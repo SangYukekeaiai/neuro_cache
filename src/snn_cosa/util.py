@@ -24,7 +24,7 @@ def build_strategy(levels: List[Dict[str, Any]]) -> Dict[str, Any]:
 
     return {
         "NodeLevel": {
-            "rest_temporal_permutation": _strategy_block(
+            "temporal_tile": _tile_block(
                 _fuse_kind(node_levels, "temporal")
             ),
         },
@@ -51,11 +51,22 @@ def _region_levels(levels: List[Dict[str, Any]], region: str) -> List[Dict[str, 
 def _strategy_block(segments: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {
         "order": _format_order(segments),
-        "loops": [
-            {"dim": seg["dim"], "size": seg["factor"]}
-            for seg in segments
-        ],
+        "loops": _loops(segments),
     }
+
+
+def _tile_block(segments: List[Dict[str, Any]]) -> Dict[str, Any]:
+    return {
+        "note": "unordered factors assigned to NodeLevel; no loop permutation is modeled here",
+        "factors": _loops(segments),
+    }
+
+
+def _loops(segments: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return [
+        {"dim": seg["dim"], "size": seg["factor"]}
+        for seg in segments
+    ]
 
 
 def _fuse_kind(levels: List[Dict[str, Any]], kind: str) -> List[Dict[str, Any]]:

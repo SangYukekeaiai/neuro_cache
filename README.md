@@ -106,15 +106,16 @@ The output JSON contains:
 
 - `status`: Gurobi solve status.
 - `objective`: final objective value if a solution exists.
-- `strategy.NodeLevel.rest_temporal_permutation`: temporal loop factors left at
-  NodeLevel.
+- `strategy.NodeLevel.temporal_tile`: unordered temporal factors assigned to
+  NodeLevel.  The model does not decide a NodeLevel loop permutation.
 - `strategy.NoCLevel.temporal_permutation`: temporal loop factors at NoCLevel.
 - `strategy.NoCLevel.spatial_splitting`: spatial split factors at NoCLevel.
 - `strategy.DRAM.temporal_permutation`: temporal loop factors at DRAM.
 
-Each strategy block has an `order` string and a `loops` list.  Each loop entry
-contains only the dimension name and fused dimension size, for example
-`{"dim": "HO", "size": 14}`.
+NoCLevel and DRAM permutation blocks have an `order` string and a `loops` list.
+NodeLevel has a `factors` list instead because no NodeLevel order is modeled.
+Each entry contains only the dimension name and fused dimension size, for
+example `{"dim": "HO", "size": 14}`.
 
 For the included sample config, the verified solve status is `OPTIMAL` with
 objective `64.399345`.

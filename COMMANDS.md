@@ -34,7 +34,7 @@ Output:
 
 - `status`: Gurobi solve status.
 - `objective`: final objective value when a solution exists.
-- `strategy.NodeLevel.rest_temporal_permutation`: remaining temporal order.
+- `strategy.NodeLevel.temporal_tile`: unordered remaining temporal factors.
 - `strategy.NoCLevel.temporal_permutation`: NoC temporal order.
 - `strategy.NoCLevel.spatial_splitting`: NoC spatial split.
 - `strategy.DRAM.temporal_permutation`: DRAM temporal order.
