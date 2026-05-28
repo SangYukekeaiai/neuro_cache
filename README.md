@@ -110,6 +110,8 @@ The output JSON contains:
 - `problem`: parsed layer dimensions.
 - `layout`: loop-level boundaries for NodeLevel, NoCLevel, and OffChip.
 - `schedule.levels`: selected factor placement by loop level.
+- `schedule.readable`: adjacent same-dimension factors fused into temporal and
+  spatial orders per memory region.
 - `schedule.reuse_indicators`: active reuse variables `y[(v, i)]`.
 - `schedule.summary`: spatial and temporal tile products per region.
 - `costs`: per-variable footprint and traffic terms.

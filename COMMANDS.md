@@ -35,5 +35,6 @@ Output:
 - `status`: Gurobi solve status.
 - `objective`: final objective value when a solution exists.
 - `schedule.levels`: selected factor placement by loop level.
+- `schedule.readable`: fused temporal/spatial order per memory region.
 - `schedule.summary`: spatial and temporal tile products per memory region.
 - `costs`: per-variable footprint and traffic terms.

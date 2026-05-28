@@ -28,6 +28,7 @@ from snn_cosa.parsers.arch import parse_snn_arch
 from snn_cosa.parsers.bitwidths import parse_snn_bitwidths
 from snn_cosa.parsers.layer import parse_snn_layer
 from snn_cosa.parsers.mapspace import parse_snn_mapspace
+from snn_cosa.schedule_format import build_readable_schedule
 
 
 _STATUS_NAMES = {
@@ -209,6 +210,7 @@ def _extract_schedule(
 
     return {
         "levels": levels,
+        "readable": build_readable_schedule(levels),
         "reuse_indicators": y_values,
         "summary": _summarize_levels(levels, prob),
     }
