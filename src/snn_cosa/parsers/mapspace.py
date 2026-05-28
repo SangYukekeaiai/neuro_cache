@@ -36,15 +36,6 @@ from snn_cosa.parsers.arch import SNNArch
 
 logger = logging.getLogger(__name__)
 
-# org indices (matches CoSA convention)
-ORG_SPATIAL   = 0
-ORG_TEMPORAL  = 1
-
-# config indices inside the mapspace 4-D array
-CFG_PERM   = 0
-CFG_FACTOR = 1
-
-
 def parse_snn_mapspace(mapspace_path: pathlib.Path) -> "SNNMapspace":
     """Parse SNN mapspace config from *mapspace_path*.
 

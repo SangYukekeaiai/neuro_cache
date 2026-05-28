@@ -105,7 +105,7 @@ def solve_schedule(
     model.optimize()
 
     return _collect_result(
-        model, prob, arch, bitwidths, mapspace, x, y, buf_util,
+        model, prob, bitwidths, mapspace, x, y, buf_util,
         temporal_traffic, spatial_cost, perm_levels, total_levels,
         dram_start, layer_path, arch_path, mapspace_path,
     )
@@ -114,7 +114,6 @@ def solve_schedule(
 def _collect_result(
     model: Model,
     prob: Any,
-    arch: Any,
     bitwidths: Any,
     mapspace: Any,
     x: Dict,
@@ -170,9 +169,7 @@ def _collect_result(
         ]}
 
     if has_solution:
-        result["schedule"] = _extract_schedule(
-            x, y, prob, total_levels, dram_start, perm_levels
-        )
+        result["schedule"] = _extract_schedule(x, y, prob, total_levels, dram_start)
         result["costs"] = _extract_costs(buf_util, temporal_traffic, spatial_cost)
 
     return result
@@ -184,7 +181,6 @@ def _extract_schedule(
     prob: Any,
     total_levels: int,
     dram_start: int,
-    perm_levels: int,
 ) -> Dict[str, Any]:
     levels = []
     for i in range(total_levels):

@@ -36,7 +36,6 @@ logger = logging.getLogger(__name__)
 # Symbolic memory-level indices (matches _B column order)
 MEM_NODE = 0   # NodeLevel  – innermost,  1024 instances
 MEM_NOC  = 1   # NoCLevel   – global buf, 1 instance
-MEM_DRAM = 2   # OffChip    – unbounded,  1 instance
 
 
 def compute_log_sizes(
