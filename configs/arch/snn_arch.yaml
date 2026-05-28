@@ -1,0 +1,14 @@
+arch:
+  bitwidths:
+    BW_WEIGHT: 8
+    BW_PSUM:   16
+    BW_VMEM:   32
+  storage:             # innermost first
+    - name: NodeLevel
+      entries:   512   # bytes per instance
+      instances: 1024  # 1024 parallel PEs
+    - name: NoCLevel
+      entries:   65536 # bytes
+      instances: 1
+    - name: OffChip
+      instances: 1     # no entries: unbounded

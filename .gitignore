@@ -1,0 +1,31 @@
+# Python build and cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Generated solver outputs
+outputs/
+*.lp
+*.mps
+*.sol
+*.log
+
+# Local Gurobi installation and license files
+gurobi_server1302/
+gurobi.lic
+*.lic
+
+# Local editor and OS files
+.idea/
+.vscode/
+*.swp
+.DS_Store

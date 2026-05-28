@@ -1,0 +1,7 @@
+mapspace:
+  # Dimensions eligible for spatial partitioning at NoCLevel.
+  # All seven dimensions are included. The solver applies different
+  # traffic rules depending on whether the split dimension is a
+  # reduction dim (KH/KW/CIN → psum-reduction) or a free dim
+  # (COUT/HO/WO/T → unicast/multicast).
+  spatial_dims: [KH, KW, CIN, COUT, HO, WO, T]
