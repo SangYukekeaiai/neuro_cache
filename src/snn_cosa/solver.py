@@ -18,8 +18,7 @@ from snn_cosa.model.constraints import (
     add_capacity_constraints,
     add_spatial_constraints,
 )
-from snn_cosa.model.constants import NUM_VARS, VAR_NAMES
-from snn_cosa.model.data_size import MEM_NOC, MEM_NODE, compute_log_sizes
+from snn_cosa.model.data_size import compute_log_sizes
 from snn_cosa.model.objective import build_objective
 from snn_cosa.model.schedule import SNN_GB_START_LEVEL, create_schedule_vars
 from snn_cosa.model.traffic.spatial import compute_spatial_traffic
@@ -28,7 +27,7 @@ from snn_cosa.parsers.arch import parse_snn_arch
 from snn_cosa.parsers.bitwidths import parse_snn_bitwidths
 from snn_cosa.parsers.layer import parse_snn_layer
 from snn_cosa.parsers.mapspace import parse_snn_mapspace
-from snn_cosa.util import build_readable_schedule
+from snn_cosa.util import build_strategy
 
 
 _STATUS_NAMES = {
@@ -106,79 +105,32 @@ def solve_schedule(
     model.optimize()
 
     return _collect_result(
-        model, prob, bitwidths, mapspace, x, y, buf_util,
-        temporal_traffic, spatial_cost, perm_levels, total_levels,
-        dram_start, layer_path, arch_path, mapspace_path,
+        model, prob, x, total_levels, dram_start,
     )
 
 
 def _collect_result(
     model: Model,
     prob: Any,
-    bitwidths: Any,
-    mapspace: Any,
     x: Dict,
-    y: Dict,
-    buf_util: Dict,
-    temporal_traffic: Dict,
-    spatial_cost: Dict,
-    perm_levels: int,
     total_levels: int,
     dram_start: int,
-    layer_path: pathlib.Path,
-    arch_path: pathlib.Path,
-    mapspace_path: Optional[pathlib.Path],
 ) -> Dict[str, Any]:
     has_solution = model.SolCount > 0
     result: Dict[str, Any] = {
         "status": _status_name(model.Status),
-        "status_code": model.Status,
         "has_solution": has_solution,
         "objective": _safe_attr(model, "ObjVal") if has_solution else None,
-        "runtime_sec": _safe_attr(model, "Runtime"),
-        "mip_gap": _safe_attr(model, "MIPGap") if has_solution else None,
-        "model_size": {
-            "variables": model.NumVars,
-            "constraints": model.NumConstrs,
-            "quadratic_constraints": model.NumQConstrs,
-        },
-        "inputs": {
-            "layer": str(layer_path.resolve()),
-            "arch": str(arch_path.resolve()),
-            "mapspace": str(mapspace_path.resolve()) if mapspace_path else None,
-        },
-        "problem": {
-            prob.prob_idx_name_dict[i]: prob.prob_bound[i]
-            for i in range(prob.prob_levels)
-        },
-        "bitwidths": {
-            "weight": bitwidths.bw_weight,
-            "psum": bitwidths.bw_psum,
-            "vmem": bitwidths.bw_vmem,
-        },
-        "layout": {
-            "gb_start_level": SNN_GB_START_LEVEL,
-            "dram_start": dram_start,
-            "perm_levels": perm_levels,
-            "total_levels": total_levels,
-        },
     }
 
-    if mapspace is not None:
-        result["mapspace"] = {"spatial_dims": [
-            prob.prob_idx_name_dict[i] for i in mapspace.spatial_dim_indices
-        ]}
-
     if has_solution:
-        result["schedule"] = _extract_schedule(x, y, prob, total_levels, dram_start)
-        result["costs"] = _extract_costs(buf_util, temporal_traffic, spatial_cost)
+        result["strategy"] = _extract_strategy(x, prob, total_levels, dram_start)
 
     return result
 
 
-def _extract_schedule(
+def _extract_strategy(
     x: Dict,
-    y: Dict,
     prob: Any,
     total_levels: int,
     dram_start: int,
@@ -201,51 +153,7 @@ def _extract_schedule(
                         )
         levels.append({"level": i, "region": _region(i, dram_start), "factors": factors})
 
-    y_values = []
-    for (v, i), var in sorted(y.items()):
-        if var.X > 0.5:
-            y_values.append(
-                {"var": VAR_NAMES[v], "var_index": v, "level": i, "value": int(round(var.X))}
-            )
-
-    return {
-        "levels": levels,
-        "readable": build_readable_schedule(levels),
-        "reuse_indicators": y_values,
-        "summary": _summarize_levels(levels, prob),
-    }
-
-
-def _summarize_levels(levels: list, prob: Any) -> Dict[str, Any]:
-    summary: Dict[str, Any] = {}
-    for region in ("NodeLevel", "NoCLevel", "OffChip"):
-        summary[region] = {
-            kind: {prob.prob_idx_name_dict[j]: 1 for j in range(prob.prob_levels)}
-            for kind in ("spatial", "temporal")
-        }
-    for level in levels:
-        region = level["region"]
-        for factor in level["factors"]:
-            dim = factor["dim"]
-            kind = factor["kind"]
-            summary[region][kind][dim] *= factor["factor"]
-    return summary
-
-
-def _extract_costs(buf_util: Dict, temporal_traffic: Dict, spatial_cost: Dict) -> Dict[str, Any]:
-    costs = {}
-    for v, name in enumerate(VAR_NAMES):
-        node_log2_bytes = _value(buf_util[(v, MEM_NODE)])
-        noc_log2_bytes = _value(buf_util[(v, MEM_NOC)])
-        costs[name] = {
-            "node_log2_bytes": node_log2_bytes,
-            "node_bytes": 2.0 ** node_log2_bytes,
-            "noc_log2_bytes": noc_log2_bytes,
-            "noc_bytes": 2.0 ** noc_log2_bytes,
-            "temporal_log2_elements": _value(temporal_traffic[v]),
-            "spatial_log2_elements": _value(spatial_cost[v]),
-        }
-    return costs
+    return build_strategy(levels)
 
 
 def _region(level: int, dram_start: int) -> str:
@@ -258,12 +166,6 @@ def _region(level: int, dram_start: int) -> str:
 
 def _status_name(status: int) -> str:
     return _STATUS_NAMES.get(status, f"STATUS_{status}")
-
-
-def _value(expr: Any) -> float:
-    if hasattr(expr, "getValue"):
-        return float(expr.getValue())
-    return float(expr)
 
 
 def _safe_attr(obj: Any, name: str) -> Optional[float]:

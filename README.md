@@ -106,15 +106,15 @@ The output JSON contains:
 
 - `status`: Gurobi solve status.
 - `objective`: final objective value if a solution exists.
-- `model_size`: number of variables and constraints.
-- `problem`: parsed layer dimensions.
-- `layout`: loop-level boundaries for NodeLevel, NoCLevel, and OffChip.
-- `schedule.levels`: selected factor placement by loop level.
-- `schedule.readable`: adjacent same-dimension factors fused into temporal and
-  spatial orders per memory region.
-- `schedule.reuse_indicators`: active reuse variables `y[(v, i)]`.
-- `schedule.summary`: spatial and temporal tile products per region.
-- `costs`: per-variable footprint and traffic terms.
+- `strategy.NodeLevel.rest_temporal_permutation`: temporal loop factors left at
+  NodeLevel.
+- `strategy.NoCLevel.temporal_permutation`: temporal loop factors at NoCLevel.
+- `strategy.NoCLevel.spatial_splitting`: spatial split factors at NoCLevel.
+- `strategy.DRAM.temporal_permutation`: temporal loop factors at DRAM.
+
+Each strategy block has an `order` string and a `loops` list.  Each loop entry
+contains only the dimension name and fused dimension size, for example
+`{"dim": "HO", "size": 14}`.
 
 For the included sample config, the verified solve status is `OPTIMAL` with
 objective `64.399345`.

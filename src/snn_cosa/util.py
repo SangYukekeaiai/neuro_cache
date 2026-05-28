@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Human-readable schedule formatting utilities."""
+"""Shared output-formatting utilities."""
 
 from __future__ import annotations
 
@@ -10,25 +10,52 @@ REGIONS = ("NodeLevel", "NoCLevel", "OffChip")
 KINDS = ("temporal", "spatial")
 
 
-def build_readable_schedule(levels: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Return per-region temporal/spatial orders with adjacent dims fused.
+def build_strategy(levels: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Return the compact human-readable mapping strategy.
 
     Fusion is performed independently for temporal and spatial assignments.
     Within each region, selected factors are scanned in increasing loop-level
     order.  Consecutive entries of the same dimension are multiplied into one
     segment, preserving the first and last level where they appeared.
     """
-    readable = {}
-    for region in REGIONS:
-        readable[region] = {}
-        region_levels = [level for level in levels if level["region"] == region]
-        for kind in KINDS:
-            fused = _fuse_kind(region_levels, kind)
-            readable[region][kind] = {
-                "segments": fused,
-                "order": _format_order(fused),
-            }
-    return readable
+    node_levels = _region_levels(levels, "NodeLevel")
+    noc_levels = _region_levels(levels, "NoCLevel")
+    dram_levels = _region_levels(levels, "OffChip")
+
+    return {
+        "NodeLevel": {
+            "rest_temporal_permutation": _strategy_block(
+                _fuse_kind(node_levels, "temporal")
+            ),
+        },
+        "NoCLevel": {
+            "temporal_permutation": _strategy_block(
+                _fuse_kind(noc_levels, "temporal")
+            ),
+            "spatial_splitting": _strategy_block(
+                _fuse_kind(noc_levels, "spatial")
+            ),
+        },
+        "DRAM": {
+            "temporal_permutation": _strategy_block(
+                _fuse_kind(dram_levels, "temporal")
+            ),
+        },
+    }
+
+
+def _region_levels(levels: List[Dict[str, Any]], region: str) -> List[Dict[str, Any]]:
+    return [level for level in levels if level["region"] == region]
+
+
+def _strategy_block(segments: List[Dict[str, Any]]) -> Dict[str, Any]:
+    return {
+        "order": _format_order(segments),
+        "loops": [
+            {"dim": seg["dim"], "size": seg["factor"]}
+            for seg in segments
+        ],
+    }
 
 
 def _fuse_kind(levels: List[Dict[str, Any]], kind: str) -> List[Dict[str, Any]]:
@@ -68,4 +95,4 @@ def _format_order(segments: List[Dict[str, Any]]) -> str:
     return " -> ".join(f"{seg['dim']}x{seg['factor']}" for seg in segments)
 
 
-__all__ = ["build_readable_schedule"]
+__all__ = ["build_strategy"]

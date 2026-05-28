@@ -34,7 +34,7 @@ Output:
 
 - `status`: Gurobi solve status.
 - `objective`: final objective value when a solution exists.
-- `schedule.levels`: selected factor placement by loop level.
-- `schedule.readable`: fused temporal/spatial order per memory region.
-- `schedule.summary`: spatial and temporal tile products per memory region.
-- `costs`: per-variable footprint and traffic terms.
+- `strategy.NodeLevel.rest_temporal_permutation`: remaining temporal order.
+- `strategy.NoCLevel.temporal_permutation`: NoC temporal order.
+- `strategy.NoCLevel.spatial_splitting`: NoC spatial split.
+- `strategy.DRAM.temporal_permutation`: DRAM temporal order.
