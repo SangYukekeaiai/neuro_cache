@@ -9,7 +9,7 @@ One quantity family is returned (no Gurobi constraints are added here):
   buf_util[(v, mem_idx)] log₂ of the cumulative tile for variable v up to
                          the boundary of memory level mem_idx.
                          A-weighted: only dimensions where A[j][v]==1 count.
-                         mem_idx:  0 = NodeLevel   (capacity-constrained)
+                         mem_idx:  0 = NodeLevel   (objective/metadata only)
                                    1 = NoCLevel    (capacity-constrained)
                                    2 = OffChip     (unbounded, not constrained)
 

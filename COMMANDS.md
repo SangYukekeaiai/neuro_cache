@@ -30,6 +30,24 @@ Useful options:
 python -m snn_cosa solve --time-limit 60 --mip-gap 0.01 --solver-log
 ```
 
+Generate the architecture sweep configs:
+
+```bash
+python3 scripts/generate_arch_sweep.py
+```
+
+Run every generated architecture against every workload:
+
+```bash
+python3 scripts/run_arch_workload_sweep.py --skip-existing
+```
+
+Preview the full sweep without launching Gurobi:
+
+```bash
+python3 scripts/run_arch_workload_sweep.py --dry-run
+```
+
 Output:
 
 - `status`: Gurobi solve status.

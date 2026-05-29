@@ -14,7 +14,7 @@ configs/
   workloads/sample_snn_layer.yaml sample SNN layer dimensions
 src/snn_cosa/
   parsers/                        YAML parsers for layer, arch, bit widths, mapspace
-  model/                          constants, variables, constraints, traffic, objective
+  model/                          constants, variables, constraints, objectives
   solver.py                       model assembly, solve, schedule extraction
   cli.py                          command-line interface
 COMMANDS.md                       copyable command reference
@@ -47,10 +47,28 @@ arch:
     BW_VMEM: 32
   storage:
     - name: NodeLevel
-      entries: 512
       instances: 1024
+      pe:
+        num_pes: 1024
+        registers:
+          entries:
+            weight: 128
+            psum: 128
+            vmem: 256
+          bitwidths:
+            weight: 8
+            psum: 16
+            vmem: 32
+      local_buffer:
+        entries:
+          weight: 1024
+          psum: 1024
+          vmem: 2048
     - name: NoCLevel
-      entries: 65536
+      entries:
+        weight: 16384
+        psum: 16384
+        vmem: 32768
       instances: 1
     - name: OffChip
       instances: 1

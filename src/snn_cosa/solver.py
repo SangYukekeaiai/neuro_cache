@@ -19,10 +19,12 @@ from snn_cosa.model.constraints import (
     add_spatial_constraints,
 )
 from snn_cosa.model.data_size import compute_log_sizes
-from snn_cosa.model.objective import build_objective
+from snn_cosa.model.objectives import build_objective
 from snn_cosa.model.schedule import SNN_GB_START_LEVEL, create_schedule_vars
-from snn_cosa.model.traffic.spatial import compute_spatial_traffic
-from snn_cosa.model.traffic.temporal import compute_temporal_traffic
+from snn_cosa.model.objectives.traffic import (
+    compute_spatial_traffic,
+    compute_temporal_traffic,
+)
 from snn_cosa.parsers.arch import parse_snn_arch
 from snn_cosa.parsers.bitwidths import parse_snn_bitwidths
 from snn_cosa.parsers.layer import parse_snn_layer
@@ -100,7 +102,16 @@ def solve_schedule(
         x, y, prob, SNN_GB_START_LEVEL, dram_start, perm_levels
     )
     spatial_cost = compute_spatial_traffic(x, prob, SNN_GB_START_LEVEL, dram_start)
-    build_objective(model, buf_util, temporal_traffic, spatial_cost)
+    build_objective(
+        model,
+        buf_util,
+        temporal_traffic,
+        spatial_cost,
+        x,
+        prob.prob_factors,
+        range(total_levels),
+        range(prob.prob_levels),
+    )
 
     model.optimize()
 

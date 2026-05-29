@@ -5,10 +5,28 @@ arch:
     BW_VMEM:   32
   storage:             # innermost first
     - name: NodeLevel
-      entries:   512   # bytes per instance
-      instances: 1024  # 1024 parallel PEs
+      instances: 128  # 1024 parallel PEs
+      pe:              # internal metadata only; not a mapping level
+        num_pes: 128
+        registers:
+          entries:     # bytes per PE
+            weight: 128
+            psum:   128
+            vmem:   256
+          bitwidths:
+            weight: 8
+            psum:   16
+            vmem:   32
+      local_buffer:    # internal node metadata only; not constrained yet
+        entries:       # bytes per node
+          weight: 1024
+          psum:   1024
+          vmem:   2048
     - name: NoCLevel
-      entries:   65536 # bytes
+      entries:         # bytes in the shared on-chip/global buffer
+        weight: 64
+        psum:   32
+        vmem:   32
       instances: 1
     - name: OffChip
       instances: 1     # no entries: unbounded

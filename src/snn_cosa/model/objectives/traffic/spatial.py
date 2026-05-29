@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 8 – Spatial traffic expressions for SNN scheduling.
+"""Spatial traffic objective expressions for SNN scheduling.
 
 Spatial tiling at NoCLevel distributes work across NodeLevel PEs.
 Only the NoCLevel perm region carries spatial assignments (S[1] = 1024);
@@ -7,8 +7,11 @@ NodeLevel and OffChip are constrained to S = 1 by constraints_spatial.py.
 
 For each variable v, the spatial traffic cost is:
 
-    spatial_cost[v] = log₂(TRAFFIC_MULT[v])
-                    + Σᵢ∈NoCLevel_perm  Σⱼ  Σₙ  log₂(f_j[n]) · x[(i,j,n,0)] · A[j][v]
+    spatial_cost[v] = Σᵢ∈NoCLevel_perm  Σⱼ  Σₙ  log₂(f_j[n]) · x[(i,j,n,0)] · A[j][v]
+
+Load/store access multiplicity is modeled only in temporal.py through
+TRAFFIC_MULT.  The spatial term only captures NoC-level spatial
+partition/fanout effects.
 
 The A[j][v] mask ensures only dimensions that contribute to variable v's
 buffer size are counted:
@@ -26,7 +29,7 @@ import numpy as np
 from typing import Dict
 
 from snn_cosa.parsers.layer import SNNProb
-from snn_cosa.model.constants import NUM_VARS, TRAFFIC_MULT, _A
+from snn_cosa.model.constants import NUM_VARS, _A
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +60,6 @@ def compute_spatial_traffic(
 
     spatial_cost: Dict = {}
     for v in range(NUM_VARS):
-        offset = np.log2(TRAFFIC_MULT[v])
         size = 0.0
         for i in noc_perm:
             for j, f_j in enumerate(pf):
@@ -67,7 +69,7 @@ def compute_spatial_traffic(
                     lf = np.log2(f_j[n])
                     if lf > 0.0:
                         size += lf * x[(i, j, n, 0)]   # k=0 → spatial
-        spatial_cost[v] = offset + size
+        spatial_cost[v] = size
 
     logger.debug(
         "compute_spatial_traffic: vars=%d  noc_perm_slots=%d",

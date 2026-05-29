@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 7 – Temporal traffic expressions for SNN scheduling.
+"""Temporal traffic objective expressions for SNN scheduling.
 
 Computes log₂-scale temporal traffic for each variable across the unified
 permutation range (NoCLevel perm slots + OffChip perm slots combined).
