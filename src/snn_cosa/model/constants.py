@@ -36,8 +36,9 @@ For SNN there is no bypass: all three variables exist at all three levels.
 Z matrix (derived from B)
 ------------------------------------
 Z[v][i][i'] = 1  iff B[v][i] == 1  AND  i' <= i.
-Used in buf_util: when the permutation cursor is at position i', Z selects
-only the memory levels at i' or deeper that actually store variable v.
+Historically used for cumulative memory-visibility accounting: when the
+permutation cursor is at position i', Z selects only the memory levels at i'
+or deeper that actually store variable v.
 """
 
 from typing import List

@@ -26,7 +26,8 @@ Two formulations, one per variable class:
 All traffic values are in log₂(elements):
     log₂(TRAFFIC_MULT[v]) accounts for load-only (weight, +0) vs
     load+store (psum/vmem, +1 in log₂ because MULT=2).
-    Bit-width scaling is applied in data_size.py, not here.
+    The GB data-size term, including bit-width scaling, is added in
+    traffic/total.py from the utilization expressions.
 """
 
 import logging

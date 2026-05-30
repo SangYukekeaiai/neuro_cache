@@ -4,13 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 from pathlib import Path
 from typing import Dict, Iterable, Tuple
 
 import yaml
 
 
-NODE_COUNTS = [16, 128, 160, 576, 1024, 4096]
+NODE_COUNTS = [36, 72, 144, 288, 576, 1152]
 GB_CAPACITIES = [
     ("64KB", 64 * 1024),
     ("128KB", 128 * 1024),
@@ -47,6 +48,9 @@ def main() -> int:
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+
     count = 0
     for node_count, (gb_label, gb_bytes), (split_name, split) in _sweep_points():
         arch = _build_arch(node_count, gb_bytes, split)

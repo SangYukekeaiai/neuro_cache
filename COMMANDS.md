@@ -48,6 +48,16 @@ Preview the full sweep without launching Gurobi:
 python3 scripts/run_arch_workload_sweep.py --dry-run
 ```
 
+Run the small VGG16 partial sweep:
+
+```bash
+PYTHONPATH=src python3 scripts/run_arch_workload_sweep.py \
+  --nodes 36 1152 \
+  --gb-sizes 64KB 128KB \
+  --splits 30,1,1 24,4,4 \
+  --workloads vgg16/conv1_1 vgg16/conv5_3
+```
+
 Output:
 
 - `status`: Gurobi solve status.

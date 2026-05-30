@@ -15,11 +15,13 @@ from gurobipy import GRB, GurobiError, Model
 
 from snn_cosa.model.constraints import (
     add_assignment_constraints,
-    add_capacity_constraints,
     add_spatial_constraints,
 )
-from snn_cosa.model.data_size import compute_log_sizes
-from snn_cosa.model.objectives import build_objective
+from snn_cosa.model.objectives import (
+    add_utilization_capacity_constraints,
+    build_objective,
+    build_utilization_terms,
+)
 from snn_cosa.model.schedule import SNN_GB_START_LEVEL, create_schedule_vars
 from snn_cosa.model.objectives.traffic import (
     compute_spatial_traffic,
@@ -96,15 +98,23 @@ def solve_schedule(
         perm_levels,
     )
 
-    buf_util = compute_log_sizes(x, prob, bitwidths, SNN_GB_START_LEVEL, dram_start)
-    add_capacity_constraints(model, buf_util, arch)
+    utilization, util_hat = build_utilization_terms(
+        x,
+        prob,
+        bitwidths,
+        arch,
+        SNN_GB_START_LEVEL,
+        dram_start,
+    )
+    add_utilization_capacity_constraints(model, utilization, arch)
     _, temporal_traffic = compute_temporal_traffic(
         x, y, prob, SNN_GB_START_LEVEL, dram_start, perm_levels
     )
     spatial_cost = compute_spatial_traffic(x, prob, SNN_GB_START_LEVEL, dram_start)
     build_objective(
         model,
-        buf_util,
+        utilization,
+        util_hat,
         temporal_traffic,
         spatial_cost,
         x,

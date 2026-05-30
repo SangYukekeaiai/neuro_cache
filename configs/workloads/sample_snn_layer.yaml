@@ -5,5 +5,5 @@ problem:
   COUT: 128
   HO: 56
   WO: 56
-  T: 16
+  T: 4
   shape: snn-layer
