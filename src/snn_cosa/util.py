@@ -30,7 +30,8 @@ def build_strategy(levels: List[Dict[str, Any]]) -> Dict[str, Any]:
         },
         "NoCLevel": {
             "temporal_permutation": _strategy_block(
-                _fuse_kind(noc_levels, "temporal")
+                _fuse_kind(noc_levels, "temporal"),
+                outer_to_inner=True,
             ),
             "spatial_splitting": _strategy_block(
                 _fuse_same_dim_kind(noc_levels, "spatial")
@@ -38,7 +39,8 @@ def build_strategy(levels: List[Dict[str, Any]]) -> Dict[str, Any]:
         },
         "DRAM": {
             "temporal_permutation": _strategy_block(
-                _fuse_kind(dram_levels, "temporal")
+                _fuse_kind(dram_levels, "temporal"),
+                outer_to_inner=True,
             ),
         },
     }
@@ -48,10 +50,15 @@ def _region_levels(levels: List[Dict[str, Any]], region: str) -> List[Dict[str, 
     return [level for level in levels if level["region"] == region]
 
 
-def _strategy_block(segments: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _strategy_block(
+    segments: List[Dict[str, Any]],
+    *,
+    outer_to_inner: bool = False,
+) -> Dict[str, Any]:
+    display_segments = list(reversed(segments)) if outer_to_inner else segments
     return {
-        "order": _format_order(segments),
-        "loops": _loops(segments),
+        "order": _format_order(display_segments),
+        "loops": _loops(display_segments),
     }
 
 
