@@ -39,7 +39,7 @@ from snn_cosa.model.objectives.traffic import (
 from snn_cosa.model.constants import (
     NUM_VARS, VAR_NAMES, VAR_WEIGHT, VAR_PSUM, VAR_VMEM, TRAFFIC_MULT, _A,
 )
-from snn_cosa.parsers.arch import parse_snn_arch
+from snn_cosa.parsers.arch import MEM_NOC, parse_snn_arch
 from snn_cosa.parsers.bitwidths import SNNBitwidths, parse_snn_bitwidths
 from snn_cosa.parsers.layer import parse_snn_layer, SNN_REDUCTION_DIMS
 from snn_cosa.parsers.mapspace import parse_snn_mapspace
@@ -184,6 +184,7 @@ def solve_schedule(
         model, prob, x, y, total_levels, dram_start,
         perm_levels=perm_levels,
         bitwidths=bitwidths if return_metrics else None,
+        noc_capacity=arch.mem_entries[MEM_NOC] if return_metrics else None,
     )
 
 
@@ -196,6 +197,7 @@ def _collect_result(
     dram_start: int,
     perm_levels: int = 0,
     bitwidths: Optional[SNNBitwidths] = None,
+    noc_capacity: Optional[Dict[str, int]] = None,
 ) -> Dict[str, Any]:
     has_solution = model.SolCount > 0
     result: Dict[str, Any] = {
@@ -210,6 +212,7 @@ def _collect_result(
             result["metrics"] = _extract_metrics(
                 x, y, prob, bitwidths,
                 SNN_GB_START_LEVEL, dram_start, perm_levels, total_levels,
+                noc_capacity=noc_capacity,
             )
 
     return result
@@ -224,6 +227,7 @@ def _extract_metrics(
     dram_start: int,
     perm_levels: int,
     total_levels: int,
+    noc_capacity: Optional[Dict[str, int]] = None,
 ) -> Dict[str, Any]:
     """Read per-variable metrics directly from the binary solution matrix.
 
@@ -306,12 +310,15 @@ def _extract_metrics(
                 if _xv(i, j, n, 1):
                     dl *= factor
 
-    return {
+    result: Dict[str, Any] = {
         "util": util,
         "spatial_cost": spatial_cost,
         "temporal_traffic": temporal_traffic,
         "delay": dl,
     }
+    if noc_capacity is not None:
+        result["capacity"] = dict(noc_capacity)
+    return result
 
 
 def _extract_strategy(

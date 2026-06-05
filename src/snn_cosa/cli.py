@@ -202,11 +202,27 @@ def _print_enumeration_summary(result: Dict[str, Any], out_path: pathlib.Path) -
                 m["util"][v] * m["spatial_cost"][v] * m["temporal_traffic"][v]
                 for v in m["util"]
             )
+            cap = m.get("capacity")
+            if cap:
+                cap_total = sum(cap.values())
+                util_str = (
+                    f"{_autoscale(util_total)}/{_autoscale(cap_total)}"
+                    f" ({100 * util_total / cap_total:.0f}%)"
+                )
+            else:
+                util_str = _autoscale(util_total)
             print(
                 f"  latency={m['delay']:,}  "
                 f"traffic={_autoscale(traffic_total)}  "
-                f"util={_autoscale(util_total)}"
+                f"util={util_str}"
             )
+            if cap:
+                parts = [
+                    f"{v}={_autoscale(m['util'][v])}/{_autoscale(cap[v])}"
+                    f" ({100 * m['util'][v] / cap[v]:.0f}%)"
+                    for v in m["util"]
+                ]
+                print("  util/cap: " + "  ".join(parts))
 
         print()
 
