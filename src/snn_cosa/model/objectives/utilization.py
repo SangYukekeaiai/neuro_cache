@@ -15,7 +15,7 @@ import logging
 import math
 from typing import Dict, Tuple
 
-from gurobipy import GRB, LinExpr, Model
+from gurobipy import LinExpr, Model
 
 from snn_cosa.model.constants import NUM_VARS, VAR_NAMES, _A, _B
 from snn_cosa.parsers.arch import MEM_NOC, SNNArch
@@ -109,11 +109,6 @@ def add_utilization_capacity_constraints(
         "add_utilization_capacity_constraints: constraints=%d",
         len(utilization),
     )
-
-
-def set_utilization_objective(m: Model, util_hat: LinExpr) -> None:
-    """Set a utilization-only objective: maximize ``util_hat``."""
-    m.setObjective(util_hat, GRB.MAXIMIZE)
 
 
 def _bytes_by_var(bitwidths: SNNBitwidths) -> Tuple[float, float, float]:

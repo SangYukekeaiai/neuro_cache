@@ -28,11 +28,23 @@ All traffic values are in log₂(elements):
     load+store (psum/vmem, +1 in log₂ because MULT=2).
     The GB data-size term, including bit-width scaling, is added in
     traffic/total.py from the utilization expressions.
+
+gb_only_vars parameter
+----------------------
+When a variant enforces Td[v] = 1 (DRAM-side pattern), the DRAM perm
+contributes no traffic multiplier for variable v.  Passing v in gb_only_vars
+restricts that variable's summation to GB perm slots only, dropping the
+DRAM contribution from the expression.  The returned traffic[v] then equals
+
+    log₂(MULT[v]) + Σᵢ∈GB_perm  l[i] · y[(v,i)]       (weight / psum)
+    log₂(MULT[v]) + Σᵢ∈GB_perm  x-based sum            (vmem)
+
+Weight is never expected in gb_only_vars but is handled correctly if present.
 """
 
 import logging
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict, FrozenSet, Tuple
 
 from snn_cosa.parsers.layer import SNNProb, SNN_REDUCTION_DIMS, DIM_T
 from snn_cosa.model.constants import VAR_WEIGHT, VAR_PSUM, VAR_VMEM, TRAFFIC_MULT
@@ -47,6 +59,7 @@ def compute_temporal_traffic(
     gb_start_level: int,
     dram_start: int,
     perm_levels: int,
+    gb_only_vars: FrozenSet[int] = frozenset(),
 ) -> Tuple[Dict, Dict]:
     """Compute log₂-scale temporal traffic expressions (no constraints added).
 
@@ -57,21 +70,27 @@ def compute_temporal_traffic(
         gb_start_level: First NoCLevel perm slot.
         dram_start:     First OffChip perm slot.
         perm_levels:    Slots per permutation boundary.
+        gb_only_vars:   Variable indices whose traffic sum is restricted to
+                        GB perm slots only (Td[v] = 1 variants).  Default
+                        empty set preserves the original full-range behaviour.
 
     Returns:
         l       – {i: LinExpr}   log₂ temporal factor at each perm slot i.
-        traffic – {v: Expr}      Unified temporal traffic per variable.
+        traffic – {v: Expr}      Temporal traffic per variable.
                   weight, psum → QuadExpr  (bilinear l[i]·y[v,i]).
                   vmem         → LinExpr   (linear over non-reduction dims).
+                  For v in gb_only_vars the sum covers GB perm slots only.
                   All in log₂(elements): log₂(TRAFFIC_MULT[v]) included.
     """
-    pf = prob.prob_factors
+    pf         = prob.prob_factors
     perm_range = range(gb_start_level, dram_start + perm_levels)
+    gb_perm    = range(gb_start_level, dram_start)
 
     # ------------------------------------------------------------------
     # l[i]: total temporal log-factor at perm slot i  (not A-weighted)
     #   l[i] = Σⱼ Σₙ log₂(f_j[n]) · x[(i,j,n,1)]
-    #   Shared across all variables; variable specificity enters via y.
+    #   Always computed over the full range; gb_only restriction is applied
+    #   when building per-variable sums below.
     # ------------------------------------------------------------------
     l: Dict = {}
     for i in perm_range:
@@ -86,27 +105,26 @@ def compute_temporal_traffic(
     # ------------------------------------------------------------------
     # weight / psum: bilinear traffic
     #   Offset = log₂(TRAFFIC_MULT[v])
-    #   Element term = Σᵢ l[i] · y[(v,i)]   (QuadExpr in Gurobi)
+    #   Element term = Σᵢ∈active l[i] · y[(v,i)]   (QuadExpr in Gurobi)
+    #   active = gb_perm for gb_only_vars, else full perm_range.
     # ------------------------------------------------------------------
     traffic: Dict = {}
     for v in [VAR_WEIGHT, VAR_PSUM]:
-        offset = np.log2(TRAFFIC_MULT[v])
-        elem = sum(l[i] * y[(v, i)] for i in perm_range)
-        traffic[v] = offset + elem
+        offset       = np.log2(TRAFFIC_MULT[v])
+        active_range = gb_perm if v in gb_only_vars else perm_range
+        elem         = sum(l[i] * y[(v, i)] for i in active_range)
+        traffic[v]   = offset + elem
 
     # ------------------------------------------------------------------
     # vmem: linear traffic = (COUT/HO/WO temporal tile) × (T temporal)
-    #   vmem size is HO×WO×COUT (T-independent).  T is NOT a size dim for
-    #   vmem but IS a multiplier: for each T temporal tiling at a perm
-    #   slot, vmem must be loaded/stored once per outer T iteration.
-    #   KH/KW/CIN (reduction dims) do not drive vmem traffic at all.
-    #   In log₂ space: product → sum of two separate accumulators.
+    #   active_range restricted to GB perm when VAR_VMEM in gb_only_vars.
     # ------------------------------------------------------------------
-    offset = np.log2(TRAFFIC_MULT[VAR_VMEM])
+    offset     = np.log2(TRAFFIC_MULT[VAR_VMEM])
+    vmem_range = gb_perm if VAR_VMEM in gb_only_vars else perm_range
 
     vmem_size = 0.0   # log₂ of COUT/HO/WO temporal tile (vmem spatial extent)
     vmem_T    = 0.0   # log₂ of T temporal factor (multiplier)
-    for i in perm_range:
+    for i in vmem_range:
         for j, f_j in enumerate(pf):
             if j in SNN_REDUCTION_DIMS:
                 continue
@@ -119,10 +137,10 @@ def compute_temporal_traffic(
                     else:          # COUT, HO, WO
                         vmem_size += term
 
-    traffic[VAR_VMEM] = offset + vmem_size + vmem_T   # product in linear space
+    traffic[VAR_VMEM] = offset + vmem_size + vmem_T
 
     logger.debug(
-        "compute_temporal_traffic: l slots=%d  traffic vars=%d",
-        len(l), len(traffic),
+        "compute_temporal_traffic: l slots=%d  traffic vars=%d  gb_only_vars=%s",
+        len(l), len(traffic), gb_only_vars,
     )
     return l, traffic

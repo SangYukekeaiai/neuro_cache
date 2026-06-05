@@ -9,13 +9,22 @@ returns a JSON-friendly final schedule.
 from __future__ import annotations
 
 import pathlib
-from typing import Any, Dict, Optional
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Callable, Dict, FrozenSet, Optional
 
 from gurobipy import GRB, GurobiError, Model
 
 from snn_cosa.model.constraints import (
     add_assignment_constraints,
     add_spatial_constraints,
+    add_ootk_gb,
+    add_ootk_dram,
+    add_ootk_boundary,
+    add_xxxt_dram,
+    add_xxxt_gb,
+    add_oooo_dram,
+    add_oooo_gb,
 )
 from snn_cosa.model.objectives import (
     add_utilization_capacity_constraints,
@@ -27,11 +36,48 @@ from snn_cosa.model.objectives.traffic import (
     compute_spatial_traffic,
     compute_temporal_traffic,
 )
+from snn_cosa.model.constants import (
+    NUM_VARS, VAR_NAMES, VAR_WEIGHT, VAR_PSUM, VAR_VMEM, TRAFFIC_MULT, _A,
+)
 from snn_cosa.parsers.arch import parse_snn_arch
-from snn_cosa.parsers.bitwidths import parse_snn_bitwidths
-from snn_cosa.parsers.layer import parse_snn_layer
+from snn_cosa.parsers.bitwidths import SNNBitwidths, parse_snn_bitwidths
+from snn_cosa.parsers.layer import parse_snn_layer, SNN_REDUCTION_DIMS
 from snn_cosa.parsers.mapspace import parse_snn_mapspace
 from snn_cosa.util import build_strategy
+
+
+# ---------------------------------------------------------------------------
+# TrafficMode — selects which permutation constraints and traffic formula
+# ---------------------------------------------------------------------------
+
+class TrafficMode(str, Enum):
+    BASE            = "base"
+    PSUM_GB_OOTK    = "psum_gb_ootk"
+    PSUM_DRAM_OOTK  = "psum_dram_ootk"
+    PSUM_BOUNDARY   = "psum_boundary"
+    VMEM_DRAM_XXXT  = "vmem_dram_xxxt"
+    VMEM_GB_XXXT    = "vmem_gb_xxxt"
+    BOTH_DRAM_OOOO  = "both_dram_oooo"
+    BOTH_GB_OOOO    = "both_gb_oooo"
+
+
+@dataclass(frozen=True)
+class _ModeSpec:
+    add_constraints: Optional[Callable]   # None for BASE
+    zero_vars:       FrozenSet[int]        # TR[v] = 0  (GB-side patterns)
+    gb_only_vars:    FrozenSet[int]        # Td[v] = 1  (DRAM-side patterns)
+
+
+_MODE_SPECS: Dict[TrafficMode, _ModeSpec] = {
+    TrafficMode.BASE:           _ModeSpec(None,              frozenset(),                    frozenset()),
+    TrafficMode.PSUM_GB_OOTK:   _ModeSpec(add_ootk_gb,       frozenset({VAR_PSUM}),          frozenset()),
+    TrafficMode.PSUM_DRAM_OOTK: _ModeSpec(add_ootk_dram,     frozenset(),                    frozenset({VAR_PSUM})),
+    TrafficMode.PSUM_BOUNDARY:  _ModeSpec(add_ootk_boundary, frozenset(),                    frozenset({VAR_PSUM})),
+    TrafficMode.VMEM_DRAM_XXXT: _ModeSpec(add_xxxt_dram,     frozenset(),                    frozenset({VAR_VMEM})),
+    TrafficMode.VMEM_GB_XXXT:   _ModeSpec(add_xxxt_gb,       frozenset({VAR_VMEM}),          frozenset()),
+    TrafficMode.BOTH_DRAM_OOOO: _ModeSpec(add_oooo_dram,     frozenset(),                    frozenset({VAR_PSUM, VAR_VMEM})),
+    TrafficMode.BOTH_GB_OOOO:   _ModeSpec(add_oooo_gb,       frozenset({VAR_PSUM, VAR_VMEM}), frozenset()),
+}
 
 
 _STATUS_NAMES = {
@@ -52,6 +98,8 @@ def solve_schedule(
     time_limit: Optional[float] = None,
     mip_gap: Optional[float] = None,
     output_flag: bool = False,
+    traffic_mode: TrafficMode = TrafficMode.BASE,
+    return_metrics: bool = False,
 ) -> Dict[str, Any]:
     """Solve one SNN scheduling problem and return a JSON-friendly result."""
     layer_path = pathlib.Path(layer_path)
@@ -98,6 +146,10 @@ def solve_schedule(
         perm_levels,
     )
 
+    spec = _MODE_SPECS[traffic_mode]
+    if spec.add_constraints is not None:
+        spec.add_constraints(model, x, prob, SNN_GB_START_LEVEL, dram_start, perm_levels)
+
     utilization, util_hat = build_utilization_terms(
         x,
         prob,
@@ -108,7 +160,8 @@ def solve_schedule(
     )
     add_utilization_capacity_constraints(model, utilization, arch)
     _, temporal_traffic = compute_temporal_traffic(
-        x, y, prob, SNN_GB_START_LEVEL, dram_start, perm_levels
+        x, y, prob, SNN_GB_START_LEVEL, dram_start, perm_levels,
+        gb_only_vars=spec.gb_only_vars,
     )
     spatial_cost = compute_spatial_traffic(x, prob, SNN_GB_START_LEVEL, dram_start)
     build_objective(
@@ -121,12 +174,16 @@ def solve_schedule(
         prob.prob_factors,
         range(total_levels),
         range(prob.prob_levels),
+        zero_vars=spec.zero_vars,
+        gb_only_vars=spec.gb_only_vars,
     )
 
     model.optimize()
 
     return _collect_result(
-        model, prob, x, total_levels, dram_start,
+        model, prob, x, y, total_levels, dram_start,
+        perm_levels=perm_levels,
+        bitwidths=bitwidths if return_metrics else None,
     )
 
 
@@ -134,8 +191,11 @@ def _collect_result(
     model: Model,
     prob: Any,
     x: Dict,
+    y: Dict,
     total_levels: int,
     dram_start: int,
+    perm_levels: int = 0,
+    bitwidths: Optional[SNNBitwidths] = None,
 ) -> Dict[str, Any]:
     has_solution = model.SolCount > 0
     result: Dict[str, Any] = {
@@ -146,8 +206,112 @@ def _collect_result(
 
     if has_solution:
         result["strategy"] = _extract_strategy(x, prob, total_levels, dram_start)
+        if bitwidths is not None:
+            result["metrics"] = _extract_metrics(
+                x, y, prob, bitwidths,
+                SNN_GB_START_LEVEL, dram_start, perm_levels, total_levels,
+            )
 
     return result
+
+
+def _extract_metrics(
+    x: Dict,
+    y: Dict,
+    prob: Any,
+    bitwidths: SNNBitwidths,
+    gb_start_level: int,
+    dram_start: int,
+    perm_levels: int,
+    total_levels: int,
+) -> Dict[str, Any]:
+    """Read per-variable metrics directly from the binary solution matrix.
+
+    All values are in linear (non-log) scale, computed by multiplying the
+    actual prime factors selected by the solver.
+    """
+    pf = prob.prob_factors
+    perm_range = range(gb_start_level, dram_start + perm_levels)
+
+    bytes_per_elem = [
+        bitwidths.bw_weight / 8,
+        bitwidths.bw_psum / 8,
+        bitwidths.bw_vmem / 8,
+    ]
+
+    def _xv(i: int, j: int, n: int, k: int) -> bool:
+        return x[(i, j, n, k)].X > 0.5
+
+    def _yv(v: int, i: int) -> bool:
+        return y[(v, i)].X > 0.5
+
+    # Util_v: bytes in GB = base_bytes × all factors (spatial or temporal)
+    # at NodeLevel + NoCLevel for dimensions where A[j][v] = 1.
+    util: Dict[str, float] = {}
+    for v in range(NUM_VARS):
+        val = bytes_per_elem[v]
+        for i in range(dram_start):
+            for j, factors in enumerate(pf):
+                if _A[j][v] == 0:
+                    continue
+                for n, factor in enumerate(factors):
+                    if _xv(i, j, n, 0) or _xv(i, j, n, 1):
+                        val *= factor
+        util[VAR_NAMES[v]] = val
+
+    # SpatialCost_v: NoC spatial fanout product for v-relevant dimensions.
+    spatial_cost: Dict[str, float] = {}
+    for v in range(NUM_VARS):
+        val = 1.0
+        for i in range(gb_start_level, dram_start):
+            for j, factors in enumerate(pf):
+                if _A[j][v] == 0:
+                    continue
+                for n, factor in enumerate(factors):
+                    if _xv(i, j, n, 0):
+                        val *= factor
+        spatial_cost[VAR_NAMES[v]] = val
+
+    # TemporalTraffic_v:
+    #   weight / psum: TRAFFIC_MULT[v] × product of temporal factors at
+    #                  perm slots where y[v,i] = 1 (liveness indicator).
+    #   vmem:          TRAFFIC_MULT[vmem] × product of all non-reduction
+    #                  temporal factors across the full perm range (no y).
+    temporal_traffic: Dict[str, float] = {}
+    for v in [VAR_WEIGHT, VAR_PSUM]:
+        val = float(TRAFFIC_MULT[v])
+        for i in perm_range:
+            if _yv(v, i):
+                for j, factors in enumerate(pf):
+                    for n, factor in enumerate(factors):
+                        if _xv(i, j, n, 1):
+                            val *= factor
+        temporal_traffic[VAR_NAMES[v]] = val
+
+    vmem_val = float(TRAFFIC_MULT[VAR_VMEM])
+    for i in perm_range:
+        for j, factors in enumerate(pf):
+            if j in SNN_REDUCTION_DIMS:
+                continue
+            for n, factor in enumerate(factors):
+                if _xv(i, j, n, 1):
+                    vmem_val *= factor
+    temporal_traffic[VAR_NAMES[VAR_VMEM]] = vmem_val
+
+    # Dl: total temporal iterations across all levels.
+    dl = 1
+    for i in range(total_levels):
+        for j, factors in enumerate(pf):
+            for n, factor in enumerate(factors):
+                if _xv(i, j, n, 1):
+                    dl *= factor
+
+    return {
+        "util": util,
+        "spatial_cost": spatial_cost,
+        "temporal_traffic": temporal_traffic,
+        "delay": dl,
+    }
 
 
 def _extract_strategy(
@@ -196,4 +360,4 @@ def _safe_attr(obj: Any, name: str) -> Optional[float]:
         return None
 
 
-__all__ = ["solve_schedule"]
+__all__ = ["TrafficMode", "solve_schedule"]

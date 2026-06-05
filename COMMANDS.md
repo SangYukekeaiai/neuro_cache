@@ -30,6 +30,22 @@ Useful options:
 python -m snn_cosa solve --time-limit 60 --mip-gap 0.01 --solver-log
 ```
 
+Enumerate all 8 traffic-mode variants and pick the globally optimal schedule:
+
+```bash
+python -m snn_cosa enumerate \
+  --layer configs/workloads/sample_snn_layer.yaml \
+  --arch configs/arch/snn_arch.yaml \
+  --mapspace configs/mapspace/mapspace.yaml \
+  --out outputs/enumeration.json
+```
+
+Adjust comparison-objective weights (defaults match CoSA's w_utilization / w_traffic / w_compute):
+
+```bash
+python -m snn_cosa enumerate --w-u 0.1 --w-tr 1.0 --w-dl 10.0
+```
+
 Generate the architecture sweep configs:
 
 ```bash
@@ -58,11 +74,11 @@ PYTHONPATH=src python3 scripts/run_arch_workload_sweep.py \
   --workloads vgg16/conv1_1 vgg16/conv5_3
 ```
 
-Output:
+Output fields:
 
 - `status`: Gurobi solve status.
 - `objective`: final objective value when a solution exists.
 - `strategy.NodeLevel.temporal_tile`: unordered remaining temporal factors.
-- `strategy.NoCLevel.temporal_permutation`: NoC temporal order.
+- `strategy.NoCLevel.temporal_permutation`: NoC temporal order, shown outer -> inner.
 - `strategy.NoCLevel.spatial_splitting`: NoC spatial split.
-- `strategy.DRAM.temporal_permutation`: DRAM temporal order.
+- `strategy.DRAM.temporal_permutation`: DRAM temporal order, shown outer -> inner.

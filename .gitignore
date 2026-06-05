@@ -31,3 +31,8 @@ gurobi.lic
 .vscode/
 *.swp
 .DS_Store
+
+# Local agent skills
+.agents/skills/
+.claude/skills/
+.codex/skills/

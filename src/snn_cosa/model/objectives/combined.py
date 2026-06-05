@@ -2,7 +2,7 @@
 """Combined CoSA-style minimization objective for SNN scheduling."""
 
 import logging
-from typing import Dict, Iterable, Sequence
+from typing import Dict, FrozenSet, Iterable, Sequence
 
 from gurobipy import GRB, Model
 
@@ -25,6 +25,8 @@ def build_objective(
     w_compute: float = 10.0,
     w_utilization: float = 0.1,
     w_traffic: float = 1.0,
+    zero_vars: FrozenSet[int] = frozenset(),
+    gb_only_vars: FrozenSet[int] = frozenset(),
 ) -> None:
     """Set the weighted minimization objective on *m*.
 
@@ -32,20 +34,24 @@ def build_objective(
     buffer capacity, tensor precision, and communication traffic.  The
     utilization term is reward-like, so it enters the minimization objective
     with a negative coefficient.
+
+    zero_vars / gb_only_vars are forwarded to build_traffic_cost to apply
+    the per-variant traffic simplification (see traffic/total.py).
     """
-    comp_hat = build_compute_objective(m, x, prime_factors, levels, dims)
-    traffic_hat = build_traffic_cost(utilization, temporal_traffic, spatial_cost)
+    comp_hat    = build_compute_objective(m, x, prime_factors, levels, dims)
+    traffic_hat = build_traffic_cost(
+        utilization, temporal_traffic, spatial_cost, zero_vars, gb_only_vars
+    )
 
     total_objective = (
         w_compute * comp_hat
-        # - w_utilization * util_hat
+        - w_utilization * util_hat
         + w_traffic * traffic_hat
     )
 
     m.setObjective(total_objective, GRB.MINIMIZE)
     logger.debug(
-        "build_objective: weights compute=%s utilization=%s traffic=%s",
-        w_compute,
-        w_utilization,
-        w_traffic,
+        "build_objective: weights compute=%s utilization=%s traffic=%s"
+        "  zero_vars=%s  gb_only_vars=%s",
+        w_compute, w_utilization, w_traffic, zero_vars, gb_only_vars,
     )
