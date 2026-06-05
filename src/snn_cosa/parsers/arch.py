@@ -3,27 +3,38 @@
 
 Expected memory levels (listed innermost → outermost in the YAML):
 
-  NodeLevel   – per-PE local buffer (highest instance count)
+  NodeLevel   – per-node compute unit (highest instance count)
   NoCLevel    – on-chip shared buffer (one instance per chip)
   OffChip     – off-chip DRAM (one instance, unbounded capacity)
 
-NodeLevel can describe a two-level internal hierarchy for hardware metadata:
-PE registers and a per-node local buffer.  These are not extra mapping levels.
+NodeLevel describes a two-level internal hierarchy:
+  pe.registers  – per-PE register file (always required)
+  local_buffer  – per-node L1 scratchpad (OPTIONAL)
 
-Expected arch YAML format::
+When local_buffer is present the model has two spatial fanout levels:
+  NoCLevel spatial : S[1] = instances // NoCLevel_instances  (inter-node)
+  NodeLevel spatial: num_pes                                  (intra-node, Constraint B)
+
+When local_buffer is absent PEs sit directly under the global buffer:
+  NoCLevel spatial : num_pes  (GB feeds PEs directly)
+  NodeLevel spatial: 1        (no sub-level)
+
+Expected arch YAML format (local_buffer and spatial_split optional)::
 
     arch:
-      bitwidths:           # parsed by parsers/bitwidths.py
+      bitwidths:
         BW_WEIGHT: 8
         BW_PSUM:   32
         BW_VMEM:   16
-      storage:             # innermost first
+      storage:
         - name: NodeLevel
-          instances: 1024  # number of parallel instances
-          pe:              # internal metadata only
-            num_pes: 1024
+          instances: 128      # number of nodes; drives S[1]
+          pe:
+            num_pes: 128      # PEs per node; drives intra-node spatial budget
+            spatial_split:    # OPTIONAL — pre-defined PE-level spatial split
+              COUT: 4         # split COUT by 4 across PEs
             registers:
-              entries:     # bytes per PE
+              entries:
                 weight: 128
                 psum:   128
                 vmem:   256
@@ -31,27 +42,26 @@ Expected arch YAML format::
                 weight: 8
                 psum:   16
                 vmem:   32
-          local_buffer:    # internal metadata only
-            entries:       # bytes per node
+          local_buffer:       # OPTIONAL — omit for flat GB-to-PE architecture
+            entries:
               weight: 1024
               psum:   1024
               vmem:   2048
         - name: NoCLevel
-          entries:         # shared on-chip/global-buffer bytes
+          entries:
             weight: 16384
             psum:   16384
             vmem:   32768
           instances: 1
         - name: OffChip
           instances: 1
-          # no 'entries' key – OffChip capacity is treated as unbounded
 
 All three levels store weight, psum, and vmem (no bypass).
 """
 
 import logging
 import pathlib
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import yaml
 
@@ -62,10 +72,13 @@ _REQUIRED_LEVELS: List[str] = ["NodeLevel", "NoCLevel", "OffChip"]
 _REQUIRED_ENTRY_KEYS: List[str] = ["weight", "psum", "vmem"]
 _REQUIRED_BITWIDTH_KEYS: List[str] = ["weight", "psum", "vmem"]
 
+# Valid problem dimension names for spatial_split validation
+_VALID_DIM_NAMES: List[str] = ["KH", "KW", "CIN", "COUT", "HO", "WO", "T"]
+
 # Index constants (match position in _REQUIRED_LEVELS)
-MEM_NODE   = 0   # NodeLevel
-MEM_NOC    = 1   # NoCLevel
-MEM_OFFCHIP = 2  # OffChip
+MEM_NODE    = 0   # NodeLevel
+MEM_NOC     = 1   # NoCLevel
+MEM_OFFCHIP = 2   # OffChip
 
 
 def parse_snn_arch(arch_path: pathlib.Path) -> "SNNArch":
@@ -91,22 +104,31 @@ class SNNArch:
 
     Attributes:
         mem_levels (int):        Number of memory levels (always 3).
-        mem_entries (List[Dict[str,int]]): Per-variable capacity in bytes for
-                                           NodeLevel local buffer and NoCLevel
-                                           global buffer (length 2; OffChip is
-                                           unbounded).  Only NoCLevel is used
-                                           by capacity constraints.
-        node_pe_num_pes (int):   PE count stored as NodeLevel metadata.
+        mem_entries (List):      Per-variable capacity in bytes.
+                                 Index 0 = NodeLevel local_buffer entries
+                                 (None when local_buffer is absent);
+                                 index 1 = NoCLevel global-buffer entries.
+                                 OffChip is unbounded and not stored here.
+        has_local_buffer (bool): True when NodeLevel defines a local_buffer.
+        node_pe_num_pes (int):   PEs per node.
         node_pe_register_entries (Dict[str,int]): Per-PE register bytes.
         node_pe_register_bitwidths (Dict[str,int]): Per-PE register bit-widths.
-        node_local_buffer_entries (Dict[str,int]): Per-node local buffer bytes.
+        node_pe_spatial_split (Optional[Dict[str,int]]): Pre-defined PE-level
+                                 spatial split {dim_name: factor}. None when
+                                 not specified. Product of factors <= num_pes
+                                 is validated at parse time (V1).
+        node_local_buffer_entries (Optional[Dict[str,int]]): Per-node L1 spad
+                                 bytes. None when local_buffer is absent.
         mem_instances (List[int]): Instance count for all three levels
                                    [NodeLevel, NoCLevel, OffChip].
         mem_idx (Dict[str,int]): Level name -> index (0=NodeLevel … 2=OffChip).
         mem_name (Dict[int,str]): Index -> level name.
-        S (List[int]):           Spatial fanout constraint per level.
-                                 S[i] = mem_instances[i] // mem_instances[i+1];
-                                 length equals mem_levels.
+        S (List[int]):           Inter-level spatial fanout.
+                                 S[i] = mem_instances[i] // mem_instances[i+1].
+                                 S[1] is the NoCLevel inter-node fanout.
+                                 S[0] is always 1 (self-ratio) and is NOT used
+                                 for NodeLevel spatial; use node_pe_num_pes or
+                                 has_local_buffer logic in spatial.py instead.
         path (pathlib.Path):     Resolved path to the source arch YAML.
     """
 
@@ -156,32 +178,44 @@ class SNNArch:
             self.mem_instances.append(instances)
 
         node_level = storage[MEM_NODE]
-        noc_level = storage[MEM_NOC]
+        noc_level  = storage[MEM_NOC]
+
         (
             self.node_pe_num_pes,
             self.node_pe_register_entries,
             self.node_pe_register_bitwidths,
+            self.node_pe_spatial_split,
         ) = self._parse_node_pe(node_level)
-        self.node_local_buffer_entries = self._parse_node_local_buffer(node_level)
 
-        # Keep the legacy index shape for callers: index 0 is NodeLevel
-        # local-buffer metadata, index 1 is NoCLevel global-buffer capacity.
-        # The current optimization model constrains only index 1.
-        self.mem_entries: List[Dict[str, int]] = [
+        self.node_local_buffer_entries: Optional[Dict[str, int]] = (
+            self._parse_node_local_buffer(node_level)
+        )
+
+        # Index 0 = NodeLevel (None when no local_buffer), index 1 = NoCLevel.
+        self.mem_entries: List[Optional[Dict[str, int]]] = [
             self.node_local_buffer_entries,
             self._parse_entries(noc_level, "entries"),
         ]
 
-        # Spatial fanout: S[i] = instances[i] // instances[i+1]
-        # S[0] is the internal PE-level fanout (typically 1 for register files),
-        # S[1] is the NoC-level fanout (number of PEs sharing NoCLevel),
-        # S[2] is the chip-level fanout (number of chips sharing OffChip).
+        # S[i] = instances[i] // instances[i+1]  (inter-level fanout only).
+        # S[0] is always 1; NodeLevel spatial uses node_pe_num_pes directly.
         self.S: List[int] = self._gen_spatial_constraints()
 
         logger.debug(
-            "SNNArch loaded: instances=%s  entries=%s  S=%s",
-            self.mem_instances, self.mem_entries, self.S,
+            "SNNArch loaded: instances=%s  has_local_buffer=%s  "
+            "num_pes=%d  spatial_split=%s  S=%s",
+            self.mem_instances, self.has_local_buffer,
+            self.node_pe_num_pes, self.node_pe_spatial_split, self.S,
         )
+
+    # ------------------------------------------------------------------
+    # Public properties
+    # ------------------------------------------------------------------
+
+    @property
+    def has_local_buffer(self) -> bool:
+        """True when NodeLevel defines a local_buffer (L1 spad)."""
+        return self.node_local_buffer_entries is not None
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -256,8 +290,51 @@ class SNNArch:
             bitwidths[key] = value
         return bitwidths
 
-    def _parse_node_pe(self, lvl: Dict) -> tuple[int, Dict[str, int], Dict[str, int]]:
-        """Parse PE-register metadata nested inside NodeLevel."""
+    def _parse_spatial_split(
+        self, pe: Dict, num_pes: int
+    ) -> Optional[Dict[str, int]]:
+        """Parse optional pe.spatial_split and run V1 validation.
+
+        V1: product of all split factors must not exceed num_pes.
+        """
+        raw_split = pe.get("spatial_split")
+        if raw_split is None:
+            return None
+        if not isinstance(raw_split, dict):
+            raise ValueError(
+                f"SNNArch: pe.spatial_split must be a mapping of "
+                f"{{dim_name: factor}} in {self.path}"
+            )
+
+        split: Dict[str, int] = {}
+        product = 1
+        for dim_name, raw_factor in raw_split.items():
+            if dim_name not in _VALID_DIM_NAMES:
+                raise ValueError(
+                    f"SNNArch: pe.spatial_split unknown dimension '{dim_name}' "
+                    f"(valid: {_VALID_DIM_NAMES}) in {self.path}"
+                )
+            factor = int(raw_factor)
+            if factor <= 0:
+                raise ValueError(
+                    f"SNNArch: pe.spatial_split['{dim_name}']={factor} "
+                    f"must be positive in {self.path}"
+                )
+            split[dim_name] = factor
+            product *= factor
+
+        if product > num_pes:
+            raise ValueError(
+                f"SNNArch: pe.spatial_split product={product} exceeds "
+                f"num_pes={num_pes} (V1 violation) in {self.path}"
+            )
+
+        return split
+
+    def _parse_node_pe(
+        self, lvl: Dict
+    ) -> tuple[int, Dict[str, int], Dict[str, int], Optional[Dict[str, int]]]:
+        """Parse PE-register metadata and optional spatial_split from NodeLevel."""
         pe = lvl.get("pe")
         if not isinstance(pe, dict):
             raise ValueError(
@@ -271,12 +348,6 @@ class SNNArch:
                 f"SNNArch: level '{lvl['name']}' has non-positive "
                 f"pe.num_pes={num_pes} in {self.path}"
             )
-        if num_pes != self.mem_instances[MEM_NODE]:
-            raise ValueError(
-                f"SNNArch: level '{lvl['name']}' pe.num_pes={num_pes} must "
-                f"match instances={self.mem_instances[MEM_NODE]} so existing "
-                f"fanout behavior remains unambiguous in {self.path}"
-            )
 
         registers = pe.get("registers")
         if not isinstance(registers, dict):
@@ -286,17 +357,24 @@ class SNNArch:
             )
 
         entries_holder = {"name": lvl["name"], "entries": registers.get("entries")}
-        entries = self._parse_entries(entries_holder, "entries")
+        entries   = self._parse_entries(entries_holder, "entries")
         bitwidths = self._parse_bitwidths(lvl, registers.get("bitwidths"))
-        return num_pes, entries, bitwidths
+        spatial_split = self._parse_spatial_split(pe, num_pes)
 
-    def _parse_node_local_buffer(self, lvl: Dict) -> Dict[str, int]:
-        """Parse local-buffer metadata nested inside NodeLevel."""
+        return num_pes, entries, bitwidths, spatial_split
+
+    def _parse_node_local_buffer(self, lvl: Dict) -> Optional[Dict[str, int]]:
+        """Parse optional local_buffer entries from NodeLevel.
+
+        Returns None when the local_buffer key is absent (flat GB-to-PE arch).
+        """
         local_buffer = lvl.get("local_buffer")
+        if local_buffer is None:
+            return None
         if not isinstance(local_buffer, dict):
             raise ValueError(
-                f"SNNArch: level '{lvl['name']}' must define local_buffer "
-                f"metadata in {self.path}"
+                f"SNNArch: level '{lvl['name']}' local_buffer must be a "
+                f"mapping in {self.path}"
             )
         entries_holder = {"name": lvl["name"], "entries": local_buffer.get("entries")}
         return self._parse_entries(entries_holder, "entries")

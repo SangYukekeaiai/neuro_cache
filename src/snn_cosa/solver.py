@@ -18,6 +18,7 @@ from gurobipy import GRB, GurobiError, Model
 from snn_cosa.model.constraints import (
     add_assignment_constraints,
     add_spatial_constraints,
+    add_pe_spatial_split_constraints,
     add_ootk_gb,
     add_ootk_dram,
     add_ootk_boundary,
@@ -145,6 +146,11 @@ def solve_schedule(
         dram_start,
         perm_levels,
     )
+
+    if arch.node_pe_spatial_split is not None:
+        add_pe_spatial_split_constraints(
+            model, x, prob, arch, SNN_GB_START_LEVEL, dram_start
+        )
 
     spec = _MODE_SPECS[traffic_mode]
     if spec.add_constraints is not None:

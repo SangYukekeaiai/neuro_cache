@@ -18,7 +18,7 @@ from typing import Dict, Tuple
 from gurobipy import LinExpr, Model
 
 from snn_cosa.model.constants import NUM_VARS, VAR_NAMES, _A, _B
-from snn_cosa.parsers.arch import MEM_NOC, SNNArch
+from snn_cosa.parsers.arch import MEM_NODE, MEM_NOC, SNNArch
 from snn_cosa.parsers.bitwidths import SNNBitwidths
 from snn_cosa.parsers.layer import SNNProb
 
@@ -52,18 +52,20 @@ def build_utilization_terms(
         level ``l == MEM_NOC`` and variable ``v``, and ``util_hat`` is the sum
         over all valid Global Buffer storage pairs.
     """
-    del gb_start_level
-
     pf = prob.prob_factors
     bytes_by_var = _bytes_by_var(bitwidths)
 
     utilization: Dict = {}
     util_hat = LinExpr()
 
-    l = MEM_NOC
+    # ------------------------------------------------------------------
+    # NoCLevel global-buffer utilization (enters both objective and
+    # capacity constraint).  Sums all factors at levels [0, dram_start).
+    # ------------------------------------------------------------------
+    l_noc = MEM_NOC
     upper = _loop_upper_for_global_buffer(dram_start)
     for v in range(NUM_VARS):
-        if _B[v][l] == 0:
+        if _B[v][l_noc] == 0:
             continue
 
         expr = LinExpr()
@@ -80,13 +82,39 @@ def build_utilization_terms(
                     for k in MAPPING_KINDS:
                         expr += coef * x[(i, d, n, k)]
 
-        utilization[(l, v)] = expr
+        utilization[(l_noc, v)] = expr
         util_hat += expr
 
+    # ------------------------------------------------------------------
+    # NodeLevel L1 spad utilization (capacity constraint only — not in
+    # objective).  Only added when local_buffer is present.
+    # Sums factors at levels [0, gb_start_level) = level 0 only.
+    # ------------------------------------------------------------------
+    if arch.has_local_buffer:
+        l_node = MEM_NODE
+        for v in range(NUM_VARS):
+            if _B[v][l_node] == 0:
+                continue
+
+            expr_node = LinExpr()
+            expr_node += math.log2(bytes_by_var[v])
+
+            for i in range(gb_start_level):
+                for d, factors in enumerate(pf):
+                    if _A[d][v] == 0:
+                        continue
+                    for n, factor in enumerate(factors):
+                        coef = math.log2(factor)
+                        if coef == 0.0:
+                            continue
+                        for k in MAPPING_KINDS:
+                            expr_node += coef * x[(i, d, n, k)]
+
+            utilization[(l_node, v)] = expr_node
+
     logger.debug(
-        "build_utilization_terms: U entries=%d storage_level=%s",
-        len(utilization),
-        arch.mem_name[l],
+        "build_utilization_terms: U entries=%d  has_local_buffer=%s",
+        len(utilization), arch.has_local_buffer,
     )
     return utilization, util_hat
 

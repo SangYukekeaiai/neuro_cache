@@ -66,10 +66,29 @@ def add_spatial_constraints(
     #             constraint is non-trivially tight even for factor == 1.
     #    S >  1 → single log2-sum constraint for the whole region.
     # ------------------------------------------------------------------
+    # NodeLevel spatial budget depends on whether a local_buffer is present.
+    #
+    # has_local_buffer = True:
+    #   PE parallelism is an intra-node fanout (L1 spad → PEs).
+    #   level 0 spatial budget = num_pes  (Constraint B).
+    #   NoCLevel spatial budget = S[1]    (inter-node fanout, unchanged).
+    #
+    # has_local_buffer = False:
+    #   PEs sit directly under the global buffer; there is no sub-level.
+    #   level 0 spatial budget = 1        (no sub-level spatial).
+    #   NoCLevel spatial budget = num_pes (GB feeds PEs directly; S[1] is
+    #   structurally 1 for single-node configs and does not capture PE fanout).
+    if arch.has_local_buffer:
+        node_budget = arch.node_pe_num_pes
+        noc_budget  = arch.S[1]
+    else:
+        node_budget = 1
+        noc_budget  = arch.node_pe_num_pes
+
     regions = [
-        (range(0,              gb_start_level),          arch.S[0], "node"),
-        (range(gb_start_level, dram_start),               arch.S[1], "noc"),
-        (range(dram_start,     dram_start + perm_levels), arch.S[2], "dram"),
+        (range(0,              gb_start_level),          node_budget, "node"),
+        (range(gb_start_level, dram_start),               noc_budget,  "noc"),
+        (range(dram_start,     dram_start + perm_levels), arch.S[2],   "dram"),
     ]
 
     for loop_range, S_val, tag in regions:
