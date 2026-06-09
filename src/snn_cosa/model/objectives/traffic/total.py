@@ -1,39 +1,36 @@
 #!/usr/bin/env python3
 """Total traffic-cost expression for SNN scheduling.
 
-The traffic objective includes three pieces per variable:
+Mirrors CoSA's total_traffic structure:
 
-    GB data size + temporal traffic + spatial NoC traffic
+    traffic_hat[v] = 0.99 × data_size[v]
+                   + 0.99 × spatial_cost[v]
+                   +        temporal_traffic[v]
 
-The GB data-size term is the same log-footprint expression used by the
-Global Buffer utilization/capacity model.
+data_size and spatial_cost carry coefficient 0.99 (heuristic proxies for
+inner-level streaming and NoC broadcast overhead).  temporal_traffic is the
+primary boundary-crossing cost and carries full weight 1.0.
+
+gb_utilization is intentionally excluded — it serves only as a capacity
+constraint (see utilization.py) and must not appear here.
 
 zero_vars / gb_only_vars
 ------------------------
-Variants modify which terms appear in the sum:
-
-  zero_vars    – TR[v] = 0 (GB-side pattern).  All three pieces for v are
-                 dropped from traffic_hat.  Capacity constraints on v are
-                 unaffected (utilization is not passed to this function).
-
-  gb_only_vars – Td[v] = 1 (DRAM-side pattern).  temporal_traffic[v] was
-                 already restricted to GB perm slots by compute_temporal_traffic;
-                 this function simply includes it as-is alongside the normal
-                 gb_utilization and spatial_cost terms.  No special handling
-                 needed here beyond skipping the zero_vars check.
+  zero_vars    – TR[v] = 0.  All three pieces for v are dropped.
+  gb_only_vars – temporal_traffic[v] already restricted to GB perm slots
+                 by compute_temporal_traffic; no special handling needed.
 """
 
 import logging
 from typing import Dict, FrozenSet
 
 from snn_cosa.model.constants import NUM_VARS
-from snn_cosa.parsers.arch import MEM_NOC
 
 logger = logging.getLogger(__name__)
 
 
 def build_traffic_cost(
-    gb_utilization: Dict,
+    data_size: Dict,
     temporal_traffic: Dict,
     spatial_cost: Dict,
     zero_vars: FrozenSet[int] = frozenset(),
@@ -42,16 +39,13 @@ def build_traffic_cost(
     """Build the unweighted total traffic-cost expression.
 
     Args:
-        gb_utilization: Per-variable GB data-size expressions keyed as
-            ``(MEM_NOC, v)``.
+        data_size:        Per-variable inner-level streaming cost expressions
+                          (from build_utilization_terms).
         temporal_traffic: Per-variable temporal traffic expressions.
-            For v in gb_only_vars this should already be GB-perm-only
-            (produced by compute_temporal_traffic with the same gb_only_vars).
-        spatial_cost: Per-variable NoC spatial traffic expressions.
-        zero_vars:    Variable indices with TR[v] = 0; all three pieces are
-                      omitted from the returned expression.
-        gb_only_vars: Variable indices with Td[v] = 1; included normally
-                      (temporal_traffic already carries the GB-only value).
+        spatial_cost:     Per-variable NoC spatial traffic expressions.
+        zero_vars:        Variable indices with TR[v] = 0; all pieces omitted.
+        gb_only_vars:     Variable indices with Td[v] = 1; included normally
+                          (temporal_traffic already carries the GB-only value).
 
     Returns:
         Total traffic cost expression to minimize.
@@ -60,8 +54,9 @@ def build_traffic_cost(
     for v in range(NUM_VARS):
         if v in zero_vars:
             continue
-        traffic_hat += gb_utilization[(MEM_NOC, v)]
-        traffic_hat += temporal_traffic[v] + spatial_cost[v]
+        traffic_hat += 0.99 * data_size[v]
+        traffic_hat += 0.99 * spatial_cost[v]
+        traffic_hat += temporal_traffic[v]
 
     logger.debug(
         "build_traffic_cost: zero_vars=%s  gb_only_vars=%s",

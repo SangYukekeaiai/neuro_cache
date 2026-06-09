@@ -27,6 +27,9 @@ def build_strategy(levels: List[Dict[str, Any]]) -> Dict[str, Any]:
             "temporal_tile": _tile_block(
                 _fuse_kind(node_levels, "temporal")
             ),
+            "spatial_split": _tile_block(
+                _fuse_same_dim_kind(node_levels, "spatial")
+            ),
         },
         "NoCLevel": {
             "temporal_permutation": _strategy_block(

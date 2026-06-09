@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate architecture YAMLs for node-count, GB-capacity, and bank splits."""
+"""Generate architecture YAMLs sweeping PE count, L1 size, node count, and GB capacity."""
 
 from __future__ import annotations
 
@@ -11,31 +11,24 @@ from typing import Dict, Iterable, Tuple
 import yaml
 
 
-NODE_COUNTS = [36, 72, 144, 288, 576, 1152]
-GB_CAPACITIES = [
-    ("64KB", 64 * 1024),
-    ("128KB", 128 * 1024),
-    ("256KB", 256 * 1024),
-    ("1024KB", 1024 * 1024),
-    ("2MB", 2 * 1024 * 1024),
-    ("4MB", 4 * 1024 * 1024),
-]
+PE_COUNTS = [16, 32, 64, 128]
+
+L1_SIZES_KB = [4, 8, 16, 32]
+
+NODE_COUNTS = [16, 36, 72, 144, 288, 576, 1024, 1132]
+
+GB_SIZES_KB = [64, 128, 256, 512, 1024, 2048, 4096]
+
+# Two bank-split options shared by both L1 and GB; must sum to TOTAL_BANKS.
 BANK_SPLITS = [
     ("w30_p1_v1", {"weight": 30, "psum": 1, "vmem": 1}),
-    ("w28_p2_v2", {"weight": 28, "psum": 2, "vmem": 2}),
-    ("w26_p3_v3", {"weight": 26, "psum": 3, "vmem": 3}),
     ("w24_p4_v4", {"weight": 24, "psum": 4, "vmem": 4}),
 ]
 TOTAL_BANKS = 32
 
 DEFAULT_PE_REGISTER_ENTRIES = {"weight": 128, "psum": 128, "vmem": 256}
 DEFAULT_PE_REGISTER_BITWIDTHS = {"weight": 8, "psum": 16, "vmem": 32}
-DEFAULT_LOCAL_BUFFER_ENTRIES = {"weight": 1024, "psum": 1024, "vmem": 2048}
-DEFAULT_ARCH_BITWIDTHS = {
-    "BW_WEIGHT": 8,
-    "BW_PSUM": 16,
-    "BW_VMEM": 32,
-}
+DEFAULT_ARCH_BITWIDTHS = {"BW_WEIGHT": 8, "BW_PSUM": 16, "BW_VMEM": 32}
 
 
 def main() -> int:
@@ -52,12 +45,14 @@ def main() -> int:
         shutil.rmtree(out_dir)
 
     count = 0
-    for node_count, (gb_label, gb_bytes), (split_name, split) in _sweep_points():
-        arch = _build_arch(node_count, gb_bytes, split)
+    for pe_count, l1_kb, node_count, gb_kb, (split_name, split) in _sweep_points():
+        arch = _build_arch(pe_count, l1_kb, node_count, gb_kb, split)
         path = (
             out_dir
             / f"nodes_{node_count}"
-            / f"gb_{gb_label.lower()}"
+            / f"gb_{gb_kb}kb"
+            / f"l1_{l1_kb}kb"
+            / f"pe_{pe_count}"
             / f"split_{split_name}.yaml"
         )
         _write_yaml(path, arch)
@@ -67,18 +62,33 @@ def main() -> int:
     return 0
 
 
-def _sweep_points() -> Iterable[Tuple[int, Tuple[str, int], Tuple[str, Dict[str, int]]]]:
-    for node_count in NODE_COUNTS:
-        for gb_capacity in GB_CAPACITIES:
-            for bank_split in BANK_SPLITS:
-                yield node_count, gb_capacity, bank_split
+def _sweep_points() -> Iterable[Tuple[int, int, int, int, Tuple[str, Dict[str, int]]]]:
+    for pe_count in PE_COUNTS:
+        for l1_kb in L1_SIZES_KB:
+            for node_count in NODE_COUNTS:
+                for gb_kb in GB_SIZES_KB:
+                    for bank_split in BANK_SPLITS:
+                        yield pe_count, l1_kb, node_count, gb_kb, bank_split
+
+
+def _split_bytes(total_bytes: int, bank_split: Dict[str, int]) -> Dict[str, int]:
+    if sum(bank_split.values()) != TOTAL_BANKS:
+        raise ValueError(f"bank split must sum to {TOTAL_BANKS}: {bank_split}")
+    return {
+        var_name: total_bytes * banks // TOTAL_BANKS
+        for var_name, banks in bank_split.items()
+    }
 
 
 def _build_arch(
+    pe_count: int,
+    l1_kb: int,
     node_count: int,
-    gb_bytes: int,
+    gb_kb: int,
     bank_split: Dict[str, int],
 ) -> Dict:
+    l1_bytes = l1_kb * 1024
+    gb_bytes = gb_kb * 1024
     return {
         "arch": {
             "bitwidths": DEFAULT_ARCH_BITWIDTHS,
@@ -87,19 +97,19 @@ def _build_arch(
                     "name": "NodeLevel",
                     "instances": node_count,
                     "pe": {
-                        "num_pes": node_count,
+                        "num_pes": pe_count,
                         "registers": {
                             "entries": DEFAULT_PE_REGISTER_ENTRIES,
                             "bitwidths": DEFAULT_PE_REGISTER_BITWIDTHS,
                         },
                     },
                     "local_buffer": {
-                        "entries": DEFAULT_LOCAL_BUFFER_ENTRIES,
+                        "entries": _split_bytes(l1_bytes, bank_split),
                     },
                 },
                 {
                     "name": "NoCLevel",
-                    "entries": _split_gb_capacity(gb_bytes, bank_split),
+                    "entries": _split_bytes(gb_bytes, bank_split),
                     "instances": 1,
                 },
                 {
@@ -108,15 +118,6 @@ def _build_arch(
                 },
             ],
         }
-    }
-
-
-def _split_gb_capacity(gb_bytes: int, bank_split: Dict[str, int]) -> Dict[str, int]:
-    if sum(bank_split.values()) != TOTAL_BANKS:
-        raise ValueError(f"bank split must sum to {TOTAL_BANKS}: {bank_split}")
-    return {
-        var_name: gb_bytes * banks // TOTAL_BANKS
-        for var_name, banks in bank_split.items()
     }
 
 

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def build_objective(
     m: Model,
-    utilization: Dict,
+    data_size: Dict,
     util_hat,
     temporal_traffic: Dict,
     spatial_cost: Dict,
@@ -40,7 +40,7 @@ def build_objective(
     """
     comp_hat    = build_compute_objective(m, x, prime_factors, levels, dims)
     traffic_hat = build_traffic_cost(
-        utilization, temporal_traffic, spatial_cost, zero_vars, gb_only_vars
+        data_size, temporal_traffic, spatial_cost, zero_vars, gb_only_vars
     )
 
     total_objective = (

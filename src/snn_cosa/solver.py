@@ -156,7 +156,7 @@ def solve_schedule(
     if spec.add_constraints is not None:
         spec.add_constraints(model, x, prob, SNN_GB_START_LEVEL, dram_start, perm_levels)
 
-    utilization, util_hat = build_utilization_terms(
+    utilization, util_hat, data_size = build_utilization_terms(
         x,
         prob,
         bitwidths,
@@ -172,7 +172,7 @@ def solve_schedule(
     spatial_cost = compute_spatial_traffic(x, prob, SNN_GB_START_LEVEL, dram_start)
     build_objective(
         model,
-        utilization,
+        data_size,
         util_hat,
         temporal_traffic,
         spatial_cost,
@@ -191,6 +191,8 @@ def solve_schedule(
         perm_levels=perm_levels,
         bitwidths=bitwidths if return_metrics else None,
         noc_capacity=arch.mem_entries[MEM_NOC] if return_metrics else None,
+        zero_vars=spec.zero_vars,
+        gb_only_vars=spec.gb_only_vars,
     )
 
 
@@ -204,6 +206,8 @@ def _collect_result(
     perm_levels: int = 0,
     bitwidths: Optional[SNNBitwidths] = None,
     noc_capacity: Optional[Dict[str, int]] = None,
+    zero_vars: FrozenSet[int] = frozenset(),
+    gb_only_vars: FrozenSet[int] = frozenset(),
 ) -> Dict[str, Any]:
     has_solution = model.SolCount > 0
     result: Dict[str, Any] = {
@@ -219,6 +223,8 @@ def _collect_result(
                 x, y, prob, bitwidths,
                 SNN_GB_START_LEVEL, dram_start, perm_levels, total_levels,
                 noc_capacity=noc_capacity,
+                zero_vars=zero_vars,
+                gb_only_vars=gb_only_vars,
             )
 
     return result
@@ -234,14 +240,23 @@ def _extract_metrics(
     perm_levels: int,
     total_levels: int,
     noc_capacity: Optional[Dict[str, int]] = None,
+    zero_vars: FrozenSet[int] = frozenset(),
+    gb_only_vars: FrozenSet[int] = frozenset(),
 ) -> Dict[str, Any]:
     """Read per-variable metrics directly from the binary solution matrix.
 
     All values are in linear (non-log) scale, computed by multiplying the
     actual prime factors selected by the solver.
+
+    zero_vars / gb_only_vars mirror the same parameters in the optimizer so
+    that the reported temporal_traffic values reflect the mode's traffic model:
+      zero_vars    – TR[v] = 0; temporal_traffic[v] is set to 0.
+      gb_only_vars – traffic restricted to GB perm slots only (matching
+                     the gb_only_vars restriction in compute_temporal_traffic).
     """
     pf = prob.prob_factors
     perm_range = range(gb_start_level, dram_start + perm_levels)
+    gb_perm    = range(gb_start_level, dram_start)
 
     bytes_per_elem = [
         bitwidths.bw_weight / 8,
@@ -282,15 +297,18 @@ def _extract_metrics(
                         val *= factor
         spatial_cost[VAR_NAMES[v]] = val
 
-    # TemporalTraffic_v:
-    #   weight / psum: TRAFFIC_MULT[v] × product of temporal factors at
-    #                  perm slots where y[v,i] = 1 (liveness indicator).
-    #   vmem:          TRAFFIC_MULT[vmem] × product of all non-reduction
-    #                  temporal factors across the full perm range (no y).
+    # TemporalTraffic_v: mirrors compute_temporal_traffic with zero_vars /
+    #   gb_only_vars applied so reported values match the optimizer's model.
+    #   zero_vars    → TR[v] = 0, traffic contribution is 0.
+    #   gb_only_vars → restrict summation to GB perm slots only.
     temporal_traffic: Dict[str, float] = {}
     for v in [VAR_WEIGHT, VAR_PSUM]:
+        if v in zero_vars:
+            temporal_traffic[VAR_NAMES[v]] = 0.0
+            continue
+        active_range = gb_perm if v in gb_only_vars else perm_range
         val = float(TRAFFIC_MULT[v])
-        for i in perm_range:
+        for i in active_range:
             if _yv(v, i):
                 for j, factors in enumerate(pf):
                     for n, factor in enumerate(factors):
@@ -298,15 +316,19 @@ def _extract_metrics(
                             val *= factor
         temporal_traffic[VAR_NAMES[v]] = val
 
-    vmem_val = float(TRAFFIC_MULT[VAR_VMEM])
-    for i in perm_range:
-        for j, factors in enumerate(pf):
-            if j in SNN_REDUCTION_DIMS:
-                continue
-            for n, factor in enumerate(factors):
-                if _xv(i, j, n, 1):
-                    vmem_val *= factor
-    temporal_traffic[VAR_NAMES[VAR_VMEM]] = vmem_val
+    if VAR_VMEM in zero_vars:
+        temporal_traffic[VAR_NAMES[VAR_VMEM]] = 0.0
+    else:
+        vmem_range = gb_perm if VAR_VMEM in gb_only_vars else perm_range
+        vmem_val = float(TRAFFIC_MULT[VAR_VMEM])
+        for i in vmem_range:
+            for j, factors in enumerate(pf):
+                if j in SNN_REDUCTION_DIMS:
+                    continue
+                for n, factor in enumerate(factors):
+                    if _xv(i, j, n, 1):
+                        vmem_val *= factor
+        temporal_traffic[VAR_NAMES[VAR_VMEM]] = vmem_val
 
     # Dl: total temporal iterations across all levels.
     dl = 1

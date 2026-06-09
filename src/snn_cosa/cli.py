@@ -194,6 +194,9 @@ def _print_enumeration_summary(result: Dict[str, Any], out_path: pathlib.Path) -
             _print_wrapped("  gb:   ", _fmt_perm(s["NoCLevel"]["temporal_permutation"]["loops"]))
             _print_wrapped("  sp:   ", _fmt_unordered(s["NoCLevel"]["spatial_splitting"]["loops"]))
             _print_wrapped("  node: ", _fmt_unordered(s["NodeLevel"]["temporal_tile"]["factors"]))
+            pe_sp = _fmt_unordered(s["NodeLevel"]["spatial_split"]["factors"])
+            if pe_sp != "none":
+                _print_wrapped("  pe_sp:", pe_sp)
 
         if c.get("metrics"):
             m = c["metrics"]

@@ -121,6 +121,14 @@ def add_ootk_gb(
             for i in GB) >= 1
     )
 
+    # Force at least one T factor temporal in GB (otherwise TK → just K innermost,
+    # which is not ooTK — the big-M ordering constraints are vacuous when T is absent)
+    m.addConstr(
+        sum(x[(i, DIM_T, n, 1)]
+            for n in range(len(pf[DIM_T]))
+            for i in GB) >= 1
+    )
+
     # All non-K temporal factors in GB must be above all K temporal factors in GB
     # Covers T (non-K) and COUT/HO/WO; naturally forces T into GB when K is in GB
     for j_prime in (*_NON_K_NON_T_DIMS, DIM_T):
@@ -169,6 +177,13 @@ def add_ootk_dram(
         sum(x[(i, j_K, n, 1)]
             for j_K in _K_DIMS
             for n in range(len(pf[j_K]))
+            for i in DRAM) >= 1
+    )
+
+    # Force at least one T factor temporal in DRAM (same vacuity issue as add_ootk_gb)
+    m.addConstr(
+        sum(x[(i, DIM_T, n, 1)]
+            for n in range(len(pf[DIM_T]))
             for i in DRAM) >= 1
     )
 
@@ -319,8 +334,10 @@ def add_oooo_dram(
 ) -> None:
     """C1 — oooo in DRAM perm (TR[psum] = D·L·Tgb[psum], TR[vmem] = D·L·Tgb[vmem]).
 
-    No K or T temporal factors in DRAM; both are free in GB.
+    No K or T temporal factors in DRAM; at least one K or T factor must appear
+    as temporal in GB (otherwise the schedule is identical to both_gb_oooo/C2).
     """
+    GB   = range(gb_start_level, dram_start)
     DRAM = range(dram_start, dram_start + perm_levels)
     pf   = prob.prob_factors
 
@@ -332,6 +349,15 @@ def add_oooo_dram(
     for n in range(len(pf[DIM_T])):
         for i in DRAM:
             m.addConstr(x[(i, DIM_T, n, 1)] == 0)
+
+    # Require at least one K or T factor temporal in GB so this mode is distinct
+    # from both_gb_oooo (C2), which forbids K/T in GB and DRAM alike.
+    m.addConstr(
+        sum(x[(i, j, n, 1)]
+            for j in (*_K_DIMS, DIM_T)
+            for n in range(len(pf[j]))
+            for i in GB) >= 1
+    )
 
     logger.debug("add_oooo_dram: C1 constraints added")
 
