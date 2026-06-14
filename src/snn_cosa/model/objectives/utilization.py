@@ -48,45 +48,45 @@ def build_utilization_terms(
 ) -> Tuple[Dict, LinExpr, Dict]:
     """Build CoSA-style utilization expressions and inner streaming cost.
 
-    Args:
-        x: Scheduling variable dict keyed as ``(i,d,n,k)``.
-        prob: Parsed SNN layer with prime-factor lists.
-        bitwidths: Per-variable bit widths.
-        arch: Parsed memory hierarchy.
-        gb_start_level: First NoCLevel permutation slot (= 1 in snn_cosa).
-        dram_start: First OffChip permutation slot.
-
     Returns:
         ``(utilization, util_hat, data_size)`` where:
-          - ``utilization[(l,v)]`` — log2(bytes) capacity expressions used
-            only for capacity constraints (keys: MEM_NOC and MEM_NODE).
-          - ``util_hat`` — CoSA total_util reward: sum of inner-level
-            buf_util across MEM_NODE and MEM_NOC (level-0 factors only).
-          - ``data_size[v]`` — inner-level streaming cost per variable,
-            added to traffic_hat with coefficient 0.99.
+          - ``utilization[(l,v)]`` — log2(bytes) capacity expressions (keys:
+            MEM_NOC and MEM_NODE); used only for capacity constraints.
+          - ``util_hat`` — CoSA total_util reward (inner-level buf_util sum).
+          - ``data_size[v]`` — inner-level streaming cost (× 0.99 in objective).
     """
-    pf = prob.prob_factors
+    pf           = prob.prob_factors
     bytes_by_var = _bytes_by_var(bitwidths)
 
-    utilization: Dict = {}
-    util_hat = LinExpr()
-    data_size: Dict = {}
+    noc_util               = _build_noc_utilization(x, pf, bytes_by_var, dram_start)
+    node_util, util_hat    = _build_node_util_reward(x, pf, bytes_by_var, gb_start_level, arch.has_local_buffer)
+    data_size              = _build_data_size(x, pf, gb_start_level)
 
-    # ------------------------------------------------------------------
-    # NoCLevel global-buffer utilization — CAPACITY CONSTRAINT only.
-    # Sums all factors at levels [0, dram_start): the full GB tile.
-    # NOT added to util_hat (CoSA keeps GB tile size out of the reward).
-    # ------------------------------------------------------------------
-    l_noc = MEM_NOC
-    upper = _loop_upper_for_global_buffer(dram_start)
+    utilization = {**noc_util, **node_util}
+    logger.debug(
+        "build_utilization_terms: U entries=%d  has_local_buffer=%s",
+        len(utilization), arch.has_local_buffer,
+    )
+    return utilization, util_hat, data_size
+
+
+def _build_noc_utilization(
+    x: Dict,
+    pf: list,
+    bytes_by_var: Tuple,
+    dram_start: int,
+) -> Dict:
+    """NoCLevel GB utilization — capacity constraint only, not in objective.
+
+    Sums log2(factor) × x[(i,d,n,k)] for all levels [0, dram_start), both
+    spatial and temporal, for every dimension d where A[d][v] != 0.
+    """
+    result: Dict = {}
     for v in range(NUM_VARS):
-        if _B[v][l_noc] == 0:
+        if _B[v][MEM_NOC] == 0:
             continue
-
-        expr = LinExpr()
-        expr += math.log2(bytes_by_var[v])
-
-        for i in range(upper):
+        expr = LinExpr(math.log2(bytes_by_var[v]))
+        for i in range(dram_start):
             for d, factors in enumerate(pf):
                 if _A[d][v] == 0:
                     continue
@@ -96,55 +96,63 @@ def build_utilization_terms(
                         continue
                     for k in MAPPING_KINDS:
                         expr += coef * x[(i, d, n, k)]
+        result[(MEM_NOC, v)] = expr
+    return result
 
-        utilization[(l_noc, v)] = expr
-        # util_hat intentionally omitted here
 
-    # ------------------------------------------------------------------
-    # NodeLevel L1 spad utilization — CAPACITY CONSTRAINT + util_hat.
-    # Sums factors at levels [0, gb_start_level) = level 0 only.
-    #
-    # CoSA's total_util sums buf_util across ALL inner hardware memory
-    # levels (MEM_NODE and MEM_NOC), each Z-restricted to inner factors.
-    # In snn_cosa's single-inner-level hierarchy both reduce to the same
-    # level-0-only expression → util_hat += expr_node twice.
-    # ------------------------------------------------------------------
-    if arch.has_local_buffer:
-        l_node = MEM_NODE
-        for v in range(NUM_VARS):
-            if _B[v][l_node] == 0:
-                continue
+def _build_node_util_reward(
+    x: Dict,
+    pf: list,
+    bytes_by_var: Tuple,
+    gb_start_level: int,
+    has_local_buffer: bool,
+) -> Tuple[Dict, LinExpr]:
+    """NodeLevel L1 spad utilization — capacity constraint + util_hat reward.
 
-            expr_node = LinExpr()
-            expr_node += math.log2(bytes_by_var[v])
-
-            for i in range(gb_start_level):
-                for d, factors in enumerate(pf):
-                    if _A[d][v] == 0:
-                        continue
-                    for n, factor in enumerate(factors):
-                        coef = math.log2(factor)
-                        if coef == 0.0:
-                            continue
-                        for k in MAPPING_KINDS:
-                            expr_node += coef * x[(i, d, n, k)]
-
-            utilization[(l_node, v)] = expr_node
-            util_hat += expr_node  # MEM_NODE inner contribution
-            util_hat += expr_node  # MEM_NOC inner contribution (Z-correct: level 0 only)
-
-    # ------------------------------------------------------------------
-    # data_size: inner-level streaming cost (CoSA §data_size).
-    # Σ_{i < gb_start} (0.8 + 0.04·i) · log2(f) · (x_sp + x_tp) · A[d][v]
-    # Level 0 only in snn_cosa; the 0.04·i gradient is inert here but
-    # preserved for structural fidelity with CoSA.
-    # Added to traffic_hat with coefficient 0.99 in traffic/total.py.
-    # ------------------------------------------------------------------
+    CoSA sums buf_util over ALL inner hardware levels (MEM_NODE and MEM_NOC),
+    each Z-restricted to inner factors. In snn_cosa's single-inner-level
+    hierarchy both reduce to level-0-only expressions, so util_hat += expr_node
+    twice (once for MEM_NODE, once for MEM_NOC's inner Z-contribution).
+    """
+    result: Dict = {}
+    util_hat = LinExpr()
+    if not has_local_buffer:
+        return result, util_hat
     for v in range(NUM_VARS):
-        if _B[v][l_noc] == 0:
-            data_size[v] = 0.0
+        if _B[v][MEM_NODE] == 0:
             continue
+        expr_node = LinExpr(math.log2(bytes_by_var[v]))
+        for i in range(gb_start_level):
+            for d, factors in enumerate(pf):
+                if _A[d][v] == 0:
+                    continue
+                for n, factor in enumerate(factors):
+                    coef = math.log2(factor)
+                    if coef == 0.0:
+                        continue
+                    for k in MAPPING_KINDS:
+                        expr_node += coef * x[(i, d, n, k)]
+        result[(MEM_NODE, v)] = expr_node
+        util_hat += expr_node  # MEM_NODE inner contribution
+        util_hat += expr_node  # MEM_NOC inner Z-contribution (level 0 ≤ gb_start)
+    return result, util_hat
 
+
+def _build_data_size(
+    x: Dict,
+    pf: list,
+    gb_start_level: int,
+) -> Dict:
+    """Inner-level streaming cost (CoSA §data_size), added to traffic_hat × 0.99.
+
+    coef = (0.8 + 0.04·i) × log2(factor)   for i ∈ [0, gb_start_level)
+    The 0.04·i gradient is inert at level 0 but preserved for CoSA fidelity.
+    """
+    result: Dict = {}
+    for v in range(NUM_VARS):
+        if _B[v][MEM_NOC] == 0:
+            result[v] = 0.0
+            continue
         size = LinExpr()
         for i in range(gb_start_level):
             for d, factors in enumerate(pf):
@@ -156,13 +164,8 @@ def build_utilization_terms(
                         continue
                     for k in MAPPING_KINDS:
                         size += coef * x[(i, d, n, k)]
-        data_size[v] = size
-
-    logger.debug(
-        "build_utilization_terms: U entries=%d  has_local_buffer=%s",
-        len(utilization), arch.has_local_buffer,
-    )
-    return utilization, util_hat, data_size
+        result[v] = size
+    return result
 
 
 def add_utilization_capacity_constraints(

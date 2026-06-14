@@ -140,10 +140,7 @@ def _run_enumerate(args: argparse.Namespace) -> int:
 
     out_path = pathlib.Path(args.out)
     _write_json(result, out_path)
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        _print_enumeration_summary(result, out_path)
-    summary = buf.getvalue()
+    summary = format_enumeration_summary(result, str(out_path))
     sys.stdout.write(summary)
     out_path.with_suffix(".txt").write_text(summary)
     return 0 if result["best_mode"] else 3
@@ -234,6 +231,18 @@ def _print_enumeration_summary(result: Dict[str, Any], out_path: pathlib.Path) -
     else:
         print("no feasible solution found")
     print(f"output: {out_path}")
+
+
+def format_enumeration_summary(result: Dict[str, Any], label: str = "") -> str:
+    """Return the full enumeration summary as a formatted string.
+
+    label is appended as the final "output: <label>" line; pass an empty
+    string to omit it (e.g. when the caller will write the text elsewhere).
+    """
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        _print_enumeration_summary(result, label)
+    return buf.getvalue()
 
 
 def _fmt_perm(loops: List[Dict[str, Any]]) -> str:

@@ -5,7 +5,7 @@ Each public function adds MIP constraints to a Gurobi model to enforce one
 specific temporal permutation pattern in either the GB or DRAM perm region.
 No variables are created here — only constraints on the existing x dict.
 
-All seven functions share the same signature:
+All functions share the same signature:
     (m, x, prob, gb_start_level, dram_start, perm_levels)
 
 Region layout (slot indices):
@@ -200,51 +200,6 @@ def add_ootk_dram(
     logger.debug("add_ootk_dram: A2 constraints added")
 
 
-def add_ootk_boundary(
-    m: Model,
-    x: Dict,
-    prob: SNNProb,
-    gb_start_level: int,
-    dram_start: int,
-    perm_levels: int,
-) -> None:
-    """A3 — ooTK at the GB-DRAM boundary (TR[psum] = D·L·Tgb[psum]).
-
-    At least one K factor at the outermost GB slot (dram_start - 1);
-    T block contiguous from the innermost DRAM slot (dram_start).
-    K is excluded from DRAM; T is free in GB.
-    """
-    DRAM = range(dram_start, dram_start + perm_levels)
-    pf   = prob.prob_factors
-    M    = dram_start + perm_levels
-
-    # At least one K factor at the outermost GB slot
-    m.addConstr(
-        sum(x[(dram_start - 1, j_K, n, 1)]
-            for j_K in _K_DIMS
-            for n in range(len(pf[j_K]))) >= 1
-    )
-
-    # No K temporal in DRAM
-    for j_K in _K_DIMS:
-        for n in range(len(pf[j_K])):
-            for i in DRAM:
-                m.addConstr(x[(i, j_K, n, 1)] == 0)
-
-    # All non-T temporal factors in DRAM must be above all T temporal factors in DRAM
-    # K is already excluded from DRAM above; this covers COUT/HO/WO
-    non_t_dims = [j for j in range(len(pf)) if j != DIM_T]
-    for j_prime in non_t_dims:
-        for n_prime in range(len(pf[j_prime])):
-            _above_all_t(m, x, pf, j_prime, n_prime, DRAM, M)
-
-    # At least one T factor at the innermost DRAM slot (adjacent to K at boundary)
-    m.addConstr(
-        sum(x[(dram_start, DIM_T, n, 1)] for n in range(len(pf[DIM_T]))) >= 1
-    )
-
-    logger.debug("add_ootk_boundary: A3 constraints added")
-
 
 # ---------------------------------------------------------------------------
 # B-group: xxxT — T block innermost
@@ -260,7 +215,7 @@ def add_xxxt_dram(
 ) -> None:
     """B1 — xxxT in DRAM perm (TR[vmem] = D·L·Tgb[vmem]).
 
-    T block at the innermost DRAM slots; T is free in GB.
+    T block at the innermost DRAM slots; ≥1 K temporal in DRAM (outer to T).
     """
     DRAM = range(dram_start, dram_start + perm_levels)
     pf   = prob.prob_factors
@@ -271,6 +226,14 @@ def add_xxxt_dram(
         sum(x[(i, DIM_T, n, 1)]
             for i in DRAM
             for n in range(len(pf[DIM_T]))) >= 1
+    )
+
+    # At least one K factor temporal in DRAM (outer to T by the ordering below)
+    m.addConstr(
+        sum(x[(i, j_K, n, 1)]
+            for j_K in _K_DIMS
+            for n in range(len(pf[j_K]))
+            for i in DRAM) >= 1
     )
 
     # All non-T temporal factors in DRAM must be above all T temporal factors in DRAM
@@ -292,7 +255,7 @@ def add_xxxt_gb(
 ) -> None:
     """B2 — xxxT in GB perm (TR[vmem] = 0).
 
-    T block at the innermost GB slots; no T temporal in DRAM.
+    T block at the innermost GB slots; ≥1 K temporal in GB or DRAM; no T in DRAM.
     """
     GB   = range(gb_start_level, dram_start)
     DRAM = range(dram_start, dram_start + perm_levels)
@@ -304,6 +267,14 @@ def add_xxxt_gb(
         sum(x[(i, DIM_T, n, 1)]
             for i in GB
             for n in range(len(pf[DIM_T]))) >= 1
+    )
+
+    # At least one K factor temporal in GB or DRAM (x means ≥1 K, outer to T)
+    m.addConstr(
+        sum(x[(i, j_K, n, 1)]
+            for j_K in _K_DIMS
+            for n in range(len(pf[j_K]))
+            for i in (*GB, *DRAM)) >= 1
     )
 
     # All non-T temporal factors in GB must be above all T temporal factors in GB
@@ -334,8 +305,8 @@ def add_oooo_dram(
 ) -> None:
     """C1 — oooo in DRAM perm (TR[psum] = D·L·Tgb[psum], TR[vmem] = D·L·Tgb[vmem]).
 
-    No K or T temporal factors in DRAM; at least one K or T factor must appear
-    as temporal in GB (otherwise the schedule is identical to both_gb_oooo/C2).
+    No K or T temporal factors in DRAM; at least one K factor temporal in GB
+    (T-only-in-GB schedules belong to gb_ooot, not here).
     """
     GB   = range(gb_start_level, dram_start)
     DRAM = range(dram_start, dram_start + perm_levels)
@@ -350,12 +321,12 @@ def add_oooo_dram(
         for i in DRAM:
             m.addConstr(x[(i, DIM_T, n, 1)] == 0)
 
-    # Require at least one K or T factor temporal in GB so this mode is distinct
-    # from both_gb_oooo (C2), which forbids K/T in GB and DRAM alike.
+    # Require at least one K factor temporal in GB to distinguish from gb_oooo (C2)
+    # and gb_ooot (T-only in GB).
     m.addConstr(
-        sum(x[(i, j, n, 1)]
-            for j in (*_K_DIMS, DIM_T)
-            for n in range(len(pf[j]))
+        sum(x[(i, j_K, n, 1)]
+            for j_K in _K_DIMS
+            for n in range(len(pf[j_K]))
             for i in GB) >= 1
     )
 
@@ -390,3 +361,173 @@ def add_oooo_gb(
             m.addConstr(x[(i, DIM_T, n, 1)] == 0)
 
     logger.debug("add_oooo_gb: C2 constraints added")
+
+
+# ---------------------------------------------------------------------------
+# D-group: oooT — T innermost, no K in any perm region
+# ---------------------------------------------------------------------------
+
+def add_ooot_gb(
+    m: Model,
+    x: Dict,
+    prob: SNNProb,
+    gb_start_level: int,
+    dram_start: int,
+    perm_levels: int,
+) -> None:
+    """D1 — oooT in GB perm (TR[psum] = 0, TR[vmem] = 0).
+
+    T block at the innermost GB slots; no K or T temporal in DRAM; no K in GB.
+    """
+    GB   = range(gb_start_level, dram_start)
+    DRAM = range(dram_start, dram_start + perm_levels)
+    pf   = prob.prob_factors
+    M    = dram_start
+
+    # No K temporal in GB or DRAM
+    for j_K in _K_DIMS:
+        for n in range(len(pf[j_K])):
+            for i in (*GB, *DRAM):
+                m.addConstr(x[(i, j_K, n, 1)] == 0)
+
+    # At least one T factor temporal in GB
+    m.addConstr(
+        sum(x[(i, DIM_T, n, 1)]
+            for i in GB
+            for n in range(len(pf[DIM_T]))) >= 1
+    )
+
+    # All non-K non-T temporal factors in GB must be above all T temporal factors in GB
+    for j_prime in _NON_K_NON_T_DIMS:
+        for n_prime in range(len(pf[j_prime])):
+            _above_all_t(m, x, pf, j_prime, n_prime, GB, M)
+
+    # No T temporal in DRAM
+    for n in range(len(pf[DIM_T])):
+        for i in DRAM:
+            m.addConstr(x[(i, DIM_T, n, 1)] == 0)
+
+    logger.debug("add_ooot_gb: D1 constraints added")
+
+
+def add_ooot_dram(
+    m: Model,
+    x: Dict,
+    prob: SNNProb,
+    gb_start_level: int,
+    dram_start: int,
+    perm_levels: int,
+) -> None:
+    """D2 — oooT in DRAM perm (TR[psum] = D·L·Tgb[psum], TR[vmem] = D·L·Tgb[vmem]).
+
+    T block at the innermost DRAM slots; no K temporal in DRAM.
+    """
+    DRAM = range(dram_start, dram_start + perm_levels)
+    pf   = prob.prob_factors
+    M    = dram_start + perm_levels
+
+    # No K temporal in DRAM
+    for j_K in _K_DIMS:
+        for n in range(len(pf[j_K])):
+            for i in DRAM:
+                m.addConstr(x[(i, j_K, n, 1)] == 0)
+
+    # At least one T factor temporal in DRAM
+    m.addConstr(
+        sum(x[(i, DIM_T, n, 1)]
+            for i in DRAM
+            for n in range(len(pf[DIM_T]))) >= 1
+    )
+
+    # All non-K non-T temporal factors in DRAM must be above all T temporal factors
+    for j_prime in _NON_K_NON_T_DIMS:
+        for n_prime in range(len(pf[j_prime])):
+            _above_all_t(m, x, pf, j_prime, n_prime, DRAM, M)
+
+    logger.debug("add_ooot_dram: D2 constraints added")
+
+
+# ---------------------------------------------------------------------------
+# E-group: oooK — K innermost, no T in any perm region
+# ---------------------------------------------------------------------------
+
+def add_oook_gb(
+    m: Model,
+    x: Dict,
+    prob: SNNProb,
+    gb_start_level: int,
+    dram_start: int,
+    perm_levels: int,
+) -> None:
+    """E1 — oooK in GB perm (TR[psum] = 0, TR[vmem] = 0).
+
+    K block at the innermost GB slots; no T in GB or DRAM; no K in DRAM.
+    """
+    GB   = range(gb_start_level, dram_start)
+    DRAM = range(dram_start, dram_start + perm_levels)
+    pf   = prob.prob_factors
+    M    = dram_start
+
+    # No T temporal in GB or DRAM
+    for n in range(len(pf[DIM_T])):
+        for i in (*GB, *DRAM):
+            m.addConstr(x[(i, DIM_T, n, 1)] == 0)
+
+    # At least one K factor temporal in GB
+    m.addConstr(
+        sum(x[(i, j_K, n, 1)]
+            for j_K in _K_DIMS
+            for n in range(len(pf[j_K]))
+            for i in GB) >= 1
+    )
+
+    # All non-K non-T temporal factors in GB must be above all K temporal factors in GB
+    for j_prime in _NON_K_NON_T_DIMS:
+        for n_prime in range(len(pf[j_prime])):
+            _above_all_k(m, x, pf, j_prime, n_prime, GB, M)
+
+    # No K temporal in DRAM
+    for j_K in _K_DIMS:
+        for n in range(len(pf[j_K])):
+            for i in DRAM:
+                m.addConstr(x[(i, j_K, n, 1)] == 0)
+
+    logger.debug("add_oook_gb: E1 constraints added")
+
+
+def add_oook_dram(
+    m: Model,
+    x: Dict,
+    prob: SNNProb,
+    gb_start_level: int,
+    dram_start: int,
+    perm_levels: int,
+) -> None:
+    """E2 — oooK in DRAM perm (TR[psum] = D·L·Tgb[psum], TR[vmem] = D·L·Tgb[vmem]).
+
+    K block at the innermost DRAM slots; no T in GB or DRAM.
+    """
+    GB   = range(gb_start_level, dram_start)
+    DRAM = range(dram_start, dram_start + perm_levels)
+    pf   = prob.prob_factors
+    M    = dram_start + perm_levels
+
+    # No T temporal in GB or DRAM
+    for n in range(len(pf[DIM_T])):
+        for i in (*GB, *DRAM):
+            m.addConstr(x[(i, DIM_T, n, 1)] == 0)
+
+    # At least one K factor temporal in DRAM
+    m.addConstr(
+        sum(x[(i, j_K, n, 1)]
+            for j_K in _K_DIMS
+            for n in range(len(pf[j_K]))
+            for i in DRAM) >= 1
+    )
+
+    # All non-K non-T temporal factors in DRAM must be above all K temporal factors
+    for j_prime in _NON_K_NON_T_DIMS:
+        for n_prime in range(len(pf[j_prime])):
+            _above_all_k(m, x, pf, j_prime, n_prime, DRAM, M)
+
+    logger.debug("add_oook_dram: E2 constraints added")

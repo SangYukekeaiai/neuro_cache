@@ -22,16 +22,17 @@ from __future__ import annotations
 import pathlib
 from typing import Any, Dict, List, Optional
 
-from snn_cosa.solver import TrafficMode, solve_schedule
+from snn_cosa.modes import TrafficMode
+from snn_cosa.solver import solve_schedule
 
 
 def enumerate_modes(
     layer_path: pathlib.Path | str,
     arch_path: pathlib.Path | str,
     mapspace_path: Optional[pathlib.Path | str] = None,
-    w_u: float = 0.01585,
+    w_u: float = 0.1,
     w_tr: float = 1.0,
-    w_dl: float = 43.1,
+    w_dl: float = 10.0,
     time_limit: Optional[float] = None,
     mip_gap: Optional[float] = None,
     output_flag: bool = False,

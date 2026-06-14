@@ -88,6 +88,9 @@ TRAFFIC_SLACK = 0.05
 GRID_STEPS    = 30
 W_MIN, W_MAX  = 1e-3, 1e3
 
+# CoSA's original default weights (w_compute=10, w_traffic=1, w_utilization=0.1)
+COSA_REF_WEIGHTS = (0.1, 1.0, 10.0)   # (w_u, w_tr, w_dl)
+
 DEFAULT_PE_REGISTER_ENTRIES   = {"weight": 128, "psum": 128, "vmem": 256}
 DEFAULT_PE_REGISTER_BITWIDTHS = {"weight": 8,   "psum": 16,  "vmem": 32}
 DEFAULT_ARCH_BITWIDTHS        = {"BW_WEIGHT": 8, "BW_PSUM": 16, "BW_VMEM": 32}
@@ -222,7 +225,8 @@ def phase1_solve(
             for line in f:
                 try:
                     rec = json.loads(line)
-                    done.add((rec["arch_key"], rec["wl_key"]))
+                    if "error" not in rec:
+                        done.add((rec["arch_key"], rec["wl_key"]))
                 except Exception:
                     pass
 
@@ -287,6 +291,61 @@ def _print_progress(done: int, total: int, start: float) -> None:
 
 def _score(dl, tr_sum, util_sum, w_u, w_tr, w_dl) -> float:
     return w_u * util_sum + w_tr * tr_sum + w_dl * dl
+
+
+def _eval_weights(
+    constrained: List[Dict],
+    w_u: float,
+    w_tr: float,
+    w_dl: float,
+) -> Dict[str, Any]:
+    """Return pass statistics for a specific (w_u, w_tr, w_dl) triple."""
+    n = len(constrained)
+    failing_a, failing_b = [], []
+    for pair in constrained:
+        modes         = pair["modes"]
+        valid_winners = pair["valid_winners"]
+        scores = [(_score(m["dl"], m["tr_sum"], m["util_sum"], w_u, w_tr, w_dl), m)
+                  for m in modes]
+        winner = min(scores, key=lambda x: x[0])[1]
+        if winner["mode"] not in valid_winners:
+            (failing_a if pair["tier"] == "A" else failing_b).append(pair)
+    pass_count = n - len(failing_a) - len(failing_b)
+    return {
+        "pass_count": pass_count,
+        "pass_pct":   100 * pass_count / n if n else 0.0,
+        "failing_a":  failing_a,
+        "failing_b":  failing_b,
+    }
+
+
+def _report_weight_check(
+    constrained: List[Dict],
+    w_u: float,
+    w_tr: float,
+    w_dl: float,
+    lat_slack: float,
+    tr_slack:  float,
+    label: str = "",
+) -> None:
+    n   = len(constrained)
+    res = _eval_weights(constrained, w_u, w_tr, w_dl)
+    failing_a = res["failing_a"]
+    failing_b = res["failing_b"]
+    total_failing = len(failing_a) + len(failing_b)
+
+    print(f"\n=== Weight check: {label} ===")
+    print(f"  Pass rate: {res['pass_count']}/{n} ({res['pass_pct']:.1f}%)")
+    print(f"  [1] latency within {lat_slack*100:.0f}%:         applied to all pairs")
+    print(f"  [2] exact min traffic (Tier A): "
+          f"{'PASS' if not failing_a else f'FAIL on {len(failing_a)} pairs'}")
+    print(f"  [3] traffic within {tr_slack*100:.0f}% (Tier B): "
+          f"{'PASS' if not failing_b else f'FAIL on {len(failing_b)} pairs'}")
+    if total_failing:
+        print(f"  Failing pairs (up to 10):")
+        for p in (failing_a + failing_b)[:10]:
+            print(f"    [{p['tier']}] arch={p['arch_key']}  wl={p['wl_key']}"
+                  f"  valid={sorted(p['valid_winners'])}")
 
 
 def phase2_search(
@@ -408,31 +467,19 @@ def phase2_search(
     print(f"  w_tr = {rec_w_tr:.4g}")
     print(f"  w_dl = {rec_w_dl:.4g}")
 
-    # Verify and show failing pairs
-    failing_a, failing_b = [], []
-    for pair in constrained:
-        modes         = pair["modes"]
-        valid_winners = pair["valid_winners"]
-        scores = [(_score(m["dl"], m["tr_sum"], m["util_sum"], rec_w_u, rec_w_tr, rec_w_dl), m)
-                  for m in modes]
-        winner = min(scores, key=lambda x: x[0])[1]
-        if winner["mode"] not in valid_winners:
-            (failing_a if pair["tier"] == "A" else failing_b).append(pair)
+    # Verify recommended weights
+    _report_weight_check(constrained, rec_w_u, rec_w_tr, rec_w_dl,
+                         lat_slack, tr_slack,
+                         label=f"Recommended  (w_u={rec_w_u:.4g}, w_tr={rec_w_tr:.4g}, w_dl={rec_w_dl:.4g})")
 
-    total_failing = len(failing_a) + len(failing_b)
-    print(f"\n  [1] latency within {lat_slack*100:.0f}%:         applied to all pairs")
-    print(f"  [2] exact min traffic (Tier A): "
-          f"{'PASS' if not failing_a else f'FAIL on {len(failing_a)} pairs'}")
-    print(f"  [3] traffic within {tr_slack*100:.0f}% (Tier B): "
-          f"{'PASS' if not failing_b else f'FAIL on {len(failing_b)} pairs'}")
-
-    if total_failing:
-        print(f"\n  Failing pairs (up to 10):")
-        for p in (failing_a + failing_b)[:10]:
-            print(f"    [{p['tier']}] arch={p['arch_key']}  wl={p['wl_key']}"
-                  f"  valid={sorted(p['valid_winners'])}")
+    # --- Reference-weight check (CoSA defaults) ---
+    ref_w_u, ref_w_tr, ref_w_dl = COSA_REF_WEIGHTS
+    _report_weight_check(constrained, ref_w_u, ref_w_tr, ref_w_dl,
+                         lat_slack, tr_slack,
+                         label=f"CoSA defaults  (w_u={ref_w_u}, w_tr={ref_w_tr}, w_dl={ref_w_dl})")
 
     # Save
+    cosa_check = _eval_weights(constrained, ref_w_u, ref_w_tr, ref_w_dl)
     results = {
         "n_pairs_with_2plus_modes": len(pairs_data),
         "n_tier_a":                 n_tier_a,
@@ -444,6 +491,11 @@ def phase2_search(
         "w_u_range":                [float(min(best_w_u)), float(max(best_w_u))],
         "w_dl_range":               [float(min(best_w_dl)), float(max(best_w_dl))],
         "recommended":              {"w_u": rec_w_u, "w_tr": rec_w_tr, "w_dl": rec_w_dl},
+        "cosa_defaults_check":      {
+            "w_u": ref_w_u, "w_tr": ref_w_tr, "w_dl": ref_w_dl,
+            "pass_count": cosa_check["pass_count"],
+            "pass_pct":   cosa_check["pass_pct"],
+        },
     }
     results_path.parent.mkdir(parents=True, exist_ok=True)
     with open(results_path, "w") as f:

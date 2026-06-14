@@ -112,8 +112,39 @@ def add_assignment_constraints(
 
     # ------------------------------------------------------------------
     # 4. Unified y monotonicity across NoCLevel + OffChip perm regions
-    #    Single chain: i runs from gb_start to dram_start + perm_levels - 1
     # ------------------------------------------------------------------
+    s_gb, s_dram = _add_y_monotonicity(
+        m, x, y, pf, gb_start_level, dram_start, perm_levels,
+    )
+
+    logger.debug("add_assignment_constraints: all 4 constraint classes added")
+
+    return s_gb, s_dram
+
+
+def _add_y_monotonicity(
+    m: Model,
+    x: Dict,
+    y: Dict,
+    pf: list,
+    gb_start_level: int,
+    dram_start: int,
+    perm_levels: int,
+) -> Tuple[Dict, Dict]:
+    """Add y-monotonicity constraints and return (s_gb, s_dram) row-sum dicts.
+
+    For each variable v and each perm slot i in [gb_start, dram_start+perm_levels):
+      row_sum(v,i) = Σ_{j,n} x[(i,j,n,1)] * A[j][v]   (1 iff a temporal
+                    factor relevant to v occupies slot i, else 0)
+
+      i == gb_start_level  →  y[v,i] == row_sum        (initialise chain)
+      i  > gb_start_level  →  y[v,i] >= y[v,i-1]       (non-decreasing)
+                               y[v,i] >= row_sum         (lower-bounded by slot)
+
+    s_gb   collects row_sum for NoCLevel slots [gb_start, dram_start).
+    s_dram collects row_sum for OffChip slots [dram_start, dram_start+perm_levels).
+    Both are consumed by compute_temporal_traffic.
+    """
     s_gb:   Dict = {}
     s_dram: Dict = {}
 
@@ -124,19 +155,15 @@ def add_assignment_constraints(
                 for j, f_j in enumerate(pf)
                 for n in range(len(f_j))
             )
-
-            # Store in the appropriate output dict
             if i < dram_start:
                 s_gb[(v, i)] = row_sum
             else:
                 s_dram[(v, i)] = row_sum
 
             if i == gb_start_level:
-                m.addConstr(y[(v, i)] == row_sum,       name=f"y_init_{v}")
+                m.addConstr(y[(v, i)] == row_sum,        name=f"y_init_{v}")
             else:
                 m.addConstr(y[(v, i)] >= y[(v, i - 1)], name=f"y_mono_{v}_{i}")
                 m.addConstr(y[(v, i)] >= row_sum,        name=f"y_row_{v}_{i}")
-
-    logger.debug("add_assignment_constraints: all 4 constraint classes added")
 
     return s_gb, s_dram
