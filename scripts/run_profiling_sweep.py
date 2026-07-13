@@ -259,7 +259,7 @@ def run_sweep(
 
     print(f"\nUnique shapes:    {total // len(T_VALUES)}")
     print(f"T values:         {T_VALUES}")
-    print(f"Total workloads:  {total}  (x11 modes each = {total * 11} Gurobi solves)")
+    print(f"Total workloads:  {total}  (x13 modes each = {total * 13} Gurobi solves)")
     print(f"Already done:     {skipped}")
     print(f"Pending:          {pending}")
     print(f"Arch config:      nodes={FIXED_NODES}, l1={FIXED_L1_KB}KB, "
@@ -339,8 +339,8 @@ def main() -> int:
     parser.add_argument("--out-dir",    default=str(DEFAULT_OUT_DIR))
     parser.add_argument("--jobs",       type=int,   default=1,
                         help="parallel worker processes (default: 1)")
-    parser.add_argument("--time-limit", type=float, default=30.0,
-                        help="per-mode Gurobi time limit in seconds (default: 30)")
+    parser.add_argument("--time-limit", type=float, default=20.0,
+                        help="per-mode Gurobi time limit in seconds (default: 20)")
     parser.add_argument("--dry-run",    action="store_true",
                         help="print plan without solving")
     args = parser.parse_args()

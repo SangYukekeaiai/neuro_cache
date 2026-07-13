@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 def extract_best_block(text: str, lines: List[str]) -> Tuple[str, List[str]]:
@@ -104,10 +104,27 @@ def parse_bytes_str(s: str) -> float:
     return float(m.group(1)) * {"B": 1, "KB": 1024, "MB": 2**20, "GB": 2**30}[m.group(2)]
 
 
+def parse_traffic_per_var(block: List[str]) -> Optional[Dict[str, float]]:
+    """Parse 'traffic/: weight=X  psum=Y  vmem=Z' from best-block lines.
+
+    Returns None if the line is absent (old-format files lack it).
+    """
+    for line in block:
+        if line.startswith("traffic/:"):
+            body = re.sub(r"^traffic/:\s*", "", line).strip()
+            result: Dict[str, float] = {}
+            for m in re.finditer(r"(\w+)=([\d.]+)\s*(B|KB|MB|GB)", body):
+                name, num, unit = m.group(1), float(m.group(2)), m.group(3)
+                result[name] = num * {"B": 1, "KB": 1024, "MB": 2**20, "GB": 2**30}[unit]
+            return result if result else None
+    return None
+
+
 __all__ = [
     "extract_best_block",
     "classify_t_in_loop",
     "sp_dims",
     "kb_str_to_int",
     "parse_bytes_str",
+    "parse_traffic_per_var",
 ]

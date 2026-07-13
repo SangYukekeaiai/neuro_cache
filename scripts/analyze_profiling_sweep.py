@@ -29,7 +29,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from lib.parse_output import (  # noqa: E402
-    classify_t_in_loop, extract_best_block, sp_dims,
+    classify_t_in_loop, extract_best_block, parse_bytes_str,
+    parse_traffic_per_var, sp_dims,
 )
 
 SWEEP_DIR    = PROJECT_ROOT / "outputs" / "profiling_sweep"
@@ -41,10 +42,15 @@ FIG_OUT      = SWEEP_DIR / "figures" / "sp_pie.pdf"
 # ---------------------------------------------------------------------------
 
 BUCKETS = [
-    "gb_oooo", "gb_ooot", "gb_oook",
+    # GB-side (psum+vmem traffic zeroed at GB boundary)
+    "gb_oooo", "gb_ooot", "gb_oook", "gb_ootk",
+    # DRAM-side (psum+vmem traffic counted only inside GB)
     "dram_oooo", "dram_ooot", "dram_oook",
-    "psum_gb_ootk", "psum_dram_ootk",
+    # PSUM reuse modes
+    "psum_gb_otok", "psum_dram_ootk", "psum_dram_otok",
+    # VMEM streaming modes
     "vmem_gb_xxxt", "vmem_dram_xxxt",
+    # Unconstrained baseline + catch-all
     "base", "others",
 ]
 
@@ -52,11 +58,13 @@ MODE_COLOR = {
     "gb_oooo":        "#4c78a8",
     "gb_ooot":        "#6a9fc8",
     "gb_oook":        "#8bbfe8",
+    "gb_ootk":        "#2a5a88",
     "dram_oooo":      "#f58518",
     "dram_ooot":      "#f7a44a",
     "dram_oook":      "#f9c37c",
-    "psum_gb_ootk":   "#54a24b",
+    "psum_gb_otok":   "#54a24b",
     "psum_dram_ootk": "#e45756",
+    "psum_dram_otok": "#c03030",
     "vmem_gb_xxxt":   "#e91e63",
     "vmem_dram_xxxt": "#795548",
     "base":           "#9467bd",
@@ -85,25 +93,34 @@ def parse_file(path: Path) -> dict | None:
     if not best:
         return None
 
-    dram_l = next((s for s in block if s.startswith("dram:")), "")
-    gb_l   = next((s for s in block if s.startswith("gb:")),   "")
-    sp_l   = next((s for s in block if s.startswith("sp:")),   "")
+    dram_l    = next((s for s in block if s.startswith("dram:")), "")
+    gb_l      = next((s for s in block if s.startswith("gb:")),   "")
+    sp_l      = next((s for s in block if s.startswith("sp:")),   "")
+    lat_l     = next((s for s in block if s.startswith("latency=")), "")
+    traffic_per_var = parse_traffic_per_var(block)
+
+    total_traffic: float | None = None
+    m_tr = re.search(r"traffic=([\d.]+)\s*(B|KB|MB|GB)", lat_l)
+    if m_tr:
+        total_traffic = parse_bytes_str(f"{m_tr.group(1)} {m_tr.group(2)}")
 
     return {
-        "CIN":        cin,
-        "COUT":       cout,
-        "HO":         ho,
-        "WO":         wo,
-        "KH":         kh,
-        "KW":         kw,
-        "T":          t,
-        "spatial":    ho * wo,
-        "best":       best,
-        "dram_t":     classify_t_in_loop(dram_l),
-        "gb_t":       classify_t_in_loop(gb_l),
-        "dram_body":  re.sub(r"^\s*dram:\s*", "", dram_l).strip() if dram_l else "none",
-        "gb_body":    re.sub(r"^\s*gb:\s*",   "", gb_l).strip()   if gb_l   else "none",
-        "sp_pattern": sp_dims(sp_l),
+        "CIN":             cin,
+        "COUT":            cout,
+        "HO":              ho,
+        "WO":              wo,
+        "KH":              kh,
+        "KW":              kw,
+        "T":               t,
+        "spatial":         ho * wo,
+        "best":            best,
+        "dram_t":          classify_t_in_loop(dram_l),
+        "gb_t":            classify_t_in_loop(gb_l),
+        "dram_body":       re.sub(r"^\s*dram:\s*", "", dram_l).strip() if dram_l else "none",
+        "gb_body":         re.sub(r"^\s*gb:\s*",   "", gb_l).strip()   if gb_l   else "none",
+        "sp_pattern":      sp_dims(sp_l),
+        "total_traffic":   total_traffic,
+        "traffic_per_var": traffic_per_var,
     }
 
 
@@ -257,6 +274,92 @@ def md_section(records: list[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Memory traffic breakdown analysis
+# ---------------------------------------------------------------------------
+
+TRAFFIC_VARS = ["weight", "psum", "vmem"]
+
+
+def _autoscale(val: float) -> str:
+    for unit, thr in [("GB", 1 << 30), ("MB", 1 << 20), ("KB", 1 << 10)]:
+        if val >= thr:
+            return f"{val / thr:.2f} {unit}"
+    return f"{val:.0f} B"
+
+
+def md_traffic_analysis(records: list[dict]) -> str:
+    """Traffic breakdown section: weight / psum / vmem fraction per mode and per parameter."""
+    tr_records = [r for r in records if r["traffic_per_var"] is not None]
+    lines: list[str] = ["## Memory Traffic Breakdown (weight / psum / vmem)\n"]
+
+    if not tr_records:
+        lines.append(
+            "_No per-variable traffic data found. Re-run the profiling sweep with the "
+            "updated snn_cosa (cli.py now emits `traffic/:` lines) to populate this section._\n"
+        )
+        return "\n".join(lines)
+
+    n = len(tr_records)
+    lines.append(f"_Based on {n} workloads that carry `traffic/:` breakdowns._\n")
+
+    # --- Overall average fractions per mode ---
+    active = [m for m in BUCKETS
+              if sum(1 for r in tr_records if bucket(r["best"]) == m) > 0]
+
+    lines.append("### Average traffic fractions per mode\n")
+    lines.append("| Mode | n | Avg total | weight% | psum% | vmem% |")
+    lines.append("|:-----|--:|----------:|--------:|------:|------:|")
+    for m in active:
+        grp = [r for r in tr_records if bucket(r["best"]) == m]
+        if not grp:
+            continue
+        totals = [sum(r["traffic_per_var"].values()) for r in grp]
+        avg_total = np.mean(totals)
+        fracs: dict[str, list[float]] = {v: [] for v in TRAFFIC_VARS}
+        for r in grp:
+            t = r["traffic_per_var"]
+            tot = sum(t.values()) or 1.0
+            for v in TRAFFIC_VARS:
+                fracs[v].append(100 * t.get(v, 0.0) / tot)
+        cells = "  ".join(f"{np.mean(fracs[v]):.0f}%" for v in TRAFFIC_VARS)
+        lines.append(
+            f"| `{m}` | {len(grp)} | {_autoscale(avg_total)} | "
+            + " | ".join(f"{np.mean(fracs[v]):.0f}%" for v in TRAFFIC_VARS)
+            + " |"
+        )
+    lines.append("")
+
+    # --- Per-parameter breakdown for ALL workloads ---
+    lines.append("### Traffic fraction vs. workload parameter\n")
+    lines.append(
+        "> Rows show mean weight% / psum% / vmem% across workloads with that parameter value.\n"
+    )
+
+    for param in ["T", "KH", "HO", "CIN", "COUT"]:
+        vals = sorted({r[param] for r in tr_records},
+                      key=lambda x: x if isinstance(x, (int, float)) else x)
+        lines.append(f"#### {PARAM_LABEL[param]}\n")
+        lines.append("| Value | n | weight% | psum% | vmem% |")
+        lines.append("|:------|--:|--------:|------:|------:|")
+        for v in vals:
+            sub = [r for r in tr_records if r[param] == v]
+            fracs = {var: [] for var in TRAFFIC_VARS}
+            for r in sub:
+                t = r["traffic_per_var"]
+                tot = sum(t.values()) or 1.0
+                for var in TRAFFIC_VARS:
+                    fracs[var].append(100 * t.get(var, 0.0) / tot)
+            lines.append(
+                f"| {pval(param, v)} | {len(sub)} | "
+                + " | ".join(f"{np.mean(fracs[var]):.0f}%" for var in TRAFFIC_VARS)
+                + " |"
+            )
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # Spatial split pie charts
 # ---------------------------------------------------------------------------
 
@@ -355,6 +458,8 @@ def main() -> None:
         md_tiling_analysis(records),
         "\n---\n",
         md_section(records),
+        "\n---\n",
+        md_traffic_analysis(records),
     ])
     MD_OUT.parent.mkdir(parents=True, exist_ok=True)
     MD_OUT.write_text(md)
