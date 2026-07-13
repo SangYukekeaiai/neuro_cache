@@ -14,6 +14,9 @@ env/
 
 # Generated solver outputs
 outputs/
+
+# Captured/copied spike traces (large binary .npy data, not source)
+input_trace/
 *.json
 *.yaml
 *.lp
@@ -25,6 +28,9 @@ outputs/
 gurobi_server1302/
 gurobi.lic
 *.lic
+
+# Compiled eventsim binary (build with: cd nocsim/eventsim && make)
+src/snn_cosa/nocsim/eventsim/eventsim
 
 # Local editor and OS files
 .idea/
