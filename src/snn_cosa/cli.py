@@ -224,6 +224,13 @@ def _print_enumeration_summary(result: Dict[str, Any], out_path: pathlib.Path) -
                 ]
                 print("  util/cap: " + "  ".join(parts))
 
+            tr_per_var = {
+                v: m["util"][v] * m["spatial_cost"][v] * m["temporal_traffic"][v]
+                for v in m["util"]
+            }
+            tr_parts = [f"{v}={_autoscale(tr_per_var[v])}" for v in tr_per_var]
+            print("  traffic/: " + "  ".join(tr_parts))
+
         print()
 
     if best_mode:

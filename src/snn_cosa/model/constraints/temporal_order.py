@@ -91,6 +91,21 @@ def _above_all_t(
         m.addConstr(ws_jp >= ws_T + ir_T - M * (1 - ir_jp))
 
 
+def _t_above_all_o(
+    m: Model, x: Dict, pf, region: range, M: int
+) -> None:
+    """Add: if T factor is temporal in region, it must be above every
+    non-K non-T (COUT/HO/WO) factor that is also temporal in region."""
+    for n_T in range(len(pf[DIM_T])):
+        ws_T  = _wslot(x, DIM_T, n_T, region)
+        ir_T  = _in_region(x, DIM_T, n_T, region)
+        for j_O in _NON_K_NON_T_DIMS:
+            for n_O in range(len(pf[j_O])):
+                ws_O = _wslot(x, j_O, n_O, region)
+                ir_O = _in_region(x, j_O, n_O, region)
+                m.addConstr(ws_T >= ws_O + ir_O - M * (1 - ir_T))
+
+
 # ---------------------------------------------------------------------------
 # A-group: ooTK — K block innermost, T block immediately above K
 # ---------------------------------------------------------------------------
@@ -199,6 +214,110 @@ def add_ootk_dram(
 
     logger.debug("add_ootk_dram: A2 constraints added")
 
+
+def add_otok_dram(
+    m: Model,
+    x: Dict,
+    prob: SNNProb,
+    gb_start_level: int,
+    dram_start: int,
+    perm_levels: int,
+) -> None:
+    """A3 — oToK non-adjacent in DRAM perm (TR[psum] = 0).
+
+    K block at innermost DRAM slots; T block outermost in DRAM;
+    at least one non-K non-T (COUT/HO/WO) separator between K and T in DRAM.
+    Ordering enforced: K < O < T (inner to outer) within DRAM.
+    """
+    DRAM = range(dram_start, dram_start + perm_levels)
+    pf   = prob.prob_factors
+    M    = dram_start + perm_levels
+
+    # Force at least one K factor temporal in DRAM
+    m.addConstr(
+        sum(x[(i, j_K, n, 1)]
+            for j_K in _K_DIMS
+            for n in range(len(pf[j_K]))
+            for i in DRAM) >= 1
+    )
+
+    # Force at least one T factor temporal in DRAM
+    m.addConstr(
+        sum(x[(i, DIM_T, n, 1)]
+            for n in range(len(pf[DIM_T]))
+            for i in DRAM) >= 1
+    )
+
+    # Force at least one non-K non-T (O) separator temporal in DRAM
+    m.addConstr(
+        sum(x[(i, j_O, n, 1)]
+            for j_O in _NON_K_NON_T_DIMS
+            for n in range(len(pf[j_O]))
+            for i in DRAM) >= 1
+    )
+
+    # All non-K temporal factors in DRAM must be above all K temporal factors
+    for j_prime in (*_NON_K_NON_T_DIMS, DIM_T):
+        for n_prime in range(len(pf[j_prime])):
+            _above_all_k(m, x, pf, j_prime, n_prime, DRAM, M)
+
+    # T must be above all non-K non-T temporal factors in DRAM (K < O < T)
+    _t_above_all_o(m, x, pf, DRAM, M)
+
+    logger.debug("add_otok_dram: A3 constraints added")
+
+
+def add_otok_gb(
+    m: Model,
+    x: Dict,
+    prob: SNNProb,
+    gb_start_level: int,
+    dram_start: int,
+    perm_levels: int,
+) -> None:
+    """A4 — oToK integrated (TR[psum] = 0).
+
+    K block innermost in GB perm; no K in DRAM; at least one non-K non-T (O)
+    separator in GB; T not forced to DRAM (may sit in GB or DRAM).
+    When T is in GB, T must be above all O in GB (K < O < T within GB).
+    When T is in DRAM, O in GB is inherently inner to DRAM, providing the gap.
+    """
+    GB   = range(gb_start_level, dram_start)
+    DRAM = range(dram_start, dram_start + perm_levels)
+    pf   = prob.prob_factors
+    M    = dram_start
+
+    # No K temporal in DRAM (K_d = 0)
+    for j_K in _K_DIMS:
+        for n in range(len(pf[j_K])):
+            for i in DRAM:
+                m.addConstr(x[(i, j_K, n, 1)] == 0)
+
+    # Force at least one K temporal in GB
+    m.addConstr(
+        sum(x[(i, j_K, n, 1)]
+            for j_K in _K_DIMS
+            for n in range(len(pf[j_K]))
+            for i in GB) >= 1
+    )
+
+    # All non-K temporal factors in GB must be above all K temporal factors in GB
+    for j_prime in (*_NON_K_NON_T_DIMS, DIM_T):
+        for n_prime in range(len(pf[j_prime])):
+            _above_all_k(m, x, pf, j_prime, n_prime, GB, M)
+
+    # Force at least one non-K non-T (O) separator temporal in GB
+    m.addConstr(
+        sum(x[(i, j_O, n, 1)]
+            for j_O in _NON_K_NON_T_DIMS
+            for n in range(len(pf[j_O]))
+            for i in GB) >= 1
+    )
+
+    # If T is in GB, T must be above all O in GB (K < O < T within GB)
+    _t_above_all_o(m, x, pf, GB, M)
+
+    logger.debug("add_otok_gb: A4 constraints added")
 
 
 # ---------------------------------------------------------------------------
