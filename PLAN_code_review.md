@@ -123,7 +123,7 @@ YAML configs
 | Profiling sweep run with 11-mode enumeration | `outputs/profiling_sweep/mode_rate_tables.md` | **Done** |
 | 7 new analysis/sweep scripts added | `scripts/` | **Done** (untracked) |
 
-### 1.6 Enumeration expansion: 3 categories, 11 modes
+### 1.6 Enumeration expansion: 3 categories, 11 modes (current) → 12 modes (pending)
 
 The `TrafficMode` enum and `_MODE_SPECS` table in `solver.py` were restructured from 8 loosely named modes into **3 semantic categories + BASE**:
 
@@ -147,7 +147,19 @@ The `TrafficMode` enum and `_MODE_SPECS` table in `solver.py` were restructured 
 - **D-group (oooT)**: T innermost, no K in any perm region → `add_ooot_gb` (D1), `add_ooot_dram` (D2)
 - **E-group (oooK)**: K innermost, no T in any perm region → `add_oook_gb` (E1), `add_oook_dram` (E2)
 
-`temporal_order.py` grew from 392 → 533 lines as a result. The `run_profiling_sweep.py` log line "x11 modes each" is **correct and current**.
+`temporal_order.py` grew from 392 → 533 lines as a result.
+
+> ⚠️ **Classification correction pending** — see `PLAN_temporal_modes.md` for full analysis.
+> The current 11-mode table contains two errors and one missing mode:
+>
+> | Issue | Current | Corrected |
+> |-------|---------|-----------|
+> | `psum_gb_ootk` misclassified as psum-only | `zero_vars={psum}` | Move to C-group as `gb_ootk`; `zero_vars={psum, vmem}` — `add_ootk_gb` forces T out of DRAM so vmem DRAM traffic is also 0 |
+> | `psum_dram_ootk` forces T adjacent to K at DRAM (too strict) | `add_ootk_dram` with adjacency | Relax to `add_otok_dram` (O can sit between T and K at DRAM); rename to `psum_dram_otok` |
+> | True psum-only GB mode (oToK: K in GB, T at DRAM, K inner to T, no adjacency) | Missing | Add `psum_gb_otok` using new `add_otok_gb` |
+>
+> After correction the count becomes **12 modes**. The `run_profiling_sweep.py`
+> log line "x11 modes each" is stale and will need updating to "x12 modes each".
 
 ---
 
