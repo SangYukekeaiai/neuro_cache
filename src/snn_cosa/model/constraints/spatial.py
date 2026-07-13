@@ -66,24 +66,17 @@ def add_spatial_constraints(
     #             constraint is non-trivially tight even for factor == 1.
     #    S >  1 → single log2-sum constraint for the whole region.
     # ------------------------------------------------------------------
-    # NodeLevel spatial budget depends on whether a local_buffer is present.
-    #
-    # has_local_buffer = True:
-    #   PE parallelism is an intra-node fanout (L1 spad → PEs).
-    #   level 0 spatial budget = num_pes  (Constraint B).
-    #   NoCLevel spatial budget = S[1]    (inter-node fanout, unchanged).
-    #
-    # has_local_buffer = False:
-    #   PEs sit directly under the global buffer; there is no sub-level.
-    #   level 0 spatial budget = 1        (no sub-level spatial).
-    #   NoCLevel spatial budget = num_pes (GB feeds PEs directly; S[1] is
-    #   structurally 1 for single-node configs and does not capture PE fanout).
-    if arch.has_local_buffer:
-        node_budget = arch.node_pe_num_pes
-        noc_budget  = arch.S[1]
-    else:
-        node_budget = 1
-        noc_budget  = arch.node_pe_num_pes
+    # PE-parallel spatial fanout always lives at NodeLevel (level 0 spatial
+    # budget = num_pes), regardless of whether a local_buffer is configured
+    # -- matching node_level.py's Constraint C. NoCLevel spatial budget is
+    # the inter-node fanout S[1]. (Previously this branched on
+    # arch.has_local_buffer, forcing node_budget=1 -- i.e. no spatial
+    # allowed at level 0 at all -- and moving the num_pes budget to NoCLevel
+    # when no local_buffer was configured. Removed: that directly
+    # contradicted node_level.py's now-unconditional level-0 pinning for
+    # named spatial-split dims, e.g. COUT, causing infeasibility.)
+    node_budget = arch.node_pe_num_pes
+    noc_budget  = arch.S[1]
 
     regions = [
         (range(0,              gb_start_level),          node_budget, "node"),

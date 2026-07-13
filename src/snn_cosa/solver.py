@@ -19,6 +19,8 @@ from snn_cosa.model.constraints import (
     add_assignment_constraints,
     add_spatial_constraints,
     add_pe_spatial_split_constraints,
+    add_node_capacity_constraints,
+    add_no_noc_level_constraints,
 )
 from snn_cosa.model.objectives import (
     add_utilization_capacity_constraints,
@@ -105,7 +107,15 @@ def solve_schedule(
 
     if arch.node_pe_spatial_split is not None:
         add_pe_spatial_split_constraints(
-            model, x, prob, arch, SNN_GB_START_LEVEL, dram_start
+            model, x, prob, arch, SNN_GB_START_LEVEL
+        )
+
+    if arch.node_dim_capacity is not None:
+        add_node_capacity_constraints(model, x, prob, arch)
+
+    if arch.single_node:
+        add_no_noc_level_constraints(
+            model, x, prob, SNN_GB_START_LEVEL, dram_start
         )
 
     spec = _MODE_SPECS[traffic_mode]

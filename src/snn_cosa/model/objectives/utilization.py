@@ -58,14 +58,17 @@ def build_utilization_terms(
     pf           = prob.prob_factors
     bytes_by_var = _bytes_by_var(bitwidths)
 
-    noc_util               = _build_noc_utilization(x, pf, bytes_by_var, dram_start)
+    noc_util = (
+        _build_noc_utilization(x, pf, bytes_by_var, dram_start)
+        if arch.has_noc_buffer else {}
+    )
     node_util, util_hat    = _build_node_util_reward(x, pf, bytes_by_var, gb_start_level, arch.has_local_buffer)
     data_size              = _build_data_size(x, pf, gb_start_level)
 
     utilization = {**noc_util, **node_util}
     logger.debug(
-        "build_utilization_terms: U entries=%d  has_local_buffer=%s",
-        len(utilization), arch.has_local_buffer,
+        "build_utilization_terms: U entries=%d  has_local_buffer=%s  has_noc_buffer=%s",
+        len(utilization), arch.has_local_buffer, arch.has_noc_buffer,
     )
     return utilization, util_hat, data_size
 
@@ -79,7 +82,10 @@ def _build_noc_utilization(
     """NoCLevel GB utilization — capacity constraint only, not in objective.
 
     Sums log2(factor) × x[(i,d,n,k)] for all levels [0, dram_start), both
-    spatial and temporal, for every dimension d where A[d][v] != 0.
+    spatial and temporal, for every dimension d where A[d][v] != 0. Only
+    called when arch.has_noc_buffer (NoCLevel entries present) -- callers
+    skip this entirely otherwise, mirroring how _build_node_util_reward is
+    skipped when has_local_buffer is False.
     """
     result: Dict = {}
     for v in range(NUM_VARS):

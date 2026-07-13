@@ -3,6 +3,7 @@ arch:
     BW_WEIGHT: 8
     BW_PSUM:   16
     BW_VMEM:   32
+    DRAM_LATENCY: 17
   storage:             # innermost first
     - name: NodeLevel
       instances: 128  # 1024 parallel PEs

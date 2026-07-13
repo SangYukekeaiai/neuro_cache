@@ -8,6 +8,7 @@ Expected arch YAML format::
         BW_WEIGHT: 8    # bits per weight element
         BW_PSUM:   32   # bits per partial-sum element
         BW_VMEM:   16   # bits per membrane-potential element
+        DRAM_LATENCY: 17  # per-packet DRAM access latency multiplier
       ...               # remaining arch fields (memory hierarchy, etc.)
 
 Missing keys fall back to the defaults defined below, so a minimal arch file
@@ -31,6 +32,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_BW_WEIGHT: int = 8
 _DEFAULT_BW_PSUM:   int = 32
 _DEFAULT_BW_VMEM:   int = 32
+_DEFAULT_DRAM_LATENCY: int = 17
 
 
 def parse_snn_bitwidths(arch_path: pathlib.Path) -> "SNNBitwidths":
@@ -57,6 +59,8 @@ class SNNBitwidths:
         bw_weight (int): Bits per weight element.   Default 8.
         bw_psum   (int): Bits per partial-sum element. Default 32.
         bw_vmem   (int): Bits per membrane-potential element. Default 16.
+        dram_latency (int): Per-packet DRAM access latency multiplier used by
+            the NoC simulator's dram_cost metric. Default 17 (CoSA parity).
         path (pathlib.Path): Resolved path to the source arch YAML.
     """
 
@@ -65,6 +69,7 @@ class SNNBitwidths:
         "BW_WEIGHT": _DEFAULT_BW_WEIGHT,
         "BW_PSUM":   _DEFAULT_BW_PSUM,
         "BW_VMEM":   _DEFAULT_BW_VMEM,
+        "DRAM_LATENCY": _DEFAULT_DRAM_LATENCY,
     }
 
     def __init__(self, arch_path: pathlib.Path) -> None:
@@ -87,11 +92,13 @@ class SNNBitwidths:
         self.bw_weight: int = int(bw_block.get("BW_WEIGHT", _DEFAULT_BW_WEIGHT))
         self.bw_psum:   int = int(bw_block.get("BW_PSUM",   _DEFAULT_BW_PSUM))
         self.bw_vmem:   int = int(bw_block.get("BW_VMEM",   _DEFAULT_BW_VMEM))
+        self.dram_latency: int = int(bw_block.get("DRAM_LATENCY", _DEFAULT_DRAM_LATENCY))
 
         for name, val in [
             ("BW_WEIGHT", self.bw_weight),
             ("BW_PSUM",   self.bw_psum),
             ("BW_VMEM",   self.bw_vmem),
+            ("DRAM_LATENCY", self.dram_latency),
         ]:
             if val <= 0:
                 raise ValueError(
@@ -100,12 +107,13 @@ class SNNBitwidths:
                 )
 
         logger.debug(
-            "SNNBitwidths: BW_WEIGHT=%d  BW_PSUM=%d  BW_VMEM=%d",
-            self.bw_weight, self.bw_psum, self.bw_vmem,
+            "SNNBitwidths: BW_WEIGHT=%d  BW_PSUM=%d  BW_VMEM=%d  DRAM_LATENCY=%d",
+            self.bw_weight, self.bw_psum, self.bw_vmem, self.dram_latency,
         )
 
     def print(self) -> None:
         print(
             f"SNNBitwidths(bw_weight={self.bw_weight}, "
-            f"bw_psum={self.bw_psum}, bw_vmem={self.bw_vmem})"
+            f"bw_psum={self.bw_psum}, bw_vmem={self.bw_vmem}, "
+            f"dram_latency={self.dram_latency})"
         )
