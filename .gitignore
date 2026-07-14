@@ -42,3 +42,6 @@ src/snn_cosa/nocsim/eventsim/eventsim
 .agents/skills/
 .claude/skills/
 .codex/skills/
+
+# Subagent-driven-development scratch (progress ledger, briefs, reports)
+.superpowers/
