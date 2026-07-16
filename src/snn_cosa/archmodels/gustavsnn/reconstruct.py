@@ -106,20 +106,26 @@ def reconstruct_tile_sequence(trace: np.ndarray, tile: NodeTileSpec) -> GustavRe
 
     Args:
         trace: real spike trace, shape [T, B, Cin, Hin, Win], binary.
-        tile:  identifies the tile -- tile_offset[DIM_HO] plus
+        tile:  identifies the tile -- tile_offset.get(DIM_HO, 0) plus
                node_bound[DIM_HO] select this tile's resident HO rows
-               (one GustavSubmatrix per row); tile_offset[DIM_WO] plus
+               (one GustavSubmatrix per row); tile_offset.get(DIM_WO, 0) plus
                node_bound[DIM_WO] select each row's resident WO width
                (this visit's P-wide column window); node_bound[DIM_KH]/
                [DIM_KW]/[DIM_CIN] the full reduction row (must be
                entirely resident -- see module docstring);
-               tile_offset[DIM_T] the single absolute tick this node
-               visit covers.
+               tile_offset.get(DIM_T, 0) the single absolute tick this node
+               visit covers. HO and WO use .get(..., 0) because they ARE
+               node-level resident (node_bound[DIM_HO]/[DIM_WO] are always
+               meaningful), but may have no DRAM-level offset entry when a
+               layer's HO/WO fits entirely within node capacity with no
+               leftover pushed to DRAM. T uses .get(..., 0) defensively only
+               (GustavSNN's own design bars T from NodeLevel entirely, so in
+               practice T always has a real DRAM-loop entry).
     """
     batch = 0
-    t = tile.tile_offset[DIM_T]
-    ho_off = tile.tile_offset[DIM_HO]
-    wo_off = tile.tile_offset[DIM_WO]
+    t = tile.tile_offset.get(DIM_T, 0)
+    ho_off = tile.tile_offset.get(DIM_HO, 0)
+    wo_off = tile.tile_offset.get(DIM_WO, 0)
     ho_n = tile.node_bound[DIM_HO]
     wo_n = tile.node_bound[DIM_WO]
     kh_n = tile.node_bound[DIM_KH]
