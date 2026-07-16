@@ -21,7 +21,7 @@ tile's actual spike sequence.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Protocol
+from typing import Any, Dict, Optional, Protocol
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,14 @@ class NodeTileSpec:
 @dataclass
 class ComputeCycles:
     mac_cycles: int
-    lif_cycles: int
+    lif_cycles: Optional[int] = None
+    """None means this architecture has no meaningful split between MAC
+    and LIF cycles -- mac_cycles just holds the tile's total_cycle_count.
+    This is the general case for single-node/pipelined architectures where
+    MAC and LIF work are interleaved per PE rather than separated along a
+    schedule-level VAR_VMEM dimension (e.g. PTB, see archmodels/ptb/).
+    combine.py treats None as contributing 0 additional LIF-transaction
+    cycles."""
 
 
 class ArchComputeModel(Protocol):

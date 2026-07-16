@@ -164,7 +164,8 @@ def combine(
     # ── 2. Pre-compute cycle counts ───────────────────────────────────────
     model = compute_model or DenseStaticComputeModel(schedule, prob)
     cycles = model.compute_cycles(model.format_input(None, None), None)
-    mac_cyc, lif_cyc = cycles.mac_cycles, cycles.lif_cycles
+    mac_cyc = cycles.mac_cycles
+    lif_cyc = cycles.lif_cycles if cycles.lif_cycles is not None else 0
 
     # ── 3. Shorthands ────────────────────────────────────────────────────
     ds    = schedule.data_size

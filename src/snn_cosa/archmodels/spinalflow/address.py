@@ -5,7 +5,8 @@ requires exactly one weight burst: the fixed (kh, kw, cin) reduction
 index, contiguous across this tile's full output-channel range
 (SpinalFlow's 128-wide PE array reads all output channels for a given
 input in one burst). One address per event, same order as the input
-event list (already t-chronological from reconstruct.py).
+event list (already t-chronological from reconstruct.py) -- the same
+count as cycles.py's access_cycle_count.
 """
 
 from __future__ import annotations
@@ -26,3 +27,7 @@ def event_to_address(
         (kh, kw, cin, cout_off, cout_off + cout_n)
         for (_t, cin, kh, kw) in events
     ]
+
+
+def weight_access_count(events: List[Tuple[int, int, int, int]]) -> int:
+    return len(events)
