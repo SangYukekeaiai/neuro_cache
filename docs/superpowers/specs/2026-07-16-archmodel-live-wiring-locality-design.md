@@ -61,14 +61,28 @@ module:
 def iter_node_tiles(schedule: Schedule, prob: SNNProb) -> Iterator[NodeTileSpec]:
     """Yield one NodeTileSpec per dram_i, in order, for single_node schedules.
 
-    node_bound[dim]  = total[dim] // dram_total[dim]   (same formula
-                        DenseStaticComputeModel already uses per-dim)
+    node_bound[dim]  = total[dim] // dram_total[dim]
     tile_offset[dim] = _decode_dim(dram_i, schedule.dram_temporal_loops, dim)
                        * node_bound[dim]
     is_last_K        = True iff dim KH/KW/CIN's dram-level index is at its max
                         (dram_k_position(dram_i), already in StepInfo)
     """
 ```
+
+**Important: this is NOT the same divisor `DenseStaticComputeModel` uses.**
+Dense's `node_j` additionally divides out `spatial_factors[j]` (and any
+NoC-temporal factor) because it's counting MAC *cycles* — spatial fanout
+across PEs is free, so it must be divided away. `NodeTileSpec.node_bound`
+means something different: the tile's real residency *width* — what
+`reconstruct_tile_sequence` slices out of the trace and what
+`address.py`'s burst spans (e.g. SpinalFlow's burst covers the tile's
+"whole assigned output-channel range" — the full spatial width, not 1).
+Tracing through PTB's `active_rows = min(tile.node_bound[DIM_COUT],
+PE_ROWS_MAX)` and every arch's existing "COUT costs zero/clamped cycles
+regardless of magnitude" convention confirms: `node_bound[dim]` must
+include the full spatial fanout, dividing out *only* whatever the MIP
+actually pushed to DRAM for that dim — nothing else. Only `dram_total`
+belongs in the divisor.
 
 This is the one place tile-index math lives; `combine.py` and the
 locality analyzer both call it instead of re-deriving offsets themselves.
