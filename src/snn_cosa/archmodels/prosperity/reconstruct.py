@@ -147,14 +147,15 @@ def reconstruct_tile_sequence(trace: np.ndarray, tile: NodeTileSpec) -> Prosperi
                node_bound[DIM_HO]/[DIM_WO] select this tile's resident
                (ho, wo) rows (row-major order: ho outer, wo inner);
                node_bound[DIM_KH]/[DIM_KW] this tile's k=KH_n*KW_n bit
-               width; tile_offset[DIM_T] the single absolute tick;
-               tile_offset.get(DIM_CIN, 0) the single absolute input
-               channel this visit covers (CIN barred from NodeLevel, see
-               module docstring).
+               width; tile_offset.get(DIM_T, 0) the single absolute tick
+               and tile_offset.get(DIM_CIN, 0) the single absolute input
+               channel this visit covers -- both CIN and T are barred
+               from NodeLevel (see module docstring), so both use the
+               same defensive .get(..., 0) access.
     """
     batch = 0
     cin = tile.tile_offset.get(DIM_CIN, 0)
-    t = tile.tile_offset[DIM_T]
+    t = tile.tile_offset.get(DIM_T, 0)
     ho_off = tile.tile_offset[DIM_HO]
     wo_off = tile.tile_offset[DIM_WO]
     ho_n = tile.node_bound[DIM_HO]
