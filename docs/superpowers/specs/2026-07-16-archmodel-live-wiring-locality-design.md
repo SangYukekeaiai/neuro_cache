@@ -165,10 +165,29 @@ def footprint_curve(addresses: List[Any], max_window: Optional[int] = None) -> D
 
 # classify.py
 def classify_schedule(schedule: Schedule) -> Dict[str, str]:
-    """Inspect schedule.dram_temporal_loops' ordering of T / M(=HO,WO or
-    the arch's row dim) / N(=COUT) and return {"TITL": "Strong"|"Medium"|
-    "Weak", "MITL": ..., "NISL": ...} per Table I's rule (T-position ->
-    TITL degree, M-position -> NISL degree, N-position -> MITL degree)."""
+    """Inspect schedule.dram_temporal_loops' outer->inner ordering of
+    T / M(=HO,WO collapsed into one slot) / N(=COUT) and return
+    {"TITL": ..., "MITL": ..., "NISL": ..., "table1_row": Optional[str]}.
+
+    Rule (reverse-derived from Table I's 7 rows -- the paper's prose is
+    imprecise, this is what the table's own entries actually encode):
+      TITL <- T's position:  innermost=Strong, middle=Medium, outermost=Weak
+               (absent entirely, e.g. LoAS's fully-parallel T -> "N/A")
+      NISL <- N's position:  innermost=Strong, middle=Medium, outermost=Weak
+      MITL <- N's position, INVERTED: innermost=Weak, middle=Medium,
+               outermost=Strong
+    M's own position does not independently drive any of the three degrees
+    (with only 3 permutation slots, T's and N's positions already
+    determine M's by elimination -- Table I's data cannot distinguish an
+    M-driven rule from "the slot T and N didn't take").
+
+    Also reports which of Table I's 7 canonical rows the collapsed order
+    matches (if any) and that row's attributed architecture, as a
+    built-in sanity check -- e.g. GustavSNN's real solved schedule should
+    land on row 1 (N0-M0-T) if the analyzer is implemented correctly. If
+    HO/WO aren't adjacent in the permutation (so they can't collapse into
+    one M slot), reports "non-canonical" instead of forcing a verdict.
+    """
 ```
 
 Plus a runner, `src/snn_cosa/locality/run_analysis.py`: given an arch name,
@@ -223,15 +242,25 @@ Untouched: `transactions/`, `core/`, `parsers/`, `model/`,
 3. Full `nocsim.sim` run end-to-end with a real `ArchComputeModel` +
    trace, confirm it exits clean and produces a non-trivial `tc.csv`.
 
-**Task 2:**
+**Task 2 — every step below stores its output to disk and is presented
+for explicit user review, not just self-verified and reported as "done"
+(per the PTB sweep precedent, [[project_archmodel_cycle_plan]]'s Task 6):**
 1. `stack_distances`/`footprint_curve` unit-verified against a hand-built
-   short address sequence with known-by-hand distances (scratch script,
-   no pytest, per repo convention).
-2. `classify_schedule` verified against at least 2 of the 5 archs' real
-   solved schedules, cross-checked by hand against Table I (e.g. confirm
-   LoAS's `T:null` fully-resident config reads as TITL=Strong).
-3. End-to-end run: pick one arch (SpinalFlow, most mature) + the real
-   trace, produce the two figures + classification summary, visually
-   sanity-check the reuse-distance histogram shape (expect a spike near
-   distance 0 given the paper's own Fig. 1b transition-probability
-   evidence of temporal spike correlation).
+   short address sequence with known-by-hand distances — the fixture,
+   the hand-computed expected distances, and the function's actual output
+   saved together (e.g. `outputs/locality/unit_check.json`) for review,
+   not just asserted in a scratch script's stdout.
+2. `classify_schedule` run against all 5 archs' real solved schedules
+   (not just 2) — each arch's collapsed permutation order, its
+   TITL/MITL/NISL verdict, and its matched Table I row (or
+   "non-canonical") saved to `outputs/locality/classify_summary.json` for
+   review. Includes an explicit pass/fail note on whether each arch's
+   verdict matches the row Table I itself attributes to that arch's paper
+   (GustavSNN->row1, SpinalFlow->row2, PTB->row5, LoAS->row7; Prosperity
+   has no fixed row since [11]/[12] share row4 and Prosperity's own
+   solved schedule may or may not reproduce it).
+3. End-to-end run for all 5 archs (not just SpinalFlow) against the real
+   trace: reuse-distance histogram + footprint curve figures + the
+   classification JSON, all saved under
+   `outputs/locality/<arch>_vgg16_T4_B1_<layer>/`, presented together for
+   review rather than described in prose.
