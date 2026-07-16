@@ -47,7 +47,7 @@ BUCKETS = [
     # DRAM-side (psum+vmem traffic counted only inside GB)
     "dram_oooo", "dram_ooot", "dram_oook",
     # PSUM reuse modes
-    "psum_gb_otok", "psum_dram_ootk", "psum_dram_otok",
+    "psum_gb_otok", "both_dram_ootk", "psum_dram_otok",
     # VMEM streaming modes
     "vmem_gb_xxxt", "vmem_dram_xxxt",
     # Unconstrained baseline + catch-all
@@ -63,7 +63,7 @@ MODE_COLOR = {
     "dram_ooot":      "#f7a44a",
     "dram_oook":      "#f9c37c",
     "psum_gb_otok":   "#54a24b",
-    "psum_dram_ootk": "#e45756",
+    "both_dram_ootk": "#e45756",
     "psum_dram_otok": "#c03030",
     "vmem_gb_xxxt":   "#e91e63",
     "vmem_dram_xxxt": "#795548",

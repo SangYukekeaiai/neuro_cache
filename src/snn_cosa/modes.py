@@ -6,15 +6,15 @@ constraint/traffic specification that the solver consumes.
 
 Three categories (plus BASE):
 
-  A — PSUM/ooTK  : psum accumulation reuse via innermost K block
-      OOTK  — K innermost, T immediately above K (adjacent)
+  A — PSUM/oToK  : psum accumulation reuse via innermost K block
       OTOK  — K innermost, T outermost, at least one O between K and T
   B — VMEM/xxxT  : vmem temporal streaming via innermost T block
-  C — OOOO/OOOT/OOOK/OOTK-GB : neither psum nor vmem cross the chosen boundary
+  C — OOOO/OOOT/OOOK/OOTK : neither psum nor vmem cross the chosen boundary
       OOOO — no K, no T in region
       OOOT — T innermost, no K
       OOOK — K innermost, no T
-      OOTK — K innermost, T immediately above K, neither at DRAM (joint)
+      OOTK — K innermost, T immediately above K (adjacent), at either DRAM or GB
+             (both-traffic-free: psum and vmem share the same reuse boundary)
 
 Each _ModeSpec carries:
   add_constraints  — optional function that adds ordering constraints to the
@@ -52,17 +52,17 @@ from snn_cosa.model.constraints import (
 
 class TrafficMode(str, Enum):
     BASE            = "base"
-    # A — PSUM/ooTK and PSUM/oToK
-    PSUM_DRAM_OOTK  = "psum_dram_ootk"
+    # A — PSUM/oToK
     PSUM_DRAM_OTOK  = "psum_dram_otok"
     PSUM_GB_OTOK    = "psum_gb_otok"
     # B — VMEM/xxxT
     VMEM_DRAM_XXXT  = "vmem_dram_xxxt"
     VMEM_GB_XXXT    = "vmem_gb_xxxt"
-    # C — OOOO/OOOT/OOOK/OOTK-GB (DRAM-side: gb_only; GB-side: zero)
+    # C — OOOO/OOOT/OOOK/OOTK (DRAM-side: gb_only; GB-side: zero)
     DRAM_OOOO       = "dram_oooo"
     DRAM_OOOT       = "dram_ooot"
     DRAM_OOOK       = "dram_oook"
+    BOTH_DRAM_OOTK  = "both_dram_ootk"
     GB_OOOO         = "gb_oooo"
     GB_OOOT         = "gb_ooot"
     GB_OOOK         = "gb_oook"
@@ -78,8 +78,7 @@ class _ModeSpec:
 
 _MODE_SPECS: Dict[TrafficMode, _ModeSpec] = {
     TrafficMode.BASE:           _ModeSpec(None,          frozenset(),                     frozenset()),
-    # A — PSUM/ooTK and PSUM/oToK
-    TrafficMode.PSUM_DRAM_OOTK: _ModeSpec(add_ootk_dram, frozenset(),                     frozenset({VAR_PSUM, VAR_VMEM})),
+    # A — PSUM/oToK
     TrafficMode.PSUM_DRAM_OTOK: _ModeSpec(add_otok_dram, frozenset({VAR_PSUM}),           frozenset()),
     TrafficMode.PSUM_GB_OTOK:   _ModeSpec(add_otok_gb,   frozenset({VAR_PSUM}),           frozenset()),
     # B — VMEM/xxxT
@@ -89,6 +88,7 @@ _MODE_SPECS: Dict[TrafficMode, _ModeSpec] = {
     TrafficMode.DRAM_OOOO:      _ModeSpec(add_oooo_dram, frozenset(),                     frozenset({VAR_PSUM, VAR_VMEM})),
     TrafficMode.DRAM_OOOT:      _ModeSpec(add_ooot_dram, frozenset(),                     frozenset({VAR_PSUM, VAR_VMEM})),
     TrafficMode.DRAM_OOOK:      _ModeSpec(add_oook_dram, frozenset(),                     frozenset({VAR_PSUM, VAR_VMEM})),
+    TrafficMode.BOTH_DRAM_OOTK: _ModeSpec(add_ootk_dram, frozenset(),                     frozenset({VAR_PSUM, VAR_VMEM})),
     # C — GB-side (zero both psum + vmem)
     TrafficMode.GB_OOOO:        _ModeSpec(add_oooo_gb,   frozenset({VAR_PSUM, VAR_VMEM}), frozenset()),
     TrafficMode.GB_OOOT:        _ModeSpec(add_ooot_gb,   frozenset({VAR_PSUM, VAR_VMEM}), frozenset()),

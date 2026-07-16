@@ -178,10 +178,12 @@ def add_ootk_dram(
     dram_start: int,
     perm_levels: int,
 ) -> None:
-    """A2 — ooTK in DRAM perm (TR[psum] = D·L·Tgb[psum]).
+    """ooTK in DRAM perm (TR[psum] = D·L·Tgb[psum], TR[vmem] = D·L·Tgb[vmem]).
 
     K block at innermost DRAM slots; T block contiguous immediately above K.
-    K and T are free in GB.
+    K and T are free in GB. Both psum and vmem share this DRAM-level reuse
+    boundary — this is the DRAM-side member of the both-traffic-free (C)
+    family, alongside oooo/oooT/oooK, not the PSUM-only (A) family.
     """
     DRAM = range(dram_start, dram_start + perm_levels)
     pf   = prob.prob_factors

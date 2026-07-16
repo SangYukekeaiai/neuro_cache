@@ -57,7 +57,7 @@ MODES = [
     "both_gb_oooo",
     "both_dram_oooo",
     "psum_gb_ootk",
-    "psum_dram_ootk",
+    "both_dram_ootk",
     "psum_boundary",
     "vmem_gb_xxxt",
     "vmem_dram_xxxt",
@@ -67,7 +67,7 @@ MODE_COLORS = {
     "both_gb_oooo":    "#2196F3",   # blue
     "both_dram_oooo":  "#FF9800",   # orange
     "psum_gb_ootk":    "#4CAF50",   # green
-    "psum_dram_ootk":  "#F44336",   # red
+    "both_dram_ootk":  "#F44336",   # red
     "psum_boundary":   "#9C27B0",   # purple
     "vmem_gb_xxxt":    "#E91E63",   # pink
     "vmem_dram_xxxt":  "#795548",   # brown
@@ -80,7 +80,7 @@ T_PLACEMENTS = [
     "GB_ooot",            # T alone in GB   ← both_dram_oooo
     "GB_ootk",            # T first in GB, K-dim follows ← psum_gb_ootk
     "GB_xxxt",            # T outermost in GB ← vmem_gb_xxxt
-    "DRAM_ootk",          # T middle in DRAM ← psum_dram_ootk, psum_boundary
+    "DRAM_ootk",          # T middle in DRAM ← both_dram_ootk, psum_boundary
     "DRAM_xxxt",          # T outermost in DRAM ← vmem_dram_xxxt
 ]
 TPLACE_COLORS = {

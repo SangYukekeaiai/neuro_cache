@@ -5,7 +5,7 @@ deep_temporal_analysis.py
 Three-part analysis of deep_conv subset sweep results.
 
 Req 1  Within-mode conditional distributions for each mode bucket.
-Req 2  GB-level temporal tiling: both_dram_oooo vs psum_dram_ootk.
+Req 2  GB-level temporal tiling: both_dram_oooo vs both_dram_ootk.
 Req 3  Minimal decisive multi-knob hardware combinations.
 
 Output: outputs/deep_temporal_analysis.txt
@@ -86,7 +86,7 @@ def pval(param: str, v) -> str:
     if param == "pe":    return f"PE={v}"
     return str(v)
 
-BUCKETS = ["both_gb_oooo", "both_dram_oooo", "psum_dram_ootk", "psum_gb_ootk", "others"]
+BUCKETS = ["both_gb_oooo", "both_dram_oooo", "both_dram_ootk", "psum_gb_ootk", "others"]
 
 def bucket(mode: str) -> str:
     return mode if mode in BUCKETS[:-1] else "others"
@@ -139,10 +139,10 @@ for bkt in BUCKETS:
 
 w()
 w(BAR)
-w("REQ 2  GB-LEVEL TEMPORAL TILING — both_dram_oooo  vs  psum_dram_ootk")
+w("REQ 2  GB-LEVEL TEMPORAL TILING — both_dram_oooo  vs  both_dram_ootk")
 w(BAR)
 
-for bkt in ("both_dram_oooo", "psum_dram_ootk"):
+for bkt in ("both_dram_oooo", "both_dram_ootk"):
     grp = [r for r in records if r["best"] == bkt]
     n   = len(grp)
     w()
@@ -177,15 +177,15 @@ w(SEP)
 w("  both_dram_oooo:  DRAM loops are purely SPATIAL (no T).  GB has T=2 alone")
 w("                   → T is tiled ONCE at the GB level (GB_ooot).  Weight")
 w("                     dominates GB footprint; psum/vmem are tiny.")
-w("  psum_dram_ootk:  GB is empty (none).  DRAM has T=2 in the middle with")
+w("  both_dram_ootk:  GB is empty (none).  DRAM has T=2 in the middle with")
 w("                   CIN=2 as the outermost loop: dram: … → T=2 → CIN=2.")
 w("                   → T and K (CIN) are both tiled at the DRAM level (ootk).")
 w("                     psum dominates GB footprint.")
 w()
 w("  Shared trait : both always tile T=2 — the factor is identical.")
 w("  Key contrast : WHERE that T=2 tile lives differs entirely —")
-w("                 GB level (both_dram_oooo)  vs  DRAM level (psum_dram_ootk).")
-w("                 psum_dram_ootk additionally co-tiles CIN outside T in DRAM,")
+w("                 GB level (both_dram_oooo)  vs  DRAM level (both_dram_ootk).")
+w("                 both_dram_ootk additionally co-tiles CIN outside T in DRAM,")
 w("                 enabling weight streaming across the CIN dimension.")
 
 # ══════════════════════════════════════════════════════════════════════════════

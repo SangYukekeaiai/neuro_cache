@@ -104,10 +104,12 @@ y = 0 through the gap, so K's DRAM factor contributes **0** to psum traffic. T i
 outer, but the psum reduction completes inside K → **psum DRAM traffic = 0**
 (zero_vars={VAR_PSUM}). This is a **new mode** that does NOT replace `add_ootk_dram`
 — the adjacent adjacent pattern is a separate valid schedule and must be kept. The
-two DRAM-side psum modes will coexist:
+adjacent pattern coexists, but (per the 2026-07-14 supersession in §4.2) it is
+**not** a psum-only mode — it's the joint-elimination `BOTH_DRAM_OOTK` (C-group),
+listed here only to contrast the loop shapes:
 
-| Existing | `PSUM_DRAM_OOTK` | `add_ootk_dram` | T and K adjacent at DRAM |
-| New | `PSUM_DRAM_OTOK` | `add_otok_dram` | T and K non-adjacent at DRAM, zero_vars |
+| Existing | `BOTH_DRAM_OOTK` (was `PSUM_DRAM_OOTK`) | `add_ootk_dram` | T and K adjacent at DRAM; joint (C-group), not psum-only |
+| New | `PSUM_DRAM_OTOK` | `add_otok_dram` | T and K non-adjacent at DRAM, zero_vars={VAR_PSUM} |
 
 
 ---
@@ -199,7 +201,7 @@ traffic is also 0 (T not at DRAM) but is not zeroed in the objective.
 | Mode | Current spec | Required change |
 |------|-------------|-----------------|
 | `PSUM_GB_OOTK` | `add_ootk_gb`, `zero_vars={VAR_PSUM}` | Move to C-group. Rename to `GB_OOTK`. Change `zero_vars` to `{VAR_PSUM, VAR_VMEM}`. |
-| `PSUM_DRAM_OOTK` | `add_ootk_dram`, `gb_only_vars={VAR_PSUM}` | Add `VAR_VMEM`: `gb_only_vars={VAR_PSUM, VAR_VMEM}`. |
+| `PSUM_DRAM_OOTK` | `add_ootk_dram`, `gb_only_vars={VAR_PSUM}` | Add `VAR_VMEM`: `gb_only_vars={VAR_PSUM, VAR_VMEM}`. **Superseded 2026-07-14**: also move to C-group and rename to `BOTH_DRAM_OOTK`, matching the `PSUM_GB_OOTK` → `GB_OOTK` reclassification above — its spec is identical in shape to `DRAM_OOOO/OOOT/OOOK` (both vars gb_only), so it belongs in the same family, not the psum-only one. |
 | *(new)* `PSUM_DRAM_OTOK` | — | Add: `add_otok_dram`, `zero_vars={VAR_PSUM}`. DRAM non-adjacent psum elimination. |
 | *(new)* `PSUM_GB_OTOK` | — | Add: `add_otok_gb`, `zero_vars={VAR_PSUM}`. True psum-only GB elimination. |
 | `VMEM_GB_XXXT` | `add_xxxt_gb`, `zero_vars={VAR_VMEM}` | **No change.** |
@@ -208,8 +210,8 @@ traffic is also 0 (T not at DRAM) but is not zeroed in the objective.
 | `DRAM_OOOO`, `DRAM_OOOT`, `DRAM_OOOK` | DRAM-side, `gb_only_vars={VAR_PSUM, VAR_VMEM}` | **No change.** |
 
 **Net additions**: 2 new modes (`PSUM_DRAM_OTOK`, `PSUM_GB_OTOK`).
-**Net reclassifications**: `PSUM_GB_OOTK` → `GB_OOTK` (C-group, both vars zeroed).
-**Net renamings**: 0.
+**Net reclassifications**: `PSUM_GB_OOTK` → `GB_OOTK` (C-group, both vars zeroed); `PSUM_DRAM_OOTK` → `BOTH_DRAM_OOTK` (C-group, both vars gb_only) — see superseded note in the table above.
+**Net renamings**: 1 (`PSUM_DRAM_OOTK` → `BOTH_DRAM_OOTK`, added 2026-07-14).
 
 ### 4.3 `constraints/__init__.py`
 

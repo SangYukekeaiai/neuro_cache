@@ -210,7 +210,7 @@ Deep-dives into the `deep_conv` subset sweep results. Three analyses:
 1. **Within-mode conditional distributions** — for each mode bucket, which hardware
    parameter values are over/under-represented?
 2. **GB-level temporal tiling** — contrasts `both_dram_oooo` (T at GB level) vs
-   `psum_dram_ootk` (T at DRAM level)
+   `both_dram_ootk` (T at DRAM level)
 3. **Minimal decisive combinations** — smallest hardware parameter sets that fully
    determine which mode wins
 

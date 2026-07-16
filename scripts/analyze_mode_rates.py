@@ -80,7 +80,7 @@ def parse_file(path: Path) -> dict | None:
 
 # ── constants ──────────────────────────────────────────────────────────────────
 
-BUCKETS = ["both_gb_oooo", "both_dram_oooo", "psum_dram_ootk", "psum_gb_ootk", "others"]
+BUCKETS = ["both_gb_oooo", "both_dram_oooo", "both_dram_ootk", "psum_gb_ootk", "others"]
 
 def bucket(mode: str) -> str:
     return mode if mode in BUCKETS[:-1] else "others"
@@ -294,7 +294,7 @@ def md_section(records: list[dict], heading: str) -> str:
 
 MODE_CMAP = {
     "both_dram_oooo": "Oranges",
-    "psum_dram_ootk": "Reds",
+    "both_dram_ootk": "Reds",
     "psum_gb_ootk":   "Greens",
     "both_gb_oooo":   "Blues",
 }
@@ -348,11 +348,11 @@ def fig_deep(records: list[dict]) -> plt.Figure:
     heatmap(axes[0, 1], records, "T", "gb_bytes", "both_dram_oooo",
             "both_dram_oooo: T × GB size")
 
-    # Row 2: psum_dram_ootk — driven sharply by L1=4KB + w30 split
-    heatmap(axes[1, 0], records, "T",        "l1_bytes", "psum_dram_ootk",
-            "psum_dram_ootk: T × L1 size")
-    heatmap(axes[1, 1], records, "l1_bytes", "split",    "psum_dram_ootk",
-            "psum_dram_ootk: L1 size × mem split")
+    # Row 2: both_dram_ootk — driven sharply by L1=4KB + w30 split
+    heatmap(axes[1, 0], records, "T",        "l1_bytes", "both_dram_ootk",
+            "both_dram_ootk: T × L1 size")
+    heatmap(axes[1, 1], records, "l1_bytes", "split",    "both_dram_ootk",
+            "both_dram_ootk: L1 size × mem split")
 
     # Row 3: psum_gb_ootk — driven by large nodes + large GB
     heatmap(axes[2, 0], records, "nodes", "gb_bytes", "psum_gb_ootk",
@@ -384,7 +384,7 @@ def fig_shallow(records: list[dict]) -> plt.Figure:
 MODE_COLOR = {
     "both_gb_oooo":   "#4c78a8",
     "both_dram_oooo": "#f58518",
-    "psum_dram_ootk": "#e45756",
+    "both_dram_ootk": "#e45756",
     "psum_gb_ootk":   "#54a24b",
     "others":         "#aaaaaa",
 }
