@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import operator
 from functools import reduce
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from snn_cosa.model.constants import _A, VAR_VMEM
 from snn_cosa.nocsim.schedule.decode import Schedule
@@ -42,6 +42,9 @@ class DenseStaticComputeModel(ArchComputeModel):
             mac_cycles=self._pe_cycles(),
             lif_cycles=self._lif_cycles(),
         )
+
+    def weight_addresses(self, packed: Any, tile: NodeTileSpec) -> List[Any]:
+        return []
 
     def _pe_cycles(self) -> int:
         noc_t = _dim_totals(self._schedule.noc_temporal_loops)

@@ -21,7 +21,7 @@ tile's actual spike sequence.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol
 
 
 @dataclass(frozen=True)
@@ -54,4 +54,14 @@ class ArchComputeModel(Protocol):
 
     def compute_cycles(self, packed: Any, tile: NodeTileSpec) -> ComputeCycles:
         """Derive this tile's (mac_cycles, lif_cycles) from format_input's output."""
+        ...
+
+    def weight_addresses(self, packed: Any, tile: NodeTileSpec) -> List[Any]:
+        """Ordered weight addresses this tile touches (this arch's own
+        address.py::event_to_address, wrapped). Not consumed by combine.py's
+        transaction generator (which still uses byte-size accounting) --
+        exists so the locality analyzer has one per-arch entry point for
+        both timing and addressing, instead of reaching around the
+        Protocol into each arch's raw address.py function.
+        """
         ...
