@@ -63,7 +63,7 @@ passed to the transaction builders:
 from __future__ import annotations
 
 from collections import deque
-from typing import Deque, Dict, List, Optional
+from typing import Any, Deque, Dict, List, Optional
 
 from snn_cosa.parsers.layer import (
     SNNProb,
@@ -73,6 +73,8 @@ from snn_cosa.parsers.arch import SNNArch
 from snn_cosa.parsers.bitwidths import SNNBitwidths
 from snn_cosa.archmodels import ArchComputeModel
 from snn_cosa.archmodels.dense import DenseStaticComputeModel
+from snn_cosa.archmodels import NodeTileSpec
+from snn_cosa.nocsim.schedule.tiles import iter_node_tiles
 
 from .core.noc import NoC
 from .core.generator import TC_Generator
@@ -123,6 +125,7 @@ def combine(
     bitwidths: SNNBitwidths,
     arch:      Optional[SNNArch] = None,
     compute_model: Optional[ArchComputeModel] = None,
+    trace:     Optional[Any] = None,
 ) -> TC_Generator:
     """Generate all TCs for one simulation run and return the TC_Generator.
 
@@ -145,6 +148,13 @@ def combine(
         compute_model: Optional per-architecture cycle model. None (default)
                    uses DenseStaticComputeModel, exactly reproducing today's
                    static formula.
+        trace:     Optional real spike trace (e.g. a numpy array, shape
+                   [T, B, Cin, Hin, Win]), passed straight through to
+                   compute_model.format_input() -- meaningless when
+                   compute_model is None (DenseStaticComputeModel ignores
+                   it) or when arch.single_node is not set (only
+                   single_node schedules get a per-dram_i live model
+                   call -- see below).
 
     Returns:
         TC_Generator with all TCs appended and unicast/multicast hop counters
@@ -161,11 +171,21 @@ def combine(
     Y   = sf[DIM_CIN] * sf[DIM_KW] * sf[DIM_KH] * sf[DIM_COUT]
     gen = TC_Generator(NoC(X, Y), dram_latency=bitwidths.dram_latency)
 
-    # ── 2. Pre-compute cycle counts ───────────────────────────────────────
+    # ── 2. Cycle-count model ─────────────────────────────────────────────
+    # single_node: per-tile call -- each dram_i gets its own NodeTileSpec
+    # (from iter_node_tiles) and its own model.format_input/compute_cycles
+    # call, so a real trace-driven model's cycle count can vary tile to
+    # tile. DenseStaticComputeModel ignores tile/trace entirely, so this
+    # path costs it nothing but a few redundant (identical) calls.
+    # Non-single_node: exactly today's original one-shot call, unchanged.
     model = compute_model or DenseStaticComputeModel(schedule, prob)
-    cycles = model.compute_cycles(model.format_input(None, None), None)
-    mac_cyc = cycles.mac_cycles
-    lif_cyc = cycles.lif_cycles if cycles.lif_cycles is not None else 0
+    live_tiles: Optional[List[NodeTileSpec]] = (
+        list(iter_node_tiles(schedule, prob)) if single_node else None
+    )
+    if live_tiles is None:
+        cycles = model.compute_cycles(model.format_input(trace, None), None)
+        mac_cyc = cycles.mac_cycles
+        lif_cyc = cycles.lif_cycles if cycles.lif_cycles is not None else 0
 
     # ── 3. Shorthands ────────────────────────────────────────────────────
     ds    = schedule.data_size
@@ -195,6 +215,12 @@ def combine(
 
         (is_first_K_dram, is_last_K_dram) = si.dram_k_position(dram_i)
         (is_first_T_dram, is_last_T_dram) = si.dram_t_position(dram_i)
+
+        if live_tiles is not None:
+            tile = live_tiles[dram_i]
+            cycles = model.compute_cycles(model.format_input(trace, tile), tile)
+            mac_cyc = cycles.mac_cycles
+            lif_cyc = cycles.lif_cycles if cycles.lif_cycles is not None else 0
 
         # ── 5a. DRAM → GB loads ───────────────────────────────────────────
         # Single-node mode: no Global Buffer exists, so this leg is skipped

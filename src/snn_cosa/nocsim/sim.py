@@ -38,6 +38,8 @@ import subprocess
 import sys
 from typing import Dict, Optional, Tuple
 
+import numpy as np
+
 from snn_cosa.parsers.layer import (
     SNNProb,
     DIM_T, DIM_WO, DIM_HO, DIM_CIN, DIM_KW, DIM_KH, DIM_COUT,
@@ -65,6 +67,7 @@ def run(
     y:         Optional[Dict] = None,
     arch:      Optional[SNNArch] = None,
     compute_model: Optional[ArchComputeModel] = None,
+    trace:     Optional[np.ndarray] = None,
 ) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int]]:
     """Generate the TC list for one solved MIP result and write it to CSV.
 
@@ -85,6 +88,9 @@ def run(
         compute_model: Optional per-architecture cycle model, passed straight
                    through to combine(). None (default) behaves exactly as
                    before this parameter existed.
+        trace:     Optional real spike trace, passed straight through to
+                   combine(). None (default) behaves exactly as before this
+                   parameter existed.
 
     Returns:
         ``(unicast_hops, multicast_hops, dram_cost)`` — each a dict keyed by
@@ -96,7 +102,7 @@ def run(
     schedule = decode(x, prob)
     bs       = BufSpatial(schedule, prob)
     si       = StepInfo(schedule, prob)
-    gen      = combine(schedule, bs, si, prob, bitwidths, arch=arch, compute_model=compute_model)
+    gen      = combine(schedule, bs, si, prob, bitwidths, arch=arch, compute_model=compute_model, trace=trace)
     gen.to_file(out_file)
     return (gen.unicast_hops, gen.multicast_hops, gen.dram_cost)
 
@@ -108,6 +114,7 @@ def run_from_json(
     out_file:      pathlib.Path,
     arch:          Optional[SNNArch] = None,
     compute_model: Optional[ArchComputeModel] = None,
+    trace:         Optional[np.ndarray] = None,
 ) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int]]:
     """Generate the TC list from a solver JSON output file and write it to CSV.
 
@@ -121,6 +128,7 @@ def run_from_json(
         out_file:      Destination CSV path.
         arch:          Parsed arch config -- see ``run()``.
         compute_model: Optional per-architecture cycle model -- see ``run()``.
+        trace:         Optional real spike trace -- see ``run()``.
 
     Returns:
         ``(unicast_hops, multicast_hops, dram_cost)`` — see ``run()``.
@@ -137,7 +145,7 @@ def run_from_json(
     schedule = schedule_from_strategy(result["strategy"], prob)
     bs       = BufSpatial(schedule, prob)
     si       = StepInfo(schedule, prob)
-    gen      = combine(schedule, bs, si, prob, bitwidths, arch=arch, compute_model=compute_model)
+    gen      = combine(schedule, bs, si, prob, bitwidths, arch=arch, compute_model=compute_model, trace=trace)
     gen.to_file(out_file)
     return (gen.unicast_hops, gen.multicast_hops, gen.dram_cost)
 
