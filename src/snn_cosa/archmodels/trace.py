@@ -24,8 +24,15 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-KH = KW = 3  # blanket assumption, matching every archmodel's own
-             # reconstruct_tile_sequence docstring: stride-1, no padding.
+KH = KW = 3   # blanket assumption, matching every archmodel's own
+              # reconstruct_tile_sequence docstring: stride-1 convolution.
+PAD = 1       # "same" padding for a 3x3/stride-1 conv (the standard VGG/
+              # ResNet convention) -- HO = Hin + 2*PAD - KH + 1 = Hin when
+              # PAD=1, KH=3. PAD=0 ("valid" convolution, HO=Hin-2) was this
+              # project's original assumption; changed to 1 by explicit
+              # user direction (2026-07-16) since real VGG/ResNet 3x3 convs
+              # use same-padding to preserve spatial resolution between
+              # layers, not valid-padding.
 
 
 def load_layer_trace(trace_dir: pathlib.Path, layer_name: str) -> np.ndarray:
@@ -67,16 +74,22 @@ def load_layer_trace(trace_dir: pathlib.Path, layer_name: str) -> np.ndarray:
 
 
 def valid_layer_names(meta: Dict[str, Any]) -> List[str]:
-    """Return meta['layers'] keys whose Hin/Win support a KHxKW=3x3 no-pad
-    receptive field (HO=Hin-2>=1, WO=Win-2>=1), in meta.json's own order.
+    """Return meta['layers'] keys whose Hin/Win support a KHxKW=3x3,
+    PAD=1 receptive field (HO=Hin+2*PAD-KH+1>=1, same for WO), in
+    meta.json's own order.
 
-    Excludes any layer too spatially small for this project's blanket
-    convolution-shape assumption (e.g. vgg16_T4_B1's last 3 layers,
-    Hin=Win=2) -- a real incompatibility, not a bug to work around.
+    With PAD=1 ("same" padding, HO=Hin exactly for a 3x3/stride-1 conv),
+    this is vacuous in practice for this project's real captured layers
+    (every Hin/Win>=1 already gives HO/WO>=1) -- kept as a real check
+    rather than assumed, since a future differently-shaped capture could
+    still violate it, and past behavior with PAD=0 did exclude 3 real
+    vgg16 layers on exactly this condition.
     """
     names = []
     for name, (_t, _b, _cin, hin, win) in meta["layers"].items():
-        if hin - (KH - 1) >= 1 and win - (KW - 1) >= 1:
+        ho = hin + 2 * PAD - (KH - 1)
+        wo = win + 2 * PAD - (KW - 1)
+        if ho >= 1 and wo >= 1:
             names.append(name)
     return names
 
@@ -85,7 +98,8 @@ def build_workload_from_trace(
     meta: Dict[str, Any], layer_name: str, next_cin: Optional[int] = None
 ) -> Dict[str, Any]:
     """Build a {"problem": {...}} dict for one captured layer, derived
-    directly from meta.json -- KH=KW=3, stride-1, no padding.
+    directly from meta.json -- KH=KW=3, stride-1, PAD=1 ("same" padding,
+    the standard VGG/ResNet 3x3-conv convention -- HO=Hin, WO=Win exactly).
 
     Args:
         meta:      the parsed meta.json dict.
@@ -102,15 +116,17 @@ def build_workload_from_trace(
         pass to SNNProb.
 
     Raises:
-        ValueError: if this layer's Hin/Win are too small for KH=KW=3
-                    (use valid_layer_names() to filter these out first).
+        ValueError: if this layer's Hin/Win are too small for KH=KW=3 even
+                    with PAD=1 (use valid_layer_names() to filter these
+                    out first -- vacuous in practice for real captures).
     """
     t, _b, cin, hin, win = meta["layers"][layer_name]
-    ho, wo = hin - (KH - 1), win - (KW - 1)
+    ho, wo = hin + 2 * PAD - (KH - 1), win + 2 * PAD - (KW - 1)
     if ho < 1 or wo < 1:
         raise ValueError(
             f"build_workload_from_trace: '{layer_name}' has Hin={hin}/Win={win}, "
-            f"too small for a {KH}x{KW} no-pad receptive field (HO={ho}, WO={wo})"
+            f"too small for a {KH}x{KW} receptive field even with PAD={PAD} "
+            f"(HO={ho}, WO={wo})"
         )
     cout = next_cin if next_cin is not None else cin
     return {
