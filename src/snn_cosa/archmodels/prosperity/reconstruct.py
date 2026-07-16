@@ -149,10 +149,14 @@ def reconstruct_tile_sequence(trace: np.ndarray, tile: NodeTileSpec) -> Prosperi
                node_bound[DIM_KH]/[DIM_KW] this tile's k=KH_n*KW_n bit
                width; tile_offset.get(DIM_T, 0) the single absolute tick
                and tile_offset.get(DIM_CIN, 0) the single absolute input
-               channel this visit covers -- CIN, T, HO, and WO are barred
-               from NodeLevel (see module docstring) or may have no DRAM
-               leftover, so all four use the same defensive .get(..., 0)
-               access to handle missing keys.
+               channel this visit covers. CIN and T are barred from
+               NodeLevel entirely (see module docstring), so both use
+               .get(..., 0). HO and WO ARE node-level resident (node_bound
+               [DIM_HO]/[DIM_WO] below are always meaningful), but may
+               simply have no DRAM-level offset entry when a layer's HO/WO
+               fits entirely within node capacity with no leftover pushed to
+               DRAM -- so HO/WO also use .get(DIM_HO/DIM_WO, 0), for a
+               different reason than CIN/T's.
     """
     batch = 0
     cin = tile.tile_offset.get(DIM_CIN, 0)
