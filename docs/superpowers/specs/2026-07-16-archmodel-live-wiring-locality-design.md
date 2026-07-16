@@ -34,8 +34,10 @@ solved-schedule order, not a synthetic permutation sweep.
 - **Phi** — sixth architecture, nothing implemented yet (reconstruct/
   cycles/address), out of scope here.
 - **Trace capture** — still consuming the already-captured
-  `input_trace/loas/vgg16_T4_B1/` sample; no new capture or additional
-  layers/models fetched.
+  `input_trace/loas/{vgg16_T4_B1,resnet19_T4_B1}/` data (31 layers total
+  across the two models); no new capture, no additional models beyond
+  what's already local. Verification sweeps **all 31 already-captured
+  layers**, not one sample layer (see Verification plan).
 - **Sweeping the canonical Table I permutations independently of the MIP
   solver** — the analyzer classifies whatever ordering the solved schedule
   actually used; it does not re-enumerate M0/N0/T orderings itself.
@@ -139,6 +141,21 @@ np.ndarray`) reads `input_trace/loas/<workload>/meta.json` +
 `layer_XX_*.npy`, since no such loader exists in `snn_cosa` today (the 5
 pilots' verification scripts each called `np.load` ad hoc).
 
+**Sweeping every captured layer, not one sample.** `input_trace/loas/`
+holds two fully-captured models: `vgg16_T4_B1/` (12 layers) and
+`resnet19_T4_B1/` (19 layers) — 31 layers total, all already local, no
+new capture needed. Each already has a matching generated workload YAML
+at `configs/workloads/generated/{vgg16,resnet19}/T4/*.yaml`, but the
+naming conventions differ (`meta.json`'s `layer_01_features_3` vs. the
+workload YAML's `conv1_1`) — there's no existing name-based mapping.
+`archmodels/trace.py` also gets `resolve_workload_yaml(meta, layer_name,
+workload_dir) -> Path`, matching a trace layer to its workload YAML by
+**shape** (CIN/HIN/WIN from `meta.json` vs. the YAML's declared
+CIN/HO/WO/KH/KW — HIN=HO+KH-1, WIN=WO+KW-1 for stride-1), not by name.
+This mapping is itself part of what gets verified (below) — a shape
+mismatch for any of the 31 layers means the mapping guess was wrong for
+that layer.
+
 ### 5. Locality analyzer (`src/snn_cosa/locality/`)
 
 ```python
@@ -231,16 +248,22 @@ Untouched: `transactions/`, `core/`, `parsers/`, `model/`,
 1. Zero-regression: re-run `configs/arch/snn_arch_single_node.yaml` +
    `sim_demo.yaml` with `compute_model=None`/no trace — byte-identical
    CSV to before this change.
-2. Each `<Arch>ComputeModel`, run against its own already-solved YAML
+2. Each `<Arch>ComputeModel`, run against its own arch YAML
    (`spinalflow.yaml`/`ptb.yaml`/`loas.yaml`/`gustavsnn.yaml`/
-   `prosperity.yaml`, all pre-existing from the earlier pilots) + the real
-   `vgg16_T4_B1` trace layer each pilot already used — confirm per-`dram_i`
-   `mac_cycles` now varies across tiles (proof the live per-tile call is
-   actually firing, not just returning one constant), and that summed
-   cycles/addresses match what the standalone pilot verification already
-   established for that arch.
-3. Full `nocsim.sim` run end-to-end with a real `ArchComputeModel` +
-   trace, confirm it exits clean and produces a non-trivial `tc.csv`.
+   `prosperity.yaml`) **swept across all 31 captured layers** (12 from
+   `vgg16_T4_B1/`, 19 from `resnet19_T4_B1/`) — not one sample layer per
+   arch. For each (arch, layer) pair: resolve the matching generated
+   workload YAML via `resolve_workload_yaml` (verifying the shape match
+   itself — flag any layer where no generated YAML's CIN/HIN/WIN matches),
+   solve, run live-wired, and confirm per-`dram_i` `mac_cycles` varies
+   across tiles (proof the live per-tile call is actually firing, not
+   returning one constant). Every (arch, layer) result — resolved YAML
+   name, per-tile cycle counts, total cycles/addresses — saved to one
+   aggregated table, e.g. `outputs/archmodel_sweep/<arch>_summary.csv`,
+   for review (5 archs × 31 layers = 155 rows total across 5 files).
+3. Full `nocsim.sim` run end-to-end for every (arch, layer) pair in the
+   same sweep, confirm each exits clean and produces a non-trivial
+   `tc.csv`; record pass/fail per row in the same summary table.
 
 **Task 2 — every step below stores its output to disk and is presented
 for explicit user review, not just self-verified and reported as "done"
@@ -250,17 +273,25 @@ for explicit user review, not just self-verified and reported as "done"
    the hand-computed expected distances, and the function's actual output
    saved together (e.g. `outputs/locality/unit_check.json`) for review,
    not just asserted in a scratch script's stdout.
-2. `classify_schedule` run against all 5 archs' real solved schedules
-   (not just 2) — each arch's collapsed permutation order, its
-   TITL/MITL/NISL verdict, and its matched Table I row (or
-   "non-canonical") saved to `outputs/locality/classify_summary.json` for
-   review. Includes an explicit pass/fail note on whether each arch's
-   verdict matches the row Table I itself attributes to that arch's paper
-   (GustavSNN->row1, SpinalFlow->row2, PTB->row5, LoAS->row7; Prosperity
-   has no fixed row since [11]/[12] share row4 and Prosperity's own
-   solved schedule may or may not reproduce it).
-3. End-to-end run for all 5 archs (not just SpinalFlow) against the real
-   trace: reuse-distance histogram + footprint curve figures + the
+2. `classify_schedule` run against all 5 archs' real solved schedules,
+   swept across **all 31 layers** (same set as Task 1's sweep, reusing
+   its per-layer solved schedules) — each (arch, layer)'s collapsed
+   permutation order, TITL/MITL/NISL verdict, and matched Table I row (or
+   "non-canonical") saved to `outputs/locality/classify_summary.csv` (155
+   rows) for review. Includes an explicit pass/fail column on whether
+   each arch's verdict matches the row Table I itself attributes to that
+   arch's paper (GustavSNN->row1, SpinalFlow->row2, PTB->row5,
+   LoAS->row7; Prosperity has no fixed row since [11]/[12] share row4 and
+   Prosperity's own solved schedule may or may not reproduce it) — and
+   whether the verdict is stable across all 31 layers per arch or varies
+   (it shouldn't, since loop ordering comes from the schedule, not the
+   trace content — a layer where it flips is worth flagging).
+3. End-to-end run for all 5 archs across **all 31 layers** against the
+   real trace: reuse-distance histogram + footprint curve figures + the
    classification JSON, all saved under
-   `outputs/locality/<arch>_vgg16_T4_B1_<layer>/`, presented together for
-   review rather than described in prose.
+   `outputs/locality/<arch>_<vgg16_T4_B1|resnet19_T4_B1>_<layer>/`
+   (155 directories), presented together for review rather than
+   described in prose. A single aggregated cross-layer summary (e.g.
+   mean/median reuse distance per arch, min/max across the 31 layers) is
+   also produced so 155 individual folders don't have to be reviewed
+   one-by-one to see the overall pattern.
