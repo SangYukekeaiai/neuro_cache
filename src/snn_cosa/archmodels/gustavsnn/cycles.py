@@ -71,7 +71,7 @@ PE_COUNT_MAX = 8  # K': PEs per tile (Table II's 8-PE/tile evaluated config)
 
 
 def _wave_cycle_count(reconstructed: GustavReconstructed) -> int:
-    submatrices = reconstructed.submatrices
+    submatrices = sorted(reconstructed.submatrices, key=lambda sm: sm.piece_idx)
     total = 0
     for start in range(0, len(submatrices), PE_COUNT_MAX):
         wave = submatrices[start : start + PE_COUNT_MAX]
