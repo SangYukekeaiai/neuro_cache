@@ -143,21 +143,22 @@ def reconstruct_tile_sequence(trace: np.ndarray, tile: NodeTileSpec) -> Prosperi
 
     Args:
         trace: real spike trace, shape [T, B, Cin, Hin, Win], binary.
-        tile:  identifies the tile -- tile_offset[DIM_HO]/[DIM_WO] plus
-               node_bound[DIM_HO]/[DIM_WO] select this tile's resident
+        tile:  identifies the tile -- tile_offset.get(DIM_HO, 0)/tile_offset.get(DIM_WO, 0)
+               plus node_bound[DIM_HO]/[DIM_WO] select this tile's resident
                (ho, wo) rows (row-major order: ho outer, wo inner);
                node_bound[DIM_KH]/[DIM_KW] this tile's k=KH_n*KW_n bit
                width; tile_offset.get(DIM_T, 0) the single absolute tick
                and tile_offset.get(DIM_CIN, 0) the single absolute input
-               channel this visit covers -- both CIN and T are barred
-               from NodeLevel (see module docstring), so both use the
-               same defensive .get(..., 0) access.
+               channel this visit covers -- CIN, T, HO, and WO are barred
+               from NodeLevel (see module docstring) or may have no DRAM
+               leftover, so all four use the same defensive .get(..., 0)
+               access to handle missing keys.
     """
     batch = 0
     cin = tile.tile_offset.get(DIM_CIN, 0)
     t = tile.tile_offset.get(DIM_T, 0)
-    ho_off = tile.tile_offset[DIM_HO]
-    wo_off = tile.tile_offset[DIM_WO]
+    ho_off = tile.tile_offset.get(DIM_HO, 0)
+    wo_off = tile.tile_offset.get(DIM_WO, 0)
     ho_n = tile.node_bound[DIM_HO]
     wo_n = tile.node_bound[DIM_WO]
     kh_n = tile.node_bound[DIM_KH]
