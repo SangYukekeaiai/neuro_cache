@@ -6,9 +6,16 @@ chronological order (t outermost). Unlike a dense 0/1 vector, only real
 spike events are kept -- this is the input to event_to_cycle (cycle count
 = spine length) and event_to_address (one weight burst per spine event).
 
-Assumes batch=0 and stride=1/no-padding convolution (hin = ho + kh,
-win = wo + kw), matching the reference SpinalFlow tile-computation
-(neuro_cache/sim/compute/spinalflow_compute.py's _receptive_field).
+Assumes batch=0, stride=1, "same" padding (hin = ho + kh - pad_h, win =
+wo + kw - pad_w, where pad_h=(kh_n-1)//2, pad_w=(kw_n-1)//2 -- the
+standard convention for an odd kernel, matching HO=Hin/WO=Win exactly).
+An (hin, win) that falls outside the real trace's spatial extent is
+padding, not data -- treated as zero (no spike) by _spike() below, never
+indexed out of bounds. (Originally "valid"/no-padding, hin=ho+kh; changed
+by explicit user direction, 2026-07-16, since real VGG/ResNet 3x3 convs
+use same-padding.) Matches the reference SpinalFlow tile-computation's
+receptive-field shape (neuro_cache/sim/compute/spinalflow_compute.py's
+_receptive_field), modulo this padding correction.
 """
 
 from __future__ import annotations
@@ -20,6 +27,15 @@ import numpy as np
 from snn_cosa.parsers.layer import DIM_CIN, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
 
 from .. import NodeTileSpec
+
+
+def _spike(trace: np.ndarray, t: int, batch: int, cin: int, hin: int, win: int) -> int:
+    """Zero-padding boundary check: an (hin, win) outside the real trace's
+    spatial extent is padding, not data -- returns 0 (no spike) instead of
+    indexing out of bounds."""
+    if hin < 0 or hin >= trace.shape[3] or win < 0 or win >= trace.shape[4]:
+        return 0
+    return int(trace[t, batch, cin, hin, win])
 
 
 def reconstruct_tile_sequence(
@@ -44,14 +60,16 @@ def reconstruct_tile_sequence(
     cin_off = tile.tile_offset.get(DIM_CIN, 0)
     t_n = tile.node_bound[DIM_T]
     t_off = tile.tile_offset.get(DIM_T, 0)
+    pad_h = (kh_n - 1) // 2
+    pad_w = (kw_n - 1) // 2
 
     events: List[Tuple[int, int, int, int]] = []
     for t in range(t_off, t_off + t_n):
         for kh in range(kh_n):
             for kw in range(kw_n):
-                hin = ho + kh
-                win = wo + kw
+                hin = ho + kh - pad_h
+                win = wo + kw - pad_w
                 for cin in range(cin_off, cin_off + cin_n):
-                    if trace[t, batch, cin, hin, win]:
+                    if _spike(trace, t, batch, cin, hin, win):
                         events.append((t, cin, kh, kw))
     return events

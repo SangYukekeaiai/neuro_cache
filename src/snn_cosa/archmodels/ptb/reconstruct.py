@@ -22,9 +22,12 @@ passes:
   Pass-1 count, because a merged pair still occupies only one row-slot
   even though it required two separate weight fetches.
 
-Assumes batch=0 and stride=1/no-padding convolution (hin = ho + kh,
-win = wo + kw), matching
-src/snn_cosa/archmodels/spinalflow/reconstruct.py.
+Assumes batch=0, stride=1, "same" padding (hin = ho + kh - pad_h, win =
+wo + kw - pad_w, pad_h=(kh_n-1)//2, pad_w=(kw_n-1)//2 -- HO=Hin/WO=Win
+exactly). An (hin, win) outside the real trace's spatial extent is
+padding, treated as zero (no spike) by _spike() below, matching
+src/snn_cosa/archmodels/spinalflow/reconstruct.py's identical convention
+(changed from no-padding by explicit user direction, 2026-07-16).
 """
 
 from __future__ import annotations
@@ -37,6 +40,15 @@ import numpy as np
 from snn_cosa.parsers.layer import DIM_CIN, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
 
 from .. import NodeTileSpec
+
+
+def _spike(trace: np.ndarray, t: int, batch: int, cin: int, hin: int, win: int) -> int:
+    """Zero-padding boundary check: an (hin, win) outside the real trace's
+    spatial extent is padding, not data -- returns 0 (no spike) instead of
+    indexing out of bounds."""
+    if hin < 0 or hin >= trace.shape[3] or win < 0 or win >= trace.shape[4]:
+        return 0
+    return int(trace[t, batch, cin, hin, win])
 
 
 @dataclass(frozen=True)
@@ -84,15 +96,17 @@ def reconstruct_tile_sequence(trace: np.ndarray, tile: NodeTileSpec) -> PTBRecon
     cin_off = tile.tile_offset.get(DIM_CIN, 0)
     t_n = tile.node_bound[DIM_T]
     t_off = tile.tile_offset.get(DIM_T, 0)
+    pad_h = (kh_n - 1) // 2
+    pad_w = (kw_n - 1) // 2
 
     lines: List[PTBLine] = []
     for kh in range(kh_n):
         for kw in range(kw_n):
-            hin = ho + kh
-            win = wo + kw
+            hin = ho + kh - pad_h
+            win = wo + kw - pad_w
             for cin in range(cin_off, cin_off + cin_n):
                 bits = tuple(
-                    int(trace[t, batch, cin, hin, win])
+                    _spike(trace, t, batch, cin, hin, win)
                     for t in range(t_off, t_off + t_n)
                 )
                 lines.append(PTBLine(kh, kw, cin, bits))

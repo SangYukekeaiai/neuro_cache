@@ -42,9 +42,13 @@ correct even if a real solve grants more/less residency than the YAML's
 nominal 8/8 (e.g. extra temporal residency beyond the spatial cap -- see
 cycles.py's wave handling for what happens when node_bound[DIM_HO] > 8).
 
-Assumes batch=0 and stride=1/no-padding convolution (hin=ho+kh,
-win=wo+kw), matching
-src/snn_cosa/archmodels/{spinalflow,ptb,loas}/reconstruct.py.
+Assumes batch=0, stride=1, "same" padding (hin=ho+kh-pad_h,
+win=wo+kw-pad_w, pad_h=(kh_n-1)//2, pad_w=(kw_n-1)//2 -- HO=Hin/WO=Win
+exactly). An (hin, win) outside the real trace's spatial extent is
+padding, treated as zero (no spike) by _spike() below, matching
+src/snn_cosa/archmodels/{spinalflow,ptb,loas}/reconstruct.py's identical
+convention (changed from no-padding by explicit user direction,
+2026-07-16).
 """
 
 from __future__ import annotations
@@ -57,6 +61,15 @@ import numpy as np
 from snn_cosa.parsers.layer import DIM_CIN, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
 
 from .. import NodeTileSpec
+
+
+def _spike(trace: np.ndarray, t: int, batch: int, cin: int, hin: int, win: int) -> int:
+    """Zero-padding boundary check: an (hin, win) outside the real trace's
+    spatial extent is padding, not data -- returns 0 (no spike) instead of
+    indexing out of bounds."""
+    if hin < 0 or hin >= trace.shape[3] or win < 0 or win >= trace.shape[4]:
+        return 0
+    return int(trace[t, batch, cin, hin, win])
 
 
 @dataclass(frozen=True)
@@ -132,6 +145,8 @@ def reconstruct_tile_sequence(trace: np.ndarray, tile: NodeTileSpec) -> GustavRe
     kw_n = tile.node_bound[DIM_KW]
     cin_n = tile.node_bound[DIM_CIN]
     cin_off = tile.tile_offset.get(DIM_CIN, 0)
+    pad_h = (kh_n - 1) // 2
+    pad_w = (kw_n - 1) // 2
 
     submatrices: List[GustavSubmatrix] = []
     for piece_idx, ho in enumerate(range(ho_off, ho_off + ho_n)):
@@ -141,7 +156,7 @@ def reconstruct_tile_sequence(trace: np.ndarray, tile: NodeTileSpec) -> GustavRe
             for kw in range(kw_n):
                 for cin in range(cin_off, cin_off + cin_n):
                     active = any(
-                        trace[t, batch, cin, ho + kh, wo + kw]
+                        _spike(trace, t, batch, cin, ho + kh - pad_h, wo + kw - pad_w)
                         for _, wo in positions
                     )
                     if active:
