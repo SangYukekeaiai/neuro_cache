@@ -165,7 +165,7 @@ def all_workload_configs() -> List[Tuple[str, Dict]]:
 def _worker(task: Tuple) -> Dict[str, Any]:
     arch_key, arch_dict, wl_key, wl_dict, mapspace_str, time_limit, mip_gap = task
 
-    from snn_cosa.solver import TrafficMode, solve_schedule
+    from snn_cosa.mip_solver.solve import TrafficMode, solve_schedule
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as af:
         yaml.safe_dump(arch_dict, af)

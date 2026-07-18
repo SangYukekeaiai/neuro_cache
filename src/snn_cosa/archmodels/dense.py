@@ -14,7 +14,7 @@ import operator
 from functools import reduce
 from typing import Any, Dict, List
 
-from snn_cosa.model.constants import _A, VAR_VMEM
+from snn_cosa.mip_solver.constants import _A, VAR_VMEM
 from snn_cosa.nocsim.schedule.decode import Schedule
 from snn_cosa.parsers.layer import SNNProb
 

@@ -47,7 +47,7 @@ import numpy as np
 from typing import Dict, FrozenSet, Tuple
 
 from snn_cosa.parsers.layer import SNNProb, SNN_REDUCTION_DIMS, DIM_T
-from snn_cosa.model.constants import VAR_WEIGHT, VAR_PSUM, VAR_VMEM, TRAFFIC_MULT
+from snn_cosa.mip_solver.constants import VAR_WEIGHT, VAR_PSUM, VAR_VMEM, TRAFFIC_MULT
 
 logger = logging.getLogger(__name__)
 

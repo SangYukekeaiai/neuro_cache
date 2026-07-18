@@ -40,7 +40,7 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from snn_cosa.solver import TrafficMode, solve_schedule  # noqa: E402
+from snn_cosa.mip_solver.solve import TrafficMode, solve_schedule  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

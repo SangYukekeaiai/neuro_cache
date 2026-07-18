@@ -23,7 +23,7 @@ import pathlib
 from typing import Any, Dict, List, Optional
 
 from snn_cosa.modes import TrafficMode
-from snn_cosa.solver import solve_schedule
+from snn_cosa.mip_solver.solve import solve_schedule
 
 
 def enumerate_modes(

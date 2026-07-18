@@ -44,7 +44,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Tuple
 
-from snn_cosa.model.constants import _A, VAR_WEIGHT, VAR_PSUM, VAR_VMEM
+from snn_cosa.mip_solver.constants import _A, VAR_WEIGHT, VAR_PSUM, VAR_VMEM
 from snn_cosa.parsers.layer import (
     SNNProb, DIM_KH, DIM_KW, DIM_CIN, DIM_COUT, DIM_HO, DIM_WO, DIM_T,
 )

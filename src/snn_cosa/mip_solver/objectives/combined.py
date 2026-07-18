@@ -6,8 +6,8 @@ from typing import Dict, FrozenSet, Iterable, Sequence
 
 from gurobipy import GRB, Model
 
-from snn_cosa.model.objectives.compute import build_compute_objective
-from snn_cosa.model.objectives.traffic import build_traffic_cost
+from snn_cosa.mip_solver.objectives.compute import build_compute_objective
+from snn_cosa.mip_solver.objectives.traffic import build_traffic_cost
 
 logger = logging.getLogger(__name__)
 

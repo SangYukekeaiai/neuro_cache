@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 from gurobipy import GurobiError
 
 from snn_cosa.enumerator import enumerate_modes
-from snn_cosa.solver import solve_schedule
+from snn_cosa.mip_solver.solve import solve_schedule
 
 
 DEFAULT_LAYER = "configs/workloads/sample_snn_layer.yaml"

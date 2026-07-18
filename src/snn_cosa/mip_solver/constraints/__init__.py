@@ -1,11 +1,11 @@
-from snn_cosa.model.constraints.assignment import add_assignment_constraints
-from snn_cosa.model.constraints.spatial import add_spatial_constraints
-from snn_cosa.model.constraints.node_level import add_pe_spatial_split_constraints
-from snn_cosa.model.constraints.node_capacity import (
+from snn_cosa.mip_solver.constraints.assignment import add_assignment_constraints
+from snn_cosa.mip_solver.constraints.spatial import add_spatial_constraints
+from snn_cosa.mip_solver.constraints.node_level import add_pe_spatial_split_constraints
+from snn_cosa.mip_solver.constraints.node_capacity import (
     add_node_capacity_constraints,
     add_no_noc_level_constraints,
 )
-from snn_cosa.model.constraints.temporal_order import (
+from snn_cosa.mip_solver.constraints.temporal_order import (
     add_ootk_gb,
     add_ootk_dram,
     add_otok_dram,

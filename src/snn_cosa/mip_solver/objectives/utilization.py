@@ -26,7 +26,7 @@ from typing import Dict, Tuple
 
 from gurobipy import LinExpr, Model
 
-from snn_cosa.model.constants import NUM_VARS, VAR_NAMES, _A, _B
+from snn_cosa.mip_solver.constants import NUM_VARS, VAR_NAMES, _A, _B
 from snn_cosa.parsers.arch import MEM_NODE, MEM_NOC, SNNArch
 from snn_cosa.parsers.bitwidths import SNNBitwidths
 from snn_cosa.parsers.layer import SNNProb

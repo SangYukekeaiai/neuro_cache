@@ -32,7 +32,7 @@ from snn_cosa.nocsim.schedule.tiles import iter_node_tiles
 from snn_cosa.parsers.arch import SNNArch
 from snn_cosa.parsers.bitwidths import SNNBitwidths
 from snn_cosa.parsers.layer import SNNProb
-from snn_cosa.solver import solve_schedule
+from snn_cosa.mip_solver.solve import solve_schedule
 
 ARCHS = {
     "spinalflow": ("configs/arch/spinalflow.yaml", SpinalFlowComputeModel),

@@ -29,7 +29,7 @@ import numpy as np
 from typing import Dict
 
 from snn_cosa.parsers.layer import SNNProb
-from snn_cosa.model.constants import NUM_VARS, _A
+from snn_cosa.mip_solver.constants import NUM_VARS, _A
 
 logger = logging.getLogger(__name__)
 

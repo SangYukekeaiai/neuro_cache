@@ -15,20 +15,20 @@ from gurobipy import GRB, GurobiError, Model
 
 from snn_cosa.metrics import extract_metrics
 from snn_cosa.modes import TrafficMode, _MODE_SPECS
-from snn_cosa.model.constraints import (
+from snn_cosa.mip_solver.constraints import (
     add_assignment_constraints,
     add_spatial_constraints,
     add_pe_spatial_split_constraints,
     add_node_capacity_constraints,
     add_no_noc_level_constraints,
 )
-from snn_cosa.model.objectives import (
+from snn_cosa.mip_solver.objectives import (
     add_utilization_capacity_constraints,
     build_objective,
     build_utilization_terms,
 )
-from snn_cosa.model.schedule import SNN_GB_START_LEVEL, create_schedule_vars
-from snn_cosa.model.objectives.traffic import (
+from snn_cosa.mip_solver.schedule import SNN_GB_START_LEVEL, create_schedule_vars
+from snn_cosa.mip_solver.objectives.traffic import (
     compute_spatial_traffic,
     compute_temporal_traffic,
 )

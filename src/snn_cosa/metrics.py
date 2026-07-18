@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, FrozenSet, List, Optional
 
-from snn_cosa.model.constants import (
+from snn_cosa.mip_solver.constants import (
     NUM_VARS, VAR_NAMES, VAR_WEIGHT, VAR_PSUM, VAR_VMEM, TRAFFIC_MULT, _A,
 )
 from snn_cosa.parsers.bitwidths import SNNBitwidths

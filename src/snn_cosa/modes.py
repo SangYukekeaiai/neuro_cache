@@ -33,8 +33,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Dict, FrozenSet, Optional
 
-from snn_cosa.model.constants import VAR_PSUM, VAR_VMEM
-from snn_cosa.model.constraints import (
+from snn_cosa.mip_solver.constants import VAR_PSUM, VAR_VMEM
+from snn_cosa.mip_solver.constraints import (
     add_ootk_gb,
     add_ootk_dram,
     add_otok_dram,

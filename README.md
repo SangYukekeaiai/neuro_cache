@@ -14,8 +14,8 @@ configs/
   workloads/sample_snn_layer.yaml sample SNN layer dimensions
 src/snn_cosa/
   parsers/                        YAML parsers for layer, arch, bit widths, mapspace
-  model/                          constants, variables, constraints, objectives
-  solver.py                       model assembly, solve, schedule extraction
+  mip_solver/                     constants, variables, constraints, objectives
+  mip_solver/solve.py             model assembly, solve, schedule extraction
   cli.py                          command-line interface
 COMMANDS.md                       copyable command reference
 requirements.txt                  Python runtime dependencies

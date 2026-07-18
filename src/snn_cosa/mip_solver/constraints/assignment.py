@@ -30,8 +30,8 @@ from typing import Dict, Tuple
 from gurobipy import Model
 
 from snn_cosa.parsers.layer import SNNProb
-from snn_cosa.model.constants import NUM_VARS, _A
-from snn_cosa.model.schedule import SNN_GB_START_LEVEL
+from snn_cosa.mip_solver.constants import NUM_VARS, _A
+from snn_cosa.mip_solver.schedule import SNN_GB_START_LEVEL
 
 logger = logging.getLogger(__name__)
 

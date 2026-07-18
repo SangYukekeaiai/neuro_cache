@@ -36,8 +36,8 @@ from functools import reduce
 import operator
 from typing import Any, Dict, List
 
-from snn_cosa.model.constants import _A, NUM_VARS, VAR_NAMES
-from snn_cosa.model.schedule import SNN_GB_START_LEVEL
+from snn_cosa.mip_solver.constants import _A, NUM_VARS, VAR_NAMES
+from snn_cosa.mip_solver.schedule import SNN_GB_START_LEVEL
 from snn_cosa.parsers.layer import SNNProb, _get_prime_factors
 
 

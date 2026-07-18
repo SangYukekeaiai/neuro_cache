@@ -24,7 +24,7 @@ zero_vars / gb_only_vars
 import logging
 from typing import Dict, FrozenSet
 
-from snn_cosa.model.constants import NUM_VARS
+from snn_cosa.mip_solver.constants import NUM_VARS
 
 logger = logging.getLogger(__name__)
 
