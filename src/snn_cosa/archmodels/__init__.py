@@ -21,7 +21,7 @@ tile's actual spike sequence.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol, Sequence
 
 
 @dataclass(frozen=True)
@@ -50,6 +50,13 @@ class ArchComputeModel(Protocol):
 
     def format_input(self, trace: Any, tile: NodeTileSpec) -> Any:
         """Slice/reconstruct this tile's real-trace-derived representation."""
+        ...
+
+    def format_input_batch(self, trace: Any, tile: NodeTileSpec, batch_indices: Sequence[int]) -> List[Any]:
+        """Same as format_input, for every sample in batch_indices at once
+        (one vectorized reconstruction pass instead of len(batch_indices)
+        separate format_input calls). output[i] corresponds to
+        batch_indices[i]."""
         ...
 
     def compute_cycles(self, packed: Any, tile: NodeTileSpec) -> ComputeCycles:
