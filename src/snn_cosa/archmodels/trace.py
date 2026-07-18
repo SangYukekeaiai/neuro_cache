@@ -35,12 +35,19 @@ PAD = 1       # "same" padding for a 3x3/stride-1 conv (the standard VGG/
               # layers, not valid-padding.
 
 
-def load_layer_trace(trace_dir: pathlib.Path, layer_name: str) -> np.ndarray:
+def load_layer_trace(trace_dir: pathlib.Path, layer_name: str, mmap: bool = False) -> np.ndarray:
     """Load one captured layer's trace, e.g. trace_dir=input_trace/loas/vgg16_T4_B1.
 
     Args:
         trace_dir: directory containing meta.json + <layer_name>.npy.
         layer_name: e.g. "layer_01_features_3" (a meta.json "layers" key).
+        mmap: memory-map the .npy instead of reading it fully into RAM.
+              The "_all" trace variants (B=10000) are multi-GB; reconstruction
+              only ever needs a handful of (t, batch, cin, hin, win) slices
+              per tile, not the whole array resident at once. A memmap'd
+              array also pickles cheaply (by file/offset/shape, not by
+              copying its contents), which matters for handing it to
+              multiprocessing workers -- see generate_weight_traces.py.
 
     Returns:
         Binary float32 array, shape [T, B, Cin, Hin, Win] (per meta.json).
@@ -63,7 +70,7 @@ def load_layer_trace(trace_dir: pathlib.Path, layer_name: str) -> np.ndarray:
     npy_path = trace_dir / f"{layer_name}.npy"
     if not npy_path.exists():
         raise FileNotFoundError(f"load_layer_trace: no .npy at {npy_path}")
-    trace = np.load(npy_path)
+    trace = np.load(npy_path, mmap_mode="r" if mmap else None)
     expected_shape = tuple(meta["layers"][layer_name])
     if trace.shape != expected_shape:
         raise ValueError(

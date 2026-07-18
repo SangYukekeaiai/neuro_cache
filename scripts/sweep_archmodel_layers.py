@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Sweep all 5 wired arch models against all 28 valid captured trace
+"""Sweep all 5 wired arch models against all 31 valid captured trace
 layers, solving + live-wiring + running each, and saving one summary CSV
 per arch to outputs/archmodel_sweep/ for review.
 
-28 = 9 valid vgg16_T4_B1 layers (3 of the 12 excluded, Hin=Win=2 too
-small for a 3x3 no-pad receptive field) + all 19 resnet19_T4_B1 layers.
+31 = all 12 vgg16_T4_B1 layers + all 19 resnet19_T4_B1 layers, under the
+current PAD=1 ("same" padding) convention (valid_layer_names' own
+HO/WO>=1 check is vacuous in practice for these real captured layers --
+the old PAD=0 convention used to exclude 3 vgg16 layers with Hin=Win=2,
+giving 28; that exclusion no longer applies).
 """
 
 from __future__ import annotations
@@ -20,6 +23,7 @@ sys.path.insert(0, "src")
 
 import yaml
 
+from snn_cosa import tracegen
 from snn_cosa.archmodels.gustavsnn.model import GustavSNNComputeModel
 from snn_cosa.archmodels.loas.model import LoASComputeModel
 from snn_cosa.archmodels.prosperity.model import ProsperityComputeModel
@@ -85,13 +89,19 @@ def _run_one(arch_name: str, arch_yaml: str, model_cls, trace_dir, layer_name, m
         trace = load_layer_trace(trace_dir, layer_name)
         model = model_cls()
         tiles = list(iter_node_tiles(schedule, prob))
-        per_tile_cycles = []
-        total_addresses = 0
-        for tile in tiles:
-            packed = model.format_input(trace, tile)
-            cycles = model.compute_cycles(packed, tile)
-            per_tile_cycles.append(cycles.mac_cycles)
-            total_addresses += len(model.weight_addresses(packed, tile))
+
+        # Sample 0 only, matching this script's original single-sample
+        # behavior exactly -- reconstruct_samples_for_schedule is the same
+        # shared core the generate-once pipeline (solve_schedules.py /
+        # generate_weight_traces.py) uses, so this loop isn't duplicated
+        # in two places that could drift apart.
+        [layer_trace] = tracegen.reconstruct_samples_for_schedule(
+            model, trace, tiles, [0],
+            arch_name, trace_dir.name, layer_name,
+            workload["problem"], schedule.dram_num_steps,
+        )
+        per_tile_cycles = [t.mac_cycles for t in layer_trace.tiles]
+        total_addresses = sum(len(t.weight_addresses) for t in layer_trace.tiles)
 
         row["total_mac_cycles"] = sum(per_tile_cycles)
         row["cycles_vary"] = len(set(per_tile_cycles)) > 1
