@@ -3,25 +3,24 @@
 #SBATCH --partition=ghx4
 #SBATCH --account=bebv-dtai-gh
 #SBATCH --gpus-per-node=1
-#SBATCH --cpus-per-task=288
+#SBATCH --cpus-per-task=144
 #SBATCH --mem=350G
 #SBATCH --time=03:00:00
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 
-# Full-node core count (confirmed via `scontrol show node`: CPUTot=288,
-# RealMemory=488000MB per ghx4 node) rather than half. Billing is
+# 144 cores / 144 python multiprocessing workers (dropped from 288 -- see
+# WORKERS comment below, this is about per-worker memory headroom, not
+# raw speed). Requesting exactly as many cores as workers (not the full
+# 288-core node) avoids paying for cores that would sit idle, since each
+# worker is a single-threaded Python process. --mem stays at 350G
+# unchanged, so 144 processes now share that instead of 288 -- roughly
+# doubling the memory ceiling per worker. Billing is
 # max(GPUs requested, cores/72, memory/110) GH200-equivalents
-# (.../job-accounting.html): 288/72 = 4 GH200-equivalents/hour, i.e. the
-# full node's rate -- same as requesting all 4 GPUs explicitly. Total SU
-# cost for a fixed amount of work is roughly invariant to this choice
+# (.../job-accounting.html): 144/72 = 2 GH200-equivalents/hour. Total SU
+# cost for a fixed amount of work is roughly invariant to worker count
 # (more GH200-equivalents/hour x proportionally fewer hours needed), so
-# this trades a higher hourly rate for finishing in less wall-clock time,
-# which matters more here since the real per-sample cost (measured
-# against real captured data, not the synthetic sparsity used to
-# benchmark reconstruct_tile_sequence_batch) turned out higher than
-# estimated -- the original 144-core/8h budget would not have finished
-# the full sweep.
+# this trades a bit of wall-clock speed for the memory-safety fix below.
 
 # NOT set -e: a single combo's failure (e.g. the disk-quota crash that
 # killed job 2681186 partway through) must not abort the whole 155-combo
@@ -31,8 +30,17 @@ cd /u/yyu9/projects/neuro_cache
 
 export GRB_LICENSE_FILE=/u/yyu9/gurobi.lic
 export PYTHONPATH=src
-WORKERS=288
+WORKERS=144
 SAMPLES=1000
+# Dropped from 288 to 144 workers after job 2681680 stalled 38+ minutes
+# with zero progress across the ENTIRE job (not just one combo) on
+# gustavsnn/layer_09 -- 957/1000 samples written (with gaps scattered
+# through the range, not a clean prefix) then nothing, consistent with a
+# multiprocessing.Pool worker getting killed (likely OOM: 350G/288
+# workers is only ~1.2GB/worker, and GustavSNN's per-sample data is large
+# -- ~7MB compressed, several x that in-memory) without the Pool
+# detecting it, leaving pool.map() blocked forever waiting for that
+# chunk's result. 144 workers roughly doubles headroom per worker.
 # Scoped to 1000 samples/layer (not the full 10,000) per the real-data-
 # calibrated estimate: ~457 CPU-hours / ~6.4 SU-hours total for this scope,
 # vs ~4572 CPU-hours / ~63.5 SU-hours (essentially the entire remaining
@@ -68,7 +76,13 @@ while IFS=, read -r arch trace_dir layer status dram_num_steps error; do
         continue
     fi
     echo "=== $arch / $trace_dir / $layer ==="
-    conda run -n base python3 scripts/generate_weight_traces.py \
+    # 15m hard timeout per combo: no observed combo has taken more than a
+    # few minutes even for the slowest arch (GustavSNN), so this is a
+    # generous bound whose only job is making sure a future stall (of
+    # whatever cause) kills that one combo and lets the loop continue,
+    # instead of silently burning the rest of the job's time limit doing
+    # nothing -- exactly what happened to job 2681680.
+    timeout 15m conda run -n base python3 scripts/generate_weight_traces.py \
         --arch "$arch" --trace-dir "$trace_dir" --layer "$layer" \
         --out-dir "$OUT_DIR" \
         --sample-start 0 --sample-count "$SAMPLES" --workers "$WORKERS" < /dev/null \
