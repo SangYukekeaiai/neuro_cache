@@ -15,6 +15,9 @@ env/
 # Generated solver outputs
 outputs/
 
+# Slurm job stdout/stderr
+logs/
+
 # Captured/copied spike traces (large binary .npy data, not source)
 input_trace/
 *.json

@@ -61,7 +61,7 @@ def _process_chunk(sample_indices: Sequence[int]) -> int:
     for lt in layer_traces:
         out_path = (
             _STATE["out_dir"] / _STATE["arch_name"] / _STATE["trace_dir_name"]
-            / _STATE["layer_name"] / f"sample_{lt.sample_idx:05d}.json"
+            / _STATE["layer_name"] / f"sample_{lt.sample_idx:05d}.json.gz"
         )
         tracegen.save_weight_trace(lt, out_path)
     return len(layer_traces)
@@ -104,7 +104,7 @@ def main() -> int:
     if args.force:
         todo = requested
     else:
-        todo = [i for i in requested if not (layer_out_dir / f"sample_{i:05d}.json").exists()]
+        todo = [i for i in requested if not (layer_out_dir / f"sample_{i:05d}.json.gz").exists()]
     n_skipped = len(requested) - len(todo)
     if n_skipped:
         print(f"Skipping {n_skipped} already-generated sample(s)")
