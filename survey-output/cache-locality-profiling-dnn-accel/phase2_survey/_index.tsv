@@ -1,0 +1,80 @@
+2025	A Survey on Deep Learning Hardware Accelerators for Heterogeneous HPC 	https://doi.org/10.1145/3729215
+2025	LEAP: LLM Inference on Scalable PIM-NoC Architecture with Balanced Dat	https://arxiv.org/abs/2509.14781
+2025	Hardware implementation of FPGA-based spiking attention neural network	https://doi.org/10.7717/peerj-cs.3077
+2025	FactorFlow: Mapping GEMMs on Spatial Architectures through Adaptive Pr	https://www.semanticscholar.org/paper/a77b13616798a9375704219463b584c7a593a601
+2024	EWS: An Energy-Efficient CNN Accelerator With Enhanced Weight Stationa	https://www.semanticscholar.org/paper/cb5237368fe0b6ca7e3aa540c28975683903fac9
+2024	Voxel-CIM: An Efficient Compute-In-Memory Accelerator for Voxel-Based 	https://arxiv.org/abs/2409.19077
+2024	BLESS: Bandwidth and Locality Enhanced SMEM Seeding Acceleration for D	https://www.semanticscholar.org/paper/6478b2d6fb7bae1060dc343ada780bb1bd90dc7d
+2023	SpikingJelly: An open-source machine learning infrastructure platform 	https://doi.org/10.1126/sciadv.adi1480
+2023	Hardware-aware training for large-scale and diverse deep learning infe	https://doi.org/10.1038/s41467-023-40770-4
+2023	SHARP: A Short-Word Hierarchical Accelerator for Robust and Practical 	https://doi.org/10.1145/3579371.3589053
+2023	BrainCog: A spiking neural network based, brain-inspired cognitive int	https://doi.org/10.1016/j.patter.2023.100789
+2023	FPGA-based Deep Learning Inference Accelerators: Where Are We Standing	https://doi.org/10.1145/3613963
+2023	16.1 MuITCIM: A 28nm $2.24 \mu\mathrm{J}$/Token Attention-Token-Bit Hy	https://www.semanticscholar.org/paper/63151f2ef0e570bfd5eea3b5ca265d8778139494
+2023	DOSA: Differentiable Model-Based One-Loop Search for DNN Accelerators	https://doi.org/10.1145/3613424.3623797
+2023	TeAAL: A Declarative Framework for Modeling Sparse Tensor Accelerators	https://doi.org/10.1145/3613424.3623791
+2023	Register Tiling for Unstructured Sparsity in Neural Network Inference	https://doi.org/10.1145/3591302
+2023	Casper: Accelerating Stencil Computations Using Near-Cache Processing	https://doi.org/10.1109/access.2023.3252002
+2023	ARBiS: A Hardware-Efficient SRAM CIM CNN Accelerator With Cyclic-Shift	https://www.semanticscholar.org/paper/08e6df1ddf709eb42b912cc5644a5cc9071d853c
+2023	Victima: Drastically Increasing Address Translation Reach by Leveragin	https://doi.org/10.1145/3613424.3614276
+2023	HARP: Hardware-Based Pseudo-Tiling for Sparse Matrix Multiplication Ac	https://doi.org/10.1145/3613424.3623790
+2023	PERKS: a Locality-Optimized Execution Model for Iterative Memory-bound	https://doi.org/10.1145/3577193.3593705
+2023	Pin or Fuse? Exploiting Scratchpad Memory to Reduce Off-Chip Data Tran	https://doi.org/10.1145/3579990.3580017
+2023	A Spiking Neural Network Accelerator based on Ping-Pong Architecture w	https://doi.org/10.1109/iscas46773.2023.10181432
+2022	Exploring Neuromorphic Computing Based on Spiking Neural Networks: Alg	https://doi.org/10.1145/3571155
+2022	High-Level Synthesis Hardware Design for FPGA-Based Accelerators: Mode	https://doi.org/10.1109/access.2022.3201107
+2022	Spiker: an FPGA-optimized Hardware accelerator for Spiking Neural Netw	https://doi.org/10.1109/isvlsi54635.2022.00016
+2022	Atomic Dataflow based Graph-Level Workload Orchestration for Scalable 	https://doi.org/10.1109/hpca53966.2022.00042
+2022	TelaMalloc: Efficient On-Chip Memory Allocation for Production Machine	https://doi.org/10.1145/3567955.3567961
+2021	Computing Graph Neural Networks: A Survey from Algorithms to Accelerat	https://doi.org/10.1145/3477141
+2021	Heterogeneous Dataflow Accelerators for Multi-DNN Workloads	https://doi.org/10.1109/hpca51647.2021.00016
+2021	CoSA: Scheduling by Constrained Optimization for Spatial Accelerators	https://doi.org/10.1109/isca52012.2021.00050
+2021	PointAcc: Efficient Point Cloud Accelerator	https://doi.org/10.1145/3466752.3480084
+2021	Marvel: A Data-Centric Approach for Mapping Deep Learning Operators on	https://doi.org/10.1145/3485137
+2021	Evaluating Spatial Accelerator Architectures with Tiled Matrix-Matrix 	https://doi.org/10.1109/tpds.2021.3104240
+2021	ARENA: Asynchronous Reconfigurable Accelerator Ring to Enable Data-Cen	https://doi.org/10.1109/tpds.2021.3081074
+2021	SparseAdapt: Runtime Control for Sparse Linear Algebra on a Reconfigur	https://doi.org/10.1145/3466752.3480134
+2021	Design of Computing-in-Memory (CIM) with Vertical Split-Gate Flash Mem	https://doi.org/10.1109/iscas51556.2021.9401723
+2021	A RISC-V-based FPGA Overlay to Simplify Embedded Accelerator Deploymen	https://doi.org/10.1109/dsd53832.2021.00011
+2021	ZigZag: Enlarging Joint Architecture-Mapping Design Space Exploration 	https://doi.org/10.1109/tc.2021.3059962
+2020	An Overview of Efficient Interconnection Networks for Deep Neural Netw	https://doi.org/10.1109/jetcas.2020.3022920
+2020	A Novel FPGA Accelerator Design for Real-Time and Ultra-Low Power Deep	https://doi.org/10.1109/access.2020.3000009
+2020	Interstellar	https://doi.org/10.1145/3373376.3378514
+2020	MAESTRO: A Data-Centric Approach to Understand Reuse, Performance, and	https://doi.org/10.1109/mm.2020.2985963
+2019	Timeloop: A Systematic Approach to DNN Accelerator Evaluation	https://doi.org/10.1109/ispass.2019.00042
+2019	From Loop Fusion to Kernel Fusion: A Domain-Specific Approach to Local	https://www.semanticscholar.org/paper/4adfffbe7f5c63556e24c4e3e5b8e47af9399fd0
+2019	A 2048-Neuron Spiking Neural Network Accelerator With Neuro-Inspired P	https://doi.org/10.1109/cicc.2019.8780116
+2019	Accelergy: An Architecture-Level Energy Estimation Methodology for Acc	https://doi.org/10.1109/iccad45719.2019.8942149
+2019	Buffets	https://doi.org/10.1145/3297858.3304025
+2019	Understanding Reuse, Performance, and Hardware Cost of DNN Dataflow	https://doi.org/10.1145/3352460.3358252
+2018	FPGA-Based Accelerators of Deep Learning Networks for Learning and Cla	https://doi.org/10.1109/access.2018.2890150
+2018	Toolflows for Mapping Convolutional Neural Networks on FPGAs	https://doi.org/10.1145/3186332
+2017	Trends in Data Locality Abstractions for HPC Systems	https://doi.org/10.1109/tpds.2017.2703149
+2017	Loop Tiling in Large-Scale Stencil Codes at Run-Time with OPS	https://arxiv.org/abs/1704.00693
+2017	Analytical modeling of cache behavior for affine programs	https://doi.org/10.1145/3158120
+2017	Leeway: Addressing Variability in Dead-Block Prediction for Last-Level	https://doi.org/10.1109/pact.2017.32
+2017	Fast and Accurate Exploration of Multi-level Caches Using Hierarchical	https://www.semanticscholar.org/paper/f8076a5e9acc718e22994adf2d653f33fcba327f
+2017	Eyeriss: An Energy-Efficient Reconfigurable Accelerator for Deep Convo	https://doi.org/10.1109/jssc.2016.2616357
+2016	Back to the Future: Leveraging Belady's Algorithm for Improved Cache R	https://doi.org/10.1109/isca.2016.17
+2014	A detailed GPU cache model based on reuse distance theory	https://doi.org/10.1109/hpca.2014.6835955
+2013	Memory-centric accelerator design for Convolutional Neural Networks	https://doi.org/10.1109/iccd.2013.6657019
+2013	Reuse-based online models for caches	https://www.semanticscholar.org/paper/8671317d25f917af263b457612f959823d5c86b1
+2012	Improving Cache Management Policies Using Dynamic Reuse Distances	https://www.semanticscholar.org/paper/bb0ecaa562f8af82a895fa70409e5982e6d22907
+2012	Advancing interconnect density for spiking neural network hardware imp	https://doi.org/10.1016/j.neunet.2012.04.004
+2010	Cache contention and application performance prediction for multi-core	https://www.semanticscholar.org/paper/b23e687ff4650f1955431c88281bdad29c3d57a2
+2010	Is Reuse Distance Applicable to Data Locality Analysis on Chip Multipr	https://doi.org/10.1007/978-3-642-11970-5_15
+2010	Multicore-aware reuse distance analysis	https://www.semanticscholar.org/paper/2ff05e51a9eab68f76326490ff3a61bb65c53e08
+2009	Program locality analysis using reuse distance	https://www.semanticscholar.org/paper/93a6a32f1bbf1913e9e2232132ec4fa7a75ab152
+2009	Program locality analysis using reuse distance	https://doi.org/10.1145/1552309.1552310
+2007	Locality approximation using time	https://www.semanticscholar.org/paper/7fb29f5dc844a076f5a98d76bdb4202c53ed6228
+2007	Cache replacement based on reuse-distance prediction	https://doi.org/10.1109/iccd.2007.4601909
+2005	Memory coloring: a compiler approach for scratchpad memory management	https://doi.org/10.1109/pact.2005.27
+2004	Reuse-distance-based miss-rate prediction on a per instruction basis	https://www.semanticscholar.org/paper/e013585f212ce4575d14f4e2187e9bd7f56fa6dc
+2004	Cache-aware scratchpad allocation algorithm	https://doi.org/10.1109/date.2004.1269069
+2003	Scratchpad memory: a design alternative for cache on-chip memory in em	https://doi.org/10.1109/codes.2002.1003604
+2003	Predicting whole-program locality through reuse distance analysis	https://doi.org/10.1145/781158.781159
+2000	Loop Tiling for Parallelism	https://doi.org/10.1007/978-1-4615-4337-4
+1999	Augmenting loop tiling with data alignment for improved cache performa	https://doi.org/10.1109/12.752655
+1991	A data locality optimizing algorithm	https://www.semanticscholar.org/paper/f4dff66ba8f2338d118f379f2eff1410feb57ce6
+1970	Evaluation techniques for storage hierarchies	https://doi.org/10.1147/sj.92.0078
+1966	A study of replacement algorithms for a virtual-storage computer	https://doi.org/10.1147/sj.52.0078
