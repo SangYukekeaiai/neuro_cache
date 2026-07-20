@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import os
 import pathlib
 import tempfile
 from dataclasses import asdict, dataclass
@@ -39,7 +40,7 @@ from snn_cosa.archmodels.prosperity.model import ProsperityComputeModel
 from snn_cosa.archmodels.ptb.model import PTBComputeModel
 from snn_cosa.archmodels.spinalflow.model import SpinalFlowComputeModel
 from snn_cosa.archmodels.trace import build_workload_from_trace
-from snn_cosa.mip_solver.solve import solve_schedule
+from snn_cosa.mip_solver.solve import TrafficMode, solve_schedule
 from snn_cosa.nocsim.schedule.decode import schedule_from_strategy
 from snn_cosa.nocsim.schedule.tiles import iter_node_tiles
 from snn_cosa.parsers.layer import SNNProb
@@ -63,6 +64,21 @@ class ScheduleArtifact:
     workload: Dict[str, Any]
     result: Dict[str, Any]  # raw solve_schedule() output (has_solution, strategy, ...)
     dram_num_steps: int
+    mode: str = TrafficMode.BASE.value  # winning TrafficMode's .value; default keeps old caches loadable
+
+
+# CoSA's original default weights (w_u, w_tr, w_dl), matching
+# sweep_weights.py's COSA_REF_WEIGHTS -- no calibrated
+# outputs/weight_sweep/weight_results.json exists in this checkout, so
+# every winner-selection in this pipeline uses this same reference triple.
+_SCORE_W_U, _SCORE_W_TR, _SCORE_W_DL = 0.1, 1.0, 10.0
+
+
+def _mode_score(metrics: Dict[str, Any]) -> float:
+    util, sp, tt = metrics["util"], metrics["spatial_cost"], metrics["temporal_traffic"]
+    tr_sum = sum(util[v] * sp[v] * tt[v] for v in util)
+    util_sum = sum(util.values())
+    return _SCORE_W_U * util_sum + _SCORE_W_TR * tr_sum + _SCORE_W_DL * metrics["delay"]
 
 
 def _dump_workload_path(workload: Dict[str, Any]) -> str:
@@ -84,32 +100,53 @@ def solve_and_cache_schedule(
     next_cin: Optional[int],
     cache_dir: pathlib.Path,
 ) -> ScheduleArtifact:
-    """Solve one (arch, layer)'s schedule and persist it to
-    cache_dir/<arch>/<trace_dir>/<layer_name>.json. Always re-solves --
+    """Solve one (arch, layer)'s schedule across every TrafficMode, keep the
+    winner by the same score sweep_weights.py/run_full_sweep.py use
+    (w_u*util_sum + w_tr*tr_sum + w_dl*delay, lower is better), and persist
+    it to cache_dir/<arch>/<trace_dir>/<layer_name>.json. Always re-solves --
     callers wanting skip-existing behavior should check for that file
     themselves first, matching every other skip-existing check in this
     pipeline (see generate_weight_traces.py).
 
-    Raises ValueError if the schedule is infeasible (callers sweeping many
+    BASE is always feasible (unconstrained) but is not special-cased --
+    across all 155 real (arch, layer) pairs in this project's own trace
+    data, BASE never actually wins (verified 2026-07-19): every other
+    TrafficMode either is infeasible for these single_node archs or beats
+    BASE's score once feasible, since BASE's objective has no credit for
+    the psum/vmem DRAM-traffic elimination the other modes' loop-order
+    constraints unlock.
+
+    Raises ValueError if EVERY mode is infeasible (callers sweeping many
     layers should catch this and record it, not let it abort the sweep).
     """
     workload = build_workload_from_trace(meta, layer_name, next_cin=next_cin)
     layer_path = _dump_workload_path(workload)
     prob = SNNProb(pathlib.Path(layer_path))
-    result = solve_schedule(layer_path, arch_yaml)
-    if not result.get("has_solution"):
+
+    best_mode, best_result, best_score = None, None, None
+    for mode in TrafficMode:
+        result = solve_schedule(layer_path, arch_yaml, traffic_mode=mode, return_metrics=True)
+        if not (result.get("has_solution") and result.get("metrics")):
+            continue
+        s = _mode_score(result["metrics"])
+        if best_score is None or s < best_score:
+            best_mode, best_result, best_score = mode, result, s
+
+    if best_result is None:
         raise ValueError(
-            f"solve_and_cache_schedule: infeasible for {arch_name}/{trace_dir_name}/{layer_name}"
+            f"solve_and_cache_schedule: infeasible for {arch_name}/{trace_dir_name}/{layer_name} "
+            f"(every TrafficMode infeasible)"
         )
-    schedule = schedule_from_strategy(result["strategy"], prob)
+    schedule = schedule_from_strategy(best_result["strategy"], prob)
 
     artifact = ScheduleArtifact(
         arch=arch_name,
         trace_dir=trace_dir_name,
         layer_name=layer_name,
         workload=workload,
-        result=result,
+        result=best_result,
         dram_num_steps=schedule.dram_num_steps,
+        mode=best_mode.value,
     )
     out_path = cache_dir / arch_name / trace_dir_name / f"{layer_name}.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -200,16 +237,77 @@ def reconstruct_samples_for_schedule(
     ]
 
 
+def reconstruct_tile_chunk(
+    model: ArchComputeModel,
+    trace: Any,
+    tile_chunk: Sequence[Tuple[int, NodeTileSpec]],
+    sample_indices: Sequence[int],
+) -> List[Tuple[int, List[TileWeightTrace]]]:
+    """Experimental alternate axis for reconstruct_samples_for_schedule's
+    work: given a SUBSET of (original_tile_index, tile) pairs, compute
+    every requested sample's TileWeightTrace for just those tiles --
+    format_input_batch still vectorizes across the FULL sample_indices
+    batch per tile (unchanged), but now the multiprocessing split is
+    along tiles instead of samples. Returns one (original_tile_index,
+    [TileWeightTrace per sample, in sample_indices order]) pair per tile
+    in tile_chunk, so a caller can scatter these back into per-sample
+    tile lists at the tiles' original positions and reproduce exactly
+    what reconstruct_samples_for_schedule would have produced.
+
+    Motivation: GustavSNN bars T from node-level residency (see
+    archmodels/gustavsnn/reconstruct.py's module docstring), so its
+    `tiles` list has one entry per tick -- up to ~8000 entries observed
+    on real resnet19 layers, vs. a few thousand at most for the other
+    archs. reconstruct_samples_for_schedule's `for tile in tiles:` loop
+    (this module, above) then reruns that same multi-thousand-iteration
+    Python loop once per worker process when samples are chunked across
+    workers, since sample-chunking leaves the tiles list untouched inside
+    each worker. Chunking tiles instead means each tile's loop iteration
+    (and its format_input_batch call) happens exactly once, total, no
+    matter how many workers are used.
+    """
+    out: List[Tuple[int, List[TileWeightTrace]]] = []
+    for orig_idx, tile in tile_chunk:
+        packed_per_sample = model.format_input_batch(trace, tile, sample_indices)
+        per_sample: List[TileWeightTrace] = []
+        for packed in packed_per_sample:
+            cycles = model.compute_cycles(packed, tile)
+            addresses = model.weight_addresses(packed, tile)
+            per_sample.append(
+                TileWeightTrace(
+                    dram_i=tile.dram_i,
+                    mac_cycles=cycles.mac_cycles,
+                    lif_cycles=cycles.lif_cycles,
+                    weight_addresses=list(addresses),
+                )
+            )
+        out.append((orig_idx, per_sample))
+    return out
+
+
 def save_weight_trace(trace: LayerWeightTrace, path: pathlib.Path) -> None:
     """Writes gzip-compressed JSON -- verified 19.5x smaller on real
     generated data (9.64MB -> 0.49MB), which is what makes the full sweep's
     storage footprint (otherwise ~510GB at 1000 samples/layer) fit in any
     reasonable quota. `path` should end in .json.gz; transparent to any
     caller going through load_weight_trace/iter_generated_traces below --
-    only a direct `open()`/`cat` of the file needs to know it's gzipped."""
+    only a direct `open()`/`cat` of the file needs to know it's gzipped.
+
+    Writes to a sibling temp file and os.replace()s it into place, so a
+    process killed mid-write (OOM, SLURM time limit, etc.) can never leave
+    a truncated file sitting at `path` -- skip-existing checks (this
+    module's callers, generate_weight_traces.py) only ever see either the
+    complete prior file or nothing, never a corrupted partial one."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    with gzip.open(path, "wt") as fh:
-        json.dump(asdict(trace), fh)
+    fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+    os.close(fd)
+    try:
+        with gzip.open(tmp_name, "wt") as fh:
+            json.dump(asdict(trace), fh)
+        os.replace(tmp_name, path)
+    except BaseException:
+        os.unlink(tmp_name)
+        raise
 
 
 def load_weight_trace(path: pathlib.Path) -> LayerWeightTrace:
