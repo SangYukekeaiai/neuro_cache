@@ -22,11 +22,12 @@ across the tile.
 
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 from parsers.layer import DIM_COUT
 
 from .. import NodeTileSpec
+from .cycles import group_into_waves
 from .reconstruct import GustavReconstructed
 
 
@@ -44,3 +45,33 @@ def event_to_address(
 
 def weight_access_count(reconstructed: GustavReconstructed) -> int:
     return sum(len(sm.lines) for sm in reconstructed.submatrices)
+
+
+def event_to_ticks(reconstructed: GustavReconstructed, tile: NodeTileSpec) -> List[int]:
+    """Per-line tick: unlike every other arch, GustavSNN genuinely reads
+    multiple distinct weight rows in the same cycle. Within a wave (see
+    cycles.py's group_into_waves), each of that wave's submatrices
+    independently pops its own next line every cycle -- submatrix sm's
+    j-th line (0-based) fires at cycle `wave_start + j`, where wave_start
+    accumulates prior waves' `max(len(sm.lines) for sm in wave)` (the same
+    quantity _wave_cycle_count sums into mac_cycles). So multiple lines
+    share a tick exactly when they're at the same position within their
+    own submatrix's line list, in the same wave -- up to PE_COUNT_MAX
+    lines can share one tick.
+
+    Traverses reconstructed.submatrices in the same (unsorted) order as
+    event_to_address, so tick i always corresponds to
+    event_to_address(...)[i], even though wave membership itself is
+    computed from the piece_idx-sorted order (group_into_waves)."""
+    tick_by_piece: Dict[int, List[int]] = {}
+    wave_start = 0
+    for wave in group_into_waves(reconstructed):
+        for sm in wave:
+            tick_by_piece[sm.piece_idx] = [wave_start + j for j in range(len(sm.lines))]
+        wave_start += max((len(sm.lines) for sm in wave), default=0)
+
+    return [
+        tick_by_piece[sm.piece_idx][j]
+        for sm in reconstructed.submatrices
+        for j in range(len(sm.lines))
+    ]

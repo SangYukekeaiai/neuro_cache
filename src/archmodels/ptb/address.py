@@ -34,3 +34,15 @@ def event_to_address(
 
 def weight_access_count(reconstructed: PTBReconstructed) -> int:
     return len(reconstructed.lines_pass1)
+
+
+def event_to_ticks(reconstructed: PTBReconstructed, tile: NodeTileSpec) -> List[int]:
+    """One weight-fetch cycle per Pass-1 line, strictly sequential (see
+    cycles.py's access_cycle_count = len(lines_pass1) -- the weight-fetch
+    pipeline issues one burst per cycle, no systolic propagation delay on
+    the fetch side; that delay only affects compute_cycle_count, which can
+    exceed access_cycle_count and therefore mac_cycles, so len(ticks) is
+    NOT guaranteed to equal mac_cycles here, unlike LoAS). Same order as
+    event_to_address, so tick i always corresponds to
+    event_to_address(...)[i]."""
+    return list(range(len(reconstructed.lines_pass1)))

@@ -39,3 +39,12 @@ def event_to_address(
 
 def weight_access_count(reconstructed: LoASReconstructed) -> int:
     return len(reconstructed.lines)
+
+
+def event_to_ticks(reconstructed: LoASReconstructed, tile: NodeTileSpec) -> List[int]:
+    """One weight-fetch cycle per line, strictly sequential (see
+    cycles.py's access_cycle_count = popcount(bitmask) = len(lines)) --
+    each non-silent (kh, kw, cin) row is its own cycle, in the same order
+    as event_to_address, so tick i always corresponds to
+    event_to_address(...)[i]."""
+    return list(range(len(reconstructed.lines)))

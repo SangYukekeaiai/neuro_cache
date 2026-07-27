@@ -72,3 +72,22 @@ class ArchComputeModel(Protocol):
         Protocol into each arch's raw address.py function.
         """
         ...
+
+    def weight_ticks(self, packed: Any, tile: NodeTileSpec) -> List[int]:
+        """Per-tile-local cycle index (0-based, restarting at 0 for every
+        tile) at which each corresponding entry of weight_addresses(...)
+        was fetched -- same length and order as weight_addresses(...), so
+        callers zip the two to know which addresses shared a cycle.
+
+        For every architecture except GustavSNN, weight fetches are
+        strictly one per cycle by construction of that architecture's own
+        compute_cycles model (LoAS/PTB: one burst per surviving reduction-
+        index row, already covering the full T range per burst;
+        SpinalFlow/Prosperity: one event/residual-bit per cycle), so this
+        is just range(len(weight_addresses(packed, tile))). GustavSNN is
+        the one case with genuine same-cycle parallelism: up to
+        PE_COUNT_MAX submatrices each advance their own line pointer every
+        cycle, so multiple addresses can share a tick -- see
+        gustavsnn/address.py.
+        """
+        ...

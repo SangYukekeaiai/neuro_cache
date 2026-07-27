@@ -31,3 +31,13 @@ def event_to_address(
 
 def weight_access_count(events: List[Tuple[int, int, int, int]]) -> int:
     return len(events)
+
+
+def event_to_ticks(events: List[Tuple[int, int, int, int]], tile: NodeTileSpec) -> List[int]:
+    """One weight-fetch cycle per spike event, strictly sequential (see
+    cycles.py's access_cycle_count == compute_cycle_count == len(events),
+    no dominance case for SpinalFlow -- both pipelines are driven by the
+    exact same quantity, so len(ticks) always equals mac_cycles here,
+    unlike PTB). Same order as event_to_address, so tick i always
+    corresponds to event_to_address(...)[i]."""
+    return list(range(len(events)))

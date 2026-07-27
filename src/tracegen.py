@@ -8,7 +8,7 @@ scripts/generate_weight_traces.py) share one implementation instead of
 two copies that could quietly drift apart.
 
 Two independent artifacts, matching the two-stage design
-(docs/superpowers/specs/2026-07-18-weight-trace-generation-design.md):
+(dump/docs/superpowers/specs/2026-07-18-weight-trace-generation-design.md):
 
   ScheduleArtifact  -- one solved MIP schedule, persisted once per
                        (arch, trace_dir, layer). Reused across every
@@ -177,6 +177,7 @@ class TileWeightTrace:
     mac_cycles: int
     lif_cycles: Optional[int]
     weight_addresses: List[Any]
+    tick_ids: List[int]
 
 
 @dataclass
@@ -215,12 +216,14 @@ def reconstruct_samples_for_schedule(
         for i, packed in enumerate(packed_per_sample):
             cycles = model.compute_cycles(packed, tile)
             addresses = model.weight_addresses(packed, tile)
+            ticks = model.weight_ticks(packed, tile)
             per_sample_tiles[i].append(
                 TileWeightTrace(
                     dram_i=tile.dram_i,
                     mac_cycles=cycles.mac_cycles,
                     lif_cycles=cycles.lif_cycles,
                     weight_addresses=list(addresses),
+                    tick_ids=list(ticks),
                 )
             )
     return [
@@ -273,12 +276,14 @@ def reconstruct_tile_chunk(
         for packed in packed_per_sample:
             cycles = model.compute_cycles(packed, tile)
             addresses = model.weight_addresses(packed, tile)
+            ticks = model.weight_ticks(packed, tile)
             per_sample.append(
                 TileWeightTrace(
                     dram_i=tile.dram_i,
                     mac_cycles=cycles.mac_cycles,
                     lif_cycles=cycles.lif_cycles,
                     weight_addresses=list(addresses),
+                    tick_ids=list(ticks),
                 )
             )
         out.append((orig_idx, per_sample))
@@ -322,6 +327,7 @@ def load_weight_trace(path: pathlib.Path) -> LayerWeightTrace:
             # restore tuples so callers can hash/set them (e.g. a future
             # locality analyzer counting distinct weight lines).
             weight_addresses=[tuple(a) if isinstance(a, list) else a for a in t["weight_addresses"]],
+            tick_ids=t["tick_ids"],
         )
         for t in data["tiles"]
     ]
@@ -335,3 +341,41 @@ def iter_generated_traces(root: pathlib.Path) -> Iterator[LayerWeightTrace]:
     for future analysis consumers to load directly instead of recomputing."""
     for path in sorted(root.glob("*/*/*/sample_*.json.gz")):
         yield load_weight_trace(path)
+
+
+_REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
+CANONICAL_SAMPLE_INDICES_PATH = _REPO_ROOT / "configs" / "sampling" / "sample_indices.json"
+
+
+def canonical_sample_indices(path: pathlib.Path = CANONICAL_SAMPLE_INDICES_PATH) -> List[int]:
+    """The fixed, seed-0-selected 100-sample subset used everywhere a
+    representative random sample (as opposed to the full 10,000-sample
+    sweep) is needed, so different callers never silently diverge onto
+    their own random selections. Single source of truth: previously
+    duplicated as two separate file reads in profiling/0723/
+    (regenerate_weight_traces.py's sample_indices(), input_spike_locality.py's
+    marked_sample_indices()), both now call this instead."""
+    with open(path) as fh:
+        return json.load(fh)["sample_indices"]
+
+
+def random_sample_indices(n: int, seed: int = 0, n_total: int = 10000) -> List[int]:
+    """A fixed, reproducible n-sample subset that always contains the
+    canonical 100 (canonical_sample_indices()) plus n-100 more, drawn
+    without replacement from the remaining n_total-100 indices with the
+    given seed. Superset-by-construction so growing n never discards
+    already-generated/already-patched work on the canonical 100, unlike
+    an independent random.sample(range(n_total), n) call for each n,
+    which would not nest.
+
+    Raises ValueError if n < len(canonical_sample_indices())."""
+    import random
+
+    base = canonical_sample_indices()
+    if n < len(base):
+        raise ValueError(f"random_sample_indices: n={n} smaller than the canonical {len(base)}-sample base")
+    if n == len(base):
+        return sorted(base)
+    remaining_pool = [i for i in range(n_total) if i not in set(base)]
+    extra = random.Random(seed).sample(remaining_pool, n - len(base))
+    return sorted(base + extra)

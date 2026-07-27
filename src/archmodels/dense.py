@@ -46,6 +46,9 @@ class DenseStaticComputeModel(ArchComputeModel):
     def weight_addresses(self, packed: Any, tile: NodeTileSpec) -> List[Any]:
         return []
 
+    def weight_ticks(self, packed: Any, tile: NodeTileSpec) -> List[int]:
+        return []
+
     def _pe_cycles(self) -> int:
         noc_t = _dim_totals(self._schedule.noc_temporal_loops)
         dram_t = _dim_totals(self._schedule.dram_temporal_loops)

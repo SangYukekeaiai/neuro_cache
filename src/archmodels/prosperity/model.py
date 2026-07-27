@@ -12,7 +12,7 @@ from typing import Any, List, Sequence, Tuple
 import numpy as np
 
 from .. import ArchComputeModel, ComputeCycles, NodeTileSpec
-from .address import event_to_address
+from .address import event_to_address, event_to_ticks
 from .cycles import event_to_cycle
 from .reconstruct import (
     ProsperityReconstructed,
@@ -37,3 +37,6 @@ class ProsperityComputeModel(ArchComputeModel):
         self, packed: Any, tile: NodeTileSpec
     ) -> List[Tuple[int, int, int, int, int]]:
         return event_to_address(packed, tile)
+
+    def weight_ticks(self, packed: Any, tile: NodeTileSpec) -> List[int]:
+        return event_to_ticks(packed, tile)

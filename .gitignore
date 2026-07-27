@@ -32,8 +32,24 @@ gurobi_server1302/
 gurobi.lic
 *.lic
 
-# Compiled eventsim binary (build with: cd nocsim/eventsim && make)
+# Compiled native binaries (build with: cd <dir> && make)
 src/snn_cosa/nocsim/eventsim/eventsim
+src/archmodels/gustavsnn/native/gustavgen
+src/archmodels/loas/native/loasgen
+src/archmodels/prosperity/native/prosperitygen
+src/archmodels/ptb/native/ptbgen
+src/archmodels/spinalflow/native/spinalflowgen
+src/cachesim/native/cache_replay
+profiling/*/native/cache_sweep
+profiling/*/native/cache_sweep_subset
+
+# Regenerated weight-trace data (large, reproducible from tracegen.py)
+weight_traces/
+
+# Per-unit cache-sweep results (large, reproducible from cache_sweep.py)
+profiling/*/results/
+profiling/*/results_subset/
+profiling/*/cache_sweep_results*.csv
 
 # Local editor and OS files
 .idea/

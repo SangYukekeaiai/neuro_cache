@@ -45,3 +45,14 @@ def event_to_address(
 
 def weight_access_count(reconstructed: ProsperityReconstructed) -> int:
     return sum(sum(row.pattern) for row in reconstructed.rows)
+
+
+def event_to_ticks(reconstructed: ProsperityReconstructed, tile: NodeTileSpec) -> List[int]:
+    """One weight-fetch-and-accumulate cycle per residual spike bit,
+    strictly sequential (see cycles.py: access_cycle_count ==
+    compute_cycle_count == weight_access_count, no separate access-vs-
+    compute bottleneck -- both happen together, one bit per cycle, so
+    len(ticks) always equals mac_cycles here, same as LoAS/SpinalFlow).
+    Same (row, bit_idx) traversal order as event_to_address, so tick i
+    always corresponds to event_to_address(...)[i]."""
+    return list(range(weight_access_count(reconstructed)))

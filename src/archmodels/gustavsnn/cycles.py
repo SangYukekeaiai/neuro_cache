@@ -64,17 +64,31 @@ ComputeCycles.lif_cycles=None convention, same as PTB/SpinalFlow/LoAS).
 
 from __future__ import annotations
 
+from typing import List
+
 from .. import NodeTileSpec
-from .reconstruct import GustavReconstructed
+from .reconstruct import GustavReconstructed, GustavSubmatrix
 
 PE_COUNT_MAX = 8  # K': PEs per tile (Table II's 8-PE/tile evaluated config)
 
 
-def _wave_cycle_count(reconstructed: GustavReconstructed) -> int:
+def group_into_waves(reconstructed: GustavReconstructed) -> List[List[GustavSubmatrix]]:
+    """Sort submatrices by piece_idx and chunk into sequential waves of up
+    to PE_COUNT_MAX -- Algorithm 1's parallel-for k: each wave's
+    submatrices run in parallel PEs, waves run one after another. Shared
+    by _wave_cycle_count (below) and address.py's event_to_ticks, so the
+    wave boundaries used for cycle counting and for per-line tick
+    assignment can never drift apart."""
     submatrices = sorted(reconstructed.submatrices, key=lambda sm: sm.piece_idx)
+    return [
+        submatrices[start : start + PE_COUNT_MAX]
+        for start in range(0, len(submatrices), PE_COUNT_MAX)
+    ]
+
+
+def _wave_cycle_count(reconstructed: GustavReconstructed) -> int:
     total = 0
-    for start in range(0, len(submatrices), PE_COUNT_MAX):
-        wave = submatrices[start : start + PE_COUNT_MAX]
+    for wave in group_into_waves(reconstructed):
         total += max((len(sm.lines) for sm in wave), default=0)
     return total
 
