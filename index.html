@@ -78,8 +78,25 @@
     .heatmap-panel svg { display: block; width: 100%; height: auto; }
     .source { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.6; }
     .badge { display: inline-block; margin-right: 8px; padding: 4px 8px; border-radius: 999px; color: #075c55; background: #dff1ec; font-size: 11px; font-weight: 800; }
+    .layout-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .layout-column h3 { margin: 0 0 7px; font-family: Georgia, serif; font-size: 25px; font-weight: 500; }
+    .layout-column > p { min-height: 44px; margin: 0 0 20px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .line-example { margin: 0 0 22px; }
+    .line-label { display: flex; justify-content: space-between; margin-bottom: 7px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .cache-line { display: flex; min-height: 76px; overflow: hidden; border: 2px solid var(--ink); border-radius: 9px; background: white; }
+    .line-segment { display: grid; place-items: center; min-width: 0; padding: 8px 4px; border-right: 2px solid rgba(23,32,31,.45); text-align: center; }
+    .line-segment:last-child { border-right: 0; }
+    .line-segment strong { display: block; font-size: 13px; }
+    .line-segment span { display: block; margin-top: 3px; font-size: 11px; opacity: .72; }
+    .cin0 { background: #bfe3dd; }
+    .cin1 { background: #f5cfaf; }
+    .cin2 { background: #cbd8ef; }
+    .cin3 { background: #ddd0eb; }
+    .axis-note { display: flex; justify-content: space-between; margin-top: 5px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
+    .layout-rule { margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: #faf8f1; }
+    .layout-rule code { color: var(--teal); }
     @media (max-width: 850px) {
-      .grid-4, .grid-2, .flow, .controls, .insight { grid-template-columns: 1fr; }
+      .grid-4, .grid-2, .flow, .controls, .insight, .layout-compare { grid-template-columns: 1fr; }
       .flow .step:not(:last-child)::after { content: "↓"; right: auto; top: auto; left: 50%; bottom: -24px; }
       .section-head { align-items: start; flex-direction: column; }
     }
@@ -96,7 +113,8 @@
     <nav class="nav" aria-label="Artifact pages">
       <button class="active" data-page="correction">01 · Metric correction</button>
       <button data-page="replay">02 · LOAS replay</button>
-      <button data-page="status">03 · Current status</button>
+      <button data-page="layouts">03 · Line layouts</button>
+      <button data-page="status">04 · Current status</button>
     </nav>
 
     <section id="correction" class="page active">
@@ -105,14 +123,7 @@
         <p>A weight-address event is a physical burst. Elements are still expanded to find which cache-line tags the burst touches, but consecutive identical tags inside that event collapse to one cache access.</p>
       </div>
 
-      <div class="grid grid-4">
-        <div class="card stat"><div class="label">Old accounting</div><div class="value">38 / 48</div><div class="note">79.17% — per expanded weight element</div></div>
-        <div class="card stat"><div class="label">Correct accounting</div><div class="value">2 / 12</div><div class="note">16.67% — per burst-level line access</div></div>
-        <div class="card stat"><div class="label">Tiny example</div><div class="value">12</div><div class="note">weight-address bursts, each covering 4 COUT values</div></div>
-        <div class="card stat"><div class="label">Inflation removed</div><div class="value">62.5 pp</div><div class="note">same trace and cache; only access accounting changed</div></div>
-      </div>
-
-      <div class="chalk" style="margin-top:18px">
+      <div class="chalk">
         <svg viewBox="0 0 1120 430" role="img" aria-labelledby="chalkTitle chalkDesc">
           <title id="chalkTitle">Element-wise versus burst-wise cache accounting</title>
           <desc id="chalkDesc">The old path counted four expanded weights as four accesses, including three artificial hits. The corrected path deduplicates identical line tags within the burst and issues one access.</desc>
@@ -202,6 +213,76 @@
         <div class="heatmap-wrap"><div id="heatmapGrid" class="heatmap-grid"></div></div>
       </div>
       <div class="source"><span class="badge">Verified replay</span> Inputs: <span class="formula">outputs/weight_traces/loas/{resnet19_T4_all,vgg16_T4_all}</span>. Regenerate with <span class="formula">build_artifact.py</span> after the two replay CSVs are produced.</div>
+    </section>
+
+    <section id="layouts" class="page">
+      <div class="section-head">
+        <h2>What occupies one cache line?</h2>
+        <p>The two replay layouts keep the same LoAS burst width of 16 COUT weights. They differ in how extra line capacity is used when the line is wider than one burst.</p>
+      </div>
+
+      <div class="layout-compare">
+        <article class="card layout-column">
+          <div class="eyebrow">Baseline layout</div>
+          <h3>COUT only</h3>
+          <p>Keep one fixed CIN and extend farther along COUT. Larger lines absorb more consecutive output-channel weights from that same input channel.</p>
+
+          <div class="line-example">
+            <div class="line-label"><span>16 B line</span><span>1 CIN × 16 COUT</span></div>
+            <div class="cache-line"><div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–15</span></div></div>
+            <div class="axis-note"><span>COUT 0</span><span>COUT 15</span></div>
+          </div>
+          <div class="line-example">
+            <div class="line-label"><span>32 B line</span><span>1 CIN × 32 COUT</span></div>
+            <div class="cache-line"><div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–31</span></div></div>
+            <div class="axis-note"><span>COUT 0</span><span>COUT 31</span></div>
+          </div>
+          <div class="line-example">
+            <div class="line-label"><span>64 B line</span><span>1 CIN × 64 COUT</span></div>
+            <div class="cache-line"><div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–63</span></div></div>
+            <div class="axis-note"><span>COUT 0</span><span>COUT 63</span></div>
+          </div>
+
+          <div class="layout-rule"><code>tag = (kh, kw, cin, cout ÷ line_size)</code></div>
+        </article>
+
+        <article class="card layout-column">
+          <div class="eyebrow">Tested Path A</div>
+          <h3>CIN × COUT</h3>
+          <p>Keep each LoAS COUT burst 16-wide and spend extra line capacity on adjacent CIN groups. Color marks the input channel stored in each segment.</p>
+
+          <div class="line-example">
+            <div class="line-label"><span>16 B line</span><span>1 CIN × 16 COUT</span></div>
+            <div class="cache-line"><div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–15</span></div></div>
+            <div class="axis-note"><span>burst 0</span><span>16 weights</span></div>
+          </div>
+          <div class="line-example">
+            <div class="line-label"><span>32 B line</span><span>2 CIN × 16 COUT</span></div>
+            <div class="cache-line">
+              <div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–15</span></div>
+              <div class="line-segment cin1" style="flex:1"><strong>CIN 1</strong><span>COUT 0–15</span></div>
+            </div>
+            <div class="axis-note"><span>burst 0</span><span>burst 1</span></div>
+          </div>
+          <div class="line-example">
+            <div class="line-label"><span>64 B line</span><span>4 CIN × 16 COUT</span></div>
+            <div class="cache-line">
+              <div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–15</span></div>
+              <div class="line-segment cin1" style="flex:1"><strong>CIN 1</strong><span>COUT 0–15</span></div>
+              <div class="line-segment cin2" style="flex:1"><strong>CIN 2</strong><span>COUT 0–15</span></div>
+              <div class="line-segment cin3" style="flex:1"><strong>CIN 3</strong><span>COUT 0–15</span></div>
+            </div>
+            <div class="axis-note"><span>burst 0</span><span>burst 3</span></div>
+          </div>
+
+          <div class="layout-rule"><code>Ncin = line_size ÷ 16; tag = (kh, kw, cin ÷ Ncin, cout ÷ 16)</code></div>
+        </article>
+      </div>
+
+      <div class="callout" style="margin-top:18px">
+        At 16 B the layouts are identical. Their behavior diverges at 32 B and 64 B: COUT-only extends one channel horizontally, while CIN × COUT packs two or four adjacent input channels into the same line.
+      </div>
+      <div class="source">Scope: the tested quick Path A in <span class="formula">log/2026-07-28-set-index-and-cin-cout-layout-plan.md</span>. It assumes a 16-weight LoAS burst; reading burst width and true dimension bounds from the trace remains planned follow-on work.</div>
     </section>
 
     <section id="status" class="page">
