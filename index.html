@@ -72,7 +72,10 @@
     .delta { font-family: Georgia, serif; font-size: 46px; color: var(--teal); }
     .small { color: var(--muted); font-size: 13px; line-height: 1.55; }
     .heatmap-wrap { overflow-x: auto; }
-    #heatmap { min-width: 920px; }
+    .heatmap-grid { display: grid; grid-template-columns: repeat(3, minmax(920px, 1fr)); gap: 18px; }
+    .heatmap-panel { min-width: 920px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+    .heatmap-panel h4 { margin: 0 0 6px; color: var(--ink); font-size: 14px; }
+    .heatmap-panel svg { display: block; width: 100%; height: auto; }
     .source { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.6; }
     .badge { display: inline-block; margin-right: 8px; padding: 4px 8px; border-radius: 999px; color: #075c55; background: #dff1ec; font-size: 11px; font-weight: 800; }
     @media (max-width: 850px) {
@@ -195,8 +198,8 @@
       </div>
 
       <div class="card" style="margin-top:18px">
-        <div class="chart-title"><h3>All-layer overview</h3><span>32 KB cache · 32 B line · mean across n=5</span></div>
-        <div class="heatmap-wrap"><svg id="heatmap" viewBox="0 0 1100 760" role="img" aria-label="All-layer hit-rate heatmap"></svg></div>
+        <div class="chart-title"><h3>All-layer overview</h3><span>All 9 size × line combinations · mean across n=5</span></div>
+        <div class="heatmap-wrap"><div id="heatmapGrid" class="heatmap-grid"></div></div>
       </div>
       <div class="source"><span class="badge">Verified replay</span> Inputs: <span class="formula">outputs/weight_traces/loas/{resnet19_T4_all,vgg16_T4_all}</span>. Regenerate with <span class="formula">build_artifact.py</span> after the two replay CSVs are produced.</div>
     </section>
@@ -314,8 +317,8 @@
       $("assocGapText").textContent = `Fully associative ${pct(fa)} versus 32-way ${pct(sa)} at 32 KB. This ceiling gap is shown, not explained away.`;
     }
 
-    function drawHeatmap() {
-      const svg=$("heatmap"), W=1100, left=310, top=55, rowH=21, cellW=118;
+    function heatmapMarkup(sizeKb, lineSize) {
+      const W=1100, left=310, top=55, rowH=21, cellW=118;
       const layers=[...new Set(rows.map(r=>`${r.workload}|${r.layer}`))].sort();
       const columns=[
         ["cout_only","set_associative",4,"COUT · 4w"],
@@ -336,13 +339,18 @@
         if (ri===19) out+=`<line x1="20" y1="${yy-7}" x2="${W-25}" y2="${yy-7}" stroke="#aaa195"/>`;
         out+=`<text x="${left-12}" y="${yy+4}" text-anchor="end" fill="#3c4745" font-size="11">${workload.startsWith("resnet")?"R":"V"} · ${layerLabel(layer)}</text>`;
         columns.forEach((c,ci)=>{
-          const r=rows.find(r=>r.workload===workload&&r.layer===layer&&r.layout===c[0]&&r.cache_type===c[1]&&r.associativity===c[2]&&r.size_kb===32&&r.line_size===32);
+          const r=rows.find(r=>r.workload===workload&&r.layer===layer&&r.layout===c[0]&&r.cache_type===c[1]&&r.associativity===c[2]&&r.size_kb===sizeKb&&r.line_size===lineSize);
           out+=`<rect x="${left+ci*cellW}" y="${yy-12}" width="${cellW-4}" height="18" rx="3" fill="${color(r.hit_rate)}"><title>${c[3]}: ${pct(r.hit_rate)}</title></rect>`;
           out+=`<text x="${left+ci*cellW+(cellW-4)/2}" y="${yy+1}" text-anchor="middle" fill="${r.hit_rate>.54?"white":"#26322f"}" font-size="10">${pct(r.hit_rate)}</text>`;
         });
       });
-      svg.setAttribute("viewBox",`0 0 ${W} ${top+layers.length*rowH+20}`);
-      svg.innerHTML=out;
+      return `<section class="heatmap-panel"><h4>${sizeKb} KB cache · ${lineSize} B line</h4><svg viewBox="0 0 ${W} ${top+layers.length*rowH+20}" role="img" aria-label="All-layer hit-rate heatmap for ${sizeKb} KB cache and ${lineSize} B line">${out}</svg></section>`;
+    }
+
+    function drawHeatmaps() {
+      $("heatmapGrid").innerHTML = [16,32,64].flatMap(sizeKb =>
+        [16,32,64].map(lineSize => heatmapMarkup(sizeKb, lineSize))
+      ).join("");
     }
 
     ["workload","layer","layout","lineSize"].forEach(id => $(id).addEventListener("change", () => {
@@ -350,7 +358,7 @@
       drawLineChart();
     }));
     drawLineChart();
-    drawHeatmap();
+    drawHeatmaps();
   </script>
 </body>
 </html>
