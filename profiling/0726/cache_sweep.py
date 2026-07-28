@@ -24,6 +24,8 @@ import struct
 import subprocess
 import sys
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures.process import BrokenProcessPool
 from typing import List, Tuple
 
 import numpy as np
@@ -39,11 +41,17 @@ RESULTS_DIR = pathlib.Path(__file__).resolve().parent / "results"
 # forked Pool workers just inherit them
 STRUCT_IDS: str | None = None
 MAX_SAMPLES: int | None = None
+ARCHS_FILTER: List[str] | None = None
+INNER_DIMS: str | None = None  # comma-separated indices (0=kh,1=kw,2=cin,3=cout), see native/cache_sweep.cpp argv[3]
+SIZES: str | None = None       # comma-separated byte values, see native/cache_sweep.cpp argv[4]
+LAYOUT: str | None = None      # "cout_only" (default) or "cin_cout_2d", see native/cache_sweep.cpp argv[5]
+
+_INNER_DIM_TO_INDEX = {"kh": "0", "kw": "1", "cin": "2", "cout": "3"}
 
 ARCHS = ["loas", "ptb", "spinalflow", "prosperity", "gustavsnn"]
 WORKLOADS = ["resnet19_T4_all", "vgg16_T4_all"]
 
-CSV_HEADER = "arch,workload,layer,cache_type,associativity,size_bytes,inner_dim,line_size,mean_hit_rate,n_samples\n"
+CSV_HEADER = "arch,workload,layer,cache_type,associativity,size_bytes,inner_dim,layout,line_size,mean_hit_rate,n_samples\n"
 
 
 def discover_units() -> List[Tuple[str, str, str]]:
@@ -51,7 +59,7 @@ def discover_units() -> List[Tuple[str, str, str]]:
     exists locally under outputs/weight_traces/ -- only archs/workloads
     present on disk are swept, nothing is assumed."""
     units = []
-    for arch in ARCHS:
+    for arch in (ARCHS_FILTER if ARCHS_FILTER is not None else ARCHS):
         arch_dir = TRACE_ROOT / arch
         if not arch_dir.is_dir():
             continue
@@ -122,7 +130,15 @@ def run_unit(unit: Tuple[str, str, str]) -> str:
     if n_samples == 0:
         return f"skip (no samples): {arch}/{workload}/{layer}"
 
-    argv = [str(NATIVE_BIN)] + ([STRUCT_IDS] if STRUCT_IDS is not None else [])
+    # Positional argv beyond the binary path: struct_ids, persample-flag
+    # (always empty from this mean-only driver), inner_dims, sizes, layout
+    # -- see native/cache_sweep.cpp's argv[1..5] docstrings. Trailing
+    # empties are trimmed so an old-style struct-ids-only invocation still
+    # gets the short argv it always has (native/cache_sweep.cpp's own argc
+    # checks don't care either way, but this keeps `ps`/logs readable).
+    argv = [str(NATIVE_BIN), STRUCT_IDS or "", "", INNER_DIMS or "", SIZES or "", LAYOUT or ""]
+    while len(argv) > 1 and argv[-1] == "":
+        argv.pop()
     proc = subprocess.run(argv, input=payload, capture_output=True, text=False)
 
     if proc.returncode != 0:
@@ -135,6 +151,50 @@ def run_unit(unit: Tuple[str, str, str]) -> str:
 
     elapsed = time.time() - t0
     return f"done: {arch}/{workload}/{layer} ({n_samples} samples, {elapsed:.1f}s)"
+
+
+MAX_POOL_RESTARTS = 5
+
+
+def _run_units(units: List[Tuple[str, str, str]], workers: int) -> None:
+    """Run every unit, restarting the executor if a worker dies without
+    reporting back. A native binary getting OOM-killed is handled inside
+    run_unit() itself (subprocess.run just sees a bad returncode) -- but
+    if system-wide memory pressure kills a *worker process*, the plain
+    multiprocessing.Pool used previously would hang forever waiting on a
+    result that will never arrive (a known stdlib gap: Pool doesn't
+    detect a SIGKILL'd worker). ProcessPoolExecutor does detect it and
+    raises BrokenProcessPool on the surviving futures instead, so this
+    catches that and resumes with a fresh pool rather than hanging (this
+    is exactly what happened twice during the 2026-07-27 sweep runs, see
+    log/2026-07-26-workflow-optimization-plan.md)."""
+    remaining = list(units)
+    restarts = 0
+    while remaining:
+        broken = False
+        with ProcessPoolExecutor(max_workers=workers) as pool:
+            futures = {pool.submit(run_unit, u): u for u in remaining}
+            for future in as_completed(futures):
+                try:
+                    print(future.result(), flush=True)
+                except BrokenProcessPool:
+                    broken = True
+                    break
+
+        remaining = [
+            u for u in remaining
+            if not (RESULTS_DIR / f"{u[0]}__{u[1]}__{u[2]}.csv").exists()
+        ]
+        if not broken or not remaining:
+            break
+        restarts += 1
+        if restarts > MAX_POOL_RESTARTS:
+            print(f"giving up after {MAX_POOL_RESTARTS} pool restarts; "
+                  f"{len(remaining)} units still unfinished: "
+                  f"{[' / '.join(u) for u in remaining]}", flush=True)
+            break
+        print(f"pool broke (a worker was likely OOM-killed); restarting "
+              f"({len(remaining)} units left, restart {restarts}/{MAX_POOL_RESTARTS})", flush=True)
 
 
 def merge_results(out_path: pathlib.Path) -> int:
@@ -152,7 +212,7 @@ def merge_results(out_path: pathlib.Path) -> int:
 
 
 def main() -> None:
-    global NATIVE_BIN, RESULTS_DIR, STRUCT_IDS, MAX_SAMPLES
+    global NATIVE_BIN, RESULTS_DIR, STRUCT_IDS, MAX_SAMPLES, ARCHS_FILTER, INNER_DIMS, SIZES, LAYOUT
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workers", type=int, default=mp.cpu_count(),
@@ -171,12 +231,30 @@ def main() -> None:
                               "for direct_mapped+4/16/32-way (skip 8-way and fully_associative); default: all 6")
     parser.add_argument("--max-samples", type=int, default=None,
                          help="only read the first N sample files per unit instead of all of them")
+    parser.add_argument("--archs", nargs="+", default=None,
+                         help="restrict discover_units() to these archs instead of all archs with local "
+                              "weight-trace data, e.g. --archs loas")
+    parser.add_argument("--inner-dims", nargs="+", default=None, choices=list(_INNER_DIM_TO_INDEX),
+                         help="restrict the native binary's sweep to these inner_dims (default: all 4); "
+                              "matters for speed, not just row count -- see native/cache_sweep.cpp's argv[3] note")
+    parser.add_argument("--sizes", nargs="+", type=int, default=None,
+                         help="restrict to these cache_size_bytes values, each one of 8192/16384/32768/65536 "
+                              "(default: all 4), e.g. --sizes 16384 32768 65536")
+    parser.add_argument("--layout", choices=["cout_only", "cin_cout_2d"], default=None,
+                         help="cache-line layout to sweep (default: cout_only, today's behavior); "
+                              "cin_cout_2d is Stage 2 Path A of "
+                              "log/2026-07-28-set-index-and-cin-cout-layout-plan.md, only affects "
+                              "inner_dim=cout, see native/cache_sweep.cpp's argv[5] note")
     args = parser.parse_args()
 
     NATIVE_BIN = args.native_bin
     RESULTS_DIR = args.results_dir
     STRUCT_IDS = args.struct_ids
     MAX_SAMPLES = args.max_samples
+    ARCHS_FILTER = args.archs
+    INNER_DIMS = ",".join(_INNER_DIM_TO_INDEX[d] for d in args.inner_dims) if args.inner_dims else None
+    SIZES = ",".join(str(s) for s in args.sizes) if args.sizes else None
+    LAYOUT = args.layout
 
     if not NATIVE_BIN.exists():
         sys.exit(f"native binary not found at {NATIVE_BIN}; run `make` in profiling/0726/native/ first")
@@ -189,9 +267,7 @@ def main() -> None:
         print(f"sizing {len(units)} not-yet-done units for smallest-first scheduling...", flush=True)
         units.sort(key=_one_sample_element_count)
         print(f"{len(units)} (arch, workload, layer) units to run, {args.workers} workers", flush=True)
-        with mp.Pool(args.workers) as pool:
-            for msg in pool.imap_unordered(run_unit, units):
-                print(msg, flush=True)
+        _run_units(units, args.workers)
 
     merged_path = args.out or pathlib.Path(__file__).resolve().parent / "cache_sweep_results.csv"
     n_rows = merge_results(merged_path)
