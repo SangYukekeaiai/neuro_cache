@@ -1,0 +1,6 @@
+cache:
+  cache_size_bytes: 16            # capacity_lines = 16/4 = 4 lines
+  line_size_bytes: 4              # absorbs all 4 COUT values of the tiny layer into 1 line
+  cache_type: fully_associative
+  inner_dim: cout
+  # policy: lru                   # default

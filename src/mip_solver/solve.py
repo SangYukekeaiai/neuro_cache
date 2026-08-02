@@ -34,6 +34,7 @@ from mip_solver.objectives.traffic import (
 )
 from parsers.arch import MEM_NOC, parse_snn_arch
 from parsers.bitwidths import SNNBitwidths, parse_snn_bitwidths
+from parsers.dataflow import parse_snn_dataflow
 from parsers.layer import parse_snn_layer
 from parsers.mapspace import parse_snn_mapspace
 from util import build_strategy
@@ -53,6 +54,7 @@ _STATUS_NAMES = {
 def solve_schedule(
     layer_path: pathlib.Path | str,
     arch_path: pathlib.Path | str,
+    dataflow_path: pathlib.Path | str,
     mapspace_path: Optional[pathlib.Path | str] = None,
     time_limit: Optional[float] = None,
     mip_gap: Optional[float] = None,
@@ -63,10 +65,13 @@ def solve_schedule(
     """Solve one SNN scheduling problem and return a JSON-friendly result."""
     layer_path = pathlib.Path(layer_path)
     arch_path = pathlib.Path(arch_path)
+    dataflow_path = pathlib.Path(dataflow_path)
     mapspace_path = pathlib.Path(mapspace_path) if mapspace_path else None
 
     prob = parse_snn_layer(layer_path)
     arch = parse_snn_arch(arch_path)
+    dataflow = parse_snn_dataflow(dataflow_path)
+    dataflow.validate_for_arch(arch)
     bitwidths = parse_snn_bitwidths(arch_path)
 
     mapspace = None
@@ -105,13 +110,12 @@ def solve_schedule(
         perm_levels,
     )
 
-    if arch.node_pe_spatial_split is not None:
+    if dataflow.node_pe_spatial_split is not None:
         add_pe_spatial_split_constraints(
-            model, x, prob, arch, SNN_GB_START_LEVEL
+            model, x, prob, dataflow, SNN_GB_START_LEVEL
         )
 
-    if arch.node_dim_capacity is not None:
-        add_node_capacity_constraints(model, x, prob, arch)
+    add_node_capacity_constraints(model, x, prob, dataflow)
 
     if arch.single_node:
         add_no_noc_level_constraints(
@@ -152,14 +156,30 @@ def solve_schedule(
 
     model.optimize()
 
-    return _collect_result(
-        model, prob, x, y, total_levels, dram_start,
-        perm_levels=perm_levels,
-        bitwidths=bitwidths if return_metrics else None,
-        noc_capacity=arch.mem_entries[MEM_NOC] if return_metrics else None,
-        zero_vars=spec.zero_vars,
-        gb_only_vars=spec.gb_only_vars,
-    )
+    try:
+        result = _collect_result(
+            model, prob, x, y, total_levels, dram_start,
+            perm_levels=perm_levels,
+            bitwidths=bitwidths if return_metrics else None,
+            noc_capacity=arch.mem_entries[MEM_NOC] if return_metrics else None,
+            zero_vars=spec.zero_vars,
+            gb_only_vars=spec.gb_only_vars,
+        )
+    finally:
+        # Explicit disposal, not left to GC: a long-lived worker process
+        # (e.g. the multinode sweep's Pool workers, each solving thousands
+        # of models sequentially) that never disposes its Gurobi Models can
+        # start reporting spurious infeasibility after enough accumulate --
+        # observed directly 2026-07-30 (a fresh process solved a config
+        # that an already-long-running process reported infeasible for).
+        model.dispose()
+
+    result["configs"] = {
+        "arch": str(arch.path),
+        "dataflow": str(dataflow.path),
+        "mapspace": str(mapspace.path) if mapspace is not None else None,
+    }
+    return result
 
 
 def _collect_result(
@@ -242,4 +262,58 @@ def _safe_attr(obj: Any, name: str) -> Optional[float]:
         return None
 
 
-__all__ = ["TrafficMode", "solve_schedule"]
+# CoSA's original default weights (w_u, w_tr, w_dl), matching
+# sweep_weights.py's COSA_REF_WEIGHTS -- no calibrated
+# outputs/weight_sweep/weight_results.json exists in this checkout, so
+# every winner-selection in this pipeline uses this same reference triple.
+_SCORE_W_U, _SCORE_W_TR, _SCORE_W_DL = 0.1, 1.0, 10.0
+
+
+def _mode_score(metrics: Dict[str, Any]) -> float:
+    util, sp, tt = metrics["util"], metrics["spatial_cost"], metrics["temporal_traffic"]
+    tr_sum = sum(util[v] * sp[v] * tt[v] for v in util)
+    util_sum = sum(util.values())
+    return _SCORE_W_U * util_sum + _SCORE_W_TR * tr_sum + _SCORE_W_DL * metrics["delay"]
+
+
+def solve_best_schedule(
+    layer_path: pathlib.Path | str,
+    arch_path: pathlib.Path | str,
+    dataflow_path: pathlib.Path | str,
+) -> tuple[TrafficMode, Dict[str, Any]]:
+    """Solve layer_path across every TrafficMode, keep the winner by the
+    same score sweep_weights.py/run_full_sweep.py use (lower is better),
+    and return (winning_mode, winning_result).
+
+    BASE is always feasible (unconstrained) but is not special-cased --
+    across all 155 real (arch, layer) pairs in this project's own trace
+    data, BASE never actually wins (verified 2026-07-19): every other
+    TrafficMode either is infeasible for these single_node archs or beats
+    BASE's score once feasible, since BASE's objective has no credit for
+    the psum/vmem DRAM-traffic elimination the other modes' loop-order
+    constraints unlock.
+
+    Raises ValueError if EVERY mode is infeasible (callers sweeping many
+    layers should catch this and record it, not let it abort the sweep).
+    """
+    best_mode, best_result, best_score = None, None, None
+    for mode in TrafficMode:
+        result = solve_schedule(
+            layer_path, arch_path, dataflow_path,
+            traffic_mode=mode, return_metrics=True,
+        )
+        if not (result.get("has_solution") and result.get("metrics")):
+            continue
+        score = _mode_score(result["metrics"])
+        if best_score is None or score < best_score:
+            best_mode, best_result, best_score = mode, result, score
+
+    if best_result is None:
+        raise ValueError(
+            f"solve_best_schedule: infeasible for {layer_path} against "
+            f"{arch_path}/{dataflow_path} (every TrafficMode infeasible)"
+        )
+    return best_mode, best_result
+
+
+__all__ = ["TrafficMode", "solve_schedule", "solve_best_schedule"]

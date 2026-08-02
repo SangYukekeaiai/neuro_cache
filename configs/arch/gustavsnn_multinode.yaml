@@ -1,0 +1,23 @@
+arch:
+  bitwidths:
+    BW_WEIGHT: 8
+    BW_PSUM:   16
+    BW_VMEM:   32
+    DRAM_LATENCY: 17
+
+  # 128-node baseline. The single-node design has no reported local-buffer
+  # byte capacity; the shared GB uses a 1 MiB-per-tensor reference capacity.
+  single_node: false
+  storage:
+    - name: NodeLevel
+      instances: 128
+      pe:
+        num_pes: 64
+    - name: NoCLevel
+      entries:
+        weight: 1048576
+        psum:   1048576
+        vmem:   1048576
+      instances: 1
+    - name: OffChip
+      instances: 1

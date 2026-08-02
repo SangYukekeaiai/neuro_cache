@@ -10,7 +10,7 @@ paper's own Fig. 8 compression walkthrough.
 
 This deployment fixes: COUT node-level spatial capacity 16, matching the
 paper's own 16-TPPE evaluated config, full
-NodeLevel residency for KH/KW/CIN/T (see configs/arch/loas.yaml), and
+NodeLevel residency for KH/KW/CIN/T (see configs/dataflow/loas.yaml), and
 DENSE weight storage (no column-wise bitmask compression on B) -- all
 explicit departures from Yin, Kim, Wu & Panda, "LoAS: Fully
 Temporal-Parallel Dataflow for Dual-Sparse Spiking Neural Networks"

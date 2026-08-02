@@ -34,6 +34,10 @@ DEFAULT_ARCH_YAML = {
     "gustavsnn": "configs/arch/gustavsnn.yaml",
     "prosperity": "configs/arch/prosperity.yaml",
 }
+DEFAULT_DATAFLOW_YAML = {
+    name: f"configs/dataflow/{name}.yaml"
+    for name in DEFAULT_ARCH_YAML
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -88,7 +92,8 @@ def main() -> int:
                 row = {"arch": arch_name, "trace_dir": trace_dir_name, "layer": layer_name}
                 try:
                     artifact = tracegen.solve_and_cache_schedule(
-                        arch_name, arch_yaml, trace_dir_name, layer_name,
+                        arch_name, arch_yaml, DEFAULT_DATAFLOW_YAML[arch_name],
+                        trace_dir_name, layer_name,
                         meta, next_cin, cache_dir,
                     )
                     row["status"] = "OK"

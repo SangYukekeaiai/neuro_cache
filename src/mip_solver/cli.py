@@ -18,7 +18,8 @@ from mip_solver.solve import solve_schedule
 
 
 DEFAULT_LAYER = "configs/workloads/sample_snn_layer.yaml"
-DEFAULT_ARCH = "configs/arch/snn_arch.yaml"
+DEFAULT_ARCH = "configs/arch/spinalflow.yaml"
+DEFAULT_DATAFLOW = "configs/dataflow/spinalflow.yaml"
 DEFAULT_MAPSPACE = "configs/mapspace/mapspace.yaml"
 DEFAULT_OUT = "outputs/schedule.json"
 
@@ -51,6 +52,9 @@ def _build_parser() -> argparse.ArgumentParser:
     solve.add_argument("--layer", default=DEFAULT_LAYER, help="layer YAML path")
     solve.add_argument("--arch", default=DEFAULT_ARCH, help="architecture YAML path")
     solve.add_argument(
+        "--dataflow", default=DEFAULT_DATAFLOW, help="dataflow YAML path"
+    )
+    solve.add_argument(
         "--mapspace",
         default=DEFAULT_MAPSPACE,
         help="mapspace YAML path; use an empty string to skip it",
@@ -70,6 +74,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     enum_p.add_argument("--layer", default=DEFAULT_LAYER, help="layer YAML path")
     enum_p.add_argument("--arch", default=DEFAULT_ARCH, help="architecture YAML path")
+    enum_p.add_argument(
+        "--dataflow", default=DEFAULT_DATAFLOW, help="dataflow YAML path"
+    )
     enum_p.add_argument(
         "--mapspace",
         default=DEFAULT_MAPSPACE,
@@ -105,6 +112,7 @@ def _run_solve(args: argparse.Namespace) -> int:
         result = solve_schedule(
             layer_path=args.layer,
             arch_path=args.arch,
+            dataflow_path=args.dataflow,
             mapspace_path=mapspace,
             time_limit=args.time_limit,
             mip_gap=args.mip_gap,
@@ -126,6 +134,7 @@ def _run_enumerate(args: argparse.Namespace) -> int:
         result = enumerate_modes(
             layer_path=args.layer,
             arch_path=args.arch,
+            dataflow_path=args.dataflow,
             mapspace_path=mapspace,
             w_u=args.w_u,
             w_tr=args.w_tr,

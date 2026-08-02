@@ -11,7 +11,7 @@ every other arch.
 NodeLevel residency governed by this module is temporal-only (k=1) --
 genuine spatial (k=0) PE-parallel fanout at level 0 (e.g. SpinalFlow's
 128-wide COUT) is expressed separately via the pre-existing
-arch.node_pe_spatial_split mechanism (model/constraints/node_level.py),
+dataflow.node_pe_spatial_split mechanism (constraints/node_level.py),
 which is already bounded by num_pes. A dimension present in
 node_pe_spatial_split is skipped here entirely -- its level-0 assignment is
 that mechanism's business, not this one's. For every other dimension,
@@ -25,9 +25,8 @@ compute-cycle counting -- reconstructing a node's real input sequence and
 deriving cycles/addresses from it, separate later logic -- working from a
 clean, deterministic spatial-vs-temporal role per dimension.
 
-Only called when arch.node_dim_capacity is not None. Once specified at all,
-the mapping is a *complete* per-dimension spec covering all seven SNN
-dimensions, three-way per dim (see SNNArch.node_dim_capacity docstring):
+The dataflow mapping is a complete per-dimension specification covering all
+seven SNN dimensions, with three forms:
 
   dim present, int size  -- resident factor product at level 0 is the
                             MAXIMUM achievable product of a sub-multiset of
@@ -41,7 +40,7 @@ dimensions, three-way per dim (see SNNArch.node_dim_capacity docstring):
                             equality constraint -- there is no real MIP
                             freedom in *which* dims are node-resident, only
                             in how any leftover is ordered at DRAM.
-  dim present, None      -- dimension forced entirely resident at level 0
+  dim present, full      -- dimension forced entirely resident at level 0
                             (the cap=infinity special case of the rule above).
   dim absent              -- dimension barred from level 0 entirely (the
                             cap=1 special case: max achievable product <=1
@@ -56,7 +55,7 @@ from typing import Dict, List
 
 from gurobipy import Model
 
-from parsers.arch import SNNArch
+from parsers.dataflow import FULL, SNNDataflow
 from parsers.layer import SNNProb
 
 logger = logging.getLogger(__name__)
@@ -82,7 +81,7 @@ def add_node_capacity_constraints(
     m:    Model,
     x:    Dict,
     prob: SNNProb,
-    arch: SNNArch,
+    dataflow: SNNDataflow,
 ) -> None:
     """Add per-dimension NodeLevel (level 0) capacity constraints.
 
@@ -90,23 +89,18 @@ def add_node_capacity_constraints(
         m:    Gurobi Model (variables already added).
         x:    X variable dict from create_schedule_vars.
         prob: Parsed SNN layer (prime-factor lists, dimension name map).
-        arch: Parsed SNN arch. arch.node_dim_capacity must not be None --
-              callers are expected to guard with
-              `if arch.node_dim_capacity is not None:`, matching the
-              existing add_pe_spatial_split_constraints call-site pattern
-              in solver.py.
+        dataflow: Parsed complete NodeLevel mapping specification.
     """
-    capacity = arch.node_dim_capacity
-    assert capacity is not None, "called without node_dim_capacity defined"
+    capacity = dataflow.node_dim_capacity
 
-    spatial_split = arch.node_pe_spatial_split or {}
+    spatial_split = dataflow.node_pe_spatial_split or {}
     pf = prob.prob_factors
 
     for dim_name, j in prob.prob_name_idx_dict.items():
         if dim_name in spatial_split:
             # Governed by the separate spatial-fanout mechanism instead --
             # leave both its spatial and temporal assignment untouched. This
-            # dim may also appear in arch.node_dim_capacity purely for
+            # dim also appears in node_dim_capacity purely for
             # documentation (e.g. SpinalFlow's spinalflow.yaml lists COUT in
             # both, since COUT genuinely is part of the node-level dimension
             # set even though it's realized as spatial fanout, not temporal
@@ -132,7 +126,7 @@ def add_node_capacity_constraints(
 
         cap = capacity[dim_name]
 
-        if cap is None:
+        if cap == FULL:
             # Forced fully resident: every factor of this dim must sit at
             # level 0 (column-sum==1 in assignment.py already guarantees
             # each factor is assigned exactly once overall).

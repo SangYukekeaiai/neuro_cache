@@ -1,21 +1,32 @@
 #!/usr/bin/env python3
-"""Stage 2 of the generate-once weight-trace pipeline: for one (arch,
-trace_dir, layer), load its Stage-1-cached schedule (no re-solving, no
-Gurobi) and reconstruct a range of real captured samples against it,
-persisting one JSON per sample to
-outputs/weight_traces/<arch>/<trace_dir>/<layer_name>/sample_<i5>.json.
+"""Stage 2 of the generate-once weight-trace pipeline: load a Stage-1-cached
+schedule (no re-solving, no Gurobi) and reconstruct real captured samples
+against it through the arch's native C++ bridge, persisting one JSON per
+sample to outputs/weight_traces/<arch>/<trace_dir>/<layer_name>/sample_<i5>.json.gz.
 
-This is the embarrassingly-parallel stage: every sample is independent
-given the cached schedule, so --workers fans out across local CPU cores
-via multiprocessing. Per the design doc's own estimate (~753 CPU-hours
-for the full sweep, ~5.2 hours on one 144-core node), this comfortably
-fits on a single node -- no slurm array/job-list scaffolding is needed,
-just --sample-start/--sample-count if you do want to split work across
-multiple jobs by hand. Use --canonical-samples instead of
---sample-start/--sample-count to generate the fixed, reproducible
-100-sample subset (tracegen.canonical_sample_indices) rather than an
-arbitrary range -- the same subset scripts/generate_weight_traces_canonical100.py
-uses, so results agree no matter which entry point produced them.
+Two modes:
+
+  One explicit combo (default): reconstructs --n-samples (or an explicit
+  --sample-start/--sample-count range) for one --arch/--trace-dir/--layer.
+  Parallelizes by chunking SAMPLES across --workers -- the trace for that
+  one layer is loaded once per worker (via Pool initargs, not per task) and
+  every worker reconstructs a different slice of the same sample list.
+
+  --all-layers: reconstructs the same sample selection across every valid
+  layer of both trace dirs for one --arch. Parallelizes by TASK (one
+  (trace_dir, layer) per worker) instead, in two passes -- the first
+  FIRST_PASS_SAMPLES samples across every layer, then the rest -- so a
+  coverage milestone (some samples for every layer) lands before spending
+  remaining time going deeper on earlier layers. Each task chunks its own
+  samples into SAMPLE_CHUNK_SIZE-sized groups to bound peak memory (a dense
+  layer's full per-tile weight-address list for many samples at once can
+  OOM); run via srun on a compute node, not the login node, timing on real
+  data showed 2-5s/sample per (arch, layer).
+
+Neither mode contains any native-bridge dispatch of its own -- both call
+tracegen.reconstruct_samples, the single consolidated dispatcher, and
+tracegen.save_weight_trace for persistence. This script owns only CLI
+parsing, which combos/samples to iterate, and worker-pool setup.
 
 See dump/docs/superpowers/specs/2026-07-18-weight-trace-generation-design.md.
 """
@@ -23,44 +34,47 @@ See dump/docs/superpowers/specs/2026-07-18-weight-trace-generation-design.md.
 from __future__ import annotations
 
 import argparse
+import json
 import multiprocessing
 import pathlib
 import sys
+import time
 import traceback
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import List, Sequence
 
 sys.path.insert(0, "src")
 
 import tracegen
-from archmodels.trace import load_layer_trace
+from archmodels import ARCH_NATIVE_BRIDGES
+from archmodels.trace import load_layer_trace, valid_layer_names
 
 DEFAULT_TRACE_ROOT = pathlib.Path("/u/yyu9/neuro_cache_trace/input_trace/loas")
+DEFAULT_TRACE_DIRS = ["resnet19_T4_all", "vgg16_T4_all"]
 
-# Archs with a native C++ reconstruction path (src/archmodels/<arch>/native/),
-# each verified byte-identical against tracegen.reconstruct_samples_for_schedule
-# on real data before being added here. Grows as more archs get ported (see
-# log/2026-07-26-workflow-optimization-plan.md); a plain Python module path
-# string, not an import, so archs without a built binary yet don't break
-# this script's import for the archs that do have one.
-_NATIVE_BRIDGE_MODULES = {
-    "gustavsnn": "archmodels.gustavsnn.native_bridge",
-    "spinalflow": "archmodels.spinalflow.native_bridge",
-    "loas": "archmodels.loas.native_bridge",
-    "ptb": "archmodels.ptb.native_bridge",
-    "prosperity": "archmodels.prosperity.native_bridge",
-}
+# --all-layers only: chunk size for regenerate_layer's inner loop (bounds
+# peak memory -- the native call holds every requested sample's full
+# per-tile weight-address list in memory at once; a dense layer at
+# chunk_size=100 OOM'd on real data, see log/2026-07-26-workflow-optimization-plan.md).
+SAMPLE_CHUNK_SIZE = 10
+# --all-layers only: samples covered in the first pass across every layer,
+# before the second pass fills in the rest of the requested samples.
+FIRST_PASS_SAMPLES = 10
 
 
-def _native_reconstruct_fn(arch_name: str):
-    """Returns reconstruct_samples_native for arch_name, or None if this
-    arch has no native path (yet) -- caller falls back to the Python
-    Protocol dispatch in that case."""
-    module_name = _NATIVE_BRIDGE_MODULES.get(arch_name)
-    if module_name is None:
-        return None
-    import importlib
-    return importlib.import_module(module_name).reconstruct_samples_native
+# ----------------------------------------------------------------------
+# Shared: sample selection
+# ----------------------------------------------------------------------
 
+def _resolve_samples(args: argparse.Namespace) -> List[int]:
+    if args.sample_count is not None:
+        return list(range(args.sample_start, args.sample_start + args.sample_count))
+    return tracegen.sample_indices(n=args.n_samples, seed=args.seed)
+
+
+# ----------------------------------------------------------------------
+# Mode 1: one explicit (arch, trace_dir, layer) combo, sample-chunked workers
+# ----------------------------------------------------------------------
 
 # Populated once per worker process by _init_worker, read by _process_chunk.
 # Passing `trace` this way (via Pool initargs, set once per worker) rather
@@ -70,8 +84,7 @@ def _native_reconstruct_fn(arch_name: str):
 _STATE = {}
 
 
-def _init_worker(model_cls, trace, tiles, arch_name, trace_dir_name, layer_name, workload_dims, dram_num_steps, out_dir):
-    _STATE["model"] = model_cls()
+def _init_worker(trace, tiles, arch_name, trace_dir_name, layer_name, workload_dims, dram_num_steps, out_dir):
     _STATE["trace"] = trace
     _STATE["tiles"] = tiles
     _STATE["arch_name"] = arch_name
@@ -83,23 +96,11 @@ def _init_worker(model_cls, trace, tiles, arch_name, trace_dir_name, layer_name,
 
 
 def _process_chunk(sample_indices: Sequence[int]) -> int:
-    native_fn = _native_reconstruct_fn(_STATE["arch_name"])
-    if native_fn is not None:
-        # No model needed -- the C++ side embeds the arch's algorithm
-        # directly, no Protocol dispatch. Chunking samples across
-        # --workers still gives real parallelism: each worker runs its
-        # own native subprocess concurrently.
-        layer_traces = native_fn(
-            _STATE["trace"], _STATE["tiles"], sample_indices,
-            _STATE["arch_name"], _STATE["trace_dir_name"], _STATE["layer_name"],
-            _STATE["workload_dims"], _STATE["dram_num_steps"],
-        )
-    else:
-        layer_traces = tracegen.reconstruct_samples_for_schedule(
-            _STATE["model"], _STATE["trace"], _STATE["tiles"], sample_indices,
-            _STATE["arch_name"], _STATE["trace_dir_name"], _STATE["layer_name"],
-            _STATE["workload_dims"], _STATE["dram_num_steps"],
-        )
+    layer_traces = tracegen.reconstruct_samples(
+        _STATE["arch_name"], _STATE["trace"], _STATE["tiles"], sample_indices,
+        _STATE["trace_dir_name"], _STATE["layer_name"],
+        _STATE["workload_dims"], _STATE["dram_num_steps"],
+    )
     for lt in layer_traces:
         out_path = (
             _STATE["out_dir"] / _STATE["arch_name"] / _STATE["trace_dir_name"]
@@ -116,41 +117,7 @@ def _chunks(seq: List[int], n_chunks: int) -> List[List[int]]:
     return [seq[i : i + size] for i in range(0, len(seq), size)]
 
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--arch", required=True, choices=list(tracegen.ARCH_MODELS))
-    p.add_argument("--trace-dir", required=True, help="e.g. vgg16_T4_all")
-    p.add_argument("--layer", required=True, help="e.g. layer_01_features_3")
-    p.add_argument("--trace-root", default=str(DEFAULT_TRACE_ROOT))
-    p.add_argument("--schedule-cache", default="outputs/schedules")
-    p.add_argument("--out-dir", default="outputs/weight_traces")
-    p.add_argument("--sample-start", type=int, default=0)
-    p.add_argument("--sample-count", type=int)
-    p.add_argument(
-        "--canonical-samples", action="store_true",
-        help="Use the fixed canonical 100-sample subset "
-             "(configs/sampling/sample_indices.json, seed 0) instead of "
-             "--sample-start/--sample-count.",
-    )
-    p.add_argument(
-        "--n-samples", type=int,
-        help="Use a fixed, reproducible n-sample subset "
-             "(tracegen.random_sample_indices: the canonical 100 plus "
-             "n-100 more, seeded by --seed) instead of "
-             "--sample-start/--sample-count.",
-    )
-    p.add_argument("--seed", type=int, default=0, help="Seed for --n-samples.")
-    p.add_argument("--workers", type=int, default=1)
-    p.add_argument("--force", action="store_true", help="Regenerate samples even if already present.")
-    args = p.parse_args()
-    n_modes = sum([args.canonical_samples, args.sample_count is not None, args.n_samples is not None])
-    if n_modes != 1:
-        p.error("specify exactly one of --canonical-samples, --sample-count, or --n-samples")
-    return args
-
-
-def main() -> int:
-    args = parse_args()
+def run_one_combo(args: argparse.Namespace) -> int:
     trace_root = pathlib.Path(args.trace_root)
     schedule_path = pathlib.Path(args.schedule_cache) / args.arch / args.trace_dir / f"{args.layer}.json"
     if not schedule_path.exists():
@@ -160,12 +127,7 @@ def main() -> int:
     out_dir = pathlib.Path(args.out_dir)
     layer_out_dir = out_dir / args.arch / args.trace_dir / args.layer
 
-    if args.canonical_samples:
-        requested = tracegen.canonical_sample_indices()
-    elif args.n_samples is not None:
-        requested = tracegen.random_sample_indices(args.n_samples, seed=args.seed)
-    else:
-        requested = list(range(args.sample_start, args.sample_start + args.sample_count))
+    requested = _resolve_samples(args)
     if args.force:
         todo = requested
     else:
@@ -179,14 +141,13 @@ def main() -> int:
 
     artifact, prob, tiles = tracegen.load_schedule(schedule_path)
     trace = load_layer_trace(trace_root / args.trace_dir, args.layer, mmap=True)
-    model_cls = tracegen.ARCH_MODELS[args.arch]
 
     print(f"Reconstructing {len(todo)} sample(s) of {args.arch}/{args.trace_dir}/{args.layer} "
           f"({len(tiles)} tiles/sample) with {args.workers} worker(s)")
 
     try:
         if args.workers <= 1:
-            _init_worker(model_cls, trace, tiles, args.arch, args.trace_dir, args.layer,
+            _init_worker(trace, tiles, args.arch, args.trace_dir, args.layer,
                          artifact.workload["problem"], artifact.dram_num_steps, out_dir)
             n_done = _process_chunk(todo)
         else:
@@ -194,7 +155,7 @@ def main() -> int:
             with multiprocessing.Pool(
                 processes=args.workers,
                 initializer=_init_worker,
-                initargs=(model_cls, trace, tiles, args.arch, args.trace_dir, args.layer,
+                initargs=(trace, tiles, args.arch, args.trace_dir, args.layer,
                           artifact.workload["problem"], artifact.dram_num_steps, out_dir),
             ) as pool:
                 n_done = sum(pool.map(_process_chunk, chunks))
@@ -204,6 +165,142 @@ def main() -> int:
 
     print(f"Wrote {n_done} sample(s) to {layer_out_dir}")
     return 0
+
+
+# ----------------------------------------------------------------------
+# Mode 2: --all-layers, task-chunked workers (one (trace_dir, layer) each)
+# ----------------------------------------------------------------------
+
+def _layers_for(trace_root: pathlib.Path, trace_dir_name: str) -> List[str]:
+    with open(trace_root / trace_dir_name / "meta.json") as fh:
+        meta = json.load(fh)
+    return valid_layer_names(meta)
+
+
+def _all_layer_targets(trace_root: pathlib.Path, trace_dirs: Sequence[str]):
+    return [
+        (trace_dir_name, layer_name)
+        for trace_dir_name in trace_dirs
+        for layer_name in _layers_for(trace_root, trace_dir_name)
+    ]
+
+
+def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices):
+    """Reconstruct and save whichever of `indices` aren't already saved for
+    this (arch, trace_dir, layer). Returns (num_done, seconds)."""
+    out_dir = out_root / arch_name / trace_dir_name / layer_name
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    missing = [i for i in indices if not (out_dir / f"sample_{i:05d}.json.gz").exists()]
+    if not missing:
+        return 0, 0.0
+
+    sched_path = schedule_cache / arch_name / trace_dir_name / f"{layer_name}.json"
+    t0 = time.time()
+    artifact, prob, tiles = tracegen.load_schedule(sched_path)
+    trace = load_layer_trace(trace_root / trace_dir_name, layer_name, mmap=True)
+    for chunk_start in range(0, len(missing), SAMPLE_CHUNK_SIZE):
+        chunk = missing[chunk_start:chunk_start + SAMPLE_CHUNK_SIZE]
+        traces = tracegen.reconstruct_samples(
+            arch_name, trace, tiles, chunk, trace_dir_name, layer_name,
+            artifact.workload["problem"], artifact.dram_num_steps,
+        )
+        for t in traces:
+            tracegen.save_weight_trace(t, out_dir / f"sample_{t.sample_idx:05d}.json.gz")
+    return len(missing), time.time() - t0
+
+
+def _regenerate_one_layer_task(task) -> tuple:
+    arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices = task
+    n, dt = _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices)
+    return trace_dir_name, layer_name, n, dt
+
+
+def _run_pass(arch_name, trace_root, schedule_cache, out_root, trace_dirs, indices, label, max_workers):
+    targets = _all_layer_targets(trace_root, trace_dirs)
+    print(f"=== {arch_name}: {label} ({len(indices)} samples), "
+          f"{len(targets)} layers, {max_workers} workers ===", flush=True)
+    tasks = [
+        (arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices)
+        for trace_dir_name, layer_name in targets
+    ]
+
+    with ProcessPoolExecutor(max_workers=max_workers) as pool:
+        futures = {pool.submit(_regenerate_one_layer_task, task): task for task in tasks}
+        for future in as_completed(futures):
+            _, task_trace_dir_name, task_layer_name, _, _, _, _ = futures[future]
+            try:
+                trace_dir_name, layer_name, n, dt = future.result()
+            except Exception as exc:  # noqa: BLE001 -- a real compute-node failure for one layer shouldn't sink the rest
+                print(f"  {task_trace_dir_name}/{task_layer_name}: FAILED ({exc!r})", flush=True)
+                continue
+            if n == 0:
+                print(f"  {trace_dir_name}/{layer_name}: already complete, skip", flush=True)
+            else:
+                print(f"  {trace_dir_name}/{layer_name}: {n} samples in {dt:.1f}s "
+                      f"({dt / n:.2f}s/sample)", flush=True)
+
+
+def run_all_layers(args: argparse.Namespace) -> int:
+    import os
+
+    trace_root = pathlib.Path(args.trace_root)
+    schedule_cache = pathlib.Path(args.schedule_cache)
+    out_root = pathlib.Path(args.out_dir)
+    max_workers = args.workers if args.workers > 0 else len(os.sched_getaffinity(0))
+
+    indices = _resolve_samples(args)
+    first_pass = indices[:FIRST_PASS_SAMPLES]
+    _run_pass(args.arch, trace_root, schedule_cache, out_root, args.trace_dirs,
+              first_pass, f"pass 1, first {len(first_pass)}", max_workers)
+    _run_pass(args.arch, trace_root, schedule_cache, out_root, args.trace_dirs,
+              indices, "pass 2, remaining", max_workers)
+    return 0
+
+
+# ----------------------------------------------------------------------
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--arch", required=True, choices=sorted(ARCH_NATIVE_BRIDGES))
+    p.add_argument("--all-layers", action="store_true",
+                   help="Reconstruct every valid layer of --trace-dirs instead of one --trace-dir/--layer combo.")
+    p.add_argument("--trace-dir", help="e.g. vgg16_T4_all (single-combo mode only)")
+    p.add_argument("--layer", help="e.g. layer_01_features_3 (single-combo mode only)")
+    p.add_argument("--trace-dirs", nargs="+", default=DEFAULT_TRACE_DIRS,
+                   help="--all-layers mode only (default: both).")
+    p.add_argument("--trace-root", default=str(DEFAULT_TRACE_ROOT))
+    p.add_argument("--schedule-cache", default="outputs/schedules")
+    p.add_argument("--out-dir", default="outputs/weight_traces")
+    p.add_argument("--sample-start", type=int, default=0)
+    p.add_argument("--sample-count", type=int,
+                   help="Explicit sample range (single-combo mode only); mutually exclusive with --n-samples.")
+    p.add_argument("--n-samples", type=int, default=100,
+                   help="Fixed, reproducible n-sample subset (tracegen.sample_indices); "
+                        "n=100 (the default) is the canonical subset. Default: 100.")
+    p.add_argument("--seed", type=int, default=0, help="Seed for the samples beyond the canonical 100.")
+    p.add_argument("--workers", type=int, default=1)
+    p.add_argument("--force", action="store_true", help="Regenerate samples even if already present.")
+    args = p.parse_args()
+
+    if args.sample_count is not None and args.n_samples != 100:
+        p.error("specify --sample-count or --n-samples, not both")
+    if args.all_layers:
+        if args.sample_count is not None:
+            p.error("--sample-count is not supported with --all-layers; use --n-samples")
+        if args.trace_dir or args.layer:
+            p.error("--trace-dir/--layer are not used with --all-layers; use --trace-dirs")
+    else:
+        if not args.trace_dir or not args.layer:
+            p.error("--trace-dir and --layer are required unless --all-layers is set")
+    return args
+
+
+def main() -> int:
+    args = parse_args()
+    if args.all_layers:
+        return run_all_layers(args)
+    return run_one_combo(args)
 
 
 if __name__ == "__main__":

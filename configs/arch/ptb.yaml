@@ -1,0 +1,30 @@
+arch:
+  # RECONSTRUCTED 2026-07-20: the original configs/arch/ptb.yaml was lost
+  # from disk (it was always gitignore'd, never committed -- see
+  # log/2026-07-14-archmodel-ptb-pilot.md's Task 4/Step 5). Rebuilt from
+  # that same log's field-by-field documentation of every value below;
+  # not verified byte-identical to the original file. If a fresh solve
+  # against this file doesn't reproduce outputs/schedules/ptb/...'s
+  # currently-cached dram_num_steps, treat this reconstruction (not the
+  # cached schedule) as the suspect.
+  bitwidths:
+    BW_WEIGHT: 8
+    BW_PSUM:   16
+    BW_VMEM:   32
+    DRAM_LATENCY: 17
+
+  # single_node: PTB's systolic array is fed directly from its own
+  # buffers -- no inter-node NoC (mirrors spinalflow.yaml/loas.yaml).
+  single_node: true
+
+  storage:             # innermost first
+    - name: NodeLevel
+      instances: 1
+      pe:
+        num_pes: 128
+    - name: NoCLevel
+      # entries omitted: no physical Global Buffer exists (single_node:
+      # true), so there's nothing real to size.
+      instances: 1
+    - name: OffChip
+      instances: 1

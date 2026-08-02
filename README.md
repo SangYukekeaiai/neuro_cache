@@ -19,11 +19,12 @@ external `neuro_cache_trace` tool.
 
 ```text
 configs/
-  arch/snn_arch.yaml              hardware memory hierarchy and bit widths
+  arch/                           hardware topology, capacities, and bit widths
+  dataflow/                       NodeLevel dimension mapping constraints
   mapspace/mapspace.yaml          dimensions eligible for spatial mapping
   workloads/sample_snn_layer.yaml sample SNN layer dimensions
 src/
-  parsers/                        YAML parsers for layer, arch, bit widths, mapspace
+  parsers/                        YAML parsers for layer, arch, dataflow, bit widths, mapspace
   mip_solver/                     constants, variables, constraints, objectives, cli
   mip_solver/solve.py             model assembly, solve, schedule extraction
   nocsim/                         NoC/DRAM transaction generation + compute latency
@@ -107,6 +108,18 @@ arch:
       instances: 1
 ```
 
+Dataflow YAML:
+
+```yaml
+dataflow:
+  node_dim_capacity:
+    KH: 4
+    KW: 4
+    CIN: full
+    COUT: {spatial: 128}
+    T: full
+```
+
 Mapspace YAML:
 
 ```yaml
@@ -121,7 +134,8 @@ Solve the sample layer:
 ```bash
 python -m mip_solver solve \
   --layer configs/workloads/sample_snn_layer.yaml \
-  --arch configs/arch/snn_arch.yaml \
+  --arch configs/arch/spinalflow.yaml \
+  --dataflow configs/dataflow/spinalflow.yaml \
   --mapspace configs/mapspace/mapspace.yaml \
   --out outputs/sample_schedule.json
 ```
@@ -138,7 +152,7 @@ Replay the solved schedule through the NoC simulator:
 python -m nocsim.sim \
   --schedule outputs/sample_schedule.json \
   --layer configs/workloads/sample_snn_layer.yaml \
-  --arch configs/arch/snn_arch.yaml \
+  --arch configs/arch/spinalflow.yaml \
   --out outputs/tc.csv
 ```
 

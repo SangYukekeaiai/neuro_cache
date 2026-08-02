@@ -1,0 +1,25 @@
+arch:
+  bitwidths:
+    BW_WEIGHT: 8
+    BW_PSUM: 16
+    BW_VMEM: 32
+    DRAM_LATENCY: 17
+  single_node: false
+  storage:
+  - name: NodeLevel
+    instances: 64
+    pe:
+      num_pes: 16
+    local_buffer:
+      entries:
+        weight: 3840
+        psum: 128
+        vmem: 128
+  - name: NoCLevel
+    entries:
+      weight: 491520
+      psum: 16384
+      vmem: 16384
+    instances: 1
+  - name: OffChip
+    instances: 1

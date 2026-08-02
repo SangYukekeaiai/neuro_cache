@@ -1,0 +1,9 @@
+dataflow:
+  # LoAS requires the complete reduction row and tick range in a node visit.
+  # One TPPE handles each spatial output channel. HO/WO are barred.
+  node_dim_capacity:
+    KH:   full
+    KW:   full
+    CIN:  full
+    T:    full
+    COUT: {spatial: 4}

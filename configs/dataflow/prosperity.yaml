@@ -1,0 +1,9 @@
+dataflow:
+  # Prosperity maps its 128 output columns spatially and consumes the
+  # capped KH/KW/HO/WO row tile sequentially. CIN and T are barred.
+  node_dim_capacity:
+    KH:   4
+    KW:   4
+    COUT: {spatial: 8}
+    HO:   4
+    WO:   4

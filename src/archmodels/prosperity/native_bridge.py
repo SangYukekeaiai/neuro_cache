@@ -1,4 +1,4 @@
-"""Python bridge to the compiled prosperitygen C++ binary (native/), a
+"""Python bridge to the compiled prosperitygen C++ binary, a
 port of reconstruct_tile_sequence_batch + _prosparsity_process +
 event_to_address + event_to_ticks. See
 src/archmodels/gustavsnn/native_bridge.py for the pattern this mirrors
@@ -21,7 +21,7 @@ from parsers.layer import DIM_CIN, DIM_COUT, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_
 from .. import NodeTileSpec
 
 _HERE = pathlib.Path(__file__).resolve().parent
-_BINARY = _HERE / "native" / "prosperitygen"
+_BINARY = _HERE / "prosperitygen"
 
 
 def _pack_task(trace_shape: Sequence[int], tiles: Sequence[NodeTileSpec], sample_indices: Sequence[int]) -> bytes:
@@ -74,8 +74,8 @@ def reconstruct_samples_native(
 ):
     """Native-C++ equivalent of tracegen.reconstruct_samples_for_schedule,
     specialized to Prosperity. Same LayerWeightTrace output shape as the
-    Python path. Requires native/prosperitygen to be built first
-    (cd native && make)."""
+    Python path. Requires prosperitygen to be built first
+    (make in this directory)."""
     from tracegen import LayerWeightTrace, TileWeightTrace
 
     if not _BINARY.exists():

@@ -9,34 +9,7 @@ arch:
   # global cache / bitmask buffers -- no inter-node NoC, so no physical
   # Global Buffer level at this scope (mirrors spinalflow.yaml/ptb.yaml's
   # reasoning).
-  #
-  # node_dim_capacity: this deployment's node-level dimension set.
-  #
-  # KH/KW/CIN forced fully resident (null, not capped like SpinalFlow/
-  # PTB's KH/KW=4): this deployment requires the ENTIRE reduction row
-  # (every k = (kh,kw,cin)) to be visible at once to build one complete
-  # silent-neuron-compressed fiber/bitmask (Fig. 8) -- there is no
-  # partial-row compression.
-  #
-  # T forced fully resident (null): LoAS's FTP dataflow spatially unrolls
-  # every timestep in hardware (Algorithm 1's parallel-for t), so a node
-  # visit always covers the whole T range -- T is never split across
-  # multiple node visits in this deployment.
-  #
-  # COUT uses {spatial: 16} -- one TPPE per output channel, matching the
-  # paper's own evaluated config (Section V: 16 TPPEs), validated against
-  # pe.num_pes (V1).
-  #
-  # HO/WO absent for the same reason as SpinalFlow/PTB -- they select
-  # which output pixel is computed and never vary within one node-level
-  # tile, so they live at the DRAM permutation level (MIP-decided).
   single_node: true
-  node_dim_capacity:
-    KH:   null
-    KW:   null
-    CIN:  null
-    T:    null
-    COUT: {spatial: 16}
 
   storage:             # innermost first
     - name: NodeLevel

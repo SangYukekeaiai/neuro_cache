@@ -24,35 +24,28 @@ Two independent artifacts, matching the two-stage design
 from __future__ import annotations
 
 import gzip
+import importlib
 import json
 import os
 import pathlib
+import random
 import tempfile
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import yaml
 
-from archmodels import ArchComputeModel, NodeTileSpec
-from archmodels.gustavsnn.model import GustavSNNComputeModel
-from archmodels.loas.model import LoASComputeModel
-from archmodels.prosperity.model import ProsperityComputeModel
-from archmodels.ptb.model import PTBComputeModel
-from archmodels.spinalflow.model import SpinalFlowComputeModel
+from archmodels import ARCH_NATIVE_BRIDGES, NodeTileSpec
 from archmodels.trace import build_workload_from_trace
-from mip_solver.solve import TrafficMode, solve_schedule
 from nocsim.schedule.decode import schedule_from_strategy
 from nocsim.schedule.tiles import iter_node_tiles
 from parsers.layer import SNNProb
 
-ARCH_MODELS = {
-    "loas": LoASComputeModel,
-    "spinalflow": SpinalFlowComputeModel,
-    "ptb": PTBComputeModel,
-    "gustavsnn": GustavSNNComputeModel,
-    "prosperity": ProsperityComputeModel,
-}
-
+# mip_solver is imported lazily, inside solve_and_cache_schedule only:
+# mip_solver.solve pulls in gurobipy at module load, and everything else
+# in this module (loading/reconstructing an already-cached schedule) has
+# no need for Gurobi at all -- see dump/python_reference/cachesim/sweep.py's
+# own deferred-import comment for the same reasoning applied elsewhere.
 
 @dataclass
 class ScheduleArtifact:
@@ -64,21 +57,7 @@ class ScheduleArtifact:
     workload: Dict[str, Any]
     result: Dict[str, Any]  # raw solve_schedule() output (has_solution, strategy, ...)
     dram_num_steps: int
-    mode: str = TrafficMode.BASE.value  # winning TrafficMode's .value; default keeps old caches loadable
-
-
-# CoSA's original default weights (w_u, w_tr, w_dl), matching
-# sweep_weights.py's COSA_REF_WEIGHTS -- no calibrated
-# outputs/weight_sweep/weight_results.json exists in this checkout, so
-# every winner-selection in this pipeline uses this same reference triple.
-_SCORE_W_U, _SCORE_W_TR, _SCORE_W_DL = 0.1, 1.0, 10.0
-
-
-def _mode_score(metrics: Dict[str, Any]) -> float:
-    util, sp, tt = metrics["util"], metrics["spatial_cost"], metrics["temporal_traffic"]
-    tr_sum = sum(util[v] * sp[v] * tt[v] for v in util)
-    util_sum = sum(util.values())
-    return _SCORE_W_U * util_sum + _SCORE_W_TR * tr_sum + _SCORE_W_DL * metrics["delay"]
+    mode: str = "base"  # winning TrafficMode's .value; default keeps old caches loadable
 
 
 def _dump_workload_path(workload: Dict[str, Any]) -> str:
@@ -94,6 +73,7 @@ def _prob_from_workload(workload: Dict[str, Any]) -> SNNProb:
 def solve_and_cache_schedule(
     arch_name: str,
     arch_yaml: str,
+    dataflow_yaml: str,
     trace_dir_name: str,
     layer_name: str,
     meta: Dict[str, Any],
@@ -119,24 +99,19 @@ def solve_and_cache_schedule(
     Raises ValueError if EVERY mode is infeasible (callers sweeping many
     layers should catch this and record it, not let it abort the sweep).
     """
+    from mip_solver.solve import solve_best_schedule  # lazy: see module-level comment
+
     workload = build_workload_from_trace(meta, layer_name, next_cin=next_cin)
     layer_path = _dump_workload_path(workload)
     prob = SNNProb(pathlib.Path(layer_path))
 
-    best_mode, best_result, best_score = None, None, None
-    for mode in TrafficMode:
-        result = solve_schedule(layer_path, arch_yaml, traffic_mode=mode, return_metrics=True)
-        if not (result.get("has_solution") and result.get("metrics")):
-            continue
-        s = _mode_score(result["metrics"])
-        if best_score is None or s < best_score:
-            best_mode, best_result, best_score = mode, result, s
-
-    if best_result is None:
+    try:
+        best_mode, best_result = solve_best_schedule(layer_path, arch_yaml, dataflow_yaml)
+    except ValueError as exc:
         raise ValueError(
             f"solve_and_cache_schedule: infeasible for {arch_name}/{trace_dir_name}/{layer_name} "
             f"(every TrafficMode infeasible)"
-        )
+        ) from exc
     schedule = schedule_from_strategy(best_result["strategy"], prob)
 
     artifact = ScheduleArtifact(
@@ -191,103 +166,38 @@ class LayerWeightTrace:
     tiles: List[TileWeightTrace]
 
 
-def reconstruct_samples_for_schedule(
-    model: ArchComputeModel,
+def reconstruct_samples(
+    arch_name: str,
     trace: Any,
     tiles: Sequence[NodeTileSpec],
     sample_indices: Sequence[int],
-    arch_name: str,
     trace_dir_name: str,
     layer_name: str,
     workload_dims: Dict[str, Any],
     dram_num_steps: int,
 ) -> List[LayerWeightTrace]:
-    """One LayerWeightTrace per requested sample. Calls format_input_batch
-    once per tile (reconstructing every requested sample in one vectorized
-    pass) instead of format_input once per (tile, sample) -- this is
-    exactly the win each arch's reconstruct_tile_sequence_batch was built
-    for; calling this with sample_indices=[0] reproduces exactly what
-    sweep_archmodel_layers.py's own inline loop already computes.
+    """One LayerWeightTrace per requested sample, dispatching to arch_name's
+    native C++ bridge (archmodels.ARCH_NATIVE_BRIDGES). Single consolidated
+    entry point for what used to be two copy-pasted dispatch blocks in
+    scripts/generate_weight_traces.py and
+    scripts/generate_weight_traces_canonical100.py -- callers own the
+    trace/worker-pool setup around this, this function owns only the
+    dispatch. `trace` should already be loaded (e.g. via
+    archmodels.trace.load_layer_trace(..., mmap=True)); this function
+    doesn't load it itself so a caller running many samples across
+    multiple workers can load it once per worker instead of once per call.
     """
-    num_samples = len(sample_indices)
-    per_sample_tiles: List[List[TileWeightTrace]] = [[] for _ in range(num_samples)]
-    for tile in tiles:
-        packed_per_sample = model.format_input_batch(trace, tile, sample_indices)
-        for i, packed in enumerate(packed_per_sample):
-            cycles = model.compute_cycles(packed, tile)
-            addresses = model.weight_addresses(packed, tile)
-            ticks = model.weight_ticks(packed, tile)
-            per_sample_tiles[i].append(
-                TileWeightTrace(
-                    dram_i=tile.dram_i,
-                    mac_cycles=cycles.mac_cycles,
-                    lif_cycles=cycles.lif_cycles,
-                    weight_addresses=list(addresses),
-                    tick_ids=list(ticks),
-                )
-            )
-    return [
-        LayerWeightTrace(
-            arch=arch_name,
-            trace_dir=trace_dir_name,
-            layer_name=layer_name,
-            sample_idx=sample_idx,
-            workload_dims=workload_dims,
-            dram_num_steps=dram_num_steps,
-            tiles=per_sample_tiles[i],
+    module_name = ARCH_NATIVE_BRIDGES.get(arch_name)
+    if module_name is None:
+        raise KeyError(
+            f"no native bridge registered for arch '{arch_name}'; "
+            f"known archs: {sorted(ARCH_NATIVE_BRIDGES)}"
         )
-        for i, sample_idx in enumerate(sample_indices)
-    ]
-
-
-def reconstruct_tile_chunk(
-    model: ArchComputeModel,
-    trace: Any,
-    tile_chunk: Sequence[Tuple[int, NodeTileSpec]],
-    sample_indices: Sequence[int],
-) -> List[Tuple[int, List[TileWeightTrace]]]:
-    """Experimental alternate axis for reconstruct_samples_for_schedule's
-    work: given a SUBSET of (original_tile_index, tile) pairs, compute
-    every requested sample's TileWeightTrace for just those tiles --
-    format_input_batch still vectorizes across the FULL sample_indices
-    batch per tile (unchanged), but now the multiprocessing split is
-    along tiles instead of samples. Returns one (original_tile_index,
-    [TileWeightTrace per sample, in sample_indices order]) pair per tile
-    in tile_chunk, so a caller can scatter these back into per-sample
-    tile lists at the tiles' original positions and reproduce exactly
-    what reconstruct_samples_for_schedule would have produced.
-
-    Motivation: GustavSNN bars T from node-level residency (see
-    archmodels/gustavsnn/reconstruct.py's module docstring), so its
-    `tiles` list has one entry per tick -- up to ~8000 entries observed
-    on real resnet19 layers, vs. a few thousand at most for the other
-    archs. reconstruct_samples_for_schedule's `for tile in tiles:` loop
-    (this module, above) then reruns that same multi-thousand-iteration
-    Python loop once per worker process when samples are chunked across
-    workers, since sample-chunking leaves the tiles list untouched inside
-    each worker. Chunking tiles instead means each tile's loop iteration
-    (and its format_input_batch call) happens exactly once, total, no
-    matter how many workers are used.
-    """
-    out: List[Tuple[int, List[TileWeightTrace]]] = []
-    for orig_idx, tile in tile_chunk:
-        packed_per_sample = model.format_input_batch(trace, tile, sample_indices)
-        per_sample: List[TileWeightTrace] = []
-        for packed in packed_per_sample:
-            cycles = model.compute_cycles(packed, tile)
-            addresses = model.weight_addresses(packed, tile)
-            ticks = model.weight_ticks(packed, tile)
-            per_sample.append(
-                TileWeightTrace(
-                    dram_i=tile.dram_i,
-                    mac_cycles=cycles.mac_cycles,
-                    lif_cycles=cycles.lif_cycles,
-                    weight_addresses=list(addresses),
-                    tick_ids=list(ticks),
-                )
-            )
-        out.append((orig_idx, per_sample))
-    return out
+    native_fn = importlib.import_module(module_name).reconstruct_samples_native
+    return native_fn(
+        trace, tiles, sample_indices, arch_name, trace_dir_name, layer_name,
+        workload_dims, dram_num_steps,
+    )
 
 
 def save_weight_trace(trace: LayerWeightTrace, path: pathlib.Path) -> None:
@@ -295,8 +205,11 @@ def save_weight_trace(trace: LayerWeightTrace, path: pathlib.Path) -> None:
     generated data (9.64MB -> 0.49MB), which is what makes the full sweep's
     storage footprint (otherwise ~510GB at 1000 samples/layer) fit in any
     reasonable quota. `path` should end in .json.gz; transparent to any
-    caller going through load_weight_trace/iter_generated_traces below --
-    only a direct `open()`/`cat` of the file needs to know it's gzipped.
+    caller reading it back with gzip.open -- only a direct `open()`/`cat`
+    of the file needs to know it's gzipped. (The read-side counterpart,
+    load_weight_trace, moved to dump/python_reference/tracegen_reconstruct.py
+    since nothing in the live pipeline reads a trace back this way --
+    src/cachesim/native_bridge.py reads the raw JSON directly instead.)
 
     Writes to a sibling temp file and os.replace()s it into place, so a
     process killed mid-write (OOM, SLURM time limit, etc.) can never leave
@@ -315,67 +228,35 @@ def save_weight_trace(trace: LayerWeightTrace, path: pathlib.Path) -> None:
         raise
 
 
-def load_weight_trace(path: pathlib.Path) -> LayerWeightTrace:
-    with gzip.open(path, "rt") as fh:
-        data = json.load(fh)
-    tiles = [
-        TileWeightTrace(
-            dram_i=t["dram_i"],
-            mac_cycles=t["mac_cycles"],
-            lif_cycles=t["lif_cycles"],
-            # JSON has no tuple type -- addresses come back as lists;
-            # restore tuples so callers can hash/set them (e.g. a future
-            # locality analyzer counting distinct weight lines).
-            weight_addresses=[tuple(a) if isinstance(a, list) else a for a in t["weight_addresses"]],
-            tick_ids=t["tick_ids"],
-        )
-        for t in data["tiles"]
-    ]
-    data["tiles"] = tiles
-    return LayerWeightTrace(**data)
+_CANONICAL_N = 100
+_CANONICAL_SEED = 0  # the seed configs/sampling/sample_indices.json was generated with
 
 
-def iter_generated_traces(root: pathlib.Path) -> Iterator[LayerWeightTrace]:
-    """Yield every persisted LayerWeightTrace under root
-    (outputs/weight_traces/<arch>/<trace_dir>/<layer_name>/sample_*.json.gz),
-    for future analysis consumers to load directly instead of recomputing."""
-    for path in sorted(root.glob("*/*/*/sample_*.json.gz")):
-        yield load_weight_trace(path)
+def sample_indices(n: int = 100, seed: int = 0, n_total: int = 10000) -> List[int]:
+    """A fixed, reproducible n-sample subset of range(n_total), drawn live
+    via random.Random -- no stored/hardcoded index list (replaces the now-
+    deleted configs/sampling/sample_indices.json and the old
+    canonical_sample_indices()/random_sample_indices() pair).
 
+    `sample_indices()` (n=100, seed=0) is THE canonical 100-sample subset
+    used everywhere a representative random sample (as opposed to the full
+    10,000-sample sweep) is needed, so different callers never silently
+    diverge onto their own random selections; verified to reproduce, byte
+    for byte, the values previously hardcoded in that deleted JSON file.
 
-_REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
-CANONICAL_SAMPLE_INDICES_PATH = _REPO_ROOT / "configs" / "sampling" / "sample_indices.json"
+    For n > 100, always a superset of that same canonical 100 (drawn at
+    _CANONICAL_SEED regardless of `seed`) plus n-100 more drawn at `seed`
+    from the remaining pool -- so growing n never discards
+    already-generated work on the canonical 100 or on any smaller n at the
+    same seed, matching every real n>100 call in this pipeline (e.g. the
+    4000-sample sweep), which has always used seed=0 for both parts.
 
-
-def canonical_sample_indices(path: pathlib.Path = CANONICAL_SAMPLE_INDICES_PATH) -> List[int]:
-    """The fixed, seed-0-selected 100-sample subset used everywhere a
-    representative random sample (as opposed to the full 10,000-sample
-    sweep) is needed, so different callers never silently diverge onto
-    their own random selections. Single source of truth: previously
-    duplicated as two separate file reads in profiling/0723/
-    (regenerate_weight_traces.py's sample_indices(), input_spike_locality.py's
-    marked_sample_indices()), both now call this instead."""
-    with open(path) as fh:
-        return json.load(fh)["sample_indices"]
-
-
-def random_sample_indices(n: int, seed: int = 0, n_total: int = 10000) -> List[int]:
-    """A fixed, reproducible n-sample subset that always contains the
-    canonical 100 (canonical_sample_indices()) plus n-100 more, drawn
-    without replacement from the remaining n_total-100 indices with the
-    given seed. Superset-by-construction so growing n never discards
-    already-generated/already-patched work on the canonical 100, unlike
-    an independent random.sample(range(n_total), n) call for each n,
-    which would not nest.
-
-    Raises ValueError if n < len(canonical_sample_indices())."""
-    import random
-
-    base = canonical_sample_indices()
-    if n < len(base):
-        raise ValueError(f"random_sample_indices: n={n} smaller than the canonical {len(base)}-sample base")
-    if n == len(base):
-        return sorted(base)
+    Raises ValueError if n < 100."""
+    base = sorted(random.Random(_CANONICAL_SEED).sample(range(n_total), _CANONICAL_N))
+    if n < _CANONICAL_N:
+        raise ValueError(f"sample_indices: n={n} smaller than the canonical {_CANONICAL_N}-sample base")
+    if n == _CANONICAL_N:
+        return base
     remaining_pool = [i for i in range(n_total) if i not in set(base)]
-    extra = random.Random(seed).sample(remaining_pool, n - len(base))
+    extra = random.Random(seed).sample(remaining_pool, n - _CANONICAL_N)
     return sorted(base + extra)

@@ -1,4 +1,4 @@
-"""Python bridge to the compiled gustavgen C++ binary (native/), a port
+"""Python bridge to the compiled gustavgen C++ binary, a port
 of reconstruct_tile_sequence_batch + event_to_address + event_to_ticks
 that replaces this project's own profiling finding: 94% of GustavSNN's
 weight-trace generation time is pure Python object/tuple construction in
@@ -9,7 +9,7 @@ Drop-in alternative to tracegen.reconstruct_samples_for_schedule for
 GustavSNN specifically: same signature shape, same LayerWeightTrace
 output, but does ONE subprocess call for the whole (schedule, sample
 batch) instead of one Python format_input_batch call per tile -- see
-native/main.cpp's task/output binary format docstring for the wire
+main.cpp's task/output binary format docstring for the wire
 format.
 """
 
@@ -28,7 +28,7 @@ from parsers.layer import DIM_CIN, DIM_COUT, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_
 from .. import NodeTileSpec
 
 _HERE = pathlib.Path(__file__).resolve().parent
-_BINARY = _HERE / "native" / "gustavgen"
+_BINARY = _HERE / "gustavgen"
 
 
 def _pack_task(trace_shape: Sequence[int], tiles: Sequence[NodeTileSpec], sample_indices: Sequence[int]) -> bytes:
@@ -86,7 +86,7 @@ def reconstruct_samples_native(
     shape so callers (generate_weight_traces_canonical100.py etc.) can
     swap this in without changing anything downstream of the call site.
 
-    Requires native/gustavgen to be built first (cd native && make).
+    Requires gustavgen to be built first (make in this directory).
     """
     # Imported here, not at module top, to avoid tracegen<->this module
     # import-order issues (tracegen imports archmodels.gustavsnn.model,

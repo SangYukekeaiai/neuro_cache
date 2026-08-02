@@ -1,0 +1,27 @@
+arch:
+  bitwidths:
+    BW_WEIGHT: 8
+    BW_PSUM:   16
+    BW_VMEM:   32
+    DRAM_LATENCY: 17
+
+  # single_node: SpinalFlow is one 128-PE array fed directly from its
+  # Filter/Input Buffers -- no inter-node NoC, so no Global Buffer level.
+  single_node: true
+
+  storage:             # innermost first
+    - name: NodeLevel
+      instances: 1
+      pe:
+        num_pes: 128
+        # pe.registers omitted: parsed-but-unused metadata (no constraint,
+        # objective, or nocsim code reads it) -- optional, so no need to
+        # invent numbers that affect nothing.
+    - name: NoCLevel
+      # entries omitted: no physical Global Buffer exists (single_node:
+      # true), so there's nothing real to size -- absent means no capacity
+      # check for this level (has_noc_buffer=False), which is the accurate
+      # statement here rather than an oversized placeholder.
+      instances: 1
+    - name: OffChip
+      instances: 1

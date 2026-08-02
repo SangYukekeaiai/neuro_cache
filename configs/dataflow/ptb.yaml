@@ -1,0 +1,9 @@
+dataflow:
+  # One 16-row output-channel group is spatial; the 64-tick address window
+  # and receptive-field/input-channel tile are temporal. HO/WO are barred.
+  node_dim_capacity:
+    KH:   4
+    KW:   4
+    CIN:  full
+    COUT: {spatial: 4}
+    T:    64

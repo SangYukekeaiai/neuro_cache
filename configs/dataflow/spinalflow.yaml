@@ -1,0 +1,9 @@
+dataflow:
+  # One spine visit keeps the receptive field, input channels, and ticks
+  # local; output channels fan out across the 128-PE array. HO/WO are barred.
+  node_dim_capacity:
+    KH:   4
+    KW:   4
+    T:    full
+    COUT: {spatial: 8}
+    CIN:  full

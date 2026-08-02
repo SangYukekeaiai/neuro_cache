@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Neuro Cache · 07-28 Status</title>
+  <style>
+    :root {
+      --ink: #17201f;
+      --muted: #66716f;
+      --paper: #f4f1e9;
+      --card: #fffdf7;
+      --line: #d7d0c3;
+      --teal: #006b63;
+      --orange: #d56b2d;
+      --blue: #3f70b5;
+      --gold: #e0a11b;
+      --purple: #7a5fa6;
+      --slate: #203835;
+      --chalk: #f7f1de;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--paper); }
+    button, select { font: inherit; }
+    .shell { max-width: 1280px; margin: 0 auto; padding: 0 28px 70px; }
+    .hero { padding: 58px 0 34px; border-bottom: 1px solid var(--line); }
+    .eyebrow { color: var(--teal); font-size: 12px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+    h1 { max-width: 900px; margin: 13px 0 16px; font-family: Georgia, serif; font-size: clamp(42px, 6vw, 76px); font-weight: 500; line-height: .98; letter-spacing: -.035em; }
+    .lede { max-width: 790px; margin: 0; color: var(--muted); font-size: 19px; line-height: 1.55; }
+    .nav { position: sticky; top: 0; z-index: 10; display: flex; gap: 7px; padding: 12px 0; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(10px); }
+    .nav button { padding: 9px 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--card); cursor: pointer; }
+    .nav button.active { color: white; border-color: var(--teal); background: var(--teal); }
+    .page { display: none; padding-top: 34px; }
+    .page.active { display: block; }
+    .section-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 22px; }
+    h2 { margin: 0; font-family: Georgia, serif; font-size: 35px; font-weight: 500; letter-spacing: -.02em; }
+    .section-head p { max-width: 660px; margin: 0; color: var(--muted); line-height: 1.55; }
+    .grid { display: grid; gap: 18px; }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .card { padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); box-shadow: 0 8px 30px rgba(45, 43, 36, .04); }
+    .stat .value { margin-top: 9px; font-family: Georgia, serif; font-size: 36px; }
+    .stat .label { color: var(--muted); font-size: 13px; }
+    .stat .note { margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .chalk { padding: 28px; overflow: hidden; color: var(--chalk); border-radius: 18px; background: var(--slate); box-shadow: inset 0 0 70px rgba(255,255,255,.025); }
+    .chalk svg { display: block; width: 100%; height: auto; }
+    .chalk text { fill: var(--chalk); font-family: "Comic Sans MS", "Bradley Hand", cursive; }
+    .chalk .dim { fill: #b9c6bd; }
+    .chalk .bad { stroke: #f09a72; }
+    .chalk .good { stroke: #83d1c5; }
+    .chalk line, .chalk rect, .chalk path { fill: none; stroke-width: 2.4; }
+    .callout { padding: 18px 20px; border-left: 4px solid var(--orange); background: #fff7ef; line-height: 1.55; }
+    .formula { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; }
+    .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: stretch; }
+    .flow .step { position: relative; min-height: 145px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+    .flow .step:not(:last-child)::after { content: "→"; position: absolute; right: -19px; top: 52px; z-index: 2; color: var(--teal); font-size: 25px; }
+    .step .num { color: var(--teal); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+    .step h3 { margin: 8px 0; font-size: 17px; }
+    .step p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .controls { display: grid; grid-template-columns: 1.25fr 2fr 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+    select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: white; }
+    .chart-card { padding: 20px 20px 10px; }
+    .chart-title { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 10px; }
+    .chart-title h3 { margin: 0; font-size: 17px; }
+    .chart-title span { color: var(--muted); font-size: 12px; }
+    #lineChart { width: 100%; height: auto; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 7px 0 0 58px; color: var(--muted); font-size: 12px; }
+    .legend i { display: inline-block; width: 18px; height: 3px; margin-right: 6px; vertical-align: middle; }
+    .insight { display: grid; grid-template-columns: 1.3fr .7fr; gap: 18px; margin-top: 18px; }
+    .delta { font-family: Georgia, serif; font-size: 46px; color: var(--teal); }
+    .small { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .heatmap-wrap { overflow-x: auto; }
+    .heatmap-grid { display: grid; grid-template-columns: repeat(3, minmax(920px, 1fr)); gap: 18px; }
+    .heatmap-panel { min-width: 920px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+    .heatmap-panel h4 { margin: 0 0 6px; color: var(--ink); font-size: 14px; }
+    .heatmap-panel svg { display: block; width: 100%; height: auto; }
+    .source { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .badge { display: inline-block; margin-right: 8px; padding: 4px 8px; border-radius: 999px; color: #075c55; background: #dff1ec; font-size: 11px; font-weight: 800; }
+    .layout-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .layout-column h3 { margin: 0 0 7px; font-family: Georgia, serif; font-size: 25px; font-weight: 500; }
+    .layout-column > p { min-height: 44px; margin: 0 0 20px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .line-example { margin: 0 0 22px; }
+    .line-label { display: flex; justify-content: space-between; margin-bottom: 7px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .cache-line { display: flex; min-height: 76px; overflow: hidden; border: 2px solid var(--ink); border-radius: 9px; background: white; }
+    .line-segment { display: grid; place-items: center; min-width: 0; padding: 8px 4px; border-right: 2px solid rgba(23,32,31,.45); text-align: center; }
+    .line-segment:last-child { border-right: 0; }
+    .line-segment strong { display: block; font-size: 13px; }
+    .line-segment span { display: block; margin-top: 3px; font-size: 11px; opacity: .72; }
+    .cin0 { background: #bfe3dd; }
+    .cin1 { background: #f5cfaf; }
+    .cin2 { background: #cbd8ef; }
+    .cin3 { background: #ddd0eb; }
+    .axis-note { display: flex; justify-content: space-between; margin-top: 5px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
+    .layout-rule { margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: #faf8f1; }
+    .layout-rule code { color: var(--teal); }
+    @media (max-width: 850px) {
+      .grid-4, .grid-2, .flow, .controls, .insight, .layout-compare { grid-template-columns: 1fr; }
+      .flow .step:not(:last-child)::after { content: "↓"; right: auto; top: auto; left: 50%; bottom: -24px; }
+      .section-head { align-items: start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="eyebrow">Neuro Cache · Research status · July 28, 2026</div>
+      <h1>Count memory transactions, not weights.</h1>
+      <p class="lede">Today’s debug work corrected the cache hit-rate denominator, repaired set selection with packed tags, and replayed five LoAS samples across 31 network layers and 72 cache/layout configurations per layer.</p>
+    </header>
+
+    <nav class="nav" aria-label="Artifact pages">
+      <button class="active" data-page="correction">01 · Metric correction</button>
+      <button data-page="replay">02 · LOAS replay</button>
+      <button data-page="layouts">03 · Line layouts</button>
+      <button data-page="status">04 · Current status</button>
+    </nav>
+
+    <section id="correction" class="page active">
+      <div class="section-head">
+        <h2>The denominator changed</h2>
+        <p>A weight-address event is a physical burst. Elements are still expanded to find which cache-line tags the burst touches, but consecutive identical tags inside that event collapse to one cache access.</p>
+      </div>
+
+      <div class="chalk">
+        <svg viewBox="0 0 1120 430" role="img" aria-labelledby="chalkTitle chalkDesc">
+          <title id="chalkTitle">Element-wise versus burst-wise cache accounting</title>
+          <desc id="chalkDesc">The old path counted four expanded weights as four accesses, including three artificial hits. The corrected path deduplicates identical line tags within the burst and issues one access.</desc>
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#f7f1de"/></marker>
+          </defs>
+          <text x="42" y="44" font-size="24">One weight-address burst: (kh, kw, cin, cout 0→4)</text>
+          <rect x="42" y="72" width="245" height="295" rx="18" class="bad"/>
+          <text x="68" y="108" font-size="22">OLD · element-wise</text>
+          <text x="68" y="139" font-size="16" class="dim">expand first, replay all</text>
+          <rect x="72" y="170" width="42" height="42" rx="5" class="bad"/><text x="84" y="198" font-size="16">w0</text>
+          <rect x="122" y="170" width="42" height="42" rx="5" class="bad"/><text x="134" y="198" font-size="16">w1</text>
+          <rect x="172" y="170" width="42" height="42" rx="5" class="bad"/><text x="184" y="198" font-size="16">w2</text>
+          <rect x="222" y="170" width="42" height="42" rx="5" class="bad"/><text x="234" y="198" font-size="16">w3</text>
+          <text x="71" y="241" font-size="16">same line tag: A, A, A, A</text>
+          <text x="71" y="278" font-size="18">MISS + HIT + HIT + HIT</text>
+          <text x="71" y="324" font-size="17" fill="#f09a72">3 false “free” hits</text>
+          <line x1="307" y1="220" x2="394" y2="220" stroke="#f7f1de" marker-end="url(#arrow)"/>
+          <text x="316" y="202" font-size="15">fix</text>
+          <rect x="412" y="72" width="310" height="295" rx="18" class="good"/>
+          <text x="438" y="108" font-size="22">CORRECT · burst-wise</text>
+          <text x="438" y="139" font-size="16" class="dim">expand → tag → dedup per event</text>
+          <rect x="452" y="170" width="42" height="42" rx="5" class="good"/><text x="464" y="198" font-size="16">w0</text>
+          <rect x="502" y="170" width="42" height="42" rx="5" class="good"/><text x="514" y="198" font-size="16">w1</text>
+          <rect x="552" y="170" width="42" height="42" rx="5" class="good"/><text x="564" y="198" font-size="16">w2</text>
+          <rect x="602" y="170" width="42" height="42" rx="5" class="good"/><text x="614" y="198" font-size="16">w3</text>
+          <path d="M472 225 C490 262,610 262,627 225" stroke="#83d1c5"/>
+          <text x="467" y="282" font-size="18">distinct line sequence: [A]</text>
+          <text x="467" y="324" font-size="20">one burst → one MISS</text>
+          <line x1="742" y1="220" x2="820" y2="220" stroke="#f7f1de" marker-end="url(#arrow)"/>
+          <rect x="842" y="104" width="238" height="230" rx="18" stroke="#e0a11b"/>
+          <text x="870" y="145" font-size="21">PHYSICAL MEANING</text>
+          <text x="870" y="187" font-size="17">one memory burst</text>
+          <text x="870" y="217" font-size="17">touches one line</text>
+          <text x="870" y="263" font-size="20">= one decision</text>
+          <text x="870" y="300" font-size="16" class="dim">If a burst spans lines,</text>
+          <text x="870" y="322" font-size="16" class="dim">count each distinct line.</text>
+        </svg>
+      </div>
+
+      <div class="callout" style="margin-top:18px">
+        <strong>Precise rule.</strong> For each event, expand its weights only to form cache-line tags. Collapse consecutive duplicate tags within that event, then replay the remaining distinct-line sequence. Never deduplicate across event boundaries.
+      </div>
+      <div class="source">Evidence: <span class="formula">log/2026-07-28-debug-pipeline-plan.md</span>, tiny worked example and the corrected loop in <span class="formula">profiling/0726/native/cache_sweep.cpp</span>.</div>
+    </section>
+
+    <section id="replay" class="page">
+      <div class="section-head">
+        <h2>Five-sample LoAS replay</h2>
+        <p>Interactive per-layer view, matching the morning artifact’s cache-size sweep while adding the fully associative ceiling and the cin×cout layout comparison.</p>
+      </div>
+
+      <div class="grid grid-4">
+        <div class="card stat"><div class="label">Layers</div><div class="value">31</div><div class="note">19 ResNet19 + 12 VGG16</div></div>
+        <div class="card stat"><div class="label">Samples per layer</div><div class="value">5</div><div class="note">first five canonical 07-28 LoAS samples</div></div>
+        <div class="card stat"><div class="label">Rows replayed</div><div class="value">2,232</div><div class="note">1,116 per line layout</div></div>
+        <div class="card stat"><div class="label">Fresh vs morning</div><div class="value">Δ 0.0</div><div class="note">maximum absolute hit-rate difference</div></div>
+      </div>
+
+      <div class="card chart-card" style="margin-top:18px">
+        <div class="controls">
+          <label>Workload<select id="workload"></select></label>
+          <label>Layer<select id="layer"></select></label>
+          <label>Layout<select id="layout"><option value="cout_only">COUT only</option><option value="cin_cout_2d">CIN × COUT</option></select></label>
+          <label>Line size<select id="lineSize"><option value="16">16 B</option><option value="32" selected>32 B</option><option value="64">64 B</option></select></label>
+        </div>
+        <div class="chart-title"><h3 id="chartHeading"></h3><span>Mean hit rate · n=5</span></div>
+        <svg id="lineChart" viewBox="0 0 980 455" role="img" aria-label="Mean cache hit rate by cache size and associativity"></svg>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <div class="insight">
+        <div class="card">
+          <div class="eyebrow">Layout effect at selected point</div>
+          <div class="delta" id="layoutDelta">—</div>
+          <div class="small" id="layoutDeltaText"></div>
+        </div>
+        <div class="card">
+          <div class="eyebrow">Associativity gap</div>
+          <div class="delta" id="assocGap">—</div>
+          <div class="small" id="assocGapText"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="chart-title"><h3>All-layer overview</h3><span>All 9 size × line combinations · mean across n=5</span></div>
+        <div class="heatmap-wrap"><div id="heatmapGrid" class="heatmap-grid"></div></div>
+      </div>
+      <div class="source"><span class="badge">Verified replay</span> Inputs: <span class="formula">outputs/weight_traces/loas/{resnet19_T4_all,vgg16_T4_all}</span>. Regenerate with <span class="formula">build_artifact.py</span> after the two replay CSVs are produced.</div>
+    </section>
+
+    <section id="layouts" class="page">
+      <div class="section-head">
+        <h2>What occupies one cache line?</h2>
+        <p>The two replay layouts keep the same LoAS burst width of 16 COUT weights. They differ in how extra line capacity is used when the line is wider than one burst.</p>
+      </div>
+
+      <div class="layout-compare">
+        <article class="card layout-column">
+          <div class="eyebrow">Baseline layout</div>
+          <h3>COUT only</h3>
+          <p>Keep one fixed CIN and extend farther along COUT. Larger lines absorb more consecutive output-channel weights from that same input channel.</p>
+
+          <div class="line-example">
+            <div class="line-label"><span>16 B line</span><span>1 CIN × 16 COUT</span></div>
+            <div class="cache-line"><div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–15</span></div></div>
+            <div class="axis-note"><span>COUT 0</span><span>COUT 15</span></div>
+          </div>
+          <div class="line-example">
+            <div class="line-label"><span>32 B line</span><span>1 CIN × 32 COUT</span></div>
+            <div class="cache-line"><div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–31</span></div></div>
+            <div class="axis-note"><span>COUT 0</span><span>COUT 31</span></div>
+          </div>
+          <div class="line-example">
+            <div class="line-label"><span>64 B line</span><span>1 CIN × 64 COUT</span></div>
+            <div class="cache-line"><div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–63</span></div></div>
+            <div class="axis-note"><span>COUT 0</span><span>COUT 63</span></div>
+          </div>
+
+          <div class="layout-rule"><code>tag = (kh, kw, cin, cout ÷ line_size)</code></div>
+        </article>
+
+        <article class="card layout-column">
+          <div class="eyebrow">Tested Path A</div>
+          <h3>CIN × COUT</h3>
+          <p>Keep each LoAS COUT burst 16-wide and spend extra line capacity on adjacent CIN groups. Color marks the input channel stored in each segment.</p>
+
+          <div class="line-example">
+            <div class="line-label"><span>16 B line</span><span>1 CIN × 16 COUT</span></div>
+            <div class="cache-line"><div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–15</span></div></div>
+            <div class="axis-note"><span>burst 0</span><span>16 weights</span></div>
+          </div>
+          <div class="line-example">
+            <div class="line-label"><span>32 B line</span><span>2 CIN × 16 COUT</span></div>
+            <div class="cache-line">
+              <div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–15</span></div>
+              <div class="line-segment cin1" style="flex:1"><strong>CIN 1</strong><span>COUT 0–15</span></div>
+            </div>
+            <div class="axis-note"><span>burst 0</span><span>burst 1</span></div>
+          </div>
+          <div class="line-example">
+            <div class="line-label"><span>64 B line</span><span>4 CIN × 16 COUT</span></div>
+            <div class="cache-line">
+              <div class="line-segment cin0" style="flex:1"><strong>CIN 0</strong><span>COUT 0–15</span></div>
+              <div class="line-segment cin1" style="flex:1"><strong>CIN 1</strong><span>COUT 0–15</span></div>
+              <div class="line-segment cin2" style="flex:1"><strong>CIN 2</strong><span>COUT 0–15</span></div>
+              <div class="line-segment cin3" style="flex:1"><strong>CIN 3</strong><span>COUT 0–15</span></div>
+            </div>
+            <div class="axis-note"><span>burst 0</span><span>burst 3</span></div>
+          </div>
+
+          <div class="layout-rule"><code>Ncin = line_size ÷ 16; tag = (kh, kw, cin ÷ Ncin, cout ÷ 16)</code></div>
+        </article>
+      </div>
+
+      <div class="callout" style="margin-top:18px">
+        At 16 B the layouts are identical. Their behavior diverges at 32 B and 64 B: COUT-only extends one channel horizontally, while CIN × COUT packs two or four adjacent input channels into the same line.
+      </div>
+      <div class="source">Scope: the tested quick Path A in <span class="formula">log/2026-07-28-set-index-and-cin-cout-layout-plan.md</span>. It assumes a 16-weight LoAS burst; reading burst width and true dimension bounds from the trace remains planned follow-on work.</div>
+    </section>
+
+    <section id="status" class="page">
+      <div class="section-head">
+        <h2>Where the project stands</h2>
+        <p>Today’s sessions converged on a trustworthy metric path, but the plans deliberately separate verified corrections from proposed follow-on architecture.</p>
+      </div>
+      <div class="flow">
+        <div class="step"><div class="num">DONE · 01</div><h3>Burst-level accounting</h3><p>Corrected C++ replay collapses identical line tags within each weight-address event.</p></div>
+        <div class="step"><div class="num">DONE · 02</div><h3>Packed set index</h3><p>Set selection now uses the mixed-radix packed tag rather than the collision-prone component sum.</p></div>
+        <div class="step"><div class="num">DONE · 03</div><h3>Five-sample baseline</h3><p>LoAS replay covers 31 layers, three sizes, three line sizes, three ways, and fully associative.</p></div>
+        <div class="step"><div class="num">TESTED · 04</div><h3>CIN × COUT layout</h3><p>Quick Path A replay is measured; plumbing true layer bounds and burst width remains follow-on work.</p></div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:18px">
+        <div class="card">
+          <div class="eyebrow">What is trustworthy now</div>
+          <h3>Relative replay under the corrected definitions</h3>
+          <p class="small">All values in this artifact use per-burst accesses, the packed set index, fresh result directories, five samples per layer, and an explicit fully associative reference.</p>
+        </div>
+        <div class="card">
+          <div class="eyebrow">What remains provisional</div>
+          <h3>The quick packed index is not the final address model</h3>
+          <p class="small">The current C++ sweep derives mixed-radix bounds from each sample. The plan defers true declared layer-shape radices, alternative hashing research, and a generalized layout interface.</p>
+        </div>
+        <div class="card">
+          <div class="eyebrow">Counter-story to keep visible</div>
+          <h3>Fully associative remains far above set-associative</h3>
+          <p class="small">The ceiling gap persists even after the component-sum bug is removed. It may reflect conflict pressure, remaining indexing choices, or both; the artifact shows it rather than smoothing it away.</p>
+        </div>
+        <div class="card">
+          <div class="eyebrow">Next debug gate</div>
+          <h3>Tiny-trace Python/C++ parity</h3>
+          <p class="small">The debug plan still calls for exact stage-by-stage checks: weight reconstruction, element/tag inspection, 1/6 hit-rate assertion, and Python/C++ parity before broader consolidation.</p>
+        </div>
+      </div>
+      <div class="source">Status synthesized from today’s Claude Code sessions and the three 2026-07-28 plan files. “Done” here refers only to replay behavior evidenced in the current C++ sweep and fresh outputs—not completion of every consolidation stage in the plans.</div>
+    </section>
+  </main>
+
+  <script src="data.js"></script>
+  <script>
+    const rows = window.REPLAY_DATA.rows;
+    const colors = {"4":"#d56b2d","16":"#3f70b5","32":"#7a5fa6","FA":"#006b63"};
+    const seriesOrder = [["set_associative",4,"4-way"],["set_associative",16,"16-way"],["set_associative",32,"32-way"],["fully_associative",0,"Fully associative"]];
+    const $ = id => document.getElementById(id);
+
+    document.querySelectorAll(".nav button").forEach(button => button.addEventListener("click", () => {
+      document.querySelectorAll(".nav button").forEach(b => b.classList.toggle("active", b === button));
+      document.querySelectorAll(".page").forEach(page => page.classList.toggle("active", page.id === button.dataset.page));
+    }));
+
+    const workloads = [...new Set(rows.map(r => r.workload))].sort();
+    $("workload").innerHTML = workloads.map(w => `<option>${w}</option>`).join("");
+    function layerLabel(name) { return name.replace(/^layer_/, "L").replaceAll("_", " "); }
+    function updateLayers() {
+      const layers = [...new Set(rows.filter(r => r.workload === $("workload").value).map(r => r.layer))].sort();
+      const previous = $("layer").value;
+      $("layer").innerHTML = layers.map(l => `<option value="${l}">${layerLabel(l)}</option>`).join("");
+      if (layers.includes(previous)) $("layer").value = previous;
+    }
+    workloads.forEach((w, i) => { if (w.startsWith("resnet")) $("workload").selectedIndex = i; });
+    updateLayers();
+
+    function selectedRows(layout = $("layout").value) {
+      return rows.filter(r => r.workload === $("workload").value && r.layer === $("layer").value &&
+        r.layout === layout && r.line_size === +$("lineSize").value);
+    }
+    function pct(v) { return `${(100*v).toFixed(1)}%`; }
+
+    function drawLineChart() {
+      const data = selectedRows();
+      $("chartHeading").textContent = `${$("workload").value} · ${layerLabel($("layer").value)} · ${$("layout").selectedOptions[0].text}`;
+      const svg = $("lineChart"), W=980,H=455,L=70,R=28,T=25,B=65;
+      const x = s => L + ([16,32,64].indexOf(s)) * ((W-L-R)/2);
+      const y = v => T + (1-v)*(H-T-B);
+      let out = "";
+      [0,.25,.5,.75,1].forEach(t => {
+        out += `<line x1="${L}" y1="${y(t)}" x2="${W-R}" y2="${y(t)}" stroke="#ddd7cb" stroke-width="1"/>`;
+        out += `<text x="${L-12}" y="${y(t)+4}" text-anchor="end" fill="#66716f" font-size="12">${Math.round(t*100)}%</text>`;
+      });
+      [16,32,64].forEach(s => {
+        out += `<text x="${x(s)}" y="${H-30}" text-anchor="middle" fill="#66716f" font-size="13">${s} KB</text>`;
+      });
+      out += `<text x="${(W+L-R)/2}" y="${H-6}" text-anchor="middle" fill="#66716f" font-size="12">cache size</text>`;
+      seriesOrder.forEach(([type,assoc,label]) => {
+        const key = type === "fully_associative" ? "FA" : String(assoc);
+        const points = [16,32,64].map(size => data.find(r => r.cache_type===type && r.associativity===assoc && r.size_kb===size));
+        const d = points.map((p,i) => `${i?"L":"M"}${x([16,32,64][i])},${y(p.hit_rate)}`).join(" ");
+        const dash = key === "FA" ? `stroke-dasharray="8 5"` : "";
+        out += `<path d="${d}" fill="none" stroke="${colors[key]}" stroke-width="3" ${dash}/>`;
+        points.forEach((p,i) => out += `<circle cx="${x([16,32,64][i])}" cy="${y(p.hit_rate)}" r="5" fill="${colors[key]}"><title>${label}, ${[16,32,64][i]} KB: ${pct(p.hit_rate)}</title></circle>`);
+      });
+      svg.innerHTML = out;
+      $("legend").innerHTML = seriesOrder.map(([type,assoc,label]) => {
+        const key=type==="fully_associative"?"FA":String(assoc);
+        return `<span><i style="background:${colors[key]}"></i>${label}</span>`;
+      }).join("");
+      updateInsights();
+    }
+
+    function valueFor(layout,type,assoc,size=32) {
+      return selectedRows(layout).find(r => r.cache_type===type && r.associativity===assoc && r.size_kb===size)?.hit_rate;
+    }
+    function updateInsights() {
+      const current = $("layout").value, other = current==="cout_only"?"cin_cout_2d":"cout_only";
+      const a=valueFor(current,"set_associative",32), b=valueFor(other,"set_associative",32);
+      const delta=(a-b)*100;
+      $("layoutDelta").textContent = `${delta>=0?"+":""}${delta.toFixed(1)} pp`;
+      $("layoutDeltaText").textContent = `32-way, 32 KB: ${pct(a)} for ${current.replaceAll("_"," ")} versus ${pct(b)} for ${other.replaceAll("_"," ")}.`;
+      const fa=valueFor(current,"fully_associative",0), sa=valueFor(current,"set_associative",32);
+      $("assocGap").textContent = `${((fa-sa)*100).toFixed(1)} pp`;
+      $("assocGapText").textContent = `Fully associative ${pct(fa)} versus 32-way ${pct(sa)} at 32 KB. This ceiling gap is shown, not explained away.`;
+    }
+
+    function heatmapMarkup(sizeKb, lineSize) {
+      const W=1100, left=310, top=55, rowH=21, cellW=118;
+      const layers=[...new Set(rows.map(r=>`${r.workload}|${r.layer}`))].sort();
+      const columns=[
+        ["cout_only","set_associative",4,"COUT · 4w"],
+        ["cout_only","set_associative",32,"COUT · 32w"],
+        ["cout_only","fully_associative",0,"COUT · FA"],
+        ["cin_cout_2d","set_associative",4,"2D · 4w"],
+        ["cin_cout_2d","set_associative",32,"2D · 32w"],
+        ["cin_cout_2d","fully_associative",0,"2D · FA"]
+      ];
+      function color(v) {
+        const a=[242,238,224], b=[0,107,99];
+        return `rgb(${a.map((x,i)=>Math.round(x+(b[i]-x)*v)).join(",")})`;
+      }
+      let out="";
+      columns.forEach((c,i)=>out+=`<text x="${left+i*cellW+cellW/2}" y="28" text-anchor="middle" fill="#66716f" font-size="12">${c[3]}</text>`);
+      layers.forEach((key,ri)=>{
+        const [workload,layer]=key.split("|"), yy=top+ri*rowH;
+        if (ri===19) out+=`<line x1="20" y1="${yy-7}" x2="${W-25}" y2="${yy-7}" stroke="#aaa195"/>`;
+        out+=`<text x="${left-12}" y="${yy+4}" text-anchor="end" fill="#3c4745" font-size="11">${workload.startsWith("resnet")?"R":"V"} · ${layerLabel(layer)}</text>`;
+        columns.forEach((c,ci)=>{
+          const r=rows.find(r=>r.workload===workload&&r.layer===layer&&r.layout===c[0]&&r.cache_type===c[1]&&r.associativity===c[2]&&r.size_kb===sizeKb&&r.line_size===lineSize);
+          out+=`<rect x="${left+ci*cellW}" y="${yy-12}" width="${cellW-4}" height="18" rx="3" fill="${color(r.hit_rate)}"><title>${c[3]}: ${pct(r.hit_rate)}</title></rect>`;
+          out+=`<text x="${left+ci*cellW+(cellW-4)/2}" y="${yy+1}" text-anchor="middle" fill="${r.hit_rate>.54?"white":"#26322f"}" font-size="10">${pct(r.hit_rate)}</text>`;
+        });
+      });
+      return `<section class="heatmap-panel"><h4>${sizeKb} KB cache · ${lineSize} B line</h4><svg viewBox="0 0 ${W} ${top+layers.length*rowH+20}" role="img" aria-label="All-layer hit-rate heatmap for ${sizeKb} KB cache and ${lineSize} B line">${out}</svg></section>`;
+    }
+
+    function drawHeatmaps() {
+      $("heatmapGrid").innerHTML = [16,32,64].flatMap(sizeKb =>
+        [16,32,64].map(lineSize => heatmapMarkup(sizeKb, lineSize))
+      ).join("");
+    }
+
+    ["workload","layer","layout","lineSize"].forEach(id => $(id).addEventListener("change", () => {
+      if (id==="workload") updateLayers();
+      drawLineChart();
+    }));
+    drawLineChart();
+    drawHeatmaps();
+  </script>
+</body>
+</html>

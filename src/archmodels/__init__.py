@@ -23,6 +23,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Protocol, Sequence
 
+# Canonical arch registry: arch name -> the module holding its
+# reconstruct_samples_native entry point. The compiled C++ binary reached
+# through that bridge is the only reconstruction path; the superseded
+# pure-Python compute modules now live in dump/python_reference/. Module
+# path strings, not imports, so this module stays free of arch imports.
+ARCH_NATIVE_BRIDGES = {
+    "loas": "archmodels.loas.native_bridge",
+    "spinalflow": "archmodels.spinalflow.native_bridge",
+    "ptb": "archmodels.ptb.native_bridge",
+    "gustavsnn": "archmodels.gustavsnn.native_bridge",
+    "prosperity": "archmodels.prosperity.native_bridge",
+}
+
 
 @dataclass(frozen=True)
 class NodeTileSpec:

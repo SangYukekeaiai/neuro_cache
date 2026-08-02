@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 """Step 5a – Structural constants for the SNN scheduling problem.
 
-Contains three categories of constants consumed by the MIP solver:
+Contains four categories of constants consumed by the MIP solver:
 
   1. Variable indices and metadata  (VAR_*, NUM_VARS, VAR_NAMES, TRAFFIC_MULT)
   2. A matrix – dim-to-variable buffer-size relation
   3. B matrix – variable-to-memory-level relation, and derived Z matrix
+  4. SNN_GB_START_LEVEL – the loop-level index where NoCLevel begins
+
+SNN_GB_START_LEVEL lives here rather than in mip_solver/schedule.py (which
+also defines the Gurobi-dependent create_schedule_vars) so that a
+decode-only consumer -- nocsim/schedule/decode.py's schedule_from_strategy,
+the function tracegen.load_schedule needs to rebuild an already-solved,
+already-cached schedule -- can read this one constant without importing
+gurobipy at all. This module has no such dependency and never will.
 
 A matrix convention (matches CoSA)
 ------------------------------------
@@ -42,6 +50,12 @@ or deeper that actually store variable v.
 """
 
 from typing import List
+
+# ---------------------------------------------------------------------------
+# 0. Loop-level layout
+# ---------------------------------------------------------------------------
+
+SNN_GB_START_LEVEL: int = 1
 
 # ---------------------------------------------------------------------------
 # 1. Variable indices and metadata

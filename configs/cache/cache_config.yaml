@@ -1,0 +1,6 @@
+cache:
+  cache_size_bytes: 32768   # 32KB
+  line_size_bytes: 32       # 1 byte/weight (8-bit weights), so bytes == elements
+  cache_type: fully_associative   # fully_associative | set_associative | direct_mapped
+  inner_dim: cin                  # kh | kw | cin | cout -- which dim CacheSim absorbs into the line
+  # associativity: 8              # only meaningful (and required) when cache_type: set_associative

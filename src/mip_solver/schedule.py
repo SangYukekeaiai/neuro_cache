@@ -41,11 +41,9 @@ from gurobipy import GRB, Model
 
 from parsers.layer import SNNProb
 from parsers.arch import SNNArch
-from mip_solver.constants import NUM_VARS
+from mip_solver.constants import NUM_VARS, SNN_GB_START_LEVEL
 
 logger = logging.getLogger(__name__)
-
-SNN_GB_START_LEVEL: int = 1
 
 
 def create_schedule_vars(

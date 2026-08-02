@@ -1,4 +1,4 @@
-"""Python bridge to the compiled loasgen C++ binary (native/), a port of
+"""Python bridge to the compiled loasgen C++ binary, a port of
 reconstruct_tile_sequence_batch + event_to_address + event_to_ticks.
 See src/archmodels/gustavsnn/native_bridge.py for the pattern this
 mirrors (same wire-format shape, same slice-to-requested-samples fix for
@@ -20,7 +20,7 @@ from parsers.layer import DIM_CIN, DIM_COUT, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_
 from .. import NodeTileSpec
 
 _HERE = pathlib.Path(__file__).resolve().parent
-_BINARY = _HERE / "native" / "loasgen"
+_BINARY = _HERE / "loasgen"
 
 
 def _pack_task(trace_shape: Sequence[int], tiles: Sequence[NodeTileSpec], sample_indices: Sequence[int]) -> bytes:
@@ -72,7 +72,7 @@ def reconstruct_samples_native(
 ):
     """Native-C++ equivalent of tracegen.reconstruct_samples_for_schedule,
     specialized to LoAS. Same LayerWeightTrace output shape as the Python
-    path. Requires native/loasgen to be built first (cd native && make)."""
+    path. Requires loasgen to be built first (make in this directory)."""
     from tracegen import LayerWeightTrace, TileWeightTrace
 
     if not _BINARY.exists():

@@ -21,5 +21,5 @@ Prosperity's row-wise dataflow (Section V-E) processes the tile's rows
 strictly SEQUENTIALLY through one shared 128-wide PE array (parallel only
 across COUT/N), so HO and WO are both plain capped, non-spatial
 node_dim_capacity entries -- see reconstruct.py's module docstring and
-configs/arch/prosperity.yaml for the full rationale.
+configs/dataflow/prosperity.yaml for the mapping.
 """

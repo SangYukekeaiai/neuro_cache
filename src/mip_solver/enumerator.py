@@ -29,6 +29,7 @@ from mip_solver.solve import solve_schedule
 def enumerate_modes(
     layer_path: pathlib.Path | str,
     arch_path: pathlib.Path | str,
+    dataflow_path: pathlib.Path | str,
     mapspace_path: Optional[pathlib.Path | str] = None,
     w_u: float = 0.1,
     w_tr: float = 1.0,
@@ -42,6 +43,7 @@ def enumerate_modes(
     Args:
         layer_path:   Path to layer YAML.
         arch_path:    Path to arch YAML.
+        dataflow_path: Path to NodeLevel dataflow YAML.
         mapspace_path: Optional mapspace YAML; None to skip.
         w_u:          Weight for the utilization sum term.
         w_tr:         Weight for the per-variable traffic product sum.
@@ -64,6 +66,7 @@ def enumerate_modes(
         result = solve_schedule(
             layer_path=layer_path,
             arch_path=arch_path,
+            dataflow_path=dataflow_path,
             mapspace_path=mapspace_path,
             time_limit=time_limit,
             mip_gap=mip_gap,

@@ -16,5 +16,5 @@ Gustavson's Algorithm on SNN Acceleration with Column-Parallel Tick-Batch
 Dataflow" (HPCA 2026), Sections IV-V. Unlike SpinalFlow/PTB/LoAS, T is
 barred from NodeLevel (one node visit = one tick) and HO/WO ARE NodeLevel
 resident (spatially split) -- see reconstruct.py's module docstring and
-configs/arch/gustavsnn.yaml for the full rationale.
+configs/dataflow/gustavsnn.yaml for the mapping.
 """

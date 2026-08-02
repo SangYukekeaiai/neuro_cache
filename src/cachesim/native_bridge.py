@@ -1,4 +1,4 @@
-"""Subprocess bridge to native/cache_replay -- the C++ port of
+"""Subprocess bridge to cache_replay -- the C++ port of
 sweep.sample_hit_rate's logic (expand_events + tag_for_element + Cache
 replay), for one CacheConfig against one persisted trace sample. Same
 convention as src/archmodels/*/native_bridge.py: a standalone compiled
@@ -18,11 +18,12 @@ import json
 import pathlib
 import struct
 import subprocess
+import tempfile
 from typing import Sequence
 
 from .config import CacheConfig
 
-_NATIVE_BIN = pathlib.Path(__file__).resolve().parent / "native" / "cache_replay"
+_NATIVE_BIN = pathlib.Path(__file__).resolve().parent / "cache_replay"
 
 
 def _write_events(path: pathlib.Path, sample_path: pathlib.Path) -> None:
@@ -35,32 +36,49 @@ def _write_events(path: pathlib.Path, sample_path: pathlib.Path) -> None:
             out.write(struct.pack("<iiiii", kh, kw, cin, cs, ce))
 
 
+def _run_replay(trace_path: pathlib.Path, config: CacheConfig, order: Sequence[str]) -> tuple[str, str, str]:
+    """The binary's three whitespace-separated stdout fields, unparsed:
+    hit count, access count, and hit rate as a "%.6f" string."""
+    if not _NATIVE_BIN.exists():
+        raise FileNotFoundError(f"cache_replay binary not found at {_NATIVE_BIN}; run `make` in src/cachesim/")
+
+    args = [
+        str(_NATIVE_BIN),
+        str(config.cache_size_bytes),
+        str(config.line_size_bytes),
+        config.cache_type,
+        str(config.associativity or 0),
+        config.inner_dim,
+        ",".join(order),
+    ]
+    # Same private-temp-dir convention as src/archmodels/*/native_bridge.py:
+    # a predictable name under the shared /tmp is a symlink target for any
+    # other local user on a login node. Removed on both paths out.
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = pathlib.Path(tmp) / "events.bin"
+        _write_events(tmp_path, trace_path)
+        with open(tmp_path, "rb") as stdin_fh:
+            proc = subprocess.run(args, stdin=stdin_fh, capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise RuntimeError(f"cache_replay failed: {proc.stderr.strip()}")
+    hits, total, hit_rate = proc.stdout.split()
+    return hits, total, hit_rate
+
+
 def native_sample_hit_rate(trace_path: pathlib.Path, config: CacheConfig, order: Sequence[str]) -> float:
     """Native equivalent of sweep.sample_hit_rate(trace_path, config,
     order) -- same inputs, same semantics, ~110x faster per call. Reads
     the sample's raw JSON directly (not tracegen.load_weight_trace), same
     as profiling/0726/cache_sweep.py, to avoid pulling in gurobipy just
-    to flatten weight_addresses."""
-    if not _NATIVE_BIN.exists():
-        raise FileNotFoundError(f"cache_replay binary not found at {_NATIVE_BIN}; run `make` in src/cachesim/native/")
+    to flatten weight_addresses.
 
-    tmp_path = pathlib.Path(f"/tmp/cache_replay_{__import__('os').getpid()}_{id(trace_path)}.bin")
-    try:
-        _write_events(tmp_path, trace_path)
-        args = [
-            str(_NATIVE_BIN),
-            str(config.cache_size_bytes),
-            str(config.line_size_bytes),
-            config.cache_type,
-            str(config.associativity or 0),
-            config.inner_dim,
-            ",".join(order),
-        ]
-        with open(tmp_path, "rb") as stdin_fh:
-            proc = subprocess.run(args, stdin=stdin_fh, capture_output=True, text=True)
-        if proc.returncode != 0:
-            raise RuntimeError(f"cache_replay failed: {proc.stderr.strip()}")
-        hits, total, hit_rate = proc.stdout.split()
-        return float(hit_rate)
-    finally:
-        tmp_path.unlink(missing_ok=True)
+    The rate comes back through a "%.6f" text field, so 6 decimals is all
+    the precision this wire carries; native_sample_hit_counts returns the
+    two integers behind it when an exact number is needed."""
+    return float(_run_replay(trace_path, config, order)[2])
+
+
+def native_sample_hit_counts(trace_path: pathlib.Path, config: CacheConfig, order: Sequence[str]) -> tuple[int, int]:
+    """(hits, accesses) for the same replay, exact instead of rounded."""
+    hits, total, _rate = _run_replay(trace_path, config, order)
+    return int(hits), int(total)

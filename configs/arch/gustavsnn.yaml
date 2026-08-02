@@ -1,0 +1,25 @@
+arch:
+  bitwidths:
+    BW_WEIGHT: 8
+    BW_PSUM:   16
+    BW_VMEM:   32
+    DRAM_LATENCY: 17
+
+  # single_node: GustavSNN's PE array (Fig. 11) is fed directly from its
+  # Weight/Spike global buffers -- no inter-node NoC, so no physical
+  # Global Buffer level at this scope (mirrors spinalflow.yaml/ptb.yaml/
+  # loas.yaml's reasoning).
+  single_node: true
+
+  storage:             # innermost first
+    - name: NodeLevel
+      instances: 1
+      pe:
+        num_pes: 64     # 8 tiles (COUT) x 8 PEs/tile (HO-row submatrices), Table II / Fig. 17's "64 PE"
+    - name: NoCLevel
+      # entries omitted: no physical Global Buffer exists (single_node:
+      # true), so there's nothing real to size -- absent means no capacity
+      # check for this level (has_noc_buffer=False).
+      instances: 1
+    - name: OffChip
+      instances: 1

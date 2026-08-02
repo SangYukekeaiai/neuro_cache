@@ -1,0 +1,10 @@
+dataflow:
+  # GustavSNN keeps the complete reduction row, fans out output channels and
+  # HO rows, caps resident WO, and bars T from NodeLevel.
+  node_dim_capacity:
+    KH:   full
+    KW:   full
+    CIN:  full
+    COUT: {spatial: 4}
+    HO:   {spatial: 4}
+    WO:   4
