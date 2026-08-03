@@ -43,6 +43,13 @@ class NodeTileSpec:
     node_bound: Dict[int, int]
     tile_offset: Dict[int, int]
     is_last_K: bool
+    noc_i: int = 0
+    core_id: int = 0
+    """noc_i/core_id default to 0 so every existing single-node call site
+    (which never passes them) is unaffected. See
+    nocsim.schedule.tiles.iter_node_tiles's multi-node generalization --
+    single-node schedules always yield noc_i=0, core_id=0 (one core),
+    identical to this dataclass's pre-multi-node shape."""
 
 
 @dataclass

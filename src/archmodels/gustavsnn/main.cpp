@@ -19,9 +19,17 @@
 //
 // out.bin (all int32): for each tile (outer), for each sample (inner),
 // in the same order as task.bin's tile/sample lists:
-//   tile_idx, sample_idx, mac_cycles, num_addresses
-//   per address (num_addresses times): kh, kw, cin, cout_start,
-//     cout_end, tick  (6 int32)
+//   tile_idx, sample_idx, mac_cycles, num_ticks
+//   per tick (ascending): tick_value, num_addresses_at_tick
+//     per address: kh, kw, cin, cout_start, cout_end  (5 int32, tick omitted --
+//     it's the group key above, not repeated per address)
+// See src/archmodels/tick_output.h for the shared tick-grouping helper.
+// GustavSNN is the one arch where this bucketing is real, not a no-op:
+// its tick assignment (GustavGen.h: wave_start_of[i]+j) genuinely produces
+// multiple addresses sharing one tick (up to PE_COUNT_MAX submatrices
+// advancing their own line pointer the same cycle) -- write_tick_grouped
+// buckets by the addresses' own .tick field regardless of discovery
+// order, so this is correct here without a GustavSNN-specific code path.
 
 #include <cstdint>
 #include <cstdio>
@@ -31,6 +39,7 @@
 #include <vector>
 
 #include "GustavGen.h"
+#include "../tick_output.h"
 
 namespace {
 
@@ -125,15 +134,7 @@ int main(int argc, char** argv) {
             write_i32(out_fh, tile_idx);
             write_i32(out_fh, sample_idx);
             write_i32(out_fh, result.mac_cycles);
-            write_i32(out_fh, (int32_t)result.addresses.size());
-            for (const auto& row : result.addresses) {
-                write_i32(out_fh, row.kh);
-                write_i32(out_fh, row.kw);
-                write_i32(out_fh, row.cin);
-                write_i32(out_fh, row.cout_start);
-                write_i32(out_fh, row.cout_end);
-                write_i32(out_fh, row.tick);
-            }
+            write_tick_grouped(out_fh, result.addresses);
         }
     }
 

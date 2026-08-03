@@ -42,6 +42,20 @@ def native_reconstruct_fn(arch: str):
     return importlib.import_module(ARCH_NATIVE_BRIDGES[arch]).reconstruct_samples_native
 
 
+def _flatten_single_core(tile):
+    """Flatten a single-node TileWeightTrace's ticks (always exactly one
+    core, core_id=0 -- see log/2026-08-02-multinode-core-driven-weight-trace-plan.md)
+    back into a (weight_addresses, tick_ids) pair, at the same granularity
+    this script has always diffed at, pre-dating the tick-major nesting."""
+    addresses, tick_ids = [], []
+    for entry in tile.ticks:
+        for core in entry.cores:
+            for addr in core.weight_addresses:
+                addresses.append(addr)
+                tick_ids.append(entry.tick)
+    return addresses, tick_ids
+
+
 def diff_layer(py_layer, native_layer):
     """One human-readable line per mismatched field; empty list means the two
     reconstructions are identical."""
@@ -49,12 +63,14 @@ def diff_layer(py_layer, native_layer):
     if len(py_layer.tiles) != len(native_layer.tiles):
         return [f"tile count: python={len(py_layer.tiles)} native={len(native_layer.tiles)}"]
     for i, (py_tile, nat_tile) in enumerate(zip(py_layer.tiles, native_layer.tiles)):
-        py_addr = [tuple(a) for a in py_tile.weight_addresses]
-        nat_addr = [tuple(a) for a in nat_tile.weight_addresses]
+        py_raw_addr, py_ticks = _flatten_single_core(py_tile)
+        nat_raw_addr, nat_ticks = _flatten_single_core(nat_tile)
+        py_addr = [tuple(a) for a in py_raw_addr]
+        nat_addr = [tuple(a) for a in nat_raw_addr]
         if py_addr != nat_addr:
             diffs.append(f"tile {i} weight_addresses: python={py_addr} native={nat_addr}")
-        if list(py_tile.tick_ids) != list(nat_tile.tick_ids):
-            diffs.append(f"tile {i} tick_ids: python={py_tile.tick_ids} native={nat_tile.tick_ids}")
+        if py_ticks != nat_ticks:
+            diffs.append(f"tile {i} tick_ids: python={py_ticks} native={nat_ticks}")
     return diffs
 
 

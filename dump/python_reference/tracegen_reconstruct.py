@@ -22,7 +22,7 @@ import pathlib
 from typing import Any, Dict, Iterator, List, Sequence, Tuple
 
 from archmodels import ArchComputeModel, NodeTileSpec
-from tracegen import LayerWeightTrace, TileWeightTrace
+from tracegen import LayerWeightTrace, TileWeightTrace, tick_entries_from_flat
 
 
 def reconstruct_samples_for_schedule(
@@ -42,6 +42,14 @@ def reconstruct_samples_for_schedule(
     exactly the win each arch's reconstruct_tile_sequence_batch was built
     for; calling this with sample_indices=[0] reproduces exactly what
     sweep_archmodel_layers.py's own inline loop already computes.
+
+    Groups by (dram_i, noc_i) and wraps via tick_entries_from_flat, single
+    core (core_id=0), matching TileWeightTrace's current tick-major shape
+    (log/2026-08-02-multinode-core-driven-weight-trace-plan.md) -- this
+    reference path's own model.weight_addresses/weight_ticks are unchanged
+    (still flat per tile), only how their output is packaged here differs.
+    debug/04_diff_reconstruction.py is this function's only live caller,
+    always against single-node fixtures, so every tile's noc_i is 0.
     """
     num_samples = len(sample_indices)
     per_sample_tiles: List[List[TileWeightTrace]] = [[] for _ in range(num_samples)]
@@ -54,10 +62,10 @@ def reconstruct_samples_for_schedule(
             per_sample_tiles[i].append(
                 TileWeightTrace(
                     dram_i=tile.dram_i,
+                    noc_i=tile.noc_i,
                     mac_cycles=cycles.mac_cycles,
                     lif_cycles=cycles.lif_cycles,
-                    weight_addresses=list(addresses),
-                    tick_ids=list(ticks),
+                    ticks=tick_entries_from_flat(list(addresses), list(ticks)),
                 )
             )
     return [
@@ -68,6 +76,7 @@ def reconstruct_samples_for_schedule(
             sample_idx=sample_idx,
             workload_dims=workload_dims,
             dram_num_steps=dram_num_steps,
+            noc_num_steps=max((t.noc_i for t in tiles), default=0) + 1,
             tiles=per_sample_tiles[i],
         )
         for i, sample_idx in enumerate(sample_indices)

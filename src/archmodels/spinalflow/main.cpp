@@ -14,8 +14,13 @@
 // trace.bin: flat uint8, row-major [T, B_full, Cin_full, Hin_full, Win_full].
 //
 // out.bin (all int32): for each tile (outer), for each sample (inner):
-//   tile_idx, sample_idx, mac_cycles, num_addresses
-//   per address: kh, kw, cin, cout_start, cout_end, tick  (6 int32)
+//   tile_idx, sample_idx, mac_cycles, num_ticks
+//   per tick (ascending): tick_value, num_addresses_at_tick
+//     per address: kh, kw, cin, cout_start, cout_end  (5 int32, tick omitted --
+//     it's the group key above, not repeated per address)
+// See src/archmodels/tick_output.h for the shared tick-grouping helper.
+// SpinalFlow's own tick assignment (SpinalFlowGen.h) is strictly
+// sequential, so every tick group here has exactly one address.
 
 #include <cstdint>
 #include <cstdio>
@@ -25,6 +30,7 @@
 #include <vector>
 
 #include "SpinalFlowGen.h"
+#include "../tick_output.h"
 
 namespace {
 
@@ -118,15 +124,7 @@ int main(int argc, char** argv) {
             write_i32(out_fh, tile_idx);
             write_i32(out_fh, sample_idx);
             write_i32(out_fh, result.mac_cycles);
-            write_i32(out_fh, (int32_t)result.addresses.size());
-            for (const auto& row : result.addresses) {
-                write_i32(out_fh, row.kh);
-                write_i32(out_fh, row.kw);
-                write_i32(out_fh, row.cin);
-                write_i32(out_fh, row.cout_start);
-                write_i32(out_fh, row.cout_end);
-                write_i32(out_fh, row.tick);
-            }
+            write_tick_grouped(out_fh, result.addresses);
         }
     }
 

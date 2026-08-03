@@ -84,7 +84,7 @@ def _resolve_samples(args: argparse.Namespace) -> List[int]:
 _STATE = {}
 
 
-def _init_worker(trace, tiles, arch_name, trace_dir_name, layer_name, workload_dims, dram_num_steps, out_dir):
+def _init_worker(trace, tiles, arch_name, trace_dir_name, layer_name, workload_dims, dram_num_steps, out_dir, combo_tag=""):
     _STATE["trace"] = trace
     _STATE["tiles"] = tiles
     _STATE["arch_name"] = arch_name
@@ -93,6 +93,7 @@ def _init_worker(trace, tiles, arch_name, trace_dir_name, layer_name, workload_d
     _STATE["workload_dims"] = workload_dims
     _STATE["dram_num_steps"] = dram_num_steps
     _STATE["out_dir"] = out_dir
+    _STATE["combo_tag"] = combo_tag
 
 
 def _process_chunk(sample_indices: Sequence[int]) -> int:
@@ -103,7 +104,7 @@ def _process_chunk(sample_indices: Sequence[int]) -> int:
     )
     for lt in layer_traces:
         out_path = (
-            _STATE["out_dir"] / _STATE["arch_name"] / _STATE["trace_dir_name"]
+            _STATE["out_dir"] / _STATE["arch_name"] / _STATE["combo_tag"] / _STATE["trace_dir_name"]
             / _STATE["layer_name"] / f"sample_{lt.sample_idx:05d}.json.gz"
         )
         tracegen.save_weight_trace(lt, out_path)
@@ -125,7 +126,8 @@ def run_one_combo(args: argparse.Namespace) -> int:
         return 1
 
     out_dir = pathlib.Path(args.out_dir)
-    layer_out_dir = out_dir / args.arch / args.trace_dir / args.layer
+    combo_tag = args.combo_tag or ""
+    layer_out_dir = out_dir / args.arch / combo_tag / args.trace_dir / args.layer
 
     requested = _resolve_samples(args)
     if args.force:
@@ -142,13 +144,13 @@ def run_one_combo(args: argparse.Namespace) -> int:
     artifact, prob, tiles = tracegen.load_schedule(schedule_path)
     trace = load_layer_trace(trace_root / args.trace_dir, args.layer, mmap=True)
 
-    print(f"Reconstructing {len(todo)} sample(s) of {args.arch}/{args.trace_dir}/{args.layer} "
+    print(f"Reconstructing {len(todo)} sample(s) of {args.arch}/{combo_tag}/{args.trace_dir}/{args.layer} "
           f"({len(tiles)} tiles/sample) with {args.workers} worker(s)")
 
     try:
         if args.workers <= 1:
             _init_worker(trace, tiles, args.arch, args.trace_dir, args.layer,
-                         artifact.workload["problem"], artifact.dram_num_steps, out_dir)
+                         artifact.workload["problem"], artifact.dram_num_steps, out_dir, combo_tag)
             n_done = _process_chunk(todo)
         else:
             chunks = _chunks(todo, args.workers)
@@ -156,7 +158,7 @@ def run_one_combo(args: argparse.Namespace) -> int:
                 processes=args.workers,
                 initializer=_init_worker,
                 initargs=(trace, tiles, args.arch, args.trace_dir, args.layer,
-                          artifact.workload["problem"], artifact.dram_num_steps, out_dir),
+                          artifact.workload["problem"], artifact.dram_num_steps, out_dir, combo_tag),
             ) as pool:
                 n_done = sum(pool.map(_process_chunk, chunks))
     except Exception:
@@ -272,6 +274,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--trace-root", default=str(DEFAULT_TRACE_ROOT))
     p.add_argument("--schedule-cache", default="outputs/schedules")
     p.add_argument("--out-dir", default="outputs/weight_traces")
+    p.add_argument("--combo-tag", default="",
+                   help="Optional path segment inserted as <out-dir>/<arch>/<combo-tag>/<trace-dir>/<layer>/ "
+                        "(single-combo mode only). Disambiguates output across arch-config sweeps (e.g. "
+                        "different instances/node/noc sizes) that reuse the same --schedule-cache directory "
+                        "structure otherwise. Empty (default) reproduces the original "
+                        "<out-dir>/<arch>/<trace-dir>/<layer>/ layout exactly.")
     p.add_argument("--sample-start", type=int, default=0)
     p.add_argument("--sample-count", type=int,
                    help="Explicit sample range (single-combo mode only); mutually exclusive with --n-samples.")

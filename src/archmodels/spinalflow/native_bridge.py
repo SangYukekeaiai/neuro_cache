@@ -43,20 +43,29 @@ def _pack_task(trace_shape: Sequence[int], tiles: Sequence[NodeTileSpec], sample
 
 
 def _unpack_output(data: bytes, num_tiles: int, sample_indices: Sequence[int]):
+    """Parses the tick-grouped wire format spinalflowgen's main.cpp now
+    writes (src/archmodels/tick_output.h): per (tile, sample), tick_value +
+    num_addresses_at_tick pairs, addresses without a per-address tick field
+    (the tick value is the group key). Yields ticks already in the
+    [{"tick": j, "weight_addresses": [...]}] shape tracegen.assemble_layer_traces
+    expects -- no further adaptation needed."""
     off = 0
     n = len(data)
     for _tile_idx in range(num_tiles):
         for _s in sample_indices:
-            tile_idx, sample_idx, mac_cycles, num_addr = struct.unpack_from("<4i", data, off)
+            tile_idx, sample_idx, mac_cycles, num_ticks = struct.unpack_from("<4i", data, off)
             off += 16
-            addresses = []
             ticks = []
-            for _ in range(num_addr):
-                kh, kw, cin, cout_start, cout_end, tick = struct.unpack_from("<6i", data, off)
-                off += 24
-                addresses.append((kh, kw, cin, cout_start, cout_end))
-                ticks.append(tick)
-            yield tile_idx, sample_idx, mac_cycles, addresses, ticks
+            for _ in range(num_ticks):
+                tick_value, num_addr = struct.unpack_from("<2i", data, off)
+                off += 8
+                addresses = []
+                for _ in range(num_addr):
+                    kh, kw, cin, cout_start, cout_end = struct.unpack_from("<5i", data, off)
+                    off += 20
+                    addresses.append((kh, kw, cin, cout_start, cout_end))
+                ticks.append({"tick": tick_value, "weight_addresses": addresses})
+            yield tile_idx, sample_idx, mac_cycles, ticks
     assert off == n, f"spinalflowgen output: {off} bytes consumed, {n} in file (framing bug)"
 
 
@@ -73,8 +82,14 @@ def reconstruct_samples_native(
     """Native-C++ equivalent of tracegen.reconstruct_samples_for_schedule,
     specialized to SpinalFlow. Same LayerWeightTrace output shape as the
     Python path. Requires spinalflowgen to be built first
-    (make in this directory)."""
-    from tracegen import LayerWeightTrace, TileWeightTrace
+    (make in this directory).
+
+    `tiles` may span multiple (dram_i, noc_i, core_id) triples (multi-node)
+    or just dram_i (single-node) -- one subprocess call handles the whole
+    flat list either way (see loas/native_bridge.py's docstring for why).
+    tracegen.assemble_layer_traces owns grouping the flat per-tile results
+    back into (dram_i, noc_i)-keyed, cross-core-merged LayerWeightTraces."""
+    from tracegen import assemble_layer_traces
 
     if not _BINARY.exists():
         raise FileNotFoundError(
@@ -101,28 +116,8 @@ def reconstruct_samples_native(
         )
         out_data = out_path.read_bytes()
 
-    num_samples = len(sample_indices)
-    per_sample_tiles: List[List[Any]] = [[None] * len(tiles) for _ in range(num_samples)]
-
-    for tile_idx, local_idx, mac_cycles, addresses, ticks in _unpack_output(out_data, len(tiles), local_indices):
-        i = local_idx
-        per_sample_tiles[i][tile_idx] = TileWeightTrace(
-            dram_i=tiles[tile_idx].dram_i,
-            mac_cycles=mac_cycles,
-            lif_cycles=None,
-            weight_addresses=addresses,
-            tick_ids=ticks,
-        )
-
-    return [
-        LayerWeightTrace(
-            arch=arch_name,
-            trace_dir=trace_dir_name,
-            layer_name=layer_name,
-            sample_idx=sample_idx,
-            workload_dims=workload_dims,
-            dram_num_steps=dram_num_steps,
-            tiles=per_sample_tiles[i],
-        )
-        for i, sample_idx in enumerate(sample_indices)
-    ]
+    unpacked = _unpack_output(out_data, len(tiles), local_indices)
+    return assemble_layer_traces(
+        tiles, sample_indices, unpacked,
+        arch_name, trace_dir_name, layer_name, workload_dims, dram_num_steps,
+    )
