@@ -5,58 +5,153 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Neuro Cache · L1/L2 hierarchy</title>
   <style>
-    :root{--ink:#17201f;--muted:#687270;--paper:#f3f0e8;--card:#fffdf7;--line:#d8d1c4;--teal:#08736a;--orange:#d26932;--blue:#426fae;font-family:Inter,ui-sans-serif,system-ui,sans-serif}
+    :root{--ink:#17201f;--muted:#687270;--paper:#f3f0e8;--card:#fffdf7;--line:#d8d1c4;--teal:#08736a;--orange:#d26932;--blue:#426fae;--purple:#76548f;font-family:Inter,ui-sans-serif,system-ui,sans-serif}
     *{box-sizing:border-box}body{margin:0;color:var(--ink);background:var(--paper)}.shell{max-width:1440px;margin:auto;padding:0 28px 64px}
     header{padding:52px 0 30px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--teal);font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
-    h1,h2{font-family:Georgia,serif;font-weight:500}h1{max-width:950px;margin:12px 0;font-size:clamp(42px,6vw,74px);line-height:1;letter-spacing:-.035em}header p{max-width:850px;color:var(--muted);font-size:18px;line-height:1.55}
-    .controls{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:1.25fr 1.45fr 1.2fr .8fr .8fr;gap:12px;padding:16px 0;background:color-mix(in srgb,var(--paper) 94%,transparent);backdrop-filter:blur(9px)}
+    h1,h2{font-family:Georgia,serif;font-weight:500}h1{max-width:950px;margin:12px 0;font-size:clamp(42px,6vw,74px);line-height:1;letter-spacing:-.035em}header p{max-width:900px;color:var(--muted);font-size:18px;line-height:1.55}
+    .tabs{position:sticky;top:0;z-index:8;display:flex;gap:8px;overflow:auto;padding:14px 0;background:color-mix(in srgb,var(--paper) 95%,transparent);backdrop-filter:blur(9px)}
+    .tabs button{flex:0 0 auto;padding:10px 15px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);font:700 12px/1 inherit;cursor:pointer}.tabs button.active{border-color:var(--teal);background:var(--teal);color:white}
+    .controls{position:sticky;top:62px;z-index:7;display:grid;grid-template-columns:1.25fr 1.45fr 1.2fr .8fr .8fr;gap:12px;padding:12px 0 16px;background:color-mix(in srgb,var(--paper) 95%,transparent);backdrop-filter:blur(9px)}
     label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}select{padding:10px;border:1px solid var(--line);border-radius:9px;background:white;font:inherit}
-    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0 34px}.stat,.card{border:1px solid var(--line);border-radius:15px;background:var(--card);box-shadow:0 8px 28px rgba(40,38,31,.04)}.stat{padding:18px}.stat b{display:block;margin-top:5px;font-family:Georgia,serif;font-size:34px;font-weight:500}.stat span{color:var(--muted);font-size:12px}
-    section{margin-top:42px}.section-head{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:16px}.section-head h2{margin:0;font-size:34px}.section-head p{max-width:650px;margin:0;color:var(--muted);line-height:1.5}
-    .facets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card{padding:17px;overflow:auto}.card h3{margin:0 0 4px;font-size:15px}.card .sub{color:var(--muted);font-size:11px}.chart{display:block;width:100%;min-width:460px;height:auto;margin-top:9px}.axis{stroke:#cbc4b8;stroke-width:1}.gridline{stroke:#e6e0d6;stroke-width:1}.bar{fill:var(--teal)}.bar.alt{fill:var(--blue)}.tick{fill:var(--muted);font-size:10px}.value{fill:var(--ink);font-size:10px}.heat{stroke:white;stroke-width:2}.empty{padding:30px;color:var(--muted)}
+    .page{display:none;padding-top:20px}.page.active{display:block}.page>section:first-child{margin-top:0}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:4px 0 34px}.stat,.card{border:1px solid var(--line);border-radius:15px;background:var(--card);box-shadow:0 8px 28px rgba(40,38,31,.04)}.stat{padding:18px}.stat b{display:block;margin-top:5px;font-family:Georgia,serif;font-size:34px;font-weight:500}.stat span{color:var(--muted);font-size:12px}
+    section{margin-top:42px}.section-head{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:16px}.section-head h2{margin:0;font-size:34px}.section-head p{max-width:700px;margin:0;color:var(--muted);line-height:1.5}
+    .facets,.info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.info-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.card{padding:17px;overflow:auto}.card h3{margin:0 0 7px;font-size:16px}.card .sub,.small{color:var(--muted);font-size:12px;line-height:1.55}.metric{font-family:Georgia,serif;font-size:36px;margin:6px 0}.accent{color:var(--teal)}
+    .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:stretch}.flow .node{position:relative;padding:16px;border:1px solid var(--line);border-radius:13px;background:var(--card)}.flow .node:not(:last-child)::after{content:'→';position:absolute;right:-14px;top:42%;z-index:2;color:var(--orange);font-size:21px}.node strong{display:block;margin-bottom:5px}.node span{color:var(--muted);font-size:12px;line-height:1.45}
+    pre{margin:0;padding:18px;border-radius:12px;background:#17201f;color:#eef6ef;overflow:auto;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.pill{display:inline-flex;padding:5px 9px;border-radius:999px;background:#e2efec;color:#155e57;font-size:11px;font-weight:750}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:11px 13px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{position:sticky;top:0;background:#ebe7dd;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}tbody tr:last-child td{border-bottom:0}td.center{text-align:center}.check{color:var(--teal);font-weight:900}.class-chip{display:inline-block;padding:3px 7px;border-radius:6px;background:#eee8f3;color:#62417b;font:700 11px/1.25 ui-monospace,monospace}
+    .chart{display:block;width:100%;min-width:460px;height:auto;margin-top:9px}.axis{stroke:#cbc4b8;stroke-width:1}.gridline{stroke:#e6e0d6;stroke-width:1}.bar{fill:var(--teal)}.tick{fill:var(--muted);font-size:10px}.value{fill:var(--ink);font-size:10px}.heat{stroke:white;stroke-width:2}.empty{padding:30px;color:var(--muted)}
     footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.6}
-    @media(max-width:850px){.controls,.stats,.facets{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column}}
+    [hidden]{display:none!important}@media(max-width:900px){.controls,.stats,.facets,.info-grid,.info-grid.three,.flow{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column}.flow .node::after{display:none}.tabs{top:0}.controls{top:60px}}
   </style>
 </head>
 <body>
 <main class="shell">
-  <header><div class="eyebrow">Neuro Cache · Stage 2 · August 3, 2026</div><h1>Private L1s, one shared L2.</h1><p>Five-sample LoAS smoke replay across four multi-core architecture configurations and a 24-point hierarchy grid. Rates pool exact hit/access counts; L2’s denominator contains only L1-missed traffic.</p></header>
-  <div class="controls">
+  <header><div class="eyebrow">Neuro Cache · Stage 2 · August 3, 2026</div><h1>Private L1s, one shared L2.</h1><p>Trace inputs, the complete cache-policy sweep, schedule structure, and measured hierarchy results are separated below so each claim can be inspected on its own.</p></header>
+
+  <nav class="tabs" aria-label="Artifact sections">
+    <button class="active" data-page="traces">01 · Weight traces</button>
+    <button data-page="sweep">02 · Cache sweep</button>
+    <button data-page="schedules">03 · Schedule classes</button>
+    <button data-page="l1-results">04 · L1 results</button>
+    <button data-page="l2-results">05 · L2 results</button>
+  </nav>
+
+  <div id="resultControls" class="controls" hidden>
     <label>Workload<select id="workload"></select></label>
     <label>Arch config<select id="arch"><option value="all">All · faceted</option></select></label>
     <label>Structure<select id="structure"><option value="fully_associative:0">Fully associative</option><option value="set_associative:32">32-way set associative</option><option value="set_associative:4">4-way set associative</option></select></label>
     <label>L1 size<select id="l1"><option value="16">16 KB</option><option value="32">32 KB</option></select></label>
     <label>L2 size<select id="l2"><option value="128">128 KB</option><option value="256">256 KB</option><option value="512">512 KB</option><option value="1024">1024 KB</option></select></label>
   </div>
-  <div class="stats"><div class="stat"><span>Selected L1 hit rate · visible arch configs</span><b id="l1Stat">—</b></div><div class="stat"><span>Selected L2 hit rate · visible arch configs</span><b id="l2Stat">—</b></div><div class="stat"><span>Effective on-chip hit rate · visible arch configs</span><b id="effectiveStat">—</b></div></div>
-  <section><div class="section-head"><h2>L1 · cross configurations</h2><p>Six structure/size points per architecture. L1 behavior is independent of L2 capacity, which is validated before this artifact is built.</p></div><div id="l1Overall" class="facets"></div></section>
-  <section><div class="section-head"><h2>L1 · layer detail</h2><p>The selected structure and L1 size, broken down by layer and faceted by architecture configuration.</p></div><div id="l1Layers" class="facets"></div></section>
-  <section><div class="section-head"><h2>L2 · full 24-point grid</h2><p>Rows combine structure and L1 size; columns sweep L2 capacity. Each cell is L2 hits divided by L1 misses.</p></div><div id="l2Overall" class="facets"></div></section>
-  <section><div class="section-head"><h2>L2 · layer detail</h2><p>The selected full hierarchy configuration, broken down by layer and faceted by architecture configuration.</p></div><div id="l2Layers" class="facets"></div></section>
-  <footer>Source: <code>hierarchical_cache_results.csv</code> · 14,880 native hierarchical replays · fixed 4×4 CIN×COUT lines · 16-byte line · cout-prefetch and same-tick pinning enabled.</footer>
+
+  <div id="traces" class="page active">
+    <section><div class="section-head"><h2>Weight-trace configuration</h2><p>The hierarchy consumes the Stage 1 core-driven format directly: tiles contain ticks, and every tick contains the concurrent requests issued by its cores.</p></div>
+      <div class="stats"><div class="stat"><span>Architecture configs</span><b id="traceArchCount">—</b></div><div class="stat"><span>Workload layers per config</span><b id="traceLayerCount">—</b></div><div class="stat"><span>Trace samples</span><b id="traceFileCount">—</b></div></div>
+      <div class="flow"><div class="node"><strong>Tile</strong><span><code>(dram_i, noc_i)</code><br>one temporal tile</span></div><div class="node"><strong>Tick</strong><span>lock-step issue time<br><code>tick = j</code></span></div><div class="node"><strong>Core</strong><span>private-L1 identity<br><code>core_id = k</code></span></div><div class="node"><strong>Weight range</strong><span><code>[kh, kw, cin, cout_start, cout_end)</code></span></div></div>
+    </section>
+    <section><div class="section-head"><h2>Input grid</h2><p>All four cache experiments use the same two workloads and five canonical samples per layer.</p></div><div id="traceConfigTable" class="table-wrap"></div></section>
+    <section><div class="section-head"><h2>Real trace example</h2><p>The excerpt is read from sample 0 of ResNet19 layer 1. Only the first four concurrent cores are shown; the source tick contains all cores.</p></div><div class="info-grid"><article class="card" id="traceExampleMeta"></article><article class="card"><h3>Nested JSON excerpt</h3><pre id="traceExampleCode"></pre></article></div></section>
+  </div>
+
+  <div id="sweep" class="page">
+    <section><div class="section-head"><h2>Complete L1/L2 sweep</h2><p>Every marked cell was evaluated. Structure and associativity are shared by L1 and L2; capacity differs by level.</p></div><div id="sweepTable" class="table-wrap"></div></section>
+    <section><div class="section-head"><h2>Fixed hierarchy policies</h2><p>These semantics are held constant across all 24 structural and capacity combinations.</p></div>
+      <div class="info-grid three">
+        <article class="card"><div class="eyebrow">Topology</div><h3>Private L1, shared L2</h3><p class="small">One L1 per core and one L2 shared by all cores. L2 is consulted only after an L1 miss.</p></article>
+        <article class="card"><div class="eyebrow">Line layout</div><h3>Fixed 4 × 4 CIN × COUT</h3><p class="small"><code>tag=(kh,kw,cin//4,cout//4)</code>. Each line is 16 bytes at one byte per weight, identical at both levels.</p></article>
+        <article class="card"><div class="eyebrow">Replacement</div><h3>LRU within each structure</h3><p class="small">Fully associative, 32-way set associative, and 4-way set associative use true layer-shape radices for set indexing.</p></article>
+        <article class="card"><div class="eyebrow">Miss fill</div><h3>Inclusive hierarchy</h3><p class="small">An L2 hit fills the requesting L1. An L2 miss represents an off-chip fetch and fills both L2 and that L1.</p></article>
+        <article class="card"><div class="eyebrow">Concurrency</div><h3>Tick-atomic L2 snapshot</h3><p class="small">All same-tick L2 lookups see the start-of-tick state. Fills and hit touches are applied afterward in ascending core order.</p></article>
+        <article class="card"><div class="eyebrow">L2 policy</div><h3>COUT+1 prefetch and pinning</h3><p class="small">An L2 miss prefetches the next valid COUT block. Same-tick hits are pinned; overflow falls back to the pre-touch LRU order.</p></article>
+      </div>
+    </section>
+  </div>
+
+  <div id="schedules" class="page">
+    <section><div class="section-head"><h2>Layer schedule conclusions</h2><p>Value-free schedule classes for the exact architecture/workload grid used by the cache replay. “–” means that level has no temporal loop.</p></div>
+      <div class="info-grid three"><article class="card"><div class="eyebrow">NoC-S</div><h3>Spatial dimensions</h3><p class="small">Unordered set of super-dimensions spatially split across cores.</p></article><article class="card"><div class="eyebrow">NoC-T</div><h3>NoC temporal order</h3><p class="small">Ordered super-dimension chain in the NoC temporal permutation.</p></article><article class="card"><div class="eyebrow">DRAM-T</div><h3>DRAM temporal order</h3><p class="small">Ordered super-dimension chain in the DRAM temporal permutation.</p></article></div>
+      <div class="legend"><span class="pill">M = HO, WO</span><span class="pill">N = COUT</span><span class="pill">K = KH, KW, CIN</span><span class="pill">T = timestep</span></div>
+    </section>
+    <section><div class="controls" style="position:static;grid-template-columns:1fr 1.25fr"><label>Workload<select id="scheduleWorkload"></select></label><label>Arch config<select id="scheduleArch"></select></label></div><div class="section-head"><h2>Observed classes by layer</h2><p id="scheduleSummaryText"></p></div><div id="scheduleSummary" class="legend"></div><div id="scheduleTable" class="table-wrap" style="margin-top:16px"></div></section>
+  </div>
+
+  <div id="l1-results" class="page">
+    <div class="stats"><div class="stat"><span>Selected pooled L1 hit rate</span><b id="l1Stat">—</b></div><div class="stat"><span>Selected L1 accesses</span><b id="l1AccessStat">—</b></div><div class="stat"><span>Visible architecture configs</span><b id="archCountStat">—</b></div></div>
+    <section><div class="section-head"><h2>L1 · cross configurations</h2><p>Six structure/size points per architecture. L1 behavior is independent of L2 capacity, validated before artifact generation.</p></div><div id="l1Overall" class="facets"></div></section>
+    <section><div class="section-head"><h2>L1 · layer detail</h2><p>The selected structure and L1 size, broken down by layer and faceted by architecture configuration.</p></div><div id="l1Layers" class="facets"></div></section>
+  </div>
+
+  <div id="l2-results" class="page">
+    <div class="stats"><div class="stat"><span>Selected pooled L2 hit rate</span><b id="l2Stat">—</b></div><div class="stat"><span>Effective on-chip hit rate</span><b id="effectiveStat">—</b></div><div class="stat"><span>Selected L2 accesses = L1 misses</span><b id="l2AccessStat">—</b></div></div>
+    <section><div class="section-head"><h2>L2 · full 24-point grid</h2><p>Rows combine structure and L1 size; columns sweep L2 capacity. Each cell is L2 hits divided by L1 misses.</p></div><div id="l2Overall" class="facets"></div></section>
+    <section><div class="section-head"><h2>L2 · layer detail</h2><p>The selected full hierarchy configuration, broken down by layer and faceted by architecture configuration.</p></div><div id="l2Layers" class="facets"></div></section>
+  </div>
+
+  <footer>Sources: <code>hierarchical_cache_results.csv</code>, <code>outputs/schedules/multinode_sweep/classification.csv</code>, and the Stage 1 multi-core weight traces · 14,880 native hierarchy replays · pooled exact hit/access counts · n=5 samples.</footer>
 </main>
 <script src="data.js"></script>
 <script>
-const D=window.HIERARCHY_DATA, $=id=>document.getElementById(id);
+const D=window.HIERARCHY_DATA,$=id=>document.getElementById(id);
 const pct=x=>(100*x).toFixed(1)+'%';
+const count=x=>x.toLocaleString('en-US');
 const archLabel=a=>a.replace('inst16_node32kb_noc512kb','16 cores · 512 KB NoC').replace('inst16_node32kb_noc4096kb','16 cores · 4096 KB NoC').replace('inst1024_node32kb_noc512kb','1024 cores · 512 KB NoC').replace('inst1024_node32kb_noc4096kb','1024 cores · 4096 KB NoC');
-const structLabel=(s,a)=>s==='fully_associative'?'FA':`SA-${a}`;
+const structLabel=(s,a)=>s==='fully_associative'?'Fully associative':`${a}-way set associative`;
+const shortStruct=(s,a)=>s==='fully_associative'?'FA':`SA-${a}`;
 const config=()=>{const [structure,assoc]=$('structure').value.split(':');return{workload:$('workload').value,structure,assoc:+assoc,l1_kb:+$('l1').value,l2_kb:+$('l2').value}};
-for(const w of D.workloads){const o=document.createElement('option');o.value=w;o.textContent=w;$('workload').append(o)}
-for(const a of D.archs){const o=document.createElement('option');o.value=a;o.textContent=archLabel(a);$('arch').append(o)}
+
+for(const w of D.workloads){for(const id of ['workload','scheduleWorkload']){const o=document.createElement('option');o.value=w;o.textContent=w;$(id).append(o)}}
+for(const a of D.archs){for(const id of ['arch','scheduleArch']){const o=document.createElement('option');o.value=a;o.textContent=archLabel(a);$(id).append(o)}}
+
+document.querySelectorAll('.tabs button').forEach(button=>button.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-selected',b===button)});
+  document.querySelectorAll('.page').forEach(page=>page.classList.toggle('active',page.id===button.dataset.page));
+  $('resultControls').hidden=!['l1-results','l2-results'].includes(button.dataset.page);
+  window.scrollTo({top:document.querySelector('.tabs').offsetTop,behavior:'smooth'});
+}));
+
+function renderTrace(){
+  const layerKeys=new Set(D.layers.map(r=>`${r.workload}|${r.layer}`));
+  $('traceArchCount').textContent=D.archs.length;
+  $('traceLayerCount').textContent=layerKeys.size;
+  $('traceFileCount').textContent=count(D.archs.length*layerKeys.size*D.samples.length);
+  $('traceConfigTable').innerHTML=`<table><thead><tr><th>Architecture config</th><th>Cores</th><th>Node storage</th><th>NoC storage</th><th>Workloads</th><th>Layers</th><th>Samples/layer</th></tr></thead><tbody>${D.archs.map(a=>{const m=a.match(/inst(\d+)_node(\d+)kb_noc(\d+)kb/);return`<tr><td>${archLabel(a)}</td><td>${m[1]}</td><td>${m[2]} KB</td><td>${m[3]} KB</td><td>${D.workloads.join(', ')}</td><td>${layerKeys.size}</td><td>${D.samples.length}</td></tr>`}).join('')}</tbody></table>`;
+  const e=D.trace_example,d=e.workload_dims;
+  $('traceExampleMeta').innerHTML=`<div class="eyebrow">${e.workload} · ${e.layer}</div><h3>Sample ${e.sample} · first tile and tick</h3><p class="small"><strong>Shape:</strong> KH ${d.KH} × KW ${d.KW} × CIN ${d.CIN} × COUT ${d.COUT} × HO ${d.HO} × WO ${d.WO} × T ${d.T}</p><p class="small"><strong>Temporal grid:</strong> ${e.dram_num_steps} DRAM steps × ${e.noc_num_steps} NoC steps = ${count(e.tile_count)} tiles</p><p class="small"><strong>Tile:</strong> dram_i ${e.tile.dram_i}, noc_i ${e.tile.noc_i}, ${e.tile.mac_cycles} MAC cycles, lif_cycles ${e.tile.lif_cycles===null?'placeholder/null':e.tile.lif_cycles}</p><p class="small"><strong>Tick ${e.tick}:</strong> ${e.core_count} concurrent core entries; four shown at right.</p><p class="small"><code>weight_addresses</code> uses <code>[kh, kw, cin, cout_start, cout_end)</code>.</p>`;
+  $('traceExampleCode').textContent=JSON.stringify({dram_i:e.tile.dram_i,noc_i:e.tile.noc_i,mac_cycles:e.tile.mac_cycles,lif_cycles:e.tile.lif_cycles,ticks:[{tick:e.tick,cores:e.cores}]},null,2);
+}
+
+function renderSweep(){
+  const rows=[];for(const [structure,assoc] of D.sweep.structures)for(const l1 of D.sweep.l1_kb)rows.push({structure,assoc,l1});
+  $('sweepTable').innerHTML=`<table><thead><tr><th>Shared L1/L2 structure</th><th>L1 capacity</th>${D.sweep.l2_kb.map(v=>`<th>L2 ${v} KB</th>`).join('')}<th>Line</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${structLabel(r.structure,r.assoc)}</td><td>${r.l1} KB private/core</td>${D.sweep.l2_kb.map(()=>'<td class="center check">✓</td>').join('')}<td>${D.sweep.line_size_bytes} B</td></tr>`).join('')}</tbody></table>`;
+}
+
+function renderSchedules(){
+  const rows=D.schedules.filter(r=>r.workload===$('scheduleWorkload').value&&r.arch===$('scheduleArch').value);
+  const groups=new Map();for(const r of rows){const key=`${r.noc_s} | ${r.noc_t} | ${r.dram_t}`;groups.set(key,(groups.get(key)||0)+1)}
+  $('scheduleSummaryText').textContent=`${archLabel($('scheduleArch').value)} · ${$('scheduleWorkload').value} · ${rows.length} layers`;
+  $('scheduleSummary').innerHTML=[...groups.entries()].sort((a,b)=>b[1]-a[1]).map(([key,n])=>`<span class="pill">${key} · ${n} layer${n===1?'':'s'}</span>`).join('');
+  $('scheduleTable').innerHTML=`<table><thead><tr><th>Layer</th><th>NoC-S</th><th>NoC-T</th><th>DRAM-T</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.layer.replace(/^layer_\d+_/,'')}</td><td><span class="class-chip">${r.noc_s}</span></td><td><span class="class-chip">${r.noc_t}</span></td><td><span class="class-chip">${r.dram_t}</span></td></tr>`).join('')}</tbody></table>`;
+}
+
 function card(arch,subtitle,svg){const d=document.createElement('article');d.className='card';d.innerHTML=`<h3>${archLabel(arch)}</h3><div class="sub">${subtitle}</div>${svg}`;return d}
 function barChart(rows,metric,label){const W=620,H=275,m={l:42,r:12,t:15,b:72},pw=W-m.l-m.r,ph=H-m.t-m.b,n=rows.length,bw=pw/Math.max(n,1);let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">`;
  for(const y of [0,.25,.5,.75,1]){const py=m.t+ph*(1-y);s+=`<line class="gridline" x1="${m.l}" x2="${W-m.r}" y1="${py}" y2="${py}"/><text class="tick" x="${m.l-7}" y="${py+3}" text-anchor="end">${Math.round(y*100)}</text>`}
  rows.forEach((r,i)=>{const v=r[metric],h=ph*v,x=m.l+i*bw+bw*.15,y=m.t+ph-h;s+=`<rect class="bar" x="${x}" y="${y}" width="${bw*.7}" height="${h}"><title>${r.label}: ${pct(v)}</title></rect><text class="tick" transform="translate(${x+bw*.35},${H-m.b+10}) rotate(48)" text-anchor="start">${r.label}</text>`});return s+'</svg>'}
-function heatmap(rows){const W=620,H=250,m={l:116,r:18,t:27,b:20},cols=[128,256,512,1024],names=['FA · 16','FA · 32','SA-32 · 16','SA-32 · 32','SA-4 · 16','SA-4 · 32'],cw=(W-m.l-m.r)/4,rh=(H-m.t-m.b)/6;let s=`<svg class="chart" viewBox="0 0 ${W} ${H}">`;
+function heatmap(rows){const W=620,H=250,m={l:116,r:18,t:27,b:20},cols=D.sweep.l2_kb,names=['FA · 16','FA · 32','SA-32 · 16','SA-32 · 32','SA-4 · 16','SA-4 · 32'],cw=(W-m.l-m.r)/cols.length,rh=(H-m.t-m.b)/names.length;let s=`<svg class="chart" viewBox="0 0 ${W} ${H}">`;
  cols.forEach((v,i)=>s+=`<text class="tick" x="${m.l+(i+.5)*cw}" y="16" text-anchor="middle">${v} KB</text>`);names.forEach((name,ri)=>{s+=`<text class="tick" x="${m.l-7}" y="${m.t+(ri+.55)*rh}" text-anchor="end">${name}</text>`;cols.forEach((l2,ci)=>{const r=rows.find(x=>x.row===name&&x.l2_kb===l2),v=r?r.l2_rate:0,light=96-v*54,x=m.l+ci*cw,y=m.t+ri*rh;s+=`<rect class="heat" x="${x}" y="${y}" width="${cw}" height="${rh}" fill="hsl(173 58% ${light}%)"><title>${name}, L2 ${l2} KB: ${pct(v)}</title></rect><text class="value" x="${x+cw/2}" y="${y+rh*.6}" text-anchor="middle">${pct(v)}</text>`})});return s+'</svg>'}
-function render(){const c=config(),archs=$('arch').value==='all'?D.archs:[$('arch').value],overall=D.overall.filter(r=>r.workload===c.workload&&archs.includes(r.arch)),layers=D.layers.filter(r=>r.workload===c.workload&&archs.includes(r.arch));const selected=overall.filter(r=>r.structure===c.structure&&r.assoc===c.assoc&&r.l1_kb===c.l1_kb&&r.l2_kb===c.l2_kb),sum=k=>selected.reduce((a,r)=>a+r[k],0);$('l1Stat').textContent=selected.length?pct(sum('l1_hits')/sum('l1_accesses')):'—';$('l2Stat').textContent=selected.length?pct(sum('l2_hits')/sum('l2_accesses')):'—';$('effectiveStat').textContent=selected.length?pct((sum('l1_hits')+sum('l2_hits'))/sum('l1_accesses')):'—';
+
+function renderResults(){const c=config(),archs=$('arch').value==='all'?D.archs:[$('arch').value],overall=D.overall.filter(r=>r.workload===c.workload&&archs.includes(r.arch)),layers=D.layers.filter(r=>r.workload===c.workload&&archs.includes(r.arch));const selected=overall.filter(r=>r.structure===c.structure&&r.assoc===c.assoc&&r.l1_kb===c.l1_kb&&r.l2_kb===c.l2_kb),sum=k=>selected.reduce((a,r)=>a+r[k],0);$('l1Stat').textContent=selected.length?pct(sum('l1_hits')/sum('l1_accesses')):'—';$('l1AccessStat').textContent=count(sum('l1_accesses'));$('archCountStat').textContent=archs.length;$('l2Stat').textContent=selected.length?pct(sum('l2_hits')/sum('l2_accesses')):'—';$('effectiveStat').textContent=selected.length?pct((sum('l1_hits')+sum('l2_hits'))/sum('l1_accesses')):'—';$('l2AccessStat').textContent=count(sum('l2_accesses'));
  $('l1Overall').replaceChildren();$('l1Layers').replaceChildren();$('l2Overall').replaceChildren();$('l2Layers').replaceChildren();
- for(const arch of archs){const ar=overall.filter(r=>r.arch===arch);const l1=[];for(const [s,a] of [['fully_associative',0],['set_associative',32],['set_associative',4]])for(const size of [16,32]){const r=ar.find(x=>x.structure===s&&x.assoc===a&&x.l1_kb===size);l1.push({...r,label:`${structLabel(s,a)} · ${size}`})}$('l1Overall').append(card(arch,'Pooled across all layers and five samples',barChart(l1,'l1_rate','L1 cross configurations')));
-  const layerRows=layers.filter(r=>r.arch===arch&&r.structure===c.structure&&r.assoc===c.assoc&&r.l1_kb===c.l1_kb).filter((r,i,a)=>a.findIndex(x=>x.layer===r.layer)===i).map(r=>({...r,label:r.layer.replace(/^layer_\d+_/,'')}));$('l1Layers').append(card(arch,`${structLabel(c.structure,c.assoc)} · ${c.l1_kb} KB`,barChart(layerRows,'l1_rate','L1 per layer')));
-  const hrows=ar.map(r=>({...r,row:`${structLabel(r.structure,r.assoc)} · ${r.l1_kb}`}));$('l2Overall').append(card(arch,'Pooled across all layers and five samples',heatmap(hrows)));
-  const l2rows=layers.filter(r=>r.arch===arch&&r.structure===c.structure&&r.assoc===c.assoc&&r.l1_kb===c.l1_kb&&r.l2_kb===c.l2_kb).map(r=>({...r,label:r.layer.replace(/^layer_\d+_/,'')}));$('l2Layers').append(card(arch,`${structLabel(c.structure,c.assoc)} · L1 ${c.l1_kb} KB · L2 ${c.l2_kb} KB`,barChart(l2rows,'l2_rate','L2 per layer')))} }
-for(const id of ['workload','arch','structure','l1','l2'])$(id).addEventListener('change',render);render();
+ for(const arch of archs){const ar=overall.filter(r=>r.arch===arch);const l1=[];for(const [s,a] of [['fully_associative',0],['set_associative',32],['set_associative',4]])for(const size of D.sweep.l1_kb){const r=ar.find(x=>x.structure===s&&x.assoc===a&&x.l1_kb===size);l1.push({...r,label:`${shortStruct(s,a)} · ${size}`})}$('l1Overall').append(card(arch,'Pooled across all layers and five samples',barChart(l1,'l1_rate','L1 cross configurations')));
+  const layerRows=layers.filter(r=>r.arch===arch&&r.structure===c.structure&&r.assoc===c.assoc&&r.l1_kb===c.l1_kb).filter((r,i,a)=>a.findIndex(x=>x.layer===r.layer)===i).map(r=>({...r,label:r.layer.replace(/^layer_\d+_/,'')}));$('l1Layers').append(card(arch,`${shortStruct(c.structure,c.assoc)} · ${c.l1_kb} KB`,barChart(layerRows,'l1_rate','L1 per layer')));
+  const hrows=ar.map(r=>({...r,row:`${shortStruct(r.structure,r.assoc)} · ${r.l1_kb}`}));$('l2Overall').append(card(arch,'Pooled across all layers and five samples',heatmap(hrows)));
+  const l2rows=layers.filter(r=>r.arch===arch&&r.structure===c.structure&&r.assoc===c.assoc&&r.l1_kb===c.l1_kb&&r.l2_kb===c.l2_kb).map(r=>({...r,label:r.layer.replace(/^layer_\d+_/,'')}));$('l2Layers').append(card(arch,`${shortStruct(c.structure,c.assoc)} · L1 ${c.l1_kb} KB · L2 ${c.l2_kb} KB`,barChart(l2rows,'l2_rate','L2 per layer')))}
+}
+
+for(const id of ['workload','arch','structure','l1','l2'])$(id).addEventListener('change',renderResults);
+for(const id of ['scheduleWorkload','scheduleArch'])$(id).addEventListener('change',renderSchedules);
+renderTrace();renderSweep();renderSchedules();renderResults();
 </script>
 </body>
 </html>
