@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import List, Sequence, Tuple
 
 from cachesim.config import CacheConfig
-from .policy import POLICY_CLASSES
+from .policy import POLICY_CLASSES, PinStamps
 
 
 def _num_sets_and_ways(config: CacheConfig) -> Tuple[int, int]:
@@ -64,6 +64,25 @@ class Cache:
         Delegates entirely to whichever set's policy instance it maps
         to."""
         return self._sets[self._set_index(packed_tag)].access(packed_tag)
+
+    def access_pinned(self, packed_tag: int, pins: PinStamps) -> bool:
+        """access() honoring this tick's pin set on eviction -- see
+        policy.py's PinStamps. The pin set is passed whole, not filtered
+        to this set: only lines resident in the set are ever eviction
+        candidates, so pinned tags belonging to other sets simply never
+        come up."""
+        return self._sets[self._set_index(packed_tag)].access_pinned(packed_tag, pins)
+
+    def contains(self, packed_tag: int) -> bool:
+        """Residency only, no recency move and no insert on a miss -- see
+        policy.py's LRUPolicy.contains for why hierarchy.py needs the
+        question asked this way."""
+        return self._sets[self._set_index(packed_tag)].contains(packed_tag)
+
+    def stamp(self, packed_tag: int) -> int:
+        """Recency stamp of a resident line -- see policy.py's
+        LRUPolicy.stamp."""
+        return self._sets[self._set_index(packed_tag)].stamp(packed_tag)
 
 
 def replay(cache: Cache, tags: Sequence[int]) -> List[bool]:

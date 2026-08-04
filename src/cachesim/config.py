@@ -29,6 +29,30 @@ CACHE_TYPES = ("fully_associative", "set_associative", "direct_mapped")
 # hot zones), the reason this whole cache-sim effort exists; "lru" is
 # only ever the baseline it's meant to be compared against.
 POLICIES = ("lru", "fifo", "lfu", "random", "input_activity")
+# How a cache line is formed out of a (kh, kw, cin, cout) coordinate.
+# "inner_dim": one dim (`inner_dim`) collapses by line_size_bytes, the
+#   other three stay exact -- the single-dimension layout every
+#   configs/cache/*.yaml uses today.
+# "hybrid": kh/kw stay exact and cin and cout each collapse by their own
+#   block size, so one line holds a cin_block x cout_block element block
+#   (log/2026-08-03-l1-l2-cache-policy-plan.md). `inner_dim` is ignored
+#   under this layout, but stays a required field so the two layouts share
+#   one config shape.
+LAYOUTS = ("inner_dim", "hybrid")
+
+# The element block one cache line holds under layout == "hybrid", fixed
+# at 4x4 by log/2026-08-03-l1-l2-cache-policy-plan.md. Stated here once:
+# CacheConfig's cin_block/cout_block default to these, and
+# hybrid_config_from_dims derives line_size_bytes from them rather than
+# repeating the 16.
+CIN_BLOCK = 4
+COUT_BLOCK = 4
+
+# Which workload_dims key holds each of the four shape bounds. The layer's
+# true shape lives in the sample's own workload_dims (never in a cache
+# YAML -- see load_cache_config), so this mapping is the one place the
+# trace's key spelling meets CacheConfig's field names.
+_DIM_KEYS = {"kh_bound": "KH", "kw_bound": "KW", "cin_bound": "CIN", "cout_bound": "COUT"}
 
 
 @dataclass(frozen=True)
@@ -39,6 +63,24 @@ class CacheConfig:
     inner_dim: str
     policy: str = "lru"
     associativity: Optional[int] = None  # only meaningful when cache_type == "set_associative"
+    layout: str = "inner_dim"
+    # Element block one line holds under layout == "hybrid". Fixed at 4x4
+    # by the 08-03 plan, so these are not read from YAML; they are named
+    # fields rather than literals inside layout.py/layout.h so the block
+    # shape is stated in exactly one place.
+    cin_block: int = CIN_BLOCK
+    cout_block: int = COUT_BLOCK
+    # The layer's true KH/KW/CIN/COUT, from the sample's own workload_dims.
+    # These are the radices the packed tag flattens with, so a given
+    # (kh, kw, cin, cout) line gets the same packed index -- and therefore
+    # the same cache set -- in every sample of the layer, instead of an
+    # index that shifts with whatever one sample happened to touch.
+    # Required by layout == "hybrid", rejected otherwise, so there are two
+    # configurations to reason about rather than four.
+    kh_bound: Optional[int] = None
+    kw_bound: Optional[int] = None
+    cin_bound: Optional[int] = None
+    cout_bound: Optional[int] = None
 
     def __post_init__(self) -> None:
         if self.cache_size_bytes <= 0:
@@ -59,6 +101,45 @@ class CacheConfig:
                 f"cache_type == 'set_associative', got cache_type={self.cache_type!r} "
                 f"with associativity={self.associativity}"
             )
+        if self.layout not in LAYOUTS:
+            raise ValueError(f"CacheConfig: layout must be one of {LAYOUTS}, got {self.layout!r}")
+        if self.cin_block <= 0 or self.cout_block <= 0:
+            raise ValueError(
+                f"CacheConfig: cin_block and cout_block must be positive, "
+                f"got {self.cin_block} and {self.cout_block}"
+            )
+        bounds = {
+            "kh_bound": self.kh_bound,
+            "kw_bound": self.kw_bound,
+            "cin_bound": self.cin_bound,
+            "cout_bound": self.cout_bound,
+        }
+        if self.layout == "hybrid":
+            missing = sorted(name for name, value in bounds.items() if value is None)
+            if missing:
+                raise ValueError(
+                    f"CacheConfig: layout='hybrid' flattens with the layer's true shape, "
+                    f"so it requires {missing} to be set (from the sample's workload_dims)"
+                )
+            nonpositive = sorted(name for name, value in bounds.items() if value <= 0)
+            if nonpositive:
+                raise ValueError(f"CacheConfig: shape bounds must be positive, got non-positive {nonpositive}")
+            # One line really does hold cin_block x cout_block elements, and
+            # capacity_lines divides by line_size_bytes, so a mismatch would
+            # silently model a cache of the wrong size.
+            if self.line_size_bytes != self.cin_block * self.cout_block:
+                raise ValueError(
+                    f"CacheConfig: layout='hybrid' packs cin_block x cout_block "
+                    f"({self.cin_block} x {self.cout_block} = {self.cin_block * self.cout_block}) "
+                    f"elements per line, so line_size_bytes must equal that, got {self.line_size_bytes}"
+                )
+        else:
+            supplied = sorted(name for name, value in bounds.items() if value is not None)
+            if supplied:
+                raise ValueError(
+                    f"CacheConfig: shape bounds are only used by layout='hybrid', "
+                    f"got {supplied} with layout={self.layout!r}"
+                )
         if self.cache_type == "set_associative":
             if self.associativity is None:
                 raise ValueError("CacheConfig: cache_type='set_associative' requires associativity to be set")
@@ -106,4 +187,41 @@ def load_cache_config(path: pathlib.Path) -> CacheConfig:
     )
     if cache.get("policy") is not None:
         kwargs["policy"] = cache["policy"]
+    if cache.get("layout") is not None:
+        kwargs["layout"] = cache["layout"]
+    # The shape bounds are deliberately not read from YAML: they belong to
+    # the layer being replayed, not to the cache, so they come from the
+    # sample's workload_dims. `layout: hybrid` in a YAML therefore fails
+    # validation here, pointing the caller at workload_dims.
     return CacheConfig(**kwargs)
+
+
+def hybrid_config_from_dims(
+    workload_dims: dict,
+    cache_size_bytes: int,
+    cache_type: str,
+    associativity: Optional[int] = None,
+) -> CacheConfig:
+    """A layout='hybrid' CacheConfig for the layer `workload_dims`
+    describes, at the given capacity and structure. This is the intended
+    way to build a hybrid config: the four shape bounds are the layer's,
+    so they cannot come from a cache YAML, and the two-level engine builds
+    one of these per level from the sample it is about to replay.
+
+    line_size_bytes is derived, not passed: under this layout a line holds
+    exactly CIN_BLOCK x COUT_BLOCK elements at 1 byte each, and
+    CacheConfig rejects any other value.
+
+    inner_dim is unused under this layout but is still a required field
+    (both layouts share one config shape), so it is fixed to DIMS[0] here
+    rather than offered as a knob that changes nothing."""
+    bounds = {field: int(workload_dims[key]) for field, key in _DIM_KEYS.items()}
+    return CacheConfig(
+        cache_size_bytes=cache_size_bytes,
+        line_size_bytes=CIN_BLOCK * COUT_BLOCK,
+        cache_type=cache_type,
+        associativity=associativity,
+        inner_dim=DIMS[0],
+        layout="hybrid",
+        **bounds,
+    )

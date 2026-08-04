@@ -24,7 +24,16 @@ and enumerate them) but not yet built:
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Hashable
+from typing import Dict, Hashable, Optional
+
+# The lines one tick has pinned, tag -> that line's recency stamp from
+# before this tick's touches. hierarchy.py builds one of these per tick
+# out of the L2 lookups that hit, and access_pinned consults it: a pinned
+# line is not evicted by this tick's own fills, and the stamps only break
+# the overflow case where every resident line of the set is pinned. Empty
+# means "nothing pinned", which is exactly plain LRU. C++ twin:
+# src/cachesim/policy.h's PinStamps.
+PinStamps = Dict[Hashable, int]
 
 
 class LRUPolicy:
@@ -37,19 +46,76 @@ class LRUPolicy:
         if capacity <= 0:
             raise ValueError(f"LRUPolicy: capacity must be positive, got {capacity}")
         self.capacity = capacity
-        self._lines: "OrderedDict[Hashable, None]" = OrderedDict()
+        # tag -> the counter value at that line's last access. Insertion
+        # order is the recency order, least recently used first, and the
+        # stamps say the same thing as a number the pin set can carry
+        # around after this order has moved on.
+        self._lines: "OrderedDict[Hashable, int]" = OrderedDict()
+        self._clock = 0
 
     def access(self, tag: Hashable) -> bool:
         """Access tag; returns True on hit, False on miss. A hit moves
         tag to the most-recently-used end; a miss inserts it, evicting
         the least-recently-used line first if this set is full."""
+        return self._insert_or_touch(tag, None)
+
+    def access_pinned(self, tag: Hashable, pins: PinStamps) -> bool:
+        """access() with this tick's pin set honored on eviction.
+        Identical to access() whenever `pins` is empty, which is what lets
+        the two-level engine reproduce its pre-pinning results exactly."""
+        return self._insert_or_touch(tag, pins)
+
+    def stamp(self, tag: Hashable) -> int:
+        """When `tag` was last accessed, on this set's own monotonic
+        counter. Recency order IS stamp order, so the smallest stamp is
+        the LRU end; hierarchy.py reads a stamp while L2 still holds its
+        start-of-tick state and hands it back as a pin, which is how
+        "closest to LRU before this tick's touches" survives the touches
+        that follow. Stamps are per set, and are only ever compared
+        between lines of one set, so the per-instance counter is enough.
+        KeyError if the line is not resident."""
+        return self._lines[tag]
+
+    def _insert_or_touch(self, tag: Hashable, pins: Optional[PinStamps]) -> bool:
         if tag in self._lines:
             self._lines.move_to_end(tag)
+            self._clock += 1
+            self._lines[tag] = self._clock  # assignment to a present key keeps its position
             return True
         if len(self._lines) >= self.capacity:
-            self._lines.popitem(last=False)
-        self._lines[tag] = None
+            del self._lines[self._victim(pins)]
+        self._clock += 1
+        self._lines[tag] = self._clock
         return False
+
+    def _victim(self, pins: Optional[PinStamps]) -> Hashable:
+        """Plain LRU takes the least-recently-used line. With a non-empty
+        pin set the rule becomes: the LRU-most line that is NOT pinned,
+        walking from the LRU end towards the MRU end. If the walk runs
+        out, every resident line of this set was read this tick and
+        protection has to give way to something: the plan's overflow
+        fallback sacrifices the pinned line that was closest to LRU BEFORE
+        this tick's touches, which is the smallest pinned stamp. Not the
+        current LRU end, which this tick's own hit-touches have already
+        reshuffled."""
+        if not pins:
+            return next(iter(self._lines))
+        fallback = None
+        for tag in self._lines:  # least recently used first
+            if tag not in pins:
+                return tag
+            if fallback is None or pins[tag] < pins[fallback]:
+                fallback = tag
+        return fallback  # never None: a full set has at least one line
+
+    def contains(self, tag: Hashable) -> bool:
+        """Residency only: no move to the most-recently-used end, no
+        insert on a miss. hierarchy.py resolves every core's L2 lookup
+        within one tick against the set as it stood when the tick began,
+        so it has to be able to ask "is this line resident?" without
+        access()'s two side effects, either of which would let one core's
+        same-tick lookup change what the next core sees."""
+        return tag in self._lines
 
 
 class _UnimplementedPolicy:

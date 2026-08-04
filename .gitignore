@@ -44,6 +44,8 @@ src/archmodels/prosperity/prosperitygen
 src/archmodels/ptb/ptbgen
 src/archmodels/spinalflow/spinalflowgen
 src/cachesim/cache_replay
+src/cachesim/cache_replay_hierarchical
+src/cachesim/cache_sweep_hierarchical
 dump/profiling/*/native/cache_sweep*
 !dump/profiling/*/native/*.cpp
 
@@ -53,6 +55,8 @@ weight_traces/
 # Per-unit cache-sweep results (large, reproducible from cache_sweep.py)
 dump/profiling/*/results*/
 dump/profiling/*/cache_sweep_results*.csv
+profiling/0803_l1_l2_cache/results/
+profiling/0803_l1_l2_cache/per_core/
 
 # Local editor and OS files
 .idea/

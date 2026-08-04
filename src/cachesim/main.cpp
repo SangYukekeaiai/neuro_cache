@@ -15,8 +15,17 @@
 //
 // Usage:
 //   cache_replay <cache_size_bytes> <line_size_bytes> <cache_type> \
-//                <associativity_or_0> <inner_dim> <order_csv>
+//                <associativity_or_0> <inner_dim> <order_csv> \
+//                <layout> <cin_block> <cout_block> \
+//                <kh_bound> <kw_bound> <cin_bound> <cout_bound>
 //   < events.bin > stdout: "<hits> <total> <hit_rate>\n"
+//
+// The last seven arguments are the layout the tags are formed under.
+// layout=inner_dim ignores all six that follow it (pass 4 4 0 0 0 0);
+// layout=hybrid ignores <inner_dim> instead and needs the four bounds.
+// They are all still required positionally so that one set of arguments
+// fully determines the answer, with no default hiding in the binary that
+// has to be kept in step with config.py's.
 //
 // events.bin (stdin, binary, little-endian), one sample:
 //   uint32 n_events
@@ -36,9 +45,10 @@
 using namespace cachesim;
 
 int main(int argc, char **argv) {
-    if (argc != 7) {
+    if (argc != 14) {
         std::cerr << "usage: cache_replay <cache_size_bytes> <line_size_bytes> <cache_type> "
-                     "<associativity_or_0> <inner_dim> <order_csv> < events.bin\n";
+                     "<associativity_or_0> <inner_dim> <order_csv> <layout> <cin_block> <cout_block> "
+                     "<kh_bound> <kw_bound> <cin_bound> <cout_bound> < events.bin\n";
         return 2;
     }
     try {
@@ -50,6 +60,23 @@ int main(int argc, char **argv) {
         cfg.inner_dim = dim_from_name(argv[5]);
         cfg.policy = "lru";
         std::vector<Dim> order = parse_order(argv[6]);
+        cfg.layout = layout_from_name(argv[7]);
+        cfg.cin_block = std::stoll(argv[8]);
+        cfg.cout_block = std::stoll(argv[9]);
+        cfg.kh_bound = std::stoll(argv[10]);
+        cfg.kw_bound = std::stoll(argv[11]);
+        cfg.cin_bound = std::stoll(argv[12]);
+        cfg.cout_bound = std::stoll(argv[13]);
+        // config.py's CacheConfig already rejects these before the bridge
+        // shells out, but a zero radix would silently collapse every tag
+        // onto one packed value, so the binary refuses it too rather than
+        // reporting a plausible wrong hit rate.
+        if (cfg.layout == Layout::Hybrid) {
+            if (cfg.cin_block <= 0 || cfg.cout_block <= 0)
+                throw std::runtime_error("cachesim: layout=hybrid needs positive cin_block/cout_block");
+            if (cfg.kw_bound <= 0 || cfg.cin_bound <= 0 || cfg.cout_bound <= 0)
+                throw std::runtime_error("cachesim: layout=hybrid needs positive kw/cin/cout bounds");
+        }
 
         // -- read the one sample's raw events --
         uint32_t n_events = 0;
@@ -61,24 +88,34 @@ int main(int argc, char **argv) {
             throw std::runtime_error("unexpected EOF reading events");
         }
 
-        // Pre-scan (over raw events, not expanded elements -- cheap) for
-        // TagPacker's mixed-radix bounds; see layout.h's TagPacker docstring.
-        Dim ranged_dim = order[3];
-        int64_t max_by_dim[N_DIMS] = {0, 0, 0, 0};
-        for (uint32_t ei = 0; ei < n_events; ++ei) {
-            int32_t v0 = raw[ei * 5 + 0], v1 = raw[ei * 5 + 1], v2 = raw[ei * 5 + 2],
-                    v3 = raw[ei * 5 + 3], v4 = raw[ei * 5 + 4];
-            // An empty range expands to no elements, so it must not widen
-            // the radices either: the Python pack_tags only ever sees tags
-            // that exist.
-            if (v3 >= v4) continue;
-            if (v0 > max_by_dim[order[0]]) max_by_dim[order[0]] = v0;
-            if (v1 > max_by_dim[order[1]]) max_by_dim[order[1]] = v1;
-            if (v2 > max_by_dim[order[2]]) max_by_dim[order[2]] = v2;
-            if (v4 - 1 > max_by_dim[ranged_dim]) max_by_dim[ranged_dim] = v4 - 1;
+        // TagPacker's mixed-radix radices; see layout.h's TagPacker comment.
+        // Hybrid takes them from the layer's true shape (hybrid_packer);
+        // InnerDim has no layer shape to work from and falls back to this
+        // sample's own observed maxima.
+        int64_t r_kw = 0, r_cin = 0, r_cout = 0;
+        if (cfg.layout != Layout::Hybrid) {
+            // Pre-scan (over raw events, not expanded elements -- cheap)
+            // for this sample's own observed maxima.
+            Dim ranged_dim = order[3];
+            int64_t max_by_dim[N_DIMS] = {0, 0, 0, 0};
+            for (uint32_t ei = 0; ei < n_events; ++ei) {
+                int32_t v0 = raw[ei * 5 + 0], v1 = raw[ei * 5 + 1], v2 = raw[ei * 5 + 2],
+                        v3 = raw[ei * 5 + 3], v4 = raw[ei * 5 + 4];
+                // An empty range expands to no elements, so it must not widen
+                // the radices either: the Python pack_tags only ever sees tags
+                // that exist.
+                if (v3 >= v4) continue;
+                if (v0 > max_by_dim[order[0]]) max_by_dim[order[0]] = v0;
+                if (v1 > max_by_dim[order[1]]) max_by_dim[order[1]] = v1;
+                if (v2 > max_by_dim[order[2]]) max_by_dim[order[2]] = v2;
+                if (v4 - 1 > max_by_dim[ranged_dim]) max_by_dim[ranged_dim] = v4 - 1;
+            }
+            max_by_dim[cfg.inner_dim] /= cfg.line_size_bytes;
+            r_kw = max_by_dim[KW] + 1;
+            r_cin = max_by_dim[CIN] + 1;
+            r_cout = max_by_dim[COUT] + 1;
         }
-        max_by_dim[cfg.inner_dim] /= cfg.line_size_bytes;
-        TagPacker packer(max_by_dim[KW], max_by_dim[CIN], max_by_dim[COUT]);
+        TagPacker packer = cfg.layout == Layout::Hybrid ? hybrid_packer(cfg) : TagPacker(r_kw, r_cin, r_cout);
 
         Cache cache(cfg);
         int64_t hits = 0, total = 0;
@@ -93,7 +130,9 @@ int main(int argc, char **argv) {
             bool have_prev = false;
             int64_t prev = 0;
             for_each_element(v, order, [&](const Element &e) {
-                Tag t = tag_for_element(e, cfg.inner_dim, cfg.line_size_bytes);
+                Tag t = cfg.layout == Layout::Hybrid
+                            ? tag_for_element_hybrid(e, cfg.cin_block, cfg.cout_block)
+                            : tag_for_element(e, cfg.inner_dim, cfg.line_size_bytes);
                 int64_t packed = packer.pack(t);
                 if (have_prev && packed == prev) return;
                 have_prev = true;

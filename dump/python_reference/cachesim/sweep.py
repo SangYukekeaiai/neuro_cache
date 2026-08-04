@@ -44,7 +44,7 @@ def _burst_hits(trace_path: pathlib.Path, config: CacheConfig, order: Sequence[s
                 prev = tag
 
     cache = Cache(config)
-    return replay(cache, pack_tags(tags))
+    return replay(cache, pack_tags(tags, config))
 
 
 def sample_hit_rate(trace_path: pathlib.Path, config: CacheConfig, order: Sequence[str]) -> float:

@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "config.h"
 #include "dims.h"
 
 namespace cachesim {
@@ -50,6 +51,14 @@ inline void for_each_element(const int32_t v[5], const std::vector<Dim> &order, 
     }
 }
 
+// tag_for_element_hybrid: kh/kw stay exact, cin and cout each collapse by
+// their own block size, so one line holds a cin_block x cout_block
+// element block instead of a run along a single dim -- identical rule to
+// layout.py's Layout "hybrid" branch.
+inline Tag tag_for_element_hybrid(const Element &e, int64_t cin_block, int64_t cout_block) {
+    return Tag{e.kh, e.kw, e.cin / cin_block, e.cout / cout_block};
+}
+
 // tag_for_element: the other three dims stay exact, inner_dim collapses
 // to inner_dim // line_size_bytes -- identical rule to layout.py's.
 inline Tag tag_for_element(const Element &e, Dim inner_dim, int64_t line_size_bytes) {
@@ -64,26 +73,56 @@ inline Tag tag_for_element(const Element &e, Dim inner_dim, int64_t line_size_by
     return t;
 }
 
-// TagPacker: mixed-radix-encodes a Tag into one int64 using this
-// sample's own observed per-dim maxima (found by the caller's own
-// pre-scan over its raw events, see main.cpp), guaranteeing distinct
-// Tags pack to distinct ints without guessing fixed bit-widths. Serves
-// as both policy.h's unordered_map key and cache.h's set index.
+// TagPacker: mixed-radix-encodes a Tag into one int64, serving as both
+// policy.h's unordered_map key and cache.h's set index. kh needs no
+// radix, it is the outermost component.
+//
+// The radices are the caller's, not this class's, because the two
+// layouts derive them differently (see main.cpp): InnerDim has no layer
+// shape to work from and falls back to this sample's own observed maxima
+// plus one, while Hybrid uses the layer's true shape in block units.
+// That difference is the set-index fix: under observed maxima the packed
+// value depends on what one sample happened to touch, and the cin radix
+// stays in raw element units even though a Hybrid tag's cin component is
+// a block index, which leaves most sets unreachable.
 //
 // This formula is duplicated across languages: the Python counterpart is
-// pack_tags in dump/python_reference/cachesim/layout.py:105-123, and the
-// archived sweep computes it inline at
-// dump/profiling/0726/native/cache_sweep.cpp:276-285. Change one and all
-// three must change together.
+// pack_tags in dump/python_reference/cachesim/layout.py, and they must
+// change together. A third copy is inlined in the archived sweep at
+// dump/profiling/0726/native/cache_sweep.cpp:276-285; it stays on the
+// observed-maxima radices and knows only the single-inner-dim layout,
+// since the results it produced were computed that way.
 class TagPacker {
 public:
-    TagPacker(int64_t max_kw, int64_t max_cin, int64_t max_cout)
-        : m_kw_(max_kw + 1), m_cin_(max_cin + 1), m_cout_(max_cout + 1) {}
+    // r_kw/r_cin/r_cout: how many distinct values each of those three tag
+    // components can take, not the maximum value.
+    TagPacker(int64_t r_kw, int64_t r_cin, int64_t r_cout) : m_kw_(r_kw), m_cin_(r_cin), m_cout_(r_cout) {}
 
     int64_t pack(const Tag &t) const { return ((t.kh * m_kw_ + t.kw) * m_cin_ + t.cin) * m_cout_ + t.cout; }
 
 private:
     int64_t m_kw_, m_cin_, m_cout_;
 };
+
+// How many cout blocks the layer's true COUT spans. Two callers need the
+// same number: it is the innermost radix a Hybrid tag packs with, and it
+// is the bound hierarchy.h's cout prefetch must stay inside, so it is
+// derived here once instead of at both call sites. The Python
+// counterpart is hybrid_cout_lines in
+// dump/python_reference/cachesim/layout.py.
+inline int64_t hybrid_cout_lines(const CacheConfig &cfg) {
+    return (cfg.cout_bound + cfg.cout_block - 1) / cfg.cout_block;
+}
+
+// The radices a Hybrid tag packs with: the layer's true shape, counted in
+// lines rather than elements, since a Hybrid tag's cin/cout components
+// are block indices. Rounded up, because a real layer's CIN/COUT need not
+// be a multiple of the block (a first conv layer's CIN is often 3).
+// Shared by both entry points (main.cpp, main_hierarchical.cpp) so the
+// derivation is written once; the Python counterpart is the hybrid branch
+// of pack_tags in dump/python_reference/cachesim/layout.py.
+inline TagPacker hybrid_packer(const CacheConfig &cfg) {
+    return TagPacker(cfg.kw_bound, (cfg.cin_bound + cfg.cin_block - 1) / cfg.cin_block, hybrid_cout_lines(cfg));
+}
 
 } // namespace cachesim

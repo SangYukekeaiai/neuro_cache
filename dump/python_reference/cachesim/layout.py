@@ -21,7 +21,7 @@ single hardcoded inner_dim ("cin") in the informal prototype
 
 from __future__ import annotations
 
-from typing import Dict, List, NamedTuple, Sequence, Tuple
+from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
 
 from cachesim.config import DIMS, CacheConfig
 
@@ -81,17 +81,25 @@ def expand_events(events: Sequence[Address], order: Sequence[str]) -> List[Eleme
 
 
 def tag_for_element(element: Element, config: CacheConfig) -> Tuple[int, int, int, int]:
-    """Section 1.2/1.3's tag formation: the other three dimensions stay
-    exact, config.inner_dim collapses to inner_dim // config.line_size_bytes,
-    so that many consecutive values of inner_dim (holding the other three
-    fixed) share one cache line. Always a 4-tuple, in DIMS order
+    """Section 1.2/1.3's tag formation. Always a 4-tuple, in DIMS order
     (kh, kw, cin, cout), so tags stay directly comparable across
-    CacheConfigs that only differ in inner_dim (only ONE component
-    actually changes shape between choices, not the tuple's arity).
+    CacheConfigs that differ only in how a line is formed (a component
+    changes shape between choices, the tuple's arity never does).
 
-    config.inner_dim/line_size_bytes are already validated by
+    Under config.layout == "inner_dim": the other three dimensions stay
+    exact and config.inner_dim collapses to
+    inner_dim // config.line_size_bytes, so that many consecutive values
+    of inner_dim (holding the other three fixed) share one cache line.
+
+    Under config.layout == "hybrid": kh and kw stay exact and cin and cout
+    each collapse by their own block size, so one line holds a
+    cin_block x cout_block element block.
+
+    config.layout/inner_dim/line_size_bytes are already validated by
     CacheConfig.__post_init__ (raises there, not here, on a bad value),
     so no re-validation needed at this call site."""
+    if config.layout == "hybrid":
+        return (element.kh, element.kw, element.cin // config.cin_block, element.cout // config.cout_block)
     values = {"kh": element.kh, "kw": element.kw, "cin": element.cin, "cout": element.cout}
     values[config.inner_dim] = values[config.inner_dim] // config.line_size_bytes
     return (values["kh"], values["kw"], values["cin"], values["cout"])
@@ -102,23 +110,48 @@ def element_tags(elements: Sequence[Element], config: CacheConfig) -> List[Tuple
     return [tag_for_element(e, config) for e in elements]
 
 
-def pack_tags(tags: Sequence[Tuple[int, int, int, int]]) -> List[int]:
-    """Flatten each 4-int tag into one mixed-radix int, with radices taken
-    from this sample's own observed per-dimension maxima. Distinct tags
-    always pack to distinct ints, so the packed value is both a valid
-    cache-line key and a dense index cache.py can take modulo num_sets.
+def hybrid_cout_lines(config: CacheConfig) -> int:
+    """How many cout blocks the layer's true COUT spans. Two callers need
+    the same number: it is the innermost radix a hybrid tag packs with,
+    and it is the bound hierarchy.py's cout prefetch must stay inside, so
+    it is derived here once instead of at both call sites. Rounded up, a
+    real layer's COUT need not be a multiple of the block. C++ twin:
+    src/cachesim/layout.h's hybrid_cout_lines."""
+    return (config.cout_bound + config.cout_block - 1) // config.cout_block
+
+
+def pack_tags(tags: Sequence[Tuple[int, int, int, int]], config: Optional[CacheConfig] = None) -> List[int]:
+    """Flatten each 4-int tag into one mixed-radix int, so the packed
+    value is both a valid cache-line key and an index cache.py can take
+    modulo num_sets. kh needs no radix, it is the outermost component.
+
+    Where the radices come from depends on the layout, and that is the
+    set-index fix. A "hybrid" config carries the layer's true KH/KW/CIN/
+    COUT, so the radices are the layer's own line counts and every line of
+    the layer packs to the same index in every sample, covering the range
+    0..n_lines-1 densely. An "inner_dim" config has no layer shape to work
+    from and falls back to this sample's own observed per-dimension
+    maxima, which is only injective over the tags that sample happened to
+    touch.
 
     This formula is duplicated across languages: the C++ counterpart is
-    TagPacker in src/cachesim/layout.h:77-86 (whose radices come from a
-    pre-scan over the raw events instead of over the tags -- same maxima,
-    since floor division is monotone), and the archived sweep computes it
-    inline at dump/profiling/0726/native/cache_sweep.cpp:276-285. Change
-    one and all three must change together."""
-    if not tags:
+    TagPacker in src/cachesim/layout.h, and they must change together. A
+    third copy is inlined in the archived sweep at
+    dump/profiling/0726/native/cache_sweep.cpp:276-285; it stays on the
+    observed-maxima radices and knows only the single-inner-dim layout,
+    since the results it produced were computed that way."""
+    if config is not None and config.layout == "hybrid":
+        m_kw = config.kw_bound
+        # Rounded up: a real layer's CIN/COUT need not be a multiple of the
+        # block (a first conv layer's CIN is often 3).
+        m_cin = (config.cin_bound + config.cin_block - 1) // config.cin_block
+        m_cout = hybrid_cout_lines(config)
+    elif tags:
+        m_kw = max(t[1] for t in tags) + 1
+        m_cin = max(t[2] for t in tags) + 1
+        m_cout = max(t[3] for t in tags) + 1
+    else:
         return []
-    m_kw = max(t[1] for t in tags) + 1
-    m_cin = max(t[2] for t in tags) + 1
-    m_cout = max(t[3] for t in tags) + 1
     return [((t[0] * m_kw + t[1]) * m_cin + t[2]) * m_cout + t[3] for t in tags]
 
 
