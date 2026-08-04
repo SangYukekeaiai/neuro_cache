@@ -57,6 +57,8 @@ dump/profiling/*/results*/
 dump/profiling/*/cache_sweep_results*.csv
 profiling/0803_l1_l2_cache/results/
 profiling/0803_l1_l2_cache/per_core/
+profiling/0803_l1_l2_cache/hierarchical_cache_results.csv
+profiling/0803_l1_l2_cache/artifact/neuro-cache-dashboard.zip
 
 # Local editor and OS files
 .idea/
