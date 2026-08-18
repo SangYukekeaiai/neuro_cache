@@ -109,6 +109,7 @@ struct line;
 struct core;
 struct slot;
 struct set_index;
+struct tag_id;
 struct sim_time;
 struct local_tick;
 struct refusal_order;
@@ -142,9 +143,25 @@ using SlotId = Tagged<std::int32_t, tags::slot>;
 // handle, would not narrow and would compile. Naming the quantity is what
 // makes the refusal about meaning rather than about size.
 //
-// int64, matching Placement::set_index and locate's num_sets argument, so no
-// conversion sits between locate's answer and this type.
+// int64, matching locate's num_sets argument, so no conversion sits between
+// locate's answer and this type.
 using SetIndex = Tagged<std::int64_t, tags::set_index>;
+
+// The other half of AddressMapper::locate's answer: what tells a line apart
+// from the other lines mapping to its set, `line / num_sets`.
+//
+// Named TagId and not Tag, which is the obvious name and is already spoken for
+// twice in this file: `Tag` is the second parameter of the Tagged template, and
+// `tags` is the namespace of the empty structs that fill it, so
+// `using Tag = Tagged<std::int64_t, tags::tag>` would define a name out of two
+// other uses of itself. TagId also matches LineId, CoreId and SlotId, and a tag
+// is an identity in the same sense those are: inside one set it is what names
+// the line.
+//
+// int64, matching LineId, so no width conversion sits between a line id and the
+// tag derived from it. Being tagged is what stops the two being interchangeable
+// anyway, which is the point: a tag is a line id only within one set.
+using TagId = Tagged<std::int64_t, tags::tag_id>;
 
 // Simulated time. The engine has no tick; `now` is the timestamp of the event
 // being dispatched (P1).

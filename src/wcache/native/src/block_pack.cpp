@@ -404,8 +404,10 @@ Placement BlockPackMapper::locate(LineId line, std::int64_t num_sets) const {
     // `line == tag * num_sets + set_index` is the definition of the pair, and
     // both operands are non-negative here, so these are the ordinary division
     // and remainder rather than the truncate-toward-zero trap the constructor's
-    // negative-block check exists for.
-    return Placement{v % num_sets, v / num_sets};
+    // negative-block check exists for. The two constructions are the only place
+    // this file names either quantity, which is what keeps the arithmetic above
+    // them plain int64 (layout.h, on Placement).
+    return Placement{SetIndex{v % num_sets}, TagId{v / num_sets}};
 }
 
 // --- A4b: the line size, decomposed ------------------------------------------
@@ -414,8 +416,9 @@ Placement BlockPackMapper::locate(LineId line, std::int64_t num_sets) const {
 // multiplies them, so that a reader who sees "96-byte lines" in
 // SetAssociativeArray's refusal can reach the config fields that produced the
 // 96. The product itself is not repeated: the caller has already printed it,
-// and a second copy is a second thing that can disagree with the first.
-std::string BlockPackMapper::line_size_terms() const {
+// and a second copy is a second thing that can disagree with the first. That is
+// also why the line size the caller passes is unused here rather than printed.
+std::string BlockPackMapper::line_size_terms(std::int64_t) const {
     return "cin_block " + std::to_string(cin_block_) + " x cout_block " +
            std::to_string(cout_block_) + " x weight_bytes " + std::to_string(weight_bytes_);
 }

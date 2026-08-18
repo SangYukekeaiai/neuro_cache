@@ -137,7 +137,11 @@ public:
     // and with their values, for SetAssociativeArray's exactness message (A4b).
     // Out of line rather than beside the two above because it builds a string,
     // which is the constructor's file's business rather than the header's.
-    std::string line_size_terms() const override;
+    //
+    // The line size the caller read is ignored here: this override names the
+    // factors it multiplies its own members out of, so it needs nothing from
+    // the caller. The parameter exists for the interface's default (layout.h).
+    std::string line_size_terms(std::int64_t line_bytes) const override;
 
     // --- the derived state, exposed ------------------------------------------
     //

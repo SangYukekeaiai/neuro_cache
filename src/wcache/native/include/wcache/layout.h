@@ -20,16 +20,31 @@ namespace wcache {
 // Where a line sits in a set-associative array: which set holds it, and the
 // value that tells it apart from the other lines mapping to that same set.
 //
-// Both fields are signed, matching LineId, so `line == tag * num_sets +
-// set_index` holds without a cast and a bounds check written the obvious way
-// (`0 <= set_index && set_index < num_sets`) is not vacuously true.
+// Both fields are tagged scalars over int64 rather than raw int64. A set index
+// and a tag are two quantities a set-associative array holds side by side, and
+// as raw ints either one flows into a LineId, a SimTime, a future 64-bit slot
+// handle, or the other, with no diagnostic and no width to catch it. Naming
+// them is what makes such a line fail to compile (N12).
+//
+// The identity that defines the pair is
+//
+//     line == tag * num_sets + set_index
+//
+// and that is the form to read, to check an implementation against, and to keep
+// in this comment. In code each field is unwrapped, so the same equation is
+// spelled `p.tag.get() * num_sets + p.set_index.get() == line.get()`; the
+// `.get()`s are the price of the naming above and carry no meaning of their
+// own. The same holds for the bound the set index owes,
+// `0 <= set_index < num_sets`, which is not vacuously true because the
+// representation underneath stays signed.
 //
 // Named Placement, not SetIndex: it holds two fields, and "index" reads as
-// one. A4 needs `SetIndex` for a tagged scalar, so that a policy handed a
-// SlotId where a set index belongs fails to compile.
+// one. `SetIndex` is the tagged scalar for the first field (B9) and `TagId` is
+// its sibling for the second, so a policy handed a SlotId where a set index
+// belongs, or a tag where a line id belongs, fails to compile.
 struct Placement {
-    std::int64_t set_index;  // in [0, num_sets)
-    std::int64_t tag;
+    SetIndex set_index;  // in [0, num_sets)
+    TagId    tag;
 };
 
 // The interface, deliberately abstract. A layout is a hypothesis about how
@@ -145,7 +160,18 @@ public:
     // to implement a function about diagnostics. The default is always correct
     // if uninformative, so a mapper whose line size does not decompose into
     // named factors is free to say nothing more.
-    virtual std::string line_size_terms() const { return std::to_string(line_size_bytes()); }
+    //
+    // `line_bytes` is the line size the CALLER already read, and the default
+    // prints that value rather than asking for it again. Without the argument
+    // the default's body is std::to_string(line_size_bytes()), so one refusal
+    // message asks one mapper for its line size twice; for a mapper whose
+    // answer is not stable the "-byte lines" half and the bracketed half then
+    // disagree, which is the failure the read-once discipline exists to
+    // prevent. An override naming its own factors does not need the value and
+    // may ignore it.
+    virtual std::string line_size_terms(std::int64_t line_bytes) const {
+        return std::to_string(line_bytes);
+    }
 };
 
 }  // namespace wcache
