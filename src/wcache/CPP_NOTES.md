@@ -924,7 +924,7 @@ when the unit that needs it lands.
 
 | Feature | First needed by |
 |---|---|
-| `std::vector`, `std::unordered_map` as class templates you *use* rather than write | A4 |
+| ~~`std::vector`~~, `std::unordered_map` as class templates you *use* rather than write | `std::vector` landed at A4b, as `slots_` in `set_associative.h`; it gets no section of its own, and the one wcache-specific consequence is in section 8. `std::unordered_map` still owed, first at B3 |
 | ~~virtual functions and abstract base classes~~ | landed early, at A2a: section 19 |
 | ~~`override`, `final`~~ | landed at A2b: section 20 |
 | `std::unique_ptr` and ownership | A5 |
@@ -1767,3 +1767,209 @@ evaluate during compilation and emit no code; the constructor is still a single
 size as its representation. Section 15's answer is unchanged. What it costs is
 compile time and one paragraph of reading, which is the trade this whole file
 exists to argue for.
+
+---
+
+## 24. Copy control on a polymorphic base, and a virtual with a body (unit A4b)
+
+Four things arrive with the first concrete `CacheArray`: the third access label,
+the five special member functions and what happens when you touch one of them, a
+virtual function that has a default body instead of `= 0`, and one integer trap
+that section 22's rule does not cover.
+
+### `protected`, the third access label
+
+Section 4 introduced `public` and `private`. There is one more:
+
+```cpp
+class CacheArray {
+public:
+    virtual ~CacheArray() = default;
+    virtual SlotId probe(LineId) const = 0;
+protected:
+    CacheArray() = default;                 // reachable from a derived class,
+    CacheArray(const CacheArray&) = default; // not from anywhere else
+};
+```
+
+`protected` means: reachable from inside this class **and from inside any class
+derived from it**, and from nowhere else. C has no equivalent, because C has no
+inheritance.
+
+It is the right label whenever a member is part of how a subclass is built but
+not part of what a caller may do. That is exactly the case below.
+
+### The five special member functions
+
+C++ writes six functions for you if you do not: a default constructor, a
+destructor, a copy constructor, a copy assignment operator, a move constructor,
+and a move assignment operator. In C you write `struct S a = b;` and the compiler
+copies the bytes; C++ generalises that into functions you can declare, default,
+delete, or hide.
+
+```cpp
+CacheArray()                             = default;   // CacheArray a;
+CacheArray(const CacheArray& other)      = default;   // CacheArray a = b;
+CacheArray(CacheArray&& other)           = default;   // CacheArray a = std::move(b);
+CacheArray& operator=(const CacheArray&) = default;   // a = b;
+CacheArray& operator=(CacheArray&&)      = default;   // a = std::move(b);
+```
+
+`= default` asks for the compiler's version explicitly (section 8 introduced it
+beside `= delete`). Writing them out changes nothing about *what* they do; it
+changes *who may call them*, because the access label they sit under now applies.
+
+### The bug this closes, measured rather than argued
+
+A base class with public assignment can be assigned through a base reference, and
+what gets copied is only the base part:
+
+```cpp
+struct A : CacheArray { int derived_state = 7; /* ...overrides... */ };
+
+A a1;  A a2;  a2.derived_state = 9;
+CacheArray& r1 = a1;
+CacheArray& r2 = a2;
+r1 = r2;                     // compiles
+a1.derived_state;            // 7. Not 9.
+```
+
+This is **slicing**: `operator=` was chosen from the static type `CacheArray`, so
+it assigned the `CacheArray` subobject, which holds nothing, and left everything
+the derived class added untouched. No warning, no crash. For a cache array that
+is a half-assigned object still answering queries.
+
+Worth knowing which half of the classic slicing story applies here. The other
+half, copying by value,
+
+```cpp
+CacheArray b = r2;           // error: cannot allocate an object of abstract type
+void f(CacheArray a);        // same reason
+```
+
+was never possible, because a class with a pure virtual function is abstract and
+no object of it can exist (section 19). So for an abstract base it is
+**assignment**, not copying, that is the live hazard, and a test that only proves
+"you cannot pass the base by value" is proving abstractness rather than copy
+control.
+
+### `protected` versus `= delete`, and why they are not interchangeable
+
+Both stop the line above. They differ in what they leave a *derived* class:
+
+| | base assignment `r1 = r2` | `Derived b = a;` | `std::vector<Derived>` |
+|---|---|---|---|
+| public (before) | compiles, **slices** | fine | fine |
+| `protected` + `= default` | error, inaccessible | fine | fine |
+| `= delete` | error, deleted | **error** | **error** |
+
+`= delete` propagates: a derived class whose base has a deleted copy constructor
+has its own implicitly deleted too, so the whole class becomes non-copyable and
+non-movable, and `std::vector<Derived>` will not compile because a vector needs
+to move or copy its elements when it grows.
+
+Protected keeps the derived class copyable **as itself**, where the copy is whole
+and correct, and makes the base unusable as either end of one, where it would not
+be. That is the standard treatment of a polymorphic base, and here it is load
+bearing rather than stylistic: the engine holds one L1 array per core over a
+swept range of 8 to 256 cores, so a container of concrete arrays is the ordinary
+case.
+
+### The trap: declaring any constructor removes the implicit default one
+
+This is the part that bites, and it is worth memorising as a rule.
+
+> The compiler writes a default constructor for you **only if you declare no
+> constructor at all.** Declaring one, of any kind, including a copy constructor,
+> and including one you immediately `= default` or `= delete`, suppresses it.
+
+So this alone breaks every subclass in the tree:
+
+```cpp
+protected:
+    CacheArray(const CacheArray&) = default;    // a declared constructor!
+```
+
+```
+error: use of deleted function 'A::A()'
+note:  error: no matching function for call to 'wcache::CacheArray::CacheArray()'
+```
+
+...because `struct A : CacheArray { };` now has nothing to call for its base. The
+first line names the subclass, which is not where the mistake is; the second line
+is the one to read.
+The fix is one line, and it must not be forgotten:
+
+```cpp
+    CacheArray() = default;
+```
+
+Note the asymmetry: declaring `operator=` would *not* have done this, because an
+assignment operator is not a constructor. It is specifically the constructors
+that suppress.
+
+### A virtual function with a body, and when to prefer it to `= 0`
+
+Section 19 covered the pure virtual, `= 0`: no body, class cannot be
+instantiated, every subclass must implement it. A virtual function may also have
+an ordinary body:
+
+```cpp
+class AddressMapper {
+    virtual std::int64_t line_size_bytes() const = 0;              // pure: you MUST
+    virtual std::string  line_size_terms() const {                 // default: you MAY
+        return std::to_string(line_size_bytes());
+    }
+};
+```
+
+Dispatch is identical for both: the call goes to the override if the object has
+one. The difference is what happens to a subclass that provides nothing. Pure
+means it does not compile. A default means it inherits the base's body.
+
+The rule that decides between them is not taste, it is **blast radius**. A pure
+virtual is a demand on every implementation that will ever exist, so add one only
+when no sensible default is possible or when a wrong default would be silently
+harmful. Here the function exists to make one error message more informative, and
+making it pure would have broken sixteen deliberately non-conforming test fakes
+and four `compile_fail.sh` cases at once, for a diagnostic. A default that is
+always correct if uninformative costs nothing and demands nothing.
+
+The cost to watch is the opposite one, and this unit hit it: a default body is
+easy to inherit *by accident*, and the base's default here calls
+`line_size_bytes()` a second time, so a mapper that does not override it is asked
+twice within one message. A pure virtual would have made that impossible by
+forcing an answer. Neither choice is free; the trade is a demand on every
+implementer against a default nobody notices.
+
+### One more integer trap: a product no cast can save
+
+Section 22 records the widening rule, that the cast must sit on an operand before
+the multiply because `int32 * int32` overflows before it is assigned to an
+`int64`. That rule assumes the fix exists. Sometimes it does not:
+
+```cpp
+std::int64_t line_bytes = mapper.line_size_bytes();   // up to 9.2e18 in this tree
+std::int64_t assoc      = 2;
+if (size % (line_bytes * assoc) != 0) { ... }         // both already int64
+```
+
+There is no wider type to cast to. Signed overflow is **undefined behaviour**,
+not wraparound, so this is not a wrong number that a later check might catch: the
+compiler is entitled to assume the overflow did not happen and optimise on that
+basis, which can delete the very check you wrote.
+
+The options are to guard the multiply (`b > INT64_MAX / a`, which
+`block_pack.cpp` does), or to restructure so the product is never formed at all.
+A4b took the second: `size % (L * A) == 0` is exactly equivalent to
+`size % L == 0 && (size / L) % A == 0`, and the second form only ever divides.
+Worth stating as a general habit, because it is easy to reach for the checked
+multiply reflexively: **an equivalent expression that cannot overflow beats a
+guard on one that can**, and it usually reads better too.
+
+### What this costs
+
+Nothing at run time. Every one of these is a compile-time access rule or a
+defaulted function that generates the same code the compiler was generating
+anyway, and the restructured check trades one multiply for one divide, once per
+array construction.
