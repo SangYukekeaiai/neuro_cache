@@ -61,7 +61,8 @@ inline constexpr std::int64_t kSentinel = -777;
 // failing tiers and a single bucket cannot express both. `illegal` is the
 // out_of_range tier: a well-formed burst naming something outside THIS layer.
 // `malformed` is the invalid_argument tier: a burst that is wrong whatever
-// layer it is applied to, which today is `count < 1` (B38). Putting a
+// layer it is applied to, which is `count < 1` (B38) and `stride < 1`
+// (B49, answered by the user directly rather than by delegation). Putting a
 // zero-count burst on the illegal side would make c_throw_type_is_out_of_range
 // demand out_of_range for it, which is the opposite of what B38 requires, and
 // the two tiers would stop being tellable apart at a catch site, which is the
@@ -131,13 +132,34 @@ inline Env make_env(const WeightShape& shape) {
     // not say; that question is in the reviewer's report rather than answered
     // here by the order this file happens to push things in.
     for (Axis a : kAxes) {
+        const std::int32_t n = extent_on(shape, a);
+
         e.malformed.push_back(Burst{origin, a, 0, 1});
         e.malformed.push_back(Burst{origin, a, -1, 1});
+
+        // The same tier, the other field. `stride < 1` is malformed too: a
+        // stride of 0 is one element asked for `count` times and a negative
+        // stride is a run walking backwards, while `burst_stride` in the format
+        // v2 header is the step to the NEXT element of the run, so neither
+        // describes a run a trace can carry. Driven on all four axes for the
+        // same reason the count is: the check must not sit in a per-axis branch.
+        e.malformed.push_back(Burst{origin, a, 4, 0});
+        // The backwards run is anchored high enough that all four of its
+        // elements stay inside the axis, for the same reason the counts above
+        // are anchored at the origin: a burst that is malformed AND leaves the
+        // layer would decide the tier question by which check the mapper
+        // happens to run first, which is not this file's to answer.
+        if (n >= 4) e.malformed.push_back(Burst{with_coord_on(origin, a, 3), a, 4, -1});
     }
     // The far end of the range, which is what a header decoded at the wrong
     // offset produces, and the value whose negation overflows: a check written
     // as `-count > 0` rather than `count < 1` would let it through.
     e.malformed.push_back(Burst{origin, Axis::COUT, INT32_MIN, 1});
+    // The stride's own far end, at count 1 so that the run it describes is a
+    // single element and the burst is in range at both ends whatever the stride
+    // says. That is the case which pins that the stride rule is unconditional
+    // rather than something only a multi-element burst has to satisfy.
+    e.malformed.push_back(Burst{origin, Axis::COUT, 1, INT32_MIN});
 
     // Every element of the tensor, as COUT-major bursts. num_lines()'s "one
     // past the LARGEST id this mapper can produce" is an exact claim, and only
@@ -271,8 +293,9 @@ inline void c_throw_type_is_out_of_range(const AddressMapper& m, const Env& e) {
 
 // --- contract 3c: a malformed burst is invalid_argument, not out_of_range ----
 //
-// layout.h: "A burst with `count < 1` throws std::invalid_argument. A core
-// asking for nothing is malformed at every layer" (B38). That is the OTHER
+// layout.h: "A burst with `count < 1` or with `stride < 1` throws
+// std::invalid_argument. A core asking for nothing is malformed at every layer"
+// (B38 for the count, B49 for the stride). That is the OTHER
 // failing tier, and the reason it needs its own bucket rather than a push onto
 // `illegal` is arithmetic: c_throw_type_is_out_of_range demands out_of_range
 // for every burst on the illegal side, so one zero-count burst there would fail

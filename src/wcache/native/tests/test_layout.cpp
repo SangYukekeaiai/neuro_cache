@@ -268,6 +268,23 @@ public:
     }
 };
 
+// Contract 3c, the stride half. Serves a burst whose stride is 0 or negative as
+// the one line its anchor sits on, which is the reading B49 rejected. Its own
+// bucket-mate above disagrees about the count; this one disagrees about the
+// stride, and without it nothing in this file would notice if the Env's
+// stride-malformed bursts were dropped.
+class ServesAStandingStillBurst : public PackedRowMajor {
+public:
+    using PackedRowMajor::PackedRowMajor;
+    void expand(const Burst& b, std::vector<LineId>& out) const override {
+        if (b.stride < 1) {
+            out.push_back(LineId{line_of(b.anchor)});
+            return;
+        }
+        PackedRowMajor::expand(b, out);
+    }
+};
+
 // Contract 4. Refuses an axis it does not pack. The A2a -> A2d carried
 // obligation in one class: the corpus never issues a KH burst, so this mapper
 // would run the entire study without complaint.
@@ -575,6 +592,7 @@ void test_broken_mappers_are_caught() {
     const ThrowsWrongType        wrong_type(shape, 4, 2);
     const ServesAnEmptyBurst     empty_ok(shape, 4, 2);
     const MalformedBurstIsOutOfRange empty_is_range(shape, 4, 2);
+    const ServesAStandingStillBurst  standing_still(shape, 4, 2);
     const RejectsUnpackedAxis    cout_only(shape, 4, 2);
     const AssumesCout            assumes_cout(shape, 4, 2);
     const IgnoresStride          ignores_stride(shape, 4, 2);
@@ -599,6 +617,8 @@ void test_broken_mappers_are_caught() {
                   [&] { conformance::c_malformed_burst_is_invalid_argument(empty_ok, env); });
     expect_caught("a zero-count burst throws out_of_range",
                   [&] { conformance::c_malformed_burst_is_invalid_argument(empty_is_range, env); });
+    expect_caught("serves a stride < 1 burst",
+                  [&] { conformance::c_malformed_burst_is_invalid_argument(standing_still, env); });
     expect_caught("refuses an axis it does not pack",
                   [&] { conformance::c_accepts_any_axis(cout_only, env); });
     expect_caught("walks COUT whatever the burst says",

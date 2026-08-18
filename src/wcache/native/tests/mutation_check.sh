@@ -484,6 +484,35 @@ mutate_pack kill 'A2d the count failure is out_of_range' \
 mutate_pack kill 'A2d the count message drops the value' \
     's|"burst count must be >= 1, got " + std::to_string(b.count)|"burst count must be >= 1"|'
 
+echo "== A2d: B49, the stride check"
+# stride < 1 is malformed, ruled by the user directly rather than by delegation.
+# Deleting the check does not merely make a backwards burst legal: it makes the
+# unreachable-sort argument below false again, so this case and the `allow` in
+# the walk section are two halves of one statement.
+mutate_pack kill 'A2d the stride check is deleted' \
+    '/    positive_or_reject("burst stride", b.stride);/d'
+# The boundary, not the sign, the same distinction the count check draws: `< 1`
+# and `< 0` agree on every negative stride and disagree only at 0, which is the
+# standing-still run.
+mutate_pack kill 'A2d the stride check accepts 0' \
+    's|    positive_or_reject("burst stride", b.stride);|    if (b.stride < 0) reject("burst stride must be >= 1, got " + std::to_string(b.stride));|'
+# invalid_argument, not out_of_range. A stride of 0 or less is malformed at
+# every layer, so its tier is the count's and not the coordinate's, and B27's
+# whole value is that a catch site can tell the two apart.
+mutate_pack kill 'A2d the stride failure is out_of_range' \
+    's|    positive_or_reject("burst stride", b.stride);|    if (b.stride < 1) reject_range("burst stride must be >= 1, got " + std::to_string(b.stride));|'
+
+echo "== A2d: the order of the three refusals"
+# layout.h states each rule and says nothing about their order, so these two
+# cases pin what the code does rather than a rule anybody wrote (U12, U13). They
+# are worth pinning because U10's re-throw at the engine boundary dispatches on
+# the exception TYPE: a burst wrong in two ways reaches a different catch site
+# depending on which check ran first.
+mutate_pack kill 'A2d the stride check runs before the count check' \
+    's|    if (b.count < 1) {|    positive_or_reject("burst stride", b.stride);\n    if (b.count < 1) {|'
+mutate_pack kill 'A2d the stride check runs after the range check' \
+    's|    positive_or_reject("burst stride", b.stride);||; s|    std::vector<LineId> lines;|    positive_or_reject("burst stride", b.stride);\n    std::vector<LineId> lines;|'
+
 echo "== A2d: the far end of the walk"
 # The single most important mutation in this unit, and the one that took a
 # purpose-built case to kill. Deleting this check does NOT stop expand throwing:
@@ -501,9 +530,12 @@ mutate_pack kill 'A2d the far end is computed in int32' \
 # legal burst on every axis, which is the whole-axis COUT run the corpus emits.
 mutate_pack kill 'A2d the far end drops the count offset' \
     's|static_cast<std::int64_t>(b.count - 1) \* b.stride|static_cast<std::int64_t>(b.count) * b.stride|'
-# The two halves of the check are separately observable, and only a downward
-# walk separates them: the lower half owns a far end below zero, the upper half
-# a far end past the extent.
+# The two halves of the check are separately observable, and B49 changed what
+# separates them. A downward walk is gone, so `last < 0` now holds exactly when
+# the anchor's own coordinate on the walked axis is negative, and the case that
+# kills this is the mirror of the 2^30 one above: anchor -8, count 4, stride 1
+# makes the far end -5 while the walk would reach -8 first, so with the check
+# the message names -5 and without it -8.
 mutate_pack kill 'A2d the far end drops the lower half' \
     's@    if (last < 0 || last >= n) {@    if (last >= n) {@'
 mutate_pack kill 'A2d the far end drops the upper half' \
@@ -521,12 +553,30 @@ mutate_pack kill 'A2d the walk assumes COUT' \
     's|const std::int64_t start = coord_on(b.anchor, b.axis);|const std::int64_t start = coord_on(b.anchor, Axis::COUT);|'
 
 echo "== A2d: the walk, B31 and the accumulate pattern"
+# The second intentional `allow` in this file, and the same kind as B41's: the
+# mutation is unreachable, not untested.
+#
 # B31 makes strictly increasing an obligation on the implementation rather than
-# a property of a layout, so the sort is unconditional. Under this layout a
-# positive stride already walks upward, so a downward walk is the ONLY thing
-# that exercises it, which is why the suite carries one.
-mutate_pack kill 'A2d expand drops the sort' \
-    '/    std::sort(lines.begin(), lines.end());/d'
+# a property of a layout, so the sort is unconditional. Under this layout the
+# only thing that ever reordered anything was a walk running downward, and B49
+# made that unrepresentable: `stride < 1` is refused above, so the walked
+# coordinate is strictly increasing over the run; every element that survives
+# line_of is non-negative, so its block index is non-decreasing in it; and every
+# line stride is positive whatever the flatten order (B24). The ids therefore
+# reach the sort already sorted, for every burst this mapper accepts, and no
+# input can tell the sorted range from the unsorted one.
+#
+# Not deleted, and the mutation is not weakened to keep the count clean. The
+# sort earns its place for two reasons the suite cannot see: it is what makes
+# B31 structural rather than an argument re-made per layout, and std::unique
+# removes only ADJACENT equals, so without it the de-duplication below would
+# rest on that same monotonicity argument instead of on a sorted range. It
+# becomes killable again the moment a non-monotone layout or a permuted flatten
+# with a negative radix exists, and the `A2d the stride check is deleted` case
+# above is what would announce a reversal of B49.
+mutate_pack allow 'A2d expand drops the sort' \
+    '/    std::sort(lines.begin(), lines.end());/d' \
+    'stride >= 1 (B49) makes every walk this mapper accepts already increasing'
 # unique() removes ADJACENT equals only, so this is not the same mutation as
 # the one above: without it a packed burst appends one id per element and a
 # caller counting distinct lines over-counts every one of them.

@@ -1314,59 +1314,171 @@ void test_expand_hand_computed() {
     }
 }
 
-void test_expand_is_strictly_increasing_whatever_the_walk() {
-    check::group("A2d: B31, strictly increasing is an obligation on the implementation");
+void test_expand_rejects_a_malformed_stride() {
+    check::group("A2d: B49, stride < 1 is invalid_argument and nothing is appended");
 
-    // B31 makes "strictly increasing" a promise every implementation keeps by
-    // sorting if its natural walk order does not produce it, rather than a
-    // property a layout is free to have. Under this layout a positive stride
-    // already walks upward, so the ONLY thing that exercises the sort is a walk
-    // that runs downward.
+    // This function replaces `test_expand_is_strictly_increasing_whatever_the_walk`,
+    // whose three cases asserted that a stride of 0 and a negative stride were
+    // served. B49 settled that they are not, so those cases now describe a
+    // burst the mapper refuses and their subject is the refusal.
     //
-    // Which raises a question this file records rather than answers: expand
-    // accepts a stride of 0 and a negative stride, while the reference mapper
-    // in tests/test_layout.cpp throws invalid_argument on `stride < 1`, and
-    // layout.h forbids neither. These two cases pin what the code does TODAY
-    // and are the ones to revisit when that is decided; they are deliberately
-    // not on the conformance Env's illegal side, because putting them there
-    // would fail BlockPackMapper on an undecided rule.
+    // What went with them is worth stating rather than leaving as a gap for a
+    // later reader to find: a downward walk was the only thing on this mapper
+    // that made B31's unconditional sort observable, so the sort now has no
+    // input that reorders anything. It is still there, and the reason it is
+    // still there is in block_pack.cpp beside it; the matching mutation is an
+    // intentional `allow` in tests/mutation_check.sh for the same reason
+    // `A2c block_size_on invents an answer` is (B41), unreachable rather than
+    // untested. The strictly-increasing guarantee itself is not untested: it is
+    // asserted per call by c_single_call_strictly_increasing over seven
+    // configurations, by the hand-computed cases above, and over 32,000
+    // generated bursts in test_expand_against_the_oracle.
     const BlockPackMapper m(WeightShape{3, 3, 512, 512}, 16, 16, 1);
 
-    // Downward across four blocks: the walk emits 5283, 5282, 5281, 5280 and
-    // the contract says the call appends 5280, 5281, 5282, 5283.
-    {
+    // invalid_argument and not out_of_range, the same tier as a bad count and
+    // for the same reason: a stride of 0 asks for one element `count` times and
+    // a negative stride is a run walking backwards, and `burst_stride` in the
+    // format v2 header is the step to the NEXT element. Neither is a run a
+    // trace can describe at any layer, so neither is a coordinate failure.
+    //
+    // Each anchor below is a legal coordinate and each count is legal, so the
+    // stride is the only thing wrong with these bursts.
+    expect_message("stride = 0",
+                   thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{1, 2, 80, 48}, Axis::COUT, 4, 0}, out);
+                   }),
+                   kPrefix, {"burst stride", "must be >= 1", "got 0"});
+    expect_message("stride = -1",
+                   thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{1, 2, 80, 63}, Axis::COUT, 64, -1}, out);
+                   }),
+                   kPrefix, {"burst stride", "must be >= 1", "got -1"});
+    expect_message("stride = -16",
+                   thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{1, 2, 80, 63}, Axis::COUT, 4, -16}, out);
+                   }),
+                   kPrefix, {"burst stride", "must be >= 1", "got -16"});
+    // The far end of the range, and the value whose negation overflows: a check
+    // written as `-stride > 0` rather than `stride < 1` would let it through.
+    expect_message("stride = INT32_MIN",
+                   thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 4, INT32_MIN}, out);
+                   }),
+                   kPrefix, {"burst stride", "got -2147483648"});
+
+    // The type, pinned separately from the text, on all four axes: the stride
+    // check must not live inside a per-axis branch.
+    for (Axis a : kAxes) {
         std::vector<LineId> out;
-        m.expand(Burst{Coord{1, 2, 80, 63}, Axis::COUT, 4, -16}, out);
-        CHECK_EQ(check::ssize(out), std::int64_t{4});
-        bool increasing = true;
-        for (std::size_t i = 1; i < out.size(); ++i) increasing = increasing && out[i - 1] < out[i];
-        CHECK_TRUE(increasing);
-        CHECK_TRUE(out[0] == LineId{5280});
-        CHECK_TRUE(out[3] == LineId{5283});
+        CHECK_THROWS(std::invalid_argument, m.expand(Burst{Coord{0, 0, 0, 0}, a, 4, 0}, out));
+        CHECK_THROWS(std::invalid_argument, m.expand(Burst{Coord{0, 0, 0, 0}, a, 1, -1}, out));
     }
 
-    // A downward walk whose elements share lines, so the sort and the
-    // de-duplication both have to fire and in that order: unique() only removes
-    // ADJACENT equals, so de-duplicating a descending run without sorting first
-    // still leaves the ids descending.
+    // NOT out_of_range, as its own check, for the reason B27 exists: the two
+    // are siblings under logic_error, so a bare logic_error check would accept
+    // either and the tier a catch site dispatches on would go untested.
+    bool was_range = false;
+    try {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 4, 0}, out);
+    } catch (const std::out_of_range&) {
+        was_range = true;
+    } catch (const std::exception&) {
+    } catch (...) {
+    }
+    CHECK_TRUE(!was_range);
+
+    // Nothing appended. The strong guarantee is the same one the count check
+    // and the range checks give, and it has to hold for a refusal reached this
+    // early too.
+    std::vector<LineId> acc;
+    acc.push_back(LineId{99});
+    CHECK_THROWS(std::invalid_argument, m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 4, 0}, acc));
+    CHECK_THROWS(std::invalid_argument, m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 4, -1}, acc));
+    CHECK_EQ(check::ssize(acc), std::int64_t{1});
+    CHECK_TRUE(acc[0] == LineId{99});
+
+    // The other side of the boundary: 1 is a legal stride, and so is a stride
+    // wider than the block. Without these, a check mutated from `< 1` to `< 2`
+    // would still reject everything above and still look correct.
+    {
+        std::vector<LineId> one;
+        m.expand(Burst{Coord{1, 2, 80, 48}, Axis::COUT, 4, 1}, one);
+        CHECK_EQ(check::ssize(one), std::int64_t{1});
+        CHECK_TRUE(one[0] == LineId{5283});
+
+        std::vector<LineId> wide;
+        m.expand(Burst{Coord{1, 2, 80, 0}, Axis::COUT, 4, 32}, wide);
+        CHECK_EQ(check::ssize(wide), std::int64_t{4});
+        CHECK_TRUE(wide[0] == LineId{5280});
+        CHECK_TRUE(wide[3] == LineId{5286});
+    }
+}
+
+void test_expand_validates_count_then_stride_then_range() {
+    check::group("A2d: which check fires when a burst is wrong in two ways at once");
+
+    // Three of expand's refusals can apply to one burst, and the message says
+    // which one the code reached first. layout.h states each rule and says
+    // nothing about their order, exactly as it says nothing about the far-end
+    // versus walk order (U13), so these cases pin what the code does rather
+    // than a rule anybody wrote down. They are here because the order is
+    // otherwise an accident: U10's re-throw at the engine boundary dispatches
+    // on the exception TYPE, so a burst that is both malformed and out of range
+    // reaches a different catch site depending on which check ran, and a later
+    // unit would be written against an order nobody chose.
+    //
+    // The open question that owns the malformed-versus-out-of-range half of
+    // this is U12 and it stays open: what is written here is the observation,
+    // not the ruling.
+    const BlockPackMapper m(WeightShape{3, 3, 512, 512}, 16, 16, 1);
+
+    // Count before stride. Both are malformed, both are invalid_argument, so
+    // only the message separates them.
+    expect_message("count 0 and stride 0 together",
+                   thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 0, 0}, out);
+                   }),
+                   kPrefix, {"burst count", "got 0"});
+    expect_message("count -1 and stride -1 together",
+                   thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, -1, -1}, out);
+                   }),
+                   kPrefix, {"burst count", "got -1"});
+
+    // Stride before the coordinate range check, which is the tier boundary: the
+    // burst below is malformed (stride 0) and also names a COUT the layer does
+    // not have, and the stride check runs first, so it is invalid_argument and
+    // the message names the stride. A mapper that ranged first would answer
+    // out_of_range for the same burst.
+    expect_message("stride 0 on an anchor past the extent",
+                   thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, 512}, Axis::COUT, 4, 0}, out);
+                   }),
+                   kPrefix, {"burst stride", "got 0"});
+    // And the same burst through the type probe, since the message check alone
+    // would pass on a mapper that threw the right text with the wrong type.
     {
         std::vector<LineId> out;
-        m.expand(Burst{Coord{1, 2, 80, 63}, Axis::COUT, 64, -1}, out);
-        CHECK_EQ(check::ssize(out), std::int64_t{4});
-        CHECK_TRUE(out[0] == LineId{5280});
-        CHECK_TRUE(out[1] == LineId{5281});
-        CHECK_TRUE(out[2] == LineId{5282});
-        CHECK_TRUE(out[3] == LineId{5283});
+        CHECK_THROWS(std::invalid_argument,
+                     m.expand(Burst{Coord{0, 0, 0, 512}, Axis::COUT, 4, 0}, out));
     }
 
-    // Stride 0: every element is the anchor, so the burst touches exactly one
-    // line however long it is. Recorded, not endorsed; see the note above.
-    {
-        std::vector<LineId> out;
-        m.expand(Burst{Coord{1, 2, 80, 48}, Axis::COUT, 4, 0}, out);
-        CHECK_EQ(check::ssize(out), std::int64_t{1});
-        CHECK_TRUE(out[0] == LineId{5283});
-    }
+    // The whole chain in one burst: a count, a stride and a coordinate all
+    // wrong, and the count is what is reported.
+    expect_message("all three wrong at once",
+                   thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, 512}, Axis::COUT, 0, 0}, out);
+                   }),
+                   kPrefix, {"burst count", "got 0"});
 }
 
 void test_expand_rejects_a_malformed_count() {
@@ -1467,16 +1579,26 @@ void test_expand_checks_the_far_end_in_int64() {
                    kPrefix, {"COUT", "coordinate out of range", "[0, 512)", "got 4294967296"});
 
     // The same argument at the other end, which the lower half of the check
-    // owns: walking downward past zero. The far end is -8 while the first
-    // element the walk would reject is -4, so the two halves of
-    // `last < 0 || last >= n` are separately observable.
-    expect_message("a downward walk leaves the tensor",
+    // owns. B49 changed what can reach it and this case is rebuilt around the
+    // change: with `stride < 1` refused the walk can only run upward, so
+    // `last >= start` always and `last < 0` holds exactly when the ANCHOR's own
+    // coordinate on the walked axis is negative. A negative stride is no longer
+    // available, and it is not needed.
+    //
+    // Anchor -8, count 4, stride 1: the elements are -8, -7, -6, -5, so the far
+    // end is -5 while the first element the walk would reject is -8. That gap
+    // is the whole point and it is the mirror of the 2^30 case above: with the
+    // check the message names the far end, without it the message names
+    // whatever the walk reached first. Both are COUT, both are out_of_range,
+    // and only the value tells them apart, which is why this case asserts the
+    // value rather than only the axis.
+    expect_message("the far end is below zero",
                    range_thrown_by([&] {
                        std::vector<LineId> out;
-                       m.expand(Burst{Coord{0, 0, 0, 4}, Axis::COUT, 4, -4}, out);
+                       m.expand(Burst{Coord{0, 0, 0, -8}, Axis::COUT, 4, 1}, out);
                        return 0;
                    }),
-                   kPrefix, {"COUT", "coordinate out of range", "[0, 512)", "got -8"});
+                   kPrefix, {"COUT", "coordinate out of range", "[0, 512)", "got -5"});
 
     // The ordinary one-past-the-end burst, where the far end and the first bad
     // element coincide. Present so the two cases above read as the extra they
@@ -1513,6 +1635,21 @@ void test_expand_checks_the_far_end_in_int64() {
                    }),
                    kPrefix, {"COUT", "coordinate out of range", "[0, 512)", "got 512"});
 
+    // The near end, which the far-end check does not look at. With `stride < 1`
+    // refused the walk runs upward, so a burst can begin below zero and still
+    // have a far end inside the layer: -5, count 10, stride 1 ends at 4. The
+    // far-end check passes it and line_of rejects the first element, which is
+    // the boundary of what a one-sided check can own. Present so that the
+    // one-sidedness is a tested fact rather than an oversight, and so that the
+    // "nothing appended" guarantee is shown to hold on this route too.
+    expect_message("the near end is below zero, the far end is not",
+                   range_thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, -5}, Axis::COUT, 10, 1}, out);
+                       return 0;
+                   }),
+                   kPrefix, {"COUT", "coordinate out of range", "[0, 512)", "got -5"});
+
     // An anchor out of range on an axis the burst does NOT walk. The far-end
     // check only looks at the walked axis, so this one is line_of's to catch,
     // and it is the case that says the other three coordinates are validated at
@@ -1529,9 +1666,10 @@ void test_expand_checks_the_far_end_in_int64() {
     // Whichever half fires, the type is out_of_range and the buffer is
     // untouched: the walk builds into a local vector and appends once, so the
     // strong guarantee holds by construction rather than by a rollback.
-    const Burst offenders[4] = {
+    const Burst offenders[5] = {
         Burst{Coord{0, 0, 0, 0}, Axis::COUT, 5, 1 << 30},
-        Burst{Coord{0, 0, 0, 4}, Axis::COUT, 4, -4},
+        Burst{Coord{0, 0, 0, -8}, Axis::COUT, 4, 1},
+        Burst{Coord{0, 0, 0, -5}, Axis::COUT, 10, 1},
         Burst{Coord{0, 0, 0, 511}, Axis::COUT, 2, 1},
         Burst{Coord{0, 0, 512, 0}, Axis::COUT, 4, 1},
     };
@@ -1888,8 +2026,9 @@ int main() {
     test_line_of_is_onto_with_the_expected_fan_in();
     test_a2d_conformance();
     test_expand_hand_computed();
-    test_expand_is_strictly_increasing_whatever_the_walk();
     test_expand_rejects_a_malformed_count();
+    test_expand_rejects_a_malformed_stride();
+    test_expand_validates_count_then_stride_then_range();
     test_expand_checks_the_far_end_in_int64();
     test_locate();
     test_expand_against_the_oracle();
