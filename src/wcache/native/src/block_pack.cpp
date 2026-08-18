@@ -1,5 +1,6 @@
 #include "wcache/block_pack.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -48,9 +49,10 @@ static_assert(static_cast<int>(Axis::COUT) == 3, "Axis order feeds the flatten")
 // caller catch one and not the other, and what lets a test say which it
 // expected rather than only that something was thrown.
 //
-// The choice of std::out_of_range is weakly grounded: it is not in layout.h
-// and not in the plan, and the only place in the tree naming a type for a
-// range failure is a comment in tests/check.h. Recorded as open question U1.
+// The choice of std::out_of_range is layout.h's, stated there as one of three
+// tiers: invalid_argument for an argument malformed at every layer,
+// out_of_range for one that is well formed but outside this layer, and
+// logic_error for programmer error.
 [[noreturn]] void reject_range(const std::string& what) {
     throw std::out_of_range("BlockPackMapper: " + what);
 }
@@ -240,7 +242,7 @@ BlockPackMapper::BlockPackMapper(WeightShape shape,
 // rather than a silent fall through to the throw, which is the half that keeps
 // this cheap. std::logic_error and not out_of_range: an Axis that is not one of
 // the four is a bug in the caller's program, not a value outside a legal range,
-// and that is the same distinction the A2d stubs draw.
+// and that is the same distinction layout.h's three tiers draw.
 std::int64_t BlockPackMapper::line_stride(Axis a) const {
     switch (a) {
         case Axis::KH:
@@ -316,25 +318,83 @@ LineId BlockPackMapper::line_of(const Coord& c) const {
     return LineId{line};
 }
 
-// --- A2d ---------------------------------------------------------------------
+// --- A2d: the burst walk and the placement -----------------------------------
+
+// The elements of a burst are anchor, anchor + stride, ... along b.axis, and
+// the lines it touches are their flattens with the duplicates removed, since a
+// block-packed line holds several elements of a walked axis whenever that axis
+// is blocked. Four things the contract asks for that are not free:
 //
-// Defined, so the class is concrete and this increment's validation can be
-// exercised by constructing one. Throwing std::logic_error rather than
-// returning something empty: an empty expand appends nothing and looks exactly
-// like a burst that touched no lines, which would let a caller wired up early
-// run to completion and report a hit rate. logic_error rather than
-// invalid_argument or out_of_range because nothing is wrong with the argument;
-// what is wrong is that the function was called at all.
+//  - Every range check before the first append. The lines are built in a local
+//    vector and appended to `out` only at the end, so a call that throws part
+//    way leaves `out` untouched by construction rather than by a rollback that
+//    has to be got right. The cost is one allocation per call.
 //
-// Parameter names are omitted in the definitions and kept in the header
-// declaration, which is how C++ spells "deliberately unused" without a cast to
-// void and without tripping -Wunused-parameter.
-void BlockPackMapper::expand(const Burst&, std::vector<LineId>&) const {
-    throw std::logic_error("BlockPackMapper::expand is not implemented yet (increment A2d)");
+//  - Strictly increasing ids, which layout.h makes an obligation on the
+//    implementation rather than a property of the layout, so this sorts
+//    unconditionally instead of arguing that it need not. Under this layout the
+//    walk is already increasing for a positive stride, because a block index is
+//    non-decreasing in its coordinate and every line stride is positive, so the
+//    sort is over an already sorted range and the unconditional call costs a
+//    comparison pass. A burst walking backwards is what it is there for.
+//
+//  - A burst with count < 1 is std::invalid_argument, not out_of_range: a
+//    request for no elements is malformed whatever layer it is applied to.
+//
+//  - The far end of the walk computed in int64. `count` and `stride` are both
+//    int32 (B8) and their product is not, so a wild count would wrap into a
+//    valid-looking coordinate: with an anchor of 0 and stride 2^30, element 4
+//    is at 2^32, which truncates to a perfectly legal 0. Checking both ends
+//    also covers every element between them, since the walk is affine in the
+//    element index, and it is what makes the narrowing to int32 below a
+//    conversion of a value already known to fit.
+void BlockPackMapper::expand(const Burst& b, std::vector<LineId>& out) const {
+    if (b.count < 1) {
+        reject("burst count must be >= 1, got " + std::to_string(b.count));
+    }
+
+    const std::int32_t n     = extent_on(shape_, b.axis);
+    const std::int64_t start = coord_on(b.anchor, b.axis);
+    const std::int64_t last  = start + static_cast<std::int64_t>(b.count - 1) * b.stride;
+    if (last < 0 || last >= n) {
+        reject_range(std::string(axis_name(b.axis)) + " coordinate out of range [0, " +
+                     std::to_string(n) + "), got " + std::to_string(last));
+    }
+
+    // Not reserved to b.count: the count is untrusted, and reserving it would
+    // turn a burst with a wild count into a bad_alloc before the walk could
+    // name the coordinate that was wrong.
+    std::vector<LineId> lines;
+    for (std::int32_t i = 0; i < b.count; ++i) {
+        const std::int64_t v = start + static_cast<std::int64_t>(i) * b.stride;
+        // line_of checks all four coordinates against the shape, so the anchor's
+        // other three are validated by the first element rather than by a pass
+        // of their own, and the walked one is re-checked at no cost.
+        lines.push_back(line_of(with_coord_on(b.anchor, b.axis, static_cast<std::int32_t>(v))));
+    }
+
+    std::sort(lines.begin(), lines.end());
+    lines.erase(std::unique(lines.begin(), lines.end()), lines.end());
+    out.insert(out.end(), lines.begin(), lines.end());
 }
 
-Placement BlockPackMapper::locate(LineId, std::int64_t) const {
-    throw std::logic_error("BlockPackMapper::locate is not implemented yet (increment A2d)");
+// The range check is the whole of this function's difficulty, and it runs
+// BEFORE the division. LineId is signed (B5), so a negative id would come back
+// out of `line % num_sets` as a negative set index, and the postcondition
+// 0 <= set_index < num_sets would be an assumption rather than a fact.
+// num_lines_ is an exact bound because the constructor's checked products made
+// it one.
+Placement BlockPackMapper::locate(LineId line, std::int64_t num_sets) const {
+    const std::int64_t v = line.get();
+    if (v < 0 || v >= num_lines_) {
+        reject_range("line id out of range [0, " + std::to_string(num_lines_) + "), got " +
+                     std::to_string(v));
+    }
+    // `line == tag * num_sets + set_index` is the definition of the pair, and
+    // both operands are non-negative here, so these are the ordinary division
+    // and remainder rather than the truncate-toward-zero trap the constructor's
+    // negative-block check exists for.
+    return Placement{v % num_sets, v / num_sets};
 }
 
 }  // namespace wcache

@@ -1393,3 +1393,137 @@ The test for whether something should be a `Tagged` is not "is it an int64 that
 means something". It is "do the operations I need on it survive having no
 arithmetic". A count, an id, and an index usually pass. A stride, an offset, and
 a size usually do not.
+
+---
+
+## 22. Standard algorithms, exception safety, and two integer traps (unit A2d)
+
+Four things `expand` and `locate` forced. The first two are the first use in the
+tree of anything out of `<algorithm>`; the last two are places where C++ gives an
+answer that is well defined, silent, and not the one you wanted.
+
+### `std::sort`, `std::unique`, and why `Tagged` needs no comparator
+
+De-duplicating a `std::vector` is three calls, and the shape is not obvious the
+first time:
+
+```cpp
+std::sort(lines.begin(), lines.end());
+lines.erase(std::unique(lines.begin(), lines.end()), lines.end());
+```
+
+Three separate facts, none of which a C programmer's intuition supplies:
+
+1. **`std::unique` removes only *adjacent* duplicates.** It is a linear scan, not
+   a set. That is why the sort comes first; on unsorted input it "works" and
+   leaves duplicates behind, silently.
+2. **`std::unique` does not erase anything.** It compacts the survivors to the
+   front and returns an iterator to the new logical end. The elements past that
+   point are unspecified but still there, and `size()` is unchanged. The
+   container has no idea anything happened until you call `erase` with that
+   iterator. Forgetting the `erase` is the classic version of this bug: the
+   vector still holds the old count and the tail holds garbage.
+3. **Both take the range as two iterators**, so `erase(first, last)` is the
+   two-argument overload that removes a whole range, not the one-element one.
+
+The part that matters for this tree is that neither call needs a comparator.
+`std::sort` uses `operator<` and `std::unique` uses `operator==`, both found by
+argument-dependent lookup, and section 9 gave `Tagged` exactly those. So
+
+```cpp
+std::vector<LineId> lines;      // sorts and uniques with no lambda in sight
+```
+
+works, while a hand-written wrapper class exposing only `.get()` would need a
+lambda at every one of those call sites. This is the payoff of section 9's
+choice to give `Tagged` the six comparisons and nothing else: comparisons are
+precisely what the standard algorithms ask for, and arithmetic is precisely what
+they do not.
+
+### The strong exception guarantee, bought by doing the work to the side
+
+`layout.h` requires that a call which throws leave the caller's buffer exactly as
+it was. There are two ways to write that, and they are not equally safe:
+
+```cpp
+// (a) append, and roll back if something goes wrong
+const std::size_t base = out.size();
+try { for (...) out.push_back(...); }
+catch (...) { out.resize(base); throw; }
+
+// (b) build to the side, commit once at the end
+std::vector<LineId> lines;
+for (...) lines.push_back(...);
+out.insert(out.end(), lines.begin(), lines.end());
+```
+
+(b) is what `expand` does. The difference is not style. In (a) the guarantee is
+something you maintain: every future edit to the loop has to stay inside the
+`try`, the bare `catch (...)` has to rethrow, and `resize` has to be the exact
+inverse of what was done. In (b) the guarantee is structural, because `out`
+appears exactly once in the function and it is the last statement. There is no
+edit to the loop that can break it.
+
+This is the small version of the **copy-and-swap** idiom, which is C++'s general
+answer to "make this operation all-or-nothing": do the work on a copy, then
+commit with an operation that cannot fail. Worth knowing by name, because it is
+the same reasoning that will decide how a cache level installs a line.
+
+One detail that makes the commit sound: the range `insert` either appends the
+whole range or has no effect, provided copying the element type cannot throw.
+`LineId` is trivially copyable, so that holds here. The cost of (b) is one
+allocation per call, which is a real cost and is written in the code as a
+comment rather than left for a reader to discover.
+
+### `/` and `%` on a negative left operand
+
+Since C++11 the language pins this down, and the pinned-down answer is a trap:
+
+```cpp
+-1 / 32  ==  0        // truncation toward zero, not toward minus infinity
+-1 % 32  == -1        // the remainder takes the sign of the DIVIDEND
+```
+
+Both halves bite in this file, at different times:
+
+| Expression | Naive expectation | What C++ gives | What it breaks |
+|---|---|---|---|
+| `cin / cin_block` at `cin = -1` | a negative block index | `0` | a bad coordinate lands on a real line (A2c) |
+| `line % num_sets` at `line = -1` | `num_sets - 1` | `-1` | a set index used to index an array from below (A2d) |
+
+Python answers `-1 // 32 == -1` and `-1 % 32 == 31`, so intuition carried over
+from there is wrong in both columns. The rule to remember is that C++ makes
+`(a / b) * b + (a % b) == a` hold with truncation toward zero, and everything
+else follows from that.
+
+The consequence for how code is written: neither of these is fixable by choosing
+a type. Making the value unsigned would remove the negative rather than diagnose
+it, which is worse, and it is the class of bug the whole tree is signed to avoid
+(section 5's note on the v1 flatten). The fix is always a range check *before*
+the division, which is why `locate` checks `0 <= line < num_lines()` first and
+`line_of` checks each coordinate first.
+
+### The width of an intermediate, and where the cast goes
+
+```cpp
+const std::int64_t last = start + static_cast<std::int64_t>(b.count - 1) * b.stride;
+```
+
+`count` and `stride` are both `std::int32_t`. C++ does **not** widen an
+expression because of what it is assigned to: the usual arithmetic conversions
+look only at the operands, so `b.count * b.stride` is computed in `int` and then
+widened on the way into the `int64_t`. By then it has already overflowed, and
+signed overflow is undefined behaviour rather than wraparound, so the compiler is
+entitled to assume it did not happen.
+
+So the cast has to sit on an **operand**, before the multiply, not on the result:
+
+```cpp
+static_cast<std::int64_t>(a) * b     // correct: the multiply happens in int64
+static_cast<std::int64_t>(a * b)     // wrong:   the multiply already happened
+```
+
+One operand is enough; the other is converted to match. This is the same rule
+`blocks_covering` in `block_pack.cpp` already follows for `(extent + block - 1)`,
+and it is worth stating as a rule because the wrong version is not a warning:
+`-Wconversion` complains about narrowing, and this is the opposite mistake.

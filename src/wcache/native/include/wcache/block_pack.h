@@ -44,10 +44,10 @@ public:
     //
     //     BlockPackMapper(shape, cin_block, cout_block, weight_bytes)
     //
-    // All three parameters are int32, matching WeightShape's extents and
-    // Burst's count and stride (B8): one width across the whole coordinate and
-    // block arithmetic, so the mixed-signedness, mixed-width expression that
-    // produced the v1 line_of bug has nowhere to form.
+    // The three block and width parameters are int32, matching WeightShape's
+    // extents and Burst's count and stride (B8): one width across the whole
+    // coordinate and block arithmetic, so the mixed-signedness, mixed-width
+    // expression that produced the v1 line_of bug has nowhere to form.
     //
     // weight_bytes is a constructor argument rather than something the caller
     // carries separately because it is a format v2 header field arriving with
@@ -64,12 +64,19 @@ public:
                     std::int32_t cout_block,
                     std::int32_t weight_bytes);
 
-    // --- A2d owes these ------------------------------------------------------
+    // --- the two entry points (A2d) -------------------------------------------
     //
-    // Declared and defined (in the .cpp, as a throw) rather than left pure, so
-    // that this class is concrete and can be constructed. A validation
-    // increment whose object cannot be instantiated is a validation increment
-    // that cannot be tested.
+    // Both are built out of the three public pieces below, and both hold to
+    // layout.h's contracts rather than to anything specific to this layout.
+    //
+    // `expand` walks `b.axis` from the anchor by `b.stride`, flattens each
+    // element with `line_of`, and appends the distinct lines in strictly
+    // increasing order. A burst with `count < 1` throws std::invalid_argument,
+    // a burst that leaves the layer's shape throws std::out_of_range, and
+    // either way nothing is appended.
+    //
+    // `locate` range-checks `line` against `num_lines()` before it divides, and
+    // throws std::out_of_range outside it.
     void expand(const Burst& b, std::vector<LineId>& out) const override;
     Placement locate(LineId line, std::int64_t num_sets) const override;
 
@@ -90,8 +97,12 @@ public:
     //
     // `block_len` is the extent along `a` measured in whole LINES, so KH and KW
     // report the raw extent and CIN and COUT report their block counts. It is
-    // the "how many distinct block indices exist on this axis" number, and it
-    // is what A2d's range check on a walked burst compares against.
+    // the "how many distinct block indices exist on this axis" number. It is
+    // deliberately NOT what a range check compares against: a burst carries
+    // element coordinates, so `expand` and `line_of` both check the shape,
+    // which is the strictly stronger bound (a cin of 100 under CIN = 100 with
+    // cin_block = 32 divides to a legal block 3 while naming an element the
+    // layer does not have).
     //
     // Both throw std::logic_error for an Axis outside the enumerators, which is
     // the convention extent_on and coord_on already set in types.h: refuse
@@ -107,11 +118,10 @@ public:
     // divided by the block size on CIN and COUT.
     //
     // Throws std::out_of_range, NOT the constructor's std::invalid_argument,
-    // for a coordinate outside the layer's shape (layout.h:73-75, N11, V15).
-    // The two must stay distinguishable: a bad configuration and a bad
-    // coordinate are found at different times by different callers. See
-    // EXPLAIN.md, open question U1, for why out_of_range and how weakly it is
-    // specified.
+    // for a coordinate outside the layer's shape (N11, V15). The two must stay
+    // distinguishable: a bad configuration and a bad coordinate are found at
+    // different times by different callers. layout.h states the three-tier
+    // vocabulary both follow.
     LineId line_of(const Coord& c) const;
 
     // --- fixed at construction ----------------------------------------------

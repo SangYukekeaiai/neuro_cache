@@ -1,6 +1,6 @@
 // AddressMapper: logical tensor coordinates -> cache lines.
 //
-// Plan v2 Part 2.1, the address-generator row: `AddressMapper::expand(Burst)
+// Plan v3 Part 2.1, the address-generator row: `AddressMapper::expand(Burst)
 // -> [LineId]`, shaped by `cin_block`, `cout_block`, `weight_bytes`.
 //
 // Keeping logical coordinates in the trace and resolving them here is what
@@ -42,6 +42,23 @@ class AddressMapper {
 public:
     virtual ~AddressMapper() = default;
 
+    // --- what an implementation throws --------------------------------------
+    //
+    // One vocabulary for the whole tree, so that a catch site can tell a bad
+    // configuration from a bad access by type alone:
+    //
+    //   std::invalid_argument  the argument is malformed whatever layer it is
+    //                          applied to. A burst with `count < 1`.
+    //   std::out_of_range      the argument is well formed but names something
+    //                          outside THIS layer. A coordinate past an extent,
+    //                          a LineId outside [0, num_lines()).
+    //   std::logic_error       programmer error. An Axis outside the
+    //                          enumerators.
+    //
+    // The contract belongs here rather than in a comment on the test helpers,
+    // because which type is thrown is part of what an implementation promises
+    // and is what the engine's re-throw at the level above is written against.
+
     // --- what an implementation must accept ---------------------------------
     //
     // A burst along ANY axis. `b.axis` and `b.stride` come from the format v2
@@ -59,9 +76,20 @@ public:
     // than assigns so a caller can accumulate a whole tick's demand into one
     // reused buffer, and such a buffer is neither sorted nor unique across
     // calls: different cores in one tick touch lines out of order and touch
-    // the same line (measured merge ratio 1.13 at 1024 cores). A caller
+    // the same line, and the merge ratio is measured above 1. A caller
     // accumulating across cores must sort and unique before counting distinct
     // lines.
+    //
+    // "Strictly increasing" is an obligation on the IMPLEMENTATION, not a
+    // property a layout is free to have or not have: an implementation whose
+    // natural walk order does not produce increasing ids sorts before it
+    // appends. The checks that hold implementations to this interface are
+    // parameterised over this abstract class, so a guarantee that varied per
+    // implementation could not be checked at all.
+    //
+    // A burst with `count < 1` throws std::invalid_argument. A core asking for
+    // nothing is malformed at every layer, and admitting it would leave every
+    // consumer below with a request that has no lines to special-case.
     //
     // On throwing: every range check must run before the first append, so a
     // call that throws appends nothing and leaves `out` exactly as it was.
@@ -71,11 +99,18 @@ public:
     // only. The engine must decide whether such a tick is discarded or the run
     // aborts, and must not silently simulate the partial one.
     //
-    // A coordinate outside the layer's shape throws (N11, V15) rather than
-    // wrapping into a valid-looking line id.
+    // A coordinate outside the layer's shape throws std::out_of_range (N11,
+    // V15) rather than wrapping into a valid-looking line id.
     virtual void expand(const Burst& b, std::vector<LineId>& out) const = 0;
 
     // Placement of `line` in an array of `num_sets` sets.
+    //
+    // Precondition: `0 <= line.get() < num_lines()`. An id outside that range
+    // throws std::out_of_range, and the check runs BEFORE the division, which
+    // is what makes the postcondition `0 <= set_index < num_sets` a fact
+    // rather than an assumption: LineId is signed, so a negative id would
+    // otherwise come back out of `line % num_sets` as a negative set index and
+    // index an array from below.
     virtual Placement locate(LineId line, std::int64_t num_sets) const = 0;
 
     // One past the largest LineId this mapper can produce. The bound the
