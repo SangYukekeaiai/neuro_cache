@@ -10,7 +10,7 @@
 // This file supplies three things:
 //
 //   1. mappers to drive that suite with. One conforming, in three
-//      configurations, and twelve that each break exactly one contract.
+//      configurations, and fifteen that each break exactly one contract.
 //   2. the expect-failure driver, which asserts that each broken mapper is
 //      actually caught. This is the compile_fail.sh control discipline brought
 //      inside the binary: a conformance suite no wrong implementation fails is
@@ -238,6 +238,33 @@ public:
         } catch (const std::out_of_range& ex) {
             throw std::runtime_error(ex.what());
         }
+    }
+};
+
+// Contract 3c. v1's reading of an empty burst, which B38 dropped: `count < 1`
+// is served as a legal run of no elements. It throws nothing, appends nothing,
+// and every other check in the file passes on it, because every other check is
+// driven from the legal and illegal sets and this mapper is right on both.
+class ServesAnEmptyBurst : public PackedRowMajor {
+public:
+    using PackedRowMajor::PackedRowMajor;
+    void expand(const Burst& b, std::vector<LineId>& out) const override {
+        if (b.count < 1) return;
+        PackedRowMajor::expand(b, out);
+    }
+};
+
+// Contract 3c, the tier half. Refuses the burst, leaves the buffer alone, and
+// names the wrong tier. Split from the mapper above for the same reason
+// ThrowsWrongType is split from ChecksAsItGoes: one disagrees about whether to
+// refuse, the other only about which refusal it is, and blurring them would let
+// a single fake stand for two different failures.
+class MalformedBurstIsOutOfRange : public PackedRowMajor {
+public:
+    using PackedRowMajor::PackedRowMajor;
+    void expand(const Burst& b, std::vector<LineId>& out) const override {
+        if (b.count < 1) throw std::out_of_range("burst count must be >= 1");
+        PackedRowMajor::expand(b, out);
     }
 };
 
@@ -521,13 +548,14 @@ void test_conforming_mappers_pass() {
                          "conformance: 1x1 layer");
 
     // ---------------------------------------------------------------------
-    // A2d adds one line here:
-    //
-    //     conformance::run_all(BlockPackMapper(shape, cin_block, cout_block,
-    //                                          weight_bytes),
-    //                          env, "BlockPackMapper");
-    //
-    // and nothing above changes.
+    // A2d's `conformance::run_all(BlockPackMapper(...), env, "BlockPackMapper")`
+    // landed in tests/test_block_pack.cpp, not here. Recorded rather than left
+    // as a stale invitation: this file is A2a's, its fifteen fakes and its
+    // expect-failure driver are about the interface, and the Makefile builds one
+    // binary per test file precisely so a helper written for one unit cannot
+    // leak into another's. Including block_pack.h here would make the A2a binary
+    // depend on the concrete mapper for no gain, since run_all takes an
+    // `const AddressMapper&` and does not care which file calls it.
     // ---------------------------------------------------------------------
 }
 
@@ -545,6 +573,8 @@ void test_broken_mappers_are_caught() {
     const KeepsDuplicates        duplicates(shape, 4, 2);
     const ChecksAsItGoes         eager(shape, 4, 2);
     const ThrowsWrongType        wrong_type(shape, 4, 2);
+    const ServesAnEmptyBurst     empty_ok(shape, 4, 2);
+    const MalformedBurstIsOutOfRange empty_is_range(shape, 4, 2);
     const RejectsUnpackedAxis    cout_only(shape, 4, 2);
     const AssumesCout            assumes_cout(shape, 4, 2);
     const IgnoresStride          ignores_stride(shape, 4, 2);
@@ -565,6 +595,10 @@ void test_broken_mappers_are_caught() {
                   [&] { conformance::c_throwing_call_appends_nothing(eager, env); });
     expect_caught("throws, but not out_of_range",
                   [&] { conformance::c_throw_type_is_out_of_range(wrong_type, env); });
+    expect_caught("serves a zero-count burst (v1's reading)",
+                  [&] { conformance::c_malformed_burst_is_invalid_argument(empty_ok, env); });
+    expect_caught("a zero-count burst throws out_of_range",
+                  [&] { conformance::c_malformed_burst_is_invalid_argument(empty_is_range, env); });
     expect_caught("refuses an axis it does not pack",
                   [&] { conformance::c_accepts_any_axis(cout_only, env); });
     expect_caught("walks COUT whatever the burst says",
@@ -590,6 +624,7 @@ void test_broken_mappers_are_caught() {
         conformance::c_appends_not_assigns(good, env);
         conformance::c_single_call_strictly_increasing(good, env);
         conformance::c_throwing_call_appends_nothing(good, env);
+        conformance::c_malformed_burst_is_invalid_argument(good, env);
         conformance::c_burst_is_its_elements(good, env);
         conformance::c_locate_identity(good, env);
         const int ran = check::g_checks - checks_before;

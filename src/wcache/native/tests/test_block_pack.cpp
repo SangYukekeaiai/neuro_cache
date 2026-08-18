@@ -18,10 +18,12 @@
 //   2. the derived state: ceiling division in blocks_covering, the exact
 //      product in num_lines, the exact product in line_size_bytes, and the
 //      fact that line_size_bytes does not read the shape.
-//   3. the two A2d stubs still throw. These are tripwires, not tests of a
-//      behaviour anyone wants: when A2c and A2d land, these two cases must be
-//      rewritten, and a stub that was quietly given a body would otherwise
-//      leave a mapper that returns an empty expansion and a hit rate to match.
+//   3. A2d's expand and locate, which replaced the two stub tripwires this
+//      file used to carry. The conformance suite of tests/mapper_conformance.h
+//      is run over the real mapper here, since that header is parameterised
+//      over `const AddressMapper&` and this is the file that knows the concrete
+//      one; the hand-computed values and the oracle beside it are what the
+//      interface-level suite cannot say.
 //
 // The negative half at the type level (deriving from a `final` class, unwrapping
 // a LineId, calling the constructor with a Coord) is in tests/compile_fail.sh.
@@ -31,15 +33,18 @@
 #include <wcache/layout.h>
 #include <wcache/types.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <memory>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
 
 #include "check.h"
+#include "mapper_conformance.h"
 
 using namespace wcache;
 
@@ -1114,53 +1119,659 @@ void test_line_of_is_onto_with_the_expected_fan_in() {
 }
 
 // ===========================================================================
-// A2d tripwires
+// A2d: expand and locate
 // ===========================================================================
+//
+// This section replaces the A2b tripwires that pinned the two logic_error
+// stubs. The tripwires said so themselves: when A2d lands they FAIL, and they
+// are to be replaced by the conformance suite rather than deleted, because the
+// thing they were guarding (a stub quietly given a body, so that expand appends
+// nothing and reads exactly like a burst that touched no lines) is guarded from
+// then on by a suite that says what the two members must actually do.
+//
+// Three layers, and the order matters:
+//
+//   the conformance suite  every contract layout.h states, run over the real
+//                          mapper in five configurations. Nothing here knows
+//                          about blocking, so this is the half that says
+//                          BlockPackMapper is an AddressMapper.
+//   hand-computed values   what a block-packed expand and locate answer, which
+//                          the conformance suite cannot check because it is
+//                          parameterised over the interface.
+//   the oracle             expand against the slow, obvious definition of what
+//                          it means, over a generated burst set.
 
-void test_the_a2d_members_are_still_stubs() {
-    check::group("A2b: expand and locate are declared, defined, and refuse to answer");
+void test_a2d_conformance() {
+    // Five configurations, because several contracts are inert under one of
+    // them. At blocks 1x1 every element is its own line and the de-duplication
+    // path never fires; at cout_block == COUT a whole COUT burst is one id and
+    // the strictly-increasing check has almost nothing to compare; at blocks
+    // that do not divide their extents the padded tail exists and num_lines()
+    // is a ceiling. A mapper that passed only at one blocking would be a suite
+    // that tested one blocking.
+    //
+    // The shape is small on purpose: c_num_lines_is_exact sweeps every element.
+    const WeightShape shape{3, 3, 8, 12};
+    const conformance::Env env = conformance::make_env(shape);
 
-    // These two cases are deliberately temporary. They exist because a stub
-    // that returns instead of throwing is invisible: an empty expand appends
-    // nothing and reads exactly like a burst that touched no lines, so a caller
-    // wired up early would run to completion and report a hit rate. When A2d
-    // lands, both cases FAIL, which is the signal, and both must be replaced by
-    // the conformance suite in tests/mapper_conformance.h rather than deleted.
-    const BlockPackMapper m(kOk, 64, 128, 1);
+    conformance::run_all(BlockPackMapper(shape, 1, 1, 2), env,
+                         "BlockPackMapper: one element per line");
+    conformance::run_all(BlockPackMapper(shape, 4, 4, 2), env,
+                         "BlockPackMapper: 4x4 blocks");
+    conformance::run_all(BlockPackMapper(shape, 8, 12, 2), env,
+                         "BlockPackMapper: a whole CIN x COUT plane per line");
+    conformance::run_all(BlockPackMapper(shape, 3, 5, 2), env,
+                         "BlockPackMapper: neither extent divides");
+    conformance::run_all(BlockPackMapper(shape, 16, 16, 2), env,
+                         "BlockPackMapper: blocks wider than their extents");
 
-    std::vector<LineId> out;
-    out.push_back(LineId{99});
-    const Burst b{Coord{0, 0, 0, 0}, Axis::COUT, 4, 1};
+    // A shape with an extent of 1 on two axes, which is what a 1x1 convolution
+    // looks like and where several of make_env's bursts degenerate.
+    const WeightShape pointwise{1, 1, 16, 16};
+    conformance::run_all(BlockPackMapper(pointwise, 4, 4, 2), conformance::make_env(pointwise),
+                         "BlockPackMapper: 1x1 layer");
 
-    expect_message("expand is an A2d stub",
-                   logic_thrown_by([&] { m.expand(b, out); }),
-                   "BlockPackMapper::expand", {"not implemented", "A2d"});
-    expect_message("locate is an A2d stub",
-                   logic_thrown_by([&] { m.locate(LineId{0}, 8); }),
-                   "BlockPackMapper::locate", {"not implemented", "A2d"});
+    // The corpus's own shape at the corpus's own blocking, so the suite is not
+    // only run on fixtures. COUT 64 under cout_block 128 is the one place the
+    // 7.7 GB corpus reaches the rounding path at all.
+    const WeightShape corpus{3, 3, 256, 64};
+    conformance::run_all(BlockPackMapper(corpus, 64, 128, 1), conformance::make_env(corpus),
+                         "BlockPackMapper: a corpus-shaped layer");
+}
 
-    // logic_error, not invalid_argument: nothing is wrong with the argument,
-    // what is wrong is that the function was called at all. Checked as a type
-    // as well as through the probe's prefix, because the two carry different
-    // information and invalid_argument would satisfy a bare logic_error check.
-    CHECK_THROWS(std::logic_error, m.expand(b, out));
-    CHECK_THROWS(std::logic_error, m.locate(LineId{0}, 8));
+void test_expand_hand_computed() {
+    check::group("A2d: expand on B22's worked case, by hand");
 
-    // The throw happens before anything is appended, which is layout.h's
-    // stated obligation on expand and is worth pinning now so that A2d cannot
-    // satisfy it by accident of ordering.
-    CHECK_EQ(check::ssize(out), std::int64_t{1});
-    CHECK_TRUE(out[0] == LineId{99});
+    // 3x3x512x512 at 16/16. Strides (3072, 1024, 32, 1), num_lines 9216, and
+    // line_of{1,2,80,48} == 5283, all pinned by A2c's own cases above.
+    const BlockPackMapper m(WeightShape{3, 3, 512, 512}, 16, 16, 1);
 
-    // Through the base, since that is how the engine will reach them.
-    const AddressMapper& base = m;
-    CHECK_THROWS(std::logic_error, base.expand(b, out));
-    CHECK_THROWS(std::logic_error, base.locate(LineId{0}, 8));
+    // The board's burst: 512 COUT elements collapse to the 32 contiguous ids
+    // 5280..5311. Contiguity along COUT is the whole of B22, and this is the
+    // first test in the tree that gets it out of expand rather than out of a
+    // loop over line_of.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{1, 2, 80, 0}, Axis::COUT, 512, 1}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{32});
+        bool contiguous = check::ssize(out) == 32;
+        for (std::size_t i = 0; contiguous && i < out.size(); ++i)
+            contiguous = out[i] == LineId{5280 + static_cast<std::int64_t>(i)};
+        CHECK_TRUE(contiguous);
+    }
 
-    // A mapper held by unique_ptr<AddressMapper> destroys correctly, which is
-    // the shape CacheLevel will hold and the reason ~AddressMapper is virtual.
-    std::unique_ptr<AddressMapper> owned(new BlockPackMapper(kOk, 64, 128, 1));
-    CHECK_EQ(owned->num_lines().get(), std::int64_t{36});
+    // The off-by-one pair, which has to be present in BOTH directions: a far
+    // end computed as `start + count * stride` gives 2 lines for the first and
+    // 2 for the second, so only having them together tells the two apart.
+    // cout 48..63 is one whole block; cout 48..64 crosses into the next.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{1, 2, 80, 48}, Axis::COUT, 16, 1}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{1});
+        CHECK_TRUE(out[0] == LineId{5283});
+    }
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{1, 2, 80, 48}, Axis::COUT, 17, 1}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{2});
+        CHECK_TRUE(out[0] == LineId{5283});
+        CHECK_TRUE(out[1] == LineId{5284});
+    }
+
+    // Stride exactly one block: no de-duplication at all, 32 elements to 32
+    // lines. Stride two blocks: the gaps are real, 16 lines with every second
+    // id missing. Both on the axis the corpus actually walks.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{1, 2, 80, 0}, Axis::COUT, 32, 16}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{32});
+        CHECK_TRUE(out[0] == LineId{5280});
+        CHECK_TRUE(out[31] == LineId{5311});
+    }
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{1, 2, 80, 0}, Axis::COUT, 16, 32}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{16});
+        bool every_other = check::ssize(out) == 16;
+        for (std::size_t i = 0; every_other && i < out.size(); ++i)
+            every_other = out[i] == LineId{5280 + 2 * static_cast<std::int64_t>(i)};
+        CHECK_TRUE(every_other);
+    }
+
+    // Irregular de-duplication: elements 0, 5, 10, 15, 20 land in blocks
+    // 0, 0, 0, 0, 1, which is neither "all distinct" nor "all the same" and is
+    // the shape a stride coprime with the block produces.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{1, 2, 80, 0}, Axis::COUT, 5, 5}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{2});
+        CHECK_TRUE(out[0] == LineId{5280});
+        CHECK_TRUE(out[1] == LineId{5281});
+    }
+
+    // A burst on CIN, the other blocked axis, where the spacing between ids is
+    // line_stride(CIN) rather than 1. A mapper that assumed COUT would give a
+    // contiguous run here.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{1, 2, 0, 48}, Axis::CIN, 4, 16}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{4});
+        CHECK_TRUE(out[0] == LineId{5123});
+        CHECK_TRUE(out[1] == LineId{5155});
+        CHECK_TRUE(out[2] == LineId{5187});
+        CHECK_TRUE(out[3] == LineId{5219});
+    }
+
+    // The A2a -> A2d carried obligation, in the file that owns it now: a burst
+    // along an axis the layout does not block is legal and touches `count`
+    // distinct lines, because KH and KW have a block size of 1. The corpus
+    // never emits one, so only a test announces a regression here.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{0, 0, 0, 0}, Axis::KH, 3, 1}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{3});
+        CHECK_TRUE(out[0] == LineId{0});
+        CHECK_TRUE(out[1] == LineId{3072});
+        CHECK_TRUE(out[2] == LineId{6144});
+    }
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{0, 0, 0, 0}, Axis::KW, 3, 1}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{3});
+        CHECK_TRUE(out[0] == LineId{0});
+        CHECK_TRUE(out[1] == LineId{1024});
+        CHECK_TRUE(out[2] == LineId{2048});
+    }
+
+    // The degenerate burst a cout_block of 1 produces, at the last element of
+    // the layer: one element, one line, and it is num_lines() - 1.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{2, 2, 511, 511}, Axis::COUT, 1, 1}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{1});
+        CHECK_TRUE(out[0] == LineId{m.num_lines().get() - 1});
+    }
+
+    // Appends, and appends after whatever was already there. layout.h's reason
+    // is the accumulate pattern: a whole tick's demand goes into one reused
+    // buffer, so a mapper that assigned would keep only the last core's lines
+    // and every earlier core's demand would vanish with no error anywhere.
+    {
+        std::vector<LineId> acc(3, LineId{-777});
+        m.expand(Burst{Coord{1, 2, 80, 48}, Axis::COUT, 16, 1}, acc);
+        m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 16, 1}, acc);
+        CHECK_EQ(check::ssize(acc), std::int64_t{5});
+        CHECK_TRUE(acc[0] == LineId{-777});
+        CHECK_TRUE(acc[1] == LineId{-777});
+        CHECK_TRUE(acc[2] == LineId{-777});
+        CHECK_TRUE(acc[3] == LineId{5283});
+        CHECK_TRUE(acc[4] == LineId{0});
+        // And the buffer as a whole is NOT sorted, which layout.h says out loud
+        // ("neither sorted nor unique across calls"). Asserting it here stops a
+        // later reader from strengthening the per-call guarantee into a
+        // per-buffer one that no caller can honour.
+        CHECK_TRUE(acc[4] < acc[3]);
+    }
+}
+
+void test_expand_is_strictly_increasing_whatever_the_walk() {
+    check::group("A2d: B31, strictly increasing is an obligation on the implementation");
+
+    // B31 makes "strictly increasing" a promise every implementation keeps by
+    // sorting if its natural walk order does not produce it, rather than a
+    // property a layout is free to have. Under this layout a positive stride
+    // already walks upward, so the ONLY thing that exercises the sort is a walk
+    // that runs downward.
+    //
+    // Which raises a question this file records rather than answers: expand
+    // accepts a stride of 0 and a negative stride, while the reference mapper
+    // in tests/test_layout.cpp throws invalid_argument on `stride < 1`, and
+    // layout.h forbids neither. These two cases pin what the code does TODAY
+    // and are the ones to revisit when that is decided; they are deliberately
+    // not on the conformance Env's illegal side, because putting them there
+    // would fail BlockPackMapper on an undecided rule.
+    const BlockPackMapper m(WeightShape{3, 3, 512, 512}, 16, 16, 1);
+
+    // Downward across four blocks: the walk emits 5283, 5282, 5281, 5280 and
+    // the contract says the call appends 5280, 5281, 5282, 5283.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{1, 2, 80, 63}, Axis::COUT, 4, -16}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{4});
+        bool increasing = true;
+        for (std::size_t i = 1; i < out.size(); ++i) increasing = increasing && out[i - 1] < out[i];
+        CHECK_TRUE(increasing);
+        CHECK_TRUE(out[0] == LineId{5280});
+        CHECK_TRUE(out[3] == LineId{5283});
+    }
+
+    // A downward walk whose elements share lines, so the sort and the
+    // de-duplication both have to fire and in that order: unique() only removes
+    // ADJACENT equals, so de-duplicating a descending run without sorting first
+    // still leaves the ids descending.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{1, 2, 80, 63}, Axis::COUT, 64, -1}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{4});
+        CHECK_TRUE(out[0] == LineId{5280});
+        CHECK_TRUE(out[1] == LineId{5281});
+        CHECK_TRUE(out[2] == LineId{5282});
+        CHECK_TRUE(out[3] == LineId{5283});
+    }
+
+    // Stride 0: every element is the anchor, so the burst touches exactly one
+    // line however long it is. Recorded, not endorsed; see the note above.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{1, 2, 80, 48}, Axis::COUT, 4, 0}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{1});
+        CHECK_TRUE(out[0] == LineId{5283});
+    }
+}
+
+void test_expand_rejects_a_malformed_count() {
+    check::group("A2d: B38, count < 1 is invalid_argument and nothing is appended");
+
+    const BlockPackMapper m(WeightShape{3, 3, 512, 512}, 16, 16, 1);
+
+    // invalid_argument and not out_of_range: a count of zero is malformed
+    // whatever layer it is applied to, and B27's vocabulary is what lets a
+    // catch site tell a bad burst from a bad coordinate. v1 read a zero count
+    // as a legal empty run; B38 dropped that reading because an empty burst is
+    // a core asking for nothing, which under C1's serialization would need a
+    // served time for a request with no lines.
+    expect_message("count = 0",
+                   thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 0, 1}, out);
+                   }),
+                   kPrefix, {"count", "must be >= 1", "got 0"});
+    expect_message("count = -1",
+                   thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, -1, 1}, out);
+                   }),
+                   kPrefix, {"count", "must be >= 1", "got -1"});
+    // The far end of the range, and the value whose negation overflows: a check
+    // written as `-count > 0` rather than `count < 1` would let it through.
+    expect_message("count = INT32_MIN",
+                   thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, INT32_MIN, 1}, out);
+                   }),
+                   kPrefix, {"count", "got -2147483648"});
+
+    // The type, pinned separately from the text, on all four axes: the count
+    // check must not live inside a per-axis branch.
+    for (Axis a : kAxes) {
+        std::vector<LineId> out;
+        CHECK_THROWS(std::invalid_argument, m.expand(Burst{Coord{0, 0, 0, 0}, a, 0, 1}, out));
+        CHECK_THROWS(std::invalid_argument, m.expand(Burst{Coord{0, 0, 0, 0}, a, -1, 1}, out));
+    }
+
+    // NOT out_of_range, as its own check. The two are siblings under
+    // logic_error, so a bare logic_error check would accept either and the
+    // distinction B38 rests on would go untested.
+    bool was_range = false;
+    try {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 0, 1}, out);
+    } catch (const std::out_of_range&) {
+        was_range = true;
+    } catch (const std::exception&) {
+    } catch (...) {
+    }
+    CHECK_TRUE(!was_range);
+
+    // Nothing appended, and the count check runs before the range check would
+    // have: a zero-count burst whose anchor is fine leaves the buffer alone.
+    std::vector<LineId> acc;
+    acc.push_back(LineId{99});
+    CHECK_THROWS(std::invalid_argument, m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 0, 1}, acc));
+    CHECK_EQ(check::ssize(acc), std::int64_t{1});
+    CHECK_TRUE(acc[0] == LineId{99});
+
+    // The other side of the boundary: 1 is a legal count. Without this, a check
+    // mutated from `< 1` to `< 2` would still reject everything above and still
+    // look correct.
+    std::vector<LineId> one;
+    m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 1, 1}, one);
+    CHECK_EQ(check::ssize(one), std::int64_t{1});
+}
+
+void test_expand_checks_the_far_end_in_int64() {
+    check::group("A2d: the far end of the walk is computed and checked in 64 bits");
+
+    const BlockPackMapper m(WeightShape{3, 3, 512, 512}, 16, 16, 1);
+
+    // THE case for this check, and it is not the same as "a burst that leaves
+    // the tensor". Every element of the walk is flattened through line_of,
+    // which validates all four coordinates, so a burst running off the end
+    // throws with or without a far-end check. What the far-end check buys is
+    // that the coordinate it reports is the FAR END, computed in int64, rather
+    // than whatever the walk happened to reach first after a narrowing to
+    // int32.
+    //
+    // Anchor 0, stride 2^30, count 5: the elements are 0, 2^30, 2^31, 3*2^30
+    // and 2^32. The last one truncates to a perfectly legal 0 on the way into
+    // an int32 coordinate, which is the wrap this check exists to make
+    // impossible. The message is the observable: 4294967296 is a number only
+    // 64-bit arithmetic can produce, and a walk that discovered the failure one
+    // element at a time would report 1073741824 instead.
+    expect_message("stride 2^30, the far end wraps",
+                   range_thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 5, 1 << 30}, out);
+                       return 0;
+                   }),
+                   kPrefix, {"COUT", "coordinate out of range", "[0, 512)", "got 4294967296"});
+
+    // The same argument at the other end, which the lower half of the check
+    // owns: walking downward past zero. The far end is -8 while the first
+    // element the walk would reject is -4, so the two halves of
+    // `last < 0 || last >= n` are separately observable.
+    expect_message("a downward walk leaves the tensor",
+                   range_thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, 4}, Axis::COUT, 4, -4}, out);
+                       return 0;
+                   }),
+                   kPrefix, {"COUT", "coordinate out of range", "[0, 512)", "got -8"});
+
+    // The ordinary one-past-the-end burst, where the far end and the first bad
+    // element coincide. Present so the two cases above read as the extra they
+    // are rather than as the only spelling that works.
+    expect_message("one past the last element",
+                   range_thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 0, 511}, Axis::COUT, 2, 1}, out);
+                       return 0;
+                   }),
+                   kPrefix, {"COUT", "[0, 512)", "got 512"});
+
+    // The boundary of the check, and the case that took work to find. `>= n`
+    // and `> n` disagree on exactly one value, a far end sitting on the extent,
+    // and BOTH spellings refuse it: the walk's last element is the coordinate n,
+    // which line_of rejects with the same axis and the same value, so on an
+    // ordinary burst the two are indistinguishable. What separates them is which
+    // check fires FIRST, and the burst below is wrong twice on purpose so that
+    // the answer differs: its COUT far end lands exactly on 512 and its anchor's
+    // CIN is one past the layer. Checking the far end up front names COUT, the
+    // failure this burst's own count and stride produced; discovering it during
+    // the walk names CIN instead, because line_of validates the four
+    // coordinates in Axis order and reaches the bad anchor first.
+    //
+    // layout.h does not say which of two simultaneous failures is reported, so
+    // this pins what the code does rather than a rule anybody wrote down. It is
+    // in the reviewer's report as a question for the same reason the malformed
+    // versus out-of-range ordering is.
+    expect_message("the far end lands exactly on the extent",
+                   range_thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 512, 0}, Axis::COUT, 3, 256}, out);
+                       return 0;
+                   }),
+                   kPrefix, {"COUT", "coordinate out of range", "[0, 512)", "got 512"});
+
+    // An anchor out of range on an axis the burst does NOT walk. The far-end
+    // check only looks at the walked axis, so this one is line_of's to catch,
+    // and it is the case that says the other three coordinates are validated at
+    // all. It is the companion to the case above: together they say the far-end
+    // check owns the walked axis and line_of owns the other three.
+    expect_message("the anchor is out of range off-axis",
+                   range_thrown_by([&] {
+                       std::vector<LineId> out;
+                       m.expand(Burst{Coord{0, 0, 512, 0}, Axis::COUT, 4, 1}, out);
+                       return 0;
+                   }),
+                   kPrefix, {"CIN", "[0, 512)", "got 512"});
+
+    // Whichever half fires, the type is out_of_range and the buffer is
+    // untouched: the walk builds into a local vector and appends once, so the
+    // strong guarantee holds by construction rather than by a rollback.
+    const Burst offenders[4] = {
+        Burst{Coord{0, 0, 0, 0}, Axis::COUT, 5, 1 << 30},
+        Burst{Coord{0, 0, 0, 4}, Axis::COUT, 4, -4},
+        Burst{Coord{0, 0, 0, 511}, Axis::COUT, 2, 1},
+        Burst{Coord{0, 0, 512, 0}, Axis::COUT, 4, 1},
+    };
+    for (const Burst& b : offenders) {
+        std::vector<LineId> acc;
+        acc.push_back(LineId{-777});
+        acc.push_back(LineId{5283});
+        CHECK_THROWS(std::out_of_range, m.expand(b, acc));
+        CHECK_EQ(check::ssize(acc), std::int64_t{2});
+        CHECK_TRUE(acc[0] == LineId{-777});
+        CHECK_TRUE(acc[1] == LineId{5283});
+    }
+
+    // The other side of the boundary. The widest legal burst on the axis, and
+    // the widest legal strided one, both accepted: a far-end check written as
+    // `start + count * stride` rejects the first of these, so the pair is what
+    // makes the rejections above a boundary rather than a blanket refusal.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 512, 1}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{32});
+        std::vector<LineId> strided;
+        m.expand(Burst{Coord{0, 0, 0, 0}, Axis::COUT, 2, 511}, strided);
+        CHECK_EQ(check::ssize(strided), std::int64_t{2});
+    }
+}
+
+void test_locate() {
+    check::group("A2d: locate, and the range check that runs BEFORE the division");
+
+    const BlockPackMapper m(WeightShape{3, 3, 512, 512}, 16, 16, 1);
+    CHECK_EQ(m.num_lines().get(), std::int64_t{9216});
+
+    // The identity, by hand, at a set count that is not the whole range:
+    // 5283 = 82 * 64 + 35.
+    const Placement p = m.locate(LineId{5283}, 64);
+    CHECK_EQ(p.set_index, std::int64_t{35});
+    CHECK_EQ(p.tag, std::int64_t{82});
+    CHECK_EQ(p.tag * 64 + p.set_index, std::int64_t{5283});
+
+    // The degenerate array: one set, so every line is in set 0 and the tag IS
+    // the line. This is the configuration where a mapper that swapped the two
+    // fields is at its most visible and a mapper that returned {0, 0} is not.
+    const Placement one = m.locate(LineId{5283}, 1);
+    CHECK_EQ(one.set_index, std::int64_t{0});
+    CHECK_EQ(one.tag, std::int64_t{5283});
+
+    // Both ends of the range, at several set counts, with the identity and the
+    // postcondition together. The postcondition is what the range check buys:
+    // LineId is signed (B5), so without it a negative id comes back out of
+    // `line % num_sets` as a negative set index and a cache array subscripts
+    // its slot vector from below (v1's F9).
+    const std::int64_t set_counts[5] = {1, 2, 64, 1024, 9216};
+    for (std::int64_t num_sets : set_counts) {
+        const LineId ids[3] = {LineId{0}, LineId{5283}, LineId{9215}};
+        for (LineId l : ids) {
+            const Placement q = m.locate(l, num_sets);
+            CHECK_TRUE(q.set_index >= 0);
+            CHECK_TRUE(q.set_index < num_sets);
+            CHECK_EQ(q.tag * num_sets + q.set_index, l.get());
+        }
+    }
+
+    // A COUT-walking burst spreads over min(count, num_sets) distinct sets,
+    // which is B22's set-spreading claim reached through the two members that
+    // are supposed to deliver it rather than asserted about the radices.
+    {
+        std::vector<LineId> out;
+        m.expand(Burst{Coord{1, 2, 80, 0}, Axis::COUT, 512, 1}, out);
+        CHECK_EQ(check::ssize(out), std::int64_t{32});
+        std::vector<std::int64_t> sets;
+        for (LineId l : out) sets.push_back(m.locate(l, 32).set_index);
+        std::sort(sets.begin(), sets.end());
+        sets.erase(std::unique(sets.begin(), sets.end()), sets.end());
+        CHECK_EQ(check::ssize(sets), std::int64_t{32});  // one line per set, alias free
+    }
+
+    // The range check itself, at both ends and one step outside each.
+    CHECK_THROWS(std::out_of_range, m.locate(LineId{-1}, 64));
+    CHECK_THROWS(std::out_of_range, m.locate(LineId{9216}, 64));
+    CHECK_THROWS(std::out_of_range, m.locate(LineId{INT64_MIN}, 64));
+    CHECK_THROWS(std::out_of_range, m.locate(LineId{INT64_MAX}, 64));
+    // And the two ids just inside it, so the check is a boundary rather than a
+    // blanket refusal that happens to reject the cases above.
+    CHECK_EQ(m.locate(LineId{0}, 64).set_index, std::int64_t{0});
+    CHECK_EQ(m.locate(LineId{9215}, 64).tag, std::int64_t{143});
+    CHECK_EQ(m.locate(LineId{9215}, 64).set_index, std::int64_t{63});
+
+    // The message, and the type. out_of_range, not invalid_argument: a LineId
+    // outside [0, num_lines()) is well formed and outside THIS layer, which is
+    // the middle tier of B27 and is the same tier line_of throws from.
+    expect_message("line id -1",
+                   range_thrown_by([&] { return m.locate(LineId{-1}, 64).tag; }),
+                   kPrefix, {"line id out of range", "[0, 9216)", "got -1"});
+    expect_message("line id num_lines()",
+                   range_thrown_by([&] { return m.locate(LineId{9216}, 64).tag; }),
+                   kPrefix, {"line id out of range", "[0, 9216)", "got 9216"});
+
+    bool caught_invalid = false;
+    try {
+        (void)m.locate(LineId{-1}, 64);
+    } catch (const std::out_of_range&) {
+    } catch (const std::invalid_argument&) {
+        caught_invalid = true;
+    } catch (...) {
+    }
+    CHECK_TRUE(!caught_invalid);
+
+    // No state: L1 and L2 share one mapper and call locate with different set
+    // counts, interleaved, so an answer that depended on the previous call
+    // would make the two levels able to disturb each other.
+    const Placement a1 = m.locate(LineId{5283}, 64);
+    (void)m.locate(LineId{7}, 1024);
+    const Placement a2 = m.locate(LineId{5283}, 64);
+    CHECK_EQ(a1.set_index, a2.set_index);
+    CHECK_EQ(a1.tag, a2.tag);
+
+    // NOT owned here, recorded so it is not read as covered: locate does not
+    // validate num_sets, so `locate(l, 0)` divides by zero. layout.h states no
+    // precondition on it and the plan gives no unit the check, so no case is
+    // written for it and the reviewer's report carries it instead.
+}
+
+void test_expand_against_the_oracle() {
+    check::group("A2d: expand against the slow, obvious definition of what it means");
+
+    // TEST_DESIGN.md's group G, rebuilt for this mapper. The oracle enumerates
+    // the burst one element at a time and flattens each with line_of, then
+    // sorts and uniques. That is deliberately the definition rather than the
+    // implementation: expand walks the same elements but reaches its answer
+    // through one sort and one unique over a locally built vector, and the two
+    // agree only if both are right.
+    //
+    // line_of is shared between the two, so this does not validate line_of;
+    // A2c's own cases do that, and they are hand-computed rather than derived.
+    //
+    // Deterministic, with a fixed seed, so a failure reproduces exactly.
+    std::mt19937 rng(20260818u);
+
+    const WeightShape shapes[4] = {
+        WeightShape{3, 3, 512, 512},  // the corpus
+        WeightShape{1, 1, 7, 13},     // coprime with every block below, so every
+                                      // partial trailing block is exercised
+        WeightShape{3, 3, 10, 10},    // non-dividing
+        WeightShape{2, 5, 8, 8},      // KH != KW, which is F11's whole lesson
+    };
+    const std::int32_t cin_blocks[4]  = {1, 2, 4, 8};
+    const std::int32_t cout_blocks[5] = {1, 2, 4, 8, 16};
+
+    std::int64_t bursts = 0;
+    std::int64_t multi_line = 0;    // the burst touched more than one line
+    std::int64_t deduped = 0;       // several elements shared a line
+    bool agrees = true;
+    bool increasing = true;
+    bool in_range = true;
+    bool appends = true;
+
+    for (const WeightShape& s : shapes)
+        for (std::int32_t cb : cin_blocks)
+            for (std::int32_t ob : cout_blocks) {
+                const BlockPackMapper m(s, cb, ob, 2);
+                for (Axis a : kAxes) {
+                    const std::int32_t n = extent_on(s, a);
+                    for (int t = 0; t < 100; ++t) {
+                        // The count is derived from the room left on the axis
+                        // rather than drawn and rejected. Rejection loses every
+                        // draw on an axis of extent 1, which the {1,1,7,13}
+                        // shape has two of, and would leave the per-combination
+                        // counts uneven and the total short (TEST_DESIGN's own
+                        // correction to group G).
+                        const std::int32_t anchor =
+                            static_cast<std::int32_t>(rng() % static_cast<std::uint32_t>(n));
+                        const std::int32_t stride =
+                            static_cast<std::int32_t>(1 + rng() % 9u);
+                        const std::int32_t room = (n - 1 - anchor) / stride + 1;
+                        const std::int32_t cap = room < 32 ? room : 32;
+                        const std::int32_t count =
+                            static_cast<std::int32_t>(1 + rng() % static_cast<std::uint32_t>(cap));
+
+                        const Burst b{with_coord_on(Coord{0, 0, 0, 0}, a, anchor), a, count,
+                                      stride};
+
+                        // The sentinel is what makes this an append test as
+                        // well: it is checked to survive every one of the
+                        // bursts below, not only the first.
+                        std::vector<LineId> got;
+                        got.push_back(LineId{-777});
+                        m.expand(b, got);
+
+                        std::vector<LineId> want;
+                        for (std::int32_t i = 0; i < count; ++i)
+                            want.push_back(m.line_of(
+                                with_coord_on(b.anchor, a, anchor + i * stride)));
+                        std::sort(want.begin(), want.end(),
+                                  [](LineId x, LineId y) { return x < y; });
+                        want.erase(std::unique(want.begin(), want.end(),
+                                               [](LineId x, LineId y) { return x == y; }),
+                                   want.end());
+
+                        ++bursts;
+                        if (want.size() > 1) ++multi_line;
+                        if (static_cast<std::int32_t>(want.size()) < count) ++deduped;
+
+                        appends = appends && !got.empty() && got[0] == LineId{-777};
+                        agrees = agrees && got.size() == want.size() + 1;
+                        for (std::size_t i = 0; agrees && i < want.size(); ++i)
+                            agrees = got[i + 1] == want[i];
+                        for (std::size_t i = 2; i < got.size(); ++i)
+                            increasing = increasing && got[i - 1] < got[i];
+                        for (std::size_t i = 1; i < got.size(); ++i)
+                            in_range = in_range && LineId{-1} < got[i] && got[i] < m.num_lines();
+                    }
+                }
+            }
+
+    CHECK_TRUE(agrees);
+    CHECK_TRUE(increasing);
+    CHECK_TRUE(in_range);
+    CHECK_TRUE(appends);
+    CHECK_EQ(bursts, std::int64_t{4 * 4 * 5 * 4 * 100});
+
+    // The coverage floors, which are F13's lesson: a large burst count can
+    // still leave the interesting paths nearly untouched. Both are asserted
+    // rather than reported, so a later edit to the generator that quietly
+    // collapsed every burst to a single element fails here instead of passing
+    // with a smaller suite.
+    //
+    // The two numbers are uneven on purpose, and both come from the structure
+    // of the grid rather than from what a run happened to produce. Half the
+    // bursts walk KH or KW, whose block size is 1, so they can never
+    // de-duplicate at all; of the rest, the cin_block = 1 column and the
+    // cout_block = 1 column cannot either. That leaves 12,400 of the 32,000
+    // bursts able to de-duplicate even in principle, and only those whose
+    // stride is narrower than the block actually do. A floor above that ceiling
+    // would be a floor set to make the run pass.
+    CHECK_TRUE(multi_line >= 3000);
+    CHECK_TRUE(deduped >= 2000);
+    std::printf("  oracle: %lld bursts, %lld multi-line, %lld de-duplicated\n",
+                static_cast<long long>(bursts), static_cast<long long>(multi_line),
+                static_cast<long long>(deduped));
 }
 
 // ===========================================================================
@@ -1275,6 +1886,12 @@ int main() {
     test_line_of_range_message_and_type();
     test_an_axis_outside_the_enumerators_refuses();
     test_line_of_is_onto_with_the_expected_fan_in();
-    test_the_a2d_members_are_still_stubs();
+    test_a2d_conformance();
+    test_expand_hand_computed();
+    test_expand_is_strictly_increasing_whatever_the_walk();
+    test_expand_rejects_a_malformed_count();
+    test_expand_checks_the_far_end_in_int64();
+    test_locate();
+    test_expand_against_the_oracle();
     return check::summary();
 }

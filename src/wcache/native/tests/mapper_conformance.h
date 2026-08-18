@@ -57,11 +57,21 @@ inline constexpr std::int64_t kSentinel = -777;
 // What the checks need beyond the mapper itself. The interface deliberately
 // does not expose the layer shape (locate takes num_sets as an argument for
 // the same reason), so the caller supplies it.
+// Three burst sets and not two, because layout.h's exception vocabulary has two
+// failing tiers and a single bucket cannot express both. `illegal` is the
+// out_of_range tier: a well-formed burst naming something outside THIS layer.
+// `malformed` is the invalid_argument tier: a burst that is wrong whatever
+// layer it is applied to, which today is `count < 1` (B38). Putting a
+// zero-count burst on the illegal side would make c_throw_type_is_out_of_range
+// demand out_of_range for it, which is the opposite of what B38 requires, and
+// the two tiers would stop being tellable apart at a catch site, which is the
+// whole of B27.
 struct Env {
     WeightShape        shape;
-    std::vector<Burst> legal;    // must be accepted
-    std::vector<Burst> illegal;  // must throw, and must append nothing
-    std::vector<Burst> sweep;    // together, every element of the tensor
+    std::vector<Burst> legal;      // must be accepted
+    std::vector<Burst> illegal;    // must throw out_of_range, and append nothing
+    std::vector<Burst> malformed;  // must throw invalid_argument, and append nothing
+    std::vector<Burst> sweep;      // together, every element of the tensor
 };
 
 // Bursts derived from the shape alone, so the same Env drives any mapper.
@@ -108,6 +118,26 @@ inline Env make_env(const WeightShape& shape) {
     e.illegal.push_back(Burst{Coord{0, 0, shape.CIN, 0}, Axis::COUT, 1, 1});
     e.illegal.push_back(Burst{Coord{shape.KH, 0, 0, 0}, Axis::COUT, 1, 1});
     e.illegal.push_back(Burst{Coord{0, -1, 0, 0}, Axis::CIN, 1, 1});
+
+    // The malformed tier. Every anchor here is a legal coordinate and every
+    // axis is a real axis, so the ONLY thing wrong with these bursts is the
+    // count: a mapper that answered out_of_range for one of them would be
+    // reporting a coordinate failure for a burst whose coordinates are fine.
+    // Driven on all four axes because the count check must not be written
+    // inside a per-axis branch.
+    //
+    // Anchors are deliberately in range. A burst that is malformed AND names a
+    // coordinate outside the layer would ask which tier wins, and layout.h does
+    // not say; that question is in the reviewer's report rather than answered
+    // here by the order this file happens to push things in.
+    for (Axis a : kAxes) {
+        e.malformed.push_back(Burst{origin, a, 0, 1});
+        e.malformed.push_back(Burst{origin, a, -1, 1});
+    }
+    // The far end of the range, which is what a header decoded at the wrong
+    // offset produces, and the value whose negation overflows: a check written
+    // as `-count > 0` rather than `count < 1` would let it through.
+    e.malformed.push_back(Burst{origin, Axis::COUT, INT32_MIN, 1});
 
     // Every element of the tensor, as COUT-major bursts. num_lines()'s "one
     // past the LARGEST id this mapper can produce" is an exact claim, and only
@@ -236,6 +266,51 @@ inline void c_throw_type_is_out_of_range(const AddressMapper& m, const Env& e) {
     for (const Burst& b : e.illegal) {
         std::vector<LineId> out;
         CHECK_THROWS(std::out_of_range, m.expand(b, out));
+    }
+}
+
+// --- contract 3c: a malformed burst is invalid_argument, not out_of_range ----
+//
+// layout.h: "A burst with `count < 1` throws std::invalid_argument. A core
+// asking for nothing is malformed at every layer" (B38). That is the OTHER
+// failing tier, and the reason it needs its own bucket rather than a push onto
+// `illegal` is arithmetic: c_throw_type_is_out_of_range demands out_of_range
+// for every burst on the illegal side, so one zero-count burst there would fail
+// every conforming mapper on a rule B38 states the other way round.
+//
+// The check is written as three separate assertions on purpose. "It threw" is
+// not enough, because v1's reading was that an empty run is legal and returns
+// nothing, which throws nothing at all. "It threw invalid_argument" is not
+// enough either, because out_of_range and invalid_argument are siblings under
+// logic_error, so a mapper answering the wrong tier still satisfies any check
+// written against the base and the distinction B27 exists for would go
+// untested.
+inline void c_malformed_burst_is_invalid_argument(const AddressMapper& m, const Env& e) {
+    for (const Burst& b : e.malformed) {
+        std::vector<LineId> out;
+        out.push_back(LineId{kSentinel});
+        out.push_back(LineId{kSentinel + 1});
+        const std::vector<LineId> before = out;
+
+        CHECK_THROWS(std::invalid_argument, m.expand(b, out));
+
+        bool was_range = false;
+        try {
+            m.expand(b, out);
+        } catch (const std::out_of_range&) {
+            was_range = true;
+        } catch (const std::exception&) {
+        } catch (...) {
+        }
+        CHECK_TRUE(!was_range);
+
+        // The same strong guarantee the out_of_range tier gets: a call that
+        // refuses leaves an accumulating caller's buffer exactly as it was.
+        CHECK_EQ(check::ssize(out), check::ssize(before));
+        bool identical = out.size() == before.size();
+        for (std::size_t i = 0; identical && i < before.size(); ++i)
+            identical = out[i] == before[i];
+        CHECK_TRUE(identical);
     }
 }
 
@@ -375,6 +450,7 @@ inline void run_all(const AddressMapper& m, const Env& e, const char* who) {
     c_single_call_strictly_increasing(m, e);
     c_throwing_call_appends_nothing(m, e);
     c_throw_type_is_out_of_range(m, e);
+    c_malformed_burst_is_invalid_argument(m, e);
     c_accepts_any_axis(m, e);
     c_burst_is_its_elements(m, e);
     c_locate_identity(m, e);

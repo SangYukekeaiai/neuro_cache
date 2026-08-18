@@ -70,6 +70,14 @@ tryP() { try "$1" "$2" "$3" '#include <wcache/block_pack.h>'; }
 # to fail on a type cannot pass or fail on a bad extent instead.
 SHAPE='WeightShape{3, 3, 256, 64}'
 
+# The same configuration already constructed, for A2c's cases. Every one of them
+# is about a call on a live mapper rather than about construction, and writing
+# the constructor out per case would let a case fail on the construction while
+# claiming to fail on the call. const because all three A2c helpers are const:
+# one mapper serves L1 and L2, so a case that needed a non-const mapper would be
+# testing the opposite of what the unit promises.
+PACK="const BlockPackMapper m($SHAPE, 64, 128, 1);"
+
 # A minimal complete implementation, so a case can say "and now instantiate it"
 # without repeating it. Nothing in it is under test; the control cases at the
 # end are what prove it compiles, and every case that removes one line from it
@@ -243,6 +251,126 @@ tryP reject 'int64 from num_lines'        'int main(){ BlockPackMapper m('"$SHAP
 tryP reject 'LineId from line_size_bytes' 'int main(){ BlockPackMapper m('"$SHAPE"', 64, 128, 1);
   LineId n = m.line_size_bytes(); return (int)n.get(); }'
 
+echo "== A2c: the flatten helpers belong to the concrete mapper"
+# line_of, line_stride and block_len are NOT on AddressMapper, and that is the
+# reason the interface has four members rather than seven. The engine holds a
+# mapper through the base (layout.h:34-40), so anything reachable there becomes
+# an obligation on every future layout; B23's argument that a layout is chosen
+# by naming a subclass is what these three would quietly widen. Three cases and
+# not one, because moving any single helper onto the base would still leave the
+# other two rejecting and a single case would report a pass.
+tryP reject 'line_of through the base'     "int main(){ $PACK
+  const AddressMapper& r = m; return (int)r.line_of(Coord{0,0,0,0}).get(); }"
+tryP reject 'line_stride through the base' "int main(){ $PACK
+  const AddressMapper& r = m; return (int)r.line_stride(Axis::KH); }"
+tryP reject 'block_len through the base'   "int main(){ $PACK
+  const AddressMapper& r = m; return (int)r.block_len(Axis::CIN); }"
+# The radices themselves stay private. B24 puts them in stride_[4] indexed by
+# static_cast<int>(Axis) so a future permutation is one function's edit; a
+# reader that could subscript the array directly would be depending on the
+# indexing convention from outside the one file that establishes it, and
+# line_stride would stop being the only way to ask.
+tryP reject 'stride_ is private'           "int main(){ $PACK return (int)m.stride_[0]; }"
+
+echo "== A2c: a coordinate is not a shape, and a stride is not an id"
+# Coord and WeightShape are both four int32s and line_of takes the coordinate.
+# A2b already pins the constructor against the swap (it takes the shape); this
+# is the same confusion at the other end, where passing the layer's extents
+# would name the element one past every corner.
+tryP reject 'line_of takes a WeightShape'  "int main(){ $PACK return (int)m.line_of($SHAPE).get(); }"
+# A burst is a run of coordinates, not one of them. expand is what takes a
+# Burst, and it is the member that does not exist yet, so this is the mistake a
+# caller wired up early would actually make.
+tryP reject 'line_of takes a Burst'        "int main(){ $PACK
+  return (int)m.line_of(Burst{Coord{0,0,0,0}, Axis::COUT, 4, 1}).get(); }"
+# line_of names an address, so it returns a LineId and the tag does not fall
+# off on the way out. This is the same wall as A2a's 'int64 from num_lines',
+# restated on the member that produces ids one at a time.
+tryP reject 'int64 from line_of'           "int main(){ $PACK
+  std::int64_t l = m.line_of(Coord{0,0,0,0}); return (int)l; }"
+# And the two helpers are the other side of it: a stride and a block count are
+# DELTAS, not addresses, so neither becomes a LineId by assignment. v1's
+# line_stride returned LineId; A1's typing is what makes that spelling gone
+# rather than merely discouraged (the A2b to A2c board row).
+tryP reject 'LineId from line_stride'      "int main(){ $PACK
+  LineId s = m.line_stride(Axis::KH); return (int)s.get(); }"
+tryP reject 'LineId from block_len'        "int main(){ $PACK
+  LineId n = m.block_len(Axis::CIN); return (int)n.get(); }"
+# The arithmetic that a step check wants to write. LineId has no operator+ at
+# all (A1a), so "the line one block along CIN" has to be spelled with an
+# explicit .get(), which is what tests/test_block_pack.cpp does. Without this
+# case the .get() there reads as a style choice rather than as the only
+# spelling that exists.
+tryP reject 'line_of + line_stride'        "int main(){ $PACK
+  return (int)(m.line_of(Coord{0,0,0,0}) + m.line_stride(Axis::CIN)).get(); }"
+# Comparing an id against a delta is the same mix-up as an ordering. It is
+# worth its own case because `line_of(c) < line_stride(a)` is a plausible
+# accident in a bounds check, where the bound wanted is num_lines().
+tryP reject 'line_of < line_stride'        "int main(){ $PACK
+  return m.line_of(Coord{0,0,0,0}) < m.line_stride(Axis::KH); }"
+# A vector of strides is not a vector of lines. Same shape mistake as A2a's
+# 'expand into vector<SlotId>', in the container form a caller accumulating a
+# burst would reach for.
+tryP reject 'vector<LineId> takes a stride' "int main(){ $PACK
+  std::vector<LineId> v; v.push_back(m.line_stride(Axis::COUT)); return (int)v.size(); }"
+
+echo "== A2c: an axis is an Axis"
+# Axis is scoped and does not decay, so an int cannot stand in for one. Both
+# helpers take an Axis and both index or switch on it, and line_stride's index
+# is into a four-element array: an int argument would be the one spelling that
+# could read past stride_[3] without the switch ever seeing it.
+tryP reject 'line_stride(int)'             "int main(){ $PACK return (int)m.line_stride(2); }"
+tryP reject 'block_len(int)'               "int main(){ $PACK return (int)m.block_len(2); }"
+tryP reject 'line_stride with a bare KH'   "int main(){ $PACK return (int)m.line_stride(KH); }"
+
+echo "== A2d: expand fills a caller's buffer, and cannot be made to drop it"
+# The out parameter is a non-const lvalue reference, which is what makes the
+# accumulate pattern layout.h describes possible AND what stops a caller
+# discarding a whole burst by passing a temporary. Both spellings below compile
+# happily against a by-value or a by-const-reference parameter and neither
+# returns anything, so the loss is silent: the tick accumulates nothing and the
+# hit rate is a hit rate on demand that was never issued.
+tryP reject 'expand into a temporary'      "int main(){ $PACK
+  m.expand(Burst{Coord{0,0,0,0}, Axis::COUT, 1, 1}, std::vector<LineId>{}); return 0; }"
+tryP reject 'expand into a const vector'   "int main(){ $PACK const std::vector<LineId> out;
+  m.expand(Burst{Coord{0,0,0,0}, Axis::COUT, 1, 1}, out); return (int)out.size(); }"
+# The buffer holds LineId, not the raw int64 the flatten computes. This is the
+# same wall as A2a's 'expand into vector<SlotId>', on the container a caller
+# accumulating a tick would actually declare, and it is what keeps the tag from
+# falling off between the mapper and the MSHR file that is keyed by LineId.
+tryP reject 'expand into vector<int64>'    "int main(){ $PACK std::vector<std::int64_t> out;
+  m.expand(Burst{Coord{0,0,0,0}, Axis::COUT, 1, 1}, out); return (int)out.size(); }"
+# A burst is a RUN of coordinates and expand is the member that takes one.
+# line_of is the member that takes a single Coord, and the two are one letter
+# apart at the call site now that both exist on the same object.
+tryP reject 'expand takes a Coord'         "int main(){ $PACK std::vector<LineId> out;
+  m.expand(Coord{0,0,0,0}, out); return (int)out.size(); }"
+# Returning the lines instead of appending them is the shape layout.h rejected.
+# A2a pins it on the interface; this is the same case on the concrete class,
+# which is what a caller holding a BlockPackMapper by value binds to.
+tryP reject 'expand returns the lines'     "int main(){ $PACK
+  std::vector<LineId> out = m.expand(Burst{Coord{0,0,0,0}, Axis::COUT, 1, 1});
+  return (int)out.size(); }"
+
+echo "== A2d: locate takes a LineId and a plain set count, and returns neither"
+# N12 at the member that turns an id into an array subscript. A raw int64 line
+# is the spelling that would let a set index, a tag, or a byte count be located
+# by accident, and Tagged's explicit constructor is what makes it an error.
+tryP reject 'locate takes a raw int64'     "int main(){ $PACK return (int)m.locate(5, 8).tag; }"
+tryP reject 'locate takes a SlotId'        "int main(){ $PACK return (int)m.locate(SlotId{1}, 8).tag; }"
+# num_sets is a plain int64 and deliberately not a tagged scalar: it is a
+# geometry of the ARRAY, not of the layout, which is why it is an argument
+# rather than mapper state. A LineId there would be a line count standing in for
+# a set count, which is exactly the confusion the wall exists to stop.
+tryP reject 'locate num_sets is a LineId'  "int main(){ $PACK
+  return (int)m.locate(LineId{0}, LineId{8}).tag; }"
+# Placement's fields are raw int64 (B9), so they do not convert back into an id
+# by copy-initialisation. The braced spelling IS allowed and is an accept case
+# below, which is the B29 gap A4 closes; this case is the half that already
+# holds today.
+tryP reject 'LineId from set_index'        "int main(){ $PACK
+  LineId l = m.locate(LineId{0}, 8).set_index; return (int)l.get(); }"
+
 echo "== controls: these MUST compile, or every case above is vacuous"
 try accept 'SimTime < SimTime'          'int main(){ return SimTime{1} < SimTime{2}; }'
 try accept 'SimTime + SimTime'          'int main(){ return (int)(SimTime{1} + SimTime{2}).get(); }'
@@ -303,6 +431,65 @@ tryP accept 'line_size_bytes is an int64' 'int main(){ BlockPackMapper m('"$SHAP
   std::int64_t b = m.line_size_bytes(); return (int)b; }'
 tryP accept 'shape() reads'               'int main(){ const BlockPackMapper m('"$SHAPE"', 64, 128, 1);
   return m.shape().CIN + (int)m.n_cout_blocks() + m.weight_bytes(); }'
+
+# A2c's controls. Every reject case above is worth nothing unless the ordinary
+# spellings compile: the three helpers on a CONST mapper (one mapper serves L1
+# and L2), line_of binding a temporary Coord (which is what proves the
+# parameter is a const reference rather than a mutable one), and the two return
+# types the reject cases assumed.
+tryP accept 'line_of on a temporary Coord' "int main(){ $PACK return (int)m.line_of(Coord{0,0,0,0}).get(); }"
+tryP accept 'LineId from line_of'          "int main(){ $PACK
+  LineId l = m.line_of(Coord{0,0,0,0}); return (int)l.get(); }"
+tryP accept 'int64 from line_stride'       "int main(){ $PACK
+  std::int64_t s = m.line_stride(Axis::KH); return (int)s; }"
+tryP accept 'int64 from block_len'         "int main(){ $PACK
+  std::int64_t n = m.block_len(Axis::CIN); return (int)n; }"
+# The radix identity as the test file spells it, and the id/bound comparison
+# that IS well typed: a line id compares against num_lines() because both name
+# addresses in the same space.
+tryP accept 'block_len * line_stride'      "int main(){ $PACK
+  return (int)(m.block_len(Axis::CIN) * m.line_stride(Axis::CIN)); }"
+tryP accept 'line_of < num_lines'          "int main(){ $PACK
+  return m.line_of(Coord{0,0,0,0}) < m.num_lines(); }"
+# The step check's spelling, with the unwrap made explicit. N12 asks that the
+# mix be impossible by accident, not that it be impossible, and this is the
+# escape hatch tests/test_block_pack.cpp uses on every stride check.
+tryP accept 'explicit .get() plus a stride' "int main(){ $PACK
+  return (int)(m.line_of(Coord{0,0,0,0}).get() + m.line_stride(Axis::CIN)); }"
+# The B29 gap, measured on A2c's surface rather than assumed. Tagged's
+# constructor is explicit but its argument is an ordinary function parameter,
+# so a 64-bit stride reaches a 32-bit tagged scalar and is truncated. A stride
+# is a factor of num_lines(), which is an int64 the constructor's overflow
+# guard bounds only at INT64_MAX, so the size that gets lost is not bounded by
+# anything this class checks. What g++ does here is a -Wnarrowing WARNING, not
+# an error: the case is accept, and it is the flags that decide, which is
+# precisely why it is measured rather than assumed. Recorded for the same
+# reason the three Placement ones are: A4's non-narrowing constructor has to
+# come here and flip it, and until then the size of the gap is written down.
+tryP accept 'a stride becomes a SlotId'    "int main(){ $PACK
+  SlotId s{m.line_stride(Axis::KH)}; return (int)s.get(); }"
+
+# A2d's controls. The nine cases above are worth nothing unless the ordinary
+# spellings compile: expand appending into a caller's own vector, locate taking
+# the two types it names, both reached through the base (which is the only way
+# the engine ever reaches them), and the explicit unwrap that N12 permits.
+tryP accept 'expand appends to a vector'   "int main(){ $PACK std::vector<LineId> out;
+  m.expand(Burst{Coord{0,0,0,0}, Axis::COUT, 4, 1}, out); return (int)out.size(); }"
+tryP accept 'expand through the base'      "int main(){ $PACK const AddressMapper& r = m;
+  std::vector<LineId> out; r.expand(Burst{Coord{0,0,0,0}, Axis::COUT, 4, 1}, out);
+  return (int)out.size(); }"
+tryP accept 'locate(LineId, int64)'        "int main(){ $PACK
+  return (int)m.locate(LineId{0}, 8).set_index; }"
+tryP accept 'locate through the base'      "int main(){ $PACK const AddressMapper& r = m;
+  return (int)r.locate(LineId{0}, 8).tag; }"
+tryP accept 'Placement from locate'        "int main(){ $PACK
+  Placement p = m.locate(LineId{0}, 8); return (int)(p.tag + p.set_index); }"
+# The B29 gap again, measured on A2d's surface: a braced Placement field reaches
+# ANY tagged scalar because Tagged's constructor argument is an ordinary
+# parameter. Recorded as an accept so A4's non-narrowing constructor has to come
+# here and flip it.
+tryP accept 'a set index becomes a LineId' "int main(){ $PACK
+  LineId l{m.locate(LineId{0}, 8).set_index}; return (int)l.get(); }"
 
 echo
 echo "$((pass + fail)) compile cases, $fail failures"
