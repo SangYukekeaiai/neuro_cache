@@ -398,9 +398,10 @@ inline void c_burst_is_its_elements(const AddressMapper& m, const Env& e) {
 
 // --- contract 6: locate's identity -------------------------------------------
 //
-// layout.h, on Placement: "`line == tag * num_sets + set_index` holds without a
-// cast and a bounds check written the obvious way (`0 <= set_index &&
-// set_index < num_sets`) is not vacuously true."
+// layout.h, on Placement: "The identity that defines the pair is `line == tag *
+// num_sets + set_index`", and the bound the set index owes,
+// `0 <= set_index < num_sets`, "is not vacuously true because the
+// representation underneath stays signed."
 //
 // Driven over ids the mapper actually produced, plus both ends of its range,
 // and over several set counts including 1 (where every line is in set 0 and
@@ -417,9 +418,13 @@ inline void c_locate_identity(const AddressMapper& m, const Env& e) {
     for (std::int64_t num_sets : set_counts) {
         for (LineId l : lines) {
             const Placement p = m.locate(l, num_sets);
-            CHECK_TRUE(p.set_index >= 0);
-            CHECK_TRUE(p.set_index < num_sets);
-            CHECK_EQ(p.tag * num_sets + p.set_index, l.get());
+            // Unwrapped, because U16 typed both fields: a SetIndex does not
+            // order against a raw int64 and a TagId does not multiply by one.
+            // layout.h keeps the identity in its readable form in a comment and
+            // spells it this way in code, and this is that spelling.
+            CHECK_TRUE(p.set_index.get() >= 0);
+            CHECK_TRUE(p.set_index.get() < num_sets);
+            CHECK_EQ(p.tag.get() * num_sets + p.set_index.get(), l.get());
 
             // No state: L1 and L2 share one mapper and call locate with
             // different num_sets, interleaved.
@@ -483,18 +488,23 @@ inline void c_line_size_bytes_is_usable(const AddressMapper& m, const Env&) {
 // number of 96-byte lines (...)", stays actionable, and an empty parenthesis
 // is a message that has lost its reason to exist.
 inline void c_line_size_terms_is_informative(const AddressMapper& m, const Env&) {
-    const std::string terms = m.line_size_terms();
+    // ONE read of the line size, passed to every call below. Q3 gave
+    // line_size_terms the value as an argument precisely so a caller need not
+    // ask twice, and a conformance check that asked twice would not be
+    // exercising the interface the way the array does.
+    const std::int64_t bytes = m.line_size_bytes();
+
+    const std::string terms = m.line_size_terms(bytes);
     CHECK_TRUE(!terms.empty());
     // CHECK_TRUE rather than CHECK_EQ: check.h's to_str has no std::string
     // overload, and adding one would put a formatting concern into the harness
     // for one call site. The expression says what it compares.
-    CHECK_TRUE(terms == m.line_size_terms());  // no state, same as locate
+    CHECK_TRUE(terms == m.line_size_terms(bytes));  // no state, same as locate
 
     // And it has to name the line size somewhere, whether as the bare product
     // or as the factors it multiplies out to. A terms string that mentions
     // neither is a string about some other quantity, which is worse than the
     // default: it is a message that misdirects rather than one that says less.
-    const std::int64_t bytes = m.line_size_bytes();
     bool accounted = terms.find(std::to_string(bytes)) != std::string::npos;
     if (!accounted) {
         // The factored form. Multiply out every run of digits in the string and

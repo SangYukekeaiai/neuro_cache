@@ -1,8 +1,14 @@
-// Unit A4b: SetAssociativeArray's construction and validation.
+// Units A4b and A4c: SetAssociativeArray, whole.
 //
-// A4b is a constructor and three accessors. Its five verbs are A4c's and are
-// std::logic_error stubs here (B19), so everything this file can reach is the
-// geometry the constructor derives and the seven refusals it makes on the way.
+// A4b is the constructor and three accessors: the geometry it derives and the
+// seven refusals it makes on the way. A4c is the five verbs, which were
+// std::logic_error stubs (B19) when A4b landed and now have bodies.
+//
+// The six checks that pinned the stubs are gone from this file, replaced
+// rather than deleted: they said in their own comment that A4c is the event
+// that makes "nothing answers the question yet" meaningless, which is B45's
+// precedent for a tripwire whose target has landed. What replaces each of them
+// is a check on the behaviour the verb now has.
 //
 // Its own file rather than more of tests/test_cache.cpp, and the reason is the
 // same one that put SetAssociativeArray in its own header. test_cache.cpp
@@ -16,7 +22,10 @@
 // with one binary per test file.
 //
 // Group letters follow TEST_DESIGN_CACHE.md: K is the constructor and the
-// derived quantities, L is the rejections. Groups M through S are A4c's.
+// derived quantities, L is the rejections, M through S are the verbs. That
+// document predates `invalidate` being on the interface and lists it as not
+// covered; it is covered here, alongside `insert`, since the two are the only
+// verbs that take a SlotId and they share one bound check.
 #include <wcache/set_associative.h>
 
 #include <wcache/block_pack.h>
@@ -25,9 +34,11 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -66,18 +77,26 @@ std::string thrown_by(Fn fn) {
     return "[no exception thrown]";
 }
 
-// The mirror probe, for the A4c stubs, where logic_error is the RIGHT answer.
-// Two probes rather than one parameterised probe, for test_block_pack.cpp's
+// The mirror probe, for the verbs, where out_of_range is the RIGHT answer:
+// B27 gives out_of_range to a well-formed argument naming something outside
+// this layer, which a slot id past the end and a line id past the mapper both
+// are. Two probes rather than one parameterised probe, for test_block_pack.cpp's
 // reason: the two cases disagree about which type is correct, and a single
 // probe would have to be told which, which is the thing being tested.
+//
+// The catch order is narrowest first and both siblings are named before their
+// base, so a refusal that came out as invalid_argument is reported as that
+// rather than as a plain logic_error.
 template <typename Fn>
-std::string logic_thrown_by(Fn fn) {
+std::string range_thrown_by(Fn fn) {
     try {
         fn();
-    } catch (const std::invalid_argument& e) {
-        return std::string("[invalid_argument, not logic_error] ") + e.what();
-    } catch (const std::logic_error& e) {
+    } catch (const std::out_of_range& e) {
         return e.what();
+    } catch (const std::invalid_argument& e) {
+        return std::string("[invalid_argument, not out_of_range] ") + e.what();
+    } catch (const std::logic_error& e) {
+        return std::string("[logic_error, not out_of_range] ") + e.what();
     } catch (const std::exception& e) {
         return std::string("[wrong exception type] ") + e.what();
     } catch (...) {
@@ -133,6 +152,57 @@ void expect_absent(const char* name, const std::string& actual, const char* need
     }
 }
 
+// Everything the array will answer about every line, read through the
+// interface and nothing else. The slot vector is private, so this is what an
+// "array state" comparison has to be made of: probe, free_slot and the whole
+// candidate list, for every line the mapper admits.
+//
+// It is deliberately built from the CONST verbs only. That is what lets it
+// stand as evidence about probe: a snapshot that had to insert something to
+// read the state would be changing the thing it measures.
+std::vector<std::int64_t> observables(const SetAssociativeArray& a, std::int64_t lines) {
+    std::vector<std::int64_t> v;
+    std::vector<Candidate> out;
+    for (std::int64_t l = 0; l < lines; ++l) {
+        const LineId line{l};
+        v.push_back(a.probe(line).get());
+        v.push_back(a.free_slot(line).get());
+        a.victim_candidates(line, out);
+        for (const Candidate& c : out) {
+            v.push_back(c.slot.get());
+            v.push_back(c.line.get());
+        }
+    }
+    return v;
+}
+
+// One check per comparison, reporting the FIRST index that differs rather than
+// printing two vectors of several thousand numbers. A CHECK_EQ on the vectors
+// would be correct and unreadable, and the index is the only part a reader can
+// act on: it names which line, and which of its answers, moved.
+void expect_same_observables(const char* name,
+                             const std::vector<std::int64_t>& before,
+                             const std::vector<std::int64_t>& after) {
+    ++check::g_checks;
+    if (before.size() != after.size()) {
+        ++check::g_failures;
+        if (!check::g_quiet)
+            std::printf("FAIL  %-46s length %zu became %zu\n",
+                        name, before.size(), after.size());
+        return;
+    }
+    for (std::size_t i = 0; i < before.size(); ++i) {
+        if (before[i] != after[i]) {
+            ++check::g_failures;
+            if (!check::g_quiet)
+                std::printf("FAIL  %-46s answer %zu was %lld, is now %lld\n", name, i,
+                            static_cast<long long>(before[i]),
+                            static_cast<long long>(after[i]));
+            return;
+        }
+    }
+}
+
 // --- the mappers -------------------------------------------------------------
 
 // B22's worked layer, at the blocks that give the 256-byte line the plan's L1
@@ -163,7 +233,7 @@ public:
         throw std::logic_error("TinyMapper::expand: A4b never calls it");
     }
     Placement locate(LineId line, std::int64_t num_sets) const override {
-        return Placement{line.get() % num_sets, line.get() / num_sets};
+        return Placement{SetIndex{line.get() % num_sets}, TagId{line.get() / num_sets}};
     }
     LineId       num_lines()       const override { return LineId{1}; }
     std::int64_t line_size_bytes() const override { ++reads_; return line_bytes_; }
@@ -175,16 +245,37 @@ private:
     mutable int  reads_ = 0;
 };
 
-// The same mapper with line_size_terms OVERRIDDEN, so the two halves of the
-// refusal message come from two different sources. It exists for one measured
-// reason, recorded in test_the_line_size_is_read_exactly_once below: the inline
-// default in layout.h calls line_size_bytes() a second time, so "read once" is
-// a property of the CONSTRUCTOR and not of the whole refusal path, and only a
-// mapper that overrides the terms can show the difference.
+// The same mapper with line_size_terms OVERRIDDEN, so the array's refusal has
+// to reach the override rather than the inline default. It is what shows that
+// the default is a default and not a fixed answer.
 class TermsMapper final : public TinyMapper {
 public:
     using TinyMapper::TinyMapper;
-    std::string line_size_terms() const override { return "a fixed string"; }
+    std::string line_size_terms(std::int64_t) const override { return "a fixed string"; }
+};
+
+// A mapper that answers line_size_bytes() DIFFERENTLY on every call. Nothing in
+// the tree needs such a mapper to work; it exists to make the read-once
+// discipline observable, and it is the case Q3's argument was added for.
+//
+// The array reads the line size once, refuses on that value, and passes the
+// same value to line_size_terms, so both halves of the message name the first
+// answer. Before Q3 the inline default asked the mapper again and printed the
+// SECOND answer, so one message said "96-byte lines (97)": a diagnostic
+// contradicting itself. That is checked below rather than argued.
+class DriftingLineSize : public AddressMapper {
+public:
+    void expand(const Burst&, std::vector<LineId>&) const override {
+        throw std::logic_error("DriftingLineSize::expand: never called");
+    }
+    Placement locate(LineId line, std::int64_t num_sets) const override {
+        return Placement{SetIndex{line.get() % num_sets}, TagId{line.get() / num_sets}};
+    }
+    LineId       num_lines()       const override { return LineId{1}; }
+    std::int64_t line_size_bytes() const override { return 96 + reads_++; }
+
+private:
+    mutable std::int64_t reads_ = 0;
 };
 
 // ===========================================================================
@@ -291,31 +382,35 @@ void test_the_line_size_is_read_exactly_once() {
     (void)thrown_by([&] { SetAssociativeArray bad(refused, 65536, 8); });
     CHECK_EQ(refused.reads(), 1);
 
-    // And the exception, measured rather than assumed, which is a reviewer
-    // finding rather than a designed behaviour: layout.h's INLINE DEFAULT for
-    // line_size_terms is `std::to_string(line_size_bytes())`, so a mapper that
-    // does not override it is asked a SECOND time, from inside the message.
+    // The mapper that does NOT override the terms, which is where the defect
+    // used to be. layout.h's inline default was
+    // `std::to_string(line_size_bytes())`, so it asked the mapper a SECOND
+    // time from inside the message and this check read 2.
     //
-    // The constructor's own discipline is intact -- every division still uses
-    // the one value it read -- so no geometry can come out wrong. What it costs
-    // is confined to the diagnostic: for a mapper that answers inconsistently,
-    // the "-byte lines" half and the bracketed half of one message are two
-    // reads and can disagree with each other. That is exactly the "second thing
-    // that can disagree with the first" block_pack.cpp's own line_size_terms
-    // comment says it avoided by not repeating the product.
-    //
-    // Pinned rather than left as a note, so that a later change to either side
-    // has to come here and say which way it went.
-    // Side effect worth knowing about, found by the meta-verification round and
-    // recorded so it is not read later as a coincidence: because the second
-    // read comes from inside the message, this check also goes red for a
-    // mutation that drops line_size_terms() from the message entirely. That is
-    // incidental coverage of something this test is not about, so it is NOT
-    // what the terms are pinned by; the L4 group below carries that, and it was
-    // shown to be load-bearing with this check and the two others disabled.
+    // Q3 gave line_size_terms the line size as an argument, so the default
+    // prints the value the constructor already read and the whole refusal comes
+    // from ONE read. This is the check that says the fix landed, and it is why
+    // the previous round's finding is no longer recorded as a live cost.
     TinyMapper defaulted(96);
     (void)thrown_by([&] { SetAssociativeArray bad(defaulted, 65536, 8); });
-    CHECK_EQ(defaulted.reads(), 2);
+    CHECK_EQ(defaulted.reads(), 1);
+}
+
+void test_the_refusal_message_cannot_contradict_itself() {
+    check::group("A4b Q3: both halves of the refusal come from one read");
+
+    // The behaviour the read count above stands in for, measured directly. A
+    // count of 1 is evidence only if a second read would actually change the
+    // message, so this is the mapper for which it would: it answers 96, then
+    // 97, then 98, and it does not override line_size_terms.
+    //
+    // With one read, the "-byte lines" half and the bracketed half are the same
+    // number. With two, they were 96 and 97 and the message told a reader to go
+    // looking for a 97-byte line that no configuration produces.
+    DriftingLineSize drifting;
+    const std::string msg = thrown_by([&] { SetAssociativeArray a(drifting, 65536, 8); });
+    CHECK_TRUE(msg == "SetAssociativeArray: cache_size_bytes 65536 is not a whole number of "
+                      "96-byte lines (96)");
 }
 
 void test_the_array_is_usable_through_the_base() {
@@ -450,15 +545,24 @@ void test_the_inline_default_of_line_size_terms() {
     // also checked where it is defined: an unoverridden line_size_terms is the
     // line size printed, for any line size.
     const TinyMapper other(7);
-    CHECK_TRUE(other.line_size_terms() == "7");
+    CHECK_TRUE(other.line_size_terms(other.line_size_bytes()) == "7");
     const AddressMapper& base = other;
-    CHECK_TRUE(base.line_size_terms() == "7");
+    CHECK_TRUE(base.line_size_terms(base.line_size_bytes()) == "7");
+
+    // The default prints the value it is HANDED, which is Q3's whole point and
+    // is what makes the two halves of one refusal agree by construction. A
+    // caller that passes something else gets that something else back, so the
+    // default can never disagree with the message it is being embedded in.
+    CHECK_TRUE(base.line_size_terms(4096) == "4096");
 
     // And BlockPackMapper's override is reachable through the same base
-    // reference, which is what makes it an override rather than a shadow.
+    // reference, which is what makes it an override rather than a shadow. It
+    // names its own factors, so it ignores the value it is passed.
     const BlockPackMapper packed(kShape, 12, 8, 1);
     const AddressMapper& pbase = packed;
-    CHECK_TRUE(pbase.line_size_terms() == "cin_block 12 x cout_block 8 x weight_bytes 1");
+    CHECK_TRUE(pbase.line_size_terms(pbase.line_size_bytes()) ==
+               "cin_block 12 x cout_block 8 x weight_bytes 1");
+    CHECK_TRUE(pbase.line_size_terms(-1) == "cin_block 12 x cout_block 8 x weight_bytes 1");
 
     // The default is a default, not a fixed answer: a mapper that overrides it
     // is what the array prints. Checked with a mapper other than
@@ -615,48 +719,775 @@ void test_every_refusal_is_invalid_argument() {
 }
 
 // ===========================================================================
-// The A4c stubs, and what this file therefore cannot say
+// A4c: the five verbs
 // ===========================================================================
+//
+// One geometry carries most of the groups and is named here rather than
+// rebuilt per test: 64 KB of 256-byte lines is 256 lines, 8 ways deep is 32
+// sets. All three numbers differ, which is what stops a wrong answer from
+// coinciding with a right one.
 
-void test_the_five_verbs_are_still_stubs() {
-    check::group("A4b: the five verbs are A4c stubs and say so");
+constexpr std::int64_t kBytes = 65536;
+constexpr std::int32_t kWays  = 8;
+constexpr std::int64_t kSets  = 32;
+constexpr std::int32_t kSlots = 256;
 
-    // B19's convention, and the tripwire B45 named: a stub quietly given a
-    // plausible body is the one failure in a validation increment that produces
-    // no wrong number at all. `probe` returning NoSlot and `free_slot`
-    // returning SlotId{0} would look exactly like a correctly empty cache, so
-    // the refusal is what stands between A4b and a suite that silently believes
-    // A4c is finished.
-    //
-    // This is also the honest answer to "every slot starts as NoLine". The slot
-    // vector is private and all three verbs that could report it throw, so the
-    // initial fill is NOT observable at A4b, by anything. What is checked here
-    // is the property that keeps it from being MIS-reported: nothing answers
-    // the question yet. Three mutation cases against the fill are written into
-    // mutation_check.sh and are carried by A4c's tests, not by this file.
+// The mapper admits 9216 lines. A snapshot over 512 of them visits every set
+// sixteen times, so the other 8704 buy repetition rather than coverage.
+constexpr std::int64_t kSnapLines = 512;
+
+// One draw from the test's RNG, in [0, n). mt19937's result_type is
+// uint_fast32_t, which is 64 bits on this platform, so every draw narrows
+// explicitly rather than through an implicit conversion -Wconversion would
+// rightly complain about.
+std::int64_t draw(std::mt19937& rng, std::int64_t n) {
+    return static_cast<std::int64_t>(rng() % static_cast<std::mt19937::result_type>(n));
+}
+
+// The set `line` competes in, asked of the mapper rather than recomputed here.
+// TEST_DESIGN_CACHE.md section 3's rule: `locate` is shared between the model
+// and the code, so nothing below re-derives the line-to-set map. Group I tests
+// `locate` standing alone; what is tested here is everything the array builds
+// on top of it.
+std::int64_t set_of(const AddressMapper& m, std::int64_t num_sets, std::int64_t line) {
+    return m.locate(LineId{line}, num_sets).set_index.get();
+}
+
+// ---------------------------------------------------------------------------
+// Group M: probe
+// ---------------------------------------------------------------------------
+
+void test_probe_finds_a_line_only_where_it_lives() {
+    check::group("A4c M1..M5: probe hit, miss, repeatability, and its scoping");
+
     const BlockPackMapper m(kShape, 16, 16, 1);
-    const SetAssociativeArray a(m, 65536, 8);
-    SetAssociativeArray mutable_a(m, 65536, 8);
-    std::vector<Candidate> out;
+    SetAssociativeArray a(m, kBytes, kWays);
 
-    expect_message("probe", logic_thrown_by([&] { (void)a.probe(LineId{0}); }),
-                   "SetAssociativeArray::probe", {"not implemented", "A4c"});
-    expect_message("free_slot", logic_thrown_by([&] { (void)a.free_slot(LineId{0}); }),
-                   "SetAssociativeArray::free_slot", {"not implemented", "A4c"});
-    expect_message("victim_candidates",
-                   logic_thrown_by([&] { a.victim_candidates(LineId{0}, out); }),
-                   "SetAssociativeArray::victim_candidates", {"not implemented", "A4c"});
-    expect_message("insert",
-                   logic_thrown_by([&] { (void)mutable_a.insert(LineId{0}, SlotId{0}); }),
-                   "SetAssociativeArray::insert", {"not implemented", "A4c"});
-    expect_message("invalidate", logic_thrown_by([&] { mutable_a.invalidate(SlotId{0}); }),
-                   "SetAssociativeArray::invalidate", {"not implemented", "A4c"});
+    // M1. A fresh array holds nothing, across many sets rather than one.
+    for (std::int64_t l = 0; l < 64; ++l) CHECK_EQ(a.probe(LineId{l}), NoSlot);
 
-    // And through the base, which is the only way the engine reaches them, so
-    // an override that failed to override would show up as no exception at all.
+    // M2. Insert, then probe answers with the slot that was inserted into.
+    const SlotId s = a.free_slot(LineId{7});
+    CHECK_TRUE(s != NoSlot);
+    CHECK_TRUE(!a.insert(LineId{7}, s).evicted);
+    CHECK_EQ(a.probe(LineId{7}), s);
+
+    // M3. Repeatable: ten consecutive calls, no drift.
+    for (int i = 0; i < 10; ++i) CHECK_EQ(a.probe(LineId{7}), s);
+
+    // M4. A different line in the SAME set is still a miss, and specifically is
+    // not reported at the neighbour's slot. This is the case that catches a
+    // probe comparing against something other than the line id: 7 and 7 + kSets
+    // land in one set and differ only in the tag half.
+    CHECK_EQ(set_of(m, kSets, 7), set_of(m, kSets, 7 + kSets));
+    CHECK_EQ(a.probe(LineId{7 + kSets}), NoSlot);
+
+    // M5. A line in a DIFFERENT set is a miss too, which catches a probe that
+    // forgot to scope itself to the set and scanned the whole array.
+    CHECK_TRUE(set_of(m, kSets, 8) != set_of(m, kSets, 7));
+    CHECK_EQ(a.probe(LineId{8}), NoSlot);
+
+    // And through the base, which is the only way the engine reaches it.
     const CacheArray& r = a;
-    expect_message("probe through the base", logic_thrown_by([&] { (void)r.probe(LineId{0}); }),
-                   "SetAssociativeArray::probe", {"A4c"});
+    CHECK_EQ(r.probe(LineId{7}), s);
+    CHECK_EQ(r.probe(LineId{8}), NoSlot);
+}
+
+void test_probe_is_not_an_access() {
+    check::group("A4c M6: no sequence of probes changes any later answer");
+
+    // Plan 2.2 requires that "probe is const and is NOT an access", and the
+    // class makes that enforceable rather than promised: probe is const and
+    // SetAssociativeArray has no mutable member for a const function to write.
+    // What is checked here is the consequence a caller actually depends on, and
+    // it is checked as an invariance rather than as a value.
+    //
+    // Two arrays are built and filled in lockstep. One is then probed twenty
+    // thousand times -- hits, misses and repeats, over every line the mapper
+    // admits -- and the other is not. Afterwards the storm's array agrees with
+    // its own pre-storm snapshot AND with the array that never saw the storm.
+    //
+    // The second array is what a before/after snapshot alone cannot supply. A
+    // probe that recorded something only a LATER verb reads back would still
+    // pass a before/after comparison on one array; it shows up only against an
+    // array with a different probe history. Note that taking a snapshot is
+    // itself probing, which is the point rather than a flaw: reading this
+    // array's state costs probes, so "unprobed" is not a state a test can be
+    // in, and what is being pinned is that the NUMBER and ORDER of probes does
+    // not matter.
+    const BlockPackMapper m(kShape, 16, 16, 1);
+    SetAssociativeArray stormed(m, kBytes, kWays);
+    SetAssociativeArray untouched(m, kBytes, kWays);
+
+    // Partly filled, so free ways, occupied ways and full sets are all present:
+    // lines 0..199 over 32 sets leave every set six or seven deep of eight.
+    for (std::int64_t l = 0; l < 200; ++l) {
+        const SlotId f = stormed.free_slot(LineId{l});
+        CHECK_TRUE(f != NoSlot);
+        (void)stormed.insert(LineId{l}, f);
+        (void)untouched.insert(LineId{l}, f);
+    }
+    // And one set driven to full, so the storm covers the exhausted case too.
+    for (std::int64_t ln = 200; ln < 200 + kSets * 3; ln += kSets) {
+        const SlotId f = stormed.free_slot(LineId{ln});
+        if (f == NoSlot) break;
+        (void)stormed.insert(LineId{ln}, f);
+        (void)untouched.insert(LineId{ln}, f);
+    }
+
+    const std::vector<std::int64_t> before = observables(stormed, kSnapLines);
+
+    const std::int64_t lines = m.num_lines().get();
+    std::mt19937 rng(20260818u);
+    for (int i = 0; i < 20000; ++i) {
+        const std::int64_t l = draw(rng, lines);
+        (void)stormed.probe(LineId{l});
+        (void)stormed.probe(LineId{l});  // the repeat, which is what a recency stack would record
+    }
+
+    expect_same_observables("the storm changed nothing",
+                            before, observables(stormed, kSnapLines));
+    expect_same_observables("and the two arrays still agree",
+                            observables(untouched, kSnapLines), observables(stormed, kSnapLines));
+
+    // The same statement about free_slot and victim_candidates, which are const
+    // for the same reason and are already inside `observables` above. This is
+    // the one that says so out loud: the two arrays diverge in nothing but how
+    // many const calls they have served.
+    CHECK_EQ(stormed.free_slot(LineId{0}), untouched.free_slot(LineId{0}));
+}
+
+// ---------------------------------------------------------------------------
+// Group N: free_slot
+// ---------------------------------------------------------------------------
+
+void test_free_slot_is_the_lowest_free_way() {
+    check::group("A4c N1..N5: the lowest free way, exhaustion, and neighbouring sets");
+
+    const BlockPackMapper m(kShape, 16, 16, 1);
+    SetAssociativeArray a(m, kBytes, kWays);
+
+    // N1, N2. One set, filled a way at a time, and the answer climbs by exactly
+    // one each time. That ordering is load-bearing rather than tidy: it is what
+    // makes the answer a function of the array's state alone, so two arrays
+    // given the same insert sequence agree slot for slot. An implementation
+    // free to return any free way would still be correct and would make every
+    // fixture below it unwritable.
+    const std::int32_t base = static_cast<std::int32_t>(set_of(m, kSets, 5)) * kWays;
+    for (std::int32_t w = 0; w < kWays; ++w) {
+        const SlotId f = a.free_slot(LineId{5});
+        CHECK_EQ(f, SlotId{base + w});
+        (void)a.insert(LineId{5 + kSets * w}, f);
+    }
+
+    // N3. The set is full and free_slot says so rather than picking a victim.
+    CHECK_EQ(a.free_slot(LineId{5}), NoSlot);
+
+    // N4. A full set does not starve a different one, which is what catches a
+    // free_slot that scanned the whole array instead of one set.
+    const SlotId other = a.free_slot(LineId{6});
+    CHECK_TRUE(other != NoSlot);
+    CHECK_EQ(other, SlotId{static_cast<std::int32_t>(set_of(m, kSets, 6)) * kWays});
+
+    // N5. An insert OVER an occupied way leaves the set full: replacing is not
+    // freeing, so the exhaustion answer does not change.
+    const InsertResult r = a.insert(LineId{5 + kSets * kWays}, SlotId{base});
+    CHECK_TRUE(r.evicted);
+    CHECK_EQ(a.free_slot(LineId{5}), NoSlot);
+}
+
+void test_free_slot_is_deterministic_across_arrays() {
+    check::group("A4c N6: two arrays, one insert sequence, identical slots throughout");
+
+    // The property N2's ordering exists to buy, stated at the level a sweep
+    // depends on: a cold-start fill is reproducible, so two runs of the same
+    // configuration place lines identically and a hit rate is a fact about the
+    // trace rather than about the run.
+    const BlockPackMapper m(kShape, 16, 16, 1);
+    SetAssociativeArray a(m, kBytes, kWays);
+    SetAssociativeArray b(m, kBytes, kWays);
+
+    std::mt19937 rng(7u);
+    for (int i = 0; i < 2000; ++i) {
+        const std::int64_t l = draw(rng, 400);
+        const SlotId fa = a.free_slot(LineId{l});
+        const SlotId fb = b.free_slot(LineId{l});
+        CHECK_EQ(fa, fb);
+        if (fa == NoSlot) continue;
+        const InsertResult ra = a.insert(LineId{l}, fa);
+        const InsertResult rb = b.insert(LineId{l}, fb);
+        CHECK_EQ(ra.evicted_line, rb.evicted_line);
+    }
+    expect_same_observables("the two arrays are the same array",
+                            observables(a, kSnapLines), observables(b, kSnapLines));
+}
+
+// ---------------------------------------------------------------------------
+// Group O: victim_candidates
+// ---------------------------------------------------------------------------
+
+void test_victim_candidates_reports_one_whole_set() {
+    check::group("A4c O1..O8: the candidate list is one whole set, in slot order");
+
+    const BlockPackMapper m(kShape, 16, 16, 1);
+    SetAssociativeArray a(m, kBytes, kWays);
+
+    // O2, and TEST_DESIGN_CACHE.md calls it the single most valuable case in
+    // the group: the verb REPLACES the buffer's contents. An appending version
+    // lets a caller that forgot to clear pick a victim from a previous fill in
+    // a DIFFERENT set, and the line is then stored where probe can never look
+    // for it. No crash, just a hit rate quietly below the truth for a whole run.
+    std::vector<Candidate> out(7, Candidate{SlotId{99}, LineId{99}});
+    a.victim_candidates(LineId{5}, out);
+    CHECK_EQ(check::ssize(out), std::int64_t{kWays});  // O1, at fill level zero
+
+    // O4, O7. A fresh set: every way free, carrying NoLine, in ascending slot
+    // order starting at the set's base.
+    const std::int32_t base = static_cast<std::int32_t>(set_of(m, kSets, 5)) * kWays;
+    for (std::int32_t w = 0; w < kWays; ++w) {
+        CHECK_EQ(out[static_cast<std::size_t>(w)].slot, SlotId{base + w});
+        CHECK_EQ(out[static_cast<std::size_t>(w)].line, NoLine);
+    }
+
+    // O1, O4, O5. Partly filled: the size does not change with the fill level,
+    // the occupied ways carry the line that is actually resident, and the free
+    // ways still carry NoLine.
+    (void)a.insert(LineId{5}, SlotId{base});
+    (void)a.insert(LineId{5 + kSets * 2}, SlotId{base + 2});
+    a.victim_candidates(LineId{5}, out);
+    CHECK_EQ(check::ssize(out), std::int64_t{kWays});
+    CHECK_EQ(out[0].line, LineId{5});
+    CHECK_EQ(out[1].line, NoLine);
+    CHECK_EQ(out[2].line, LineId{5 + kSets * 2});
+    for (std::size_t w = 3; w < out.size(); ++w) CHECK_EQ(out[w].line, NoLine);
+
+    // O6. Every entry that carries a line is where probe finds that line, which
+    // is what ties the candidate list to the rest of the interface rather than
+    // leaving it a private report.
+    for (const Candidate& c : out) {
+        if (c.line == NoLine) continue;
+        CHECK_EQ(a.probe(c.line), c.slot);
+    }
+
+    // O3. Called twice in a row, the second answer equals the first.
+    std::vector<Candidate> again;
+    a.victim_candidates(LineId{5}, again);
+    CHECK_EQ(check::ssize(again), check::ssize(out));
+    bool identical = true;
+    for (std::size_t i = 0; i < out.size(); ++i)
+        identical = identical && again[i].slot == out[i].slot && again[i].line == out[i].line;
+    CHECK_TRUE(identical);
+
+    // O8. The buffer converges: after the first call has grown it, calls 2..10
+    // do not reallocate. That is the local, testable half of the buffer-reuse
+    // argument, and it is what makes clearing rather than shrinking the right
+    // way to replace the contents.
+    a.victim_candidates(LineId{5}, again);
+    const std::size_t settled = again.capacity();
+    for (int i = 0; i < 9; ++i) {
+        a.victim_candidates(LineId{5 + i}, again);
+        CHECK_EQ(static_cast<std::int64_t>(again.capacity()),
+                 static_cast<std::int64_t>(settled));
+    }
+
+    // O9. And the whole verb is const in effect as well as in signature.
+    const std::vector<std::int64_t> before = observables(a, kSnapLines);
+    for (std::int64_t l = 0; l < 300; ++l) a.victim_candidates(LineId{l}, again);
+    expect_same_observables("candidates leave the array alone",
+                            before, observables(a, kSnapLines));
+}
+
+void test_victim_candidates_leaves_the_buffer_alone_when_it_throws() {
+    check::group("A4c: a throwing victim_candidates does not empty the caller's buffer");
+
+    // base_slot is the only thing in the verb that can throw, and it runs
+    // BEFORE out.clear(). That order is the contract rather than an accident:
+    // a caller that hands over a buffer and gets an exception must get the
+    // buffer back as it was, not emptied. It is the same rule expand states as
+    // "every range check runs before the first append", applied to a verb that
+    // assigns instead of appending.
+    const BlockPackMapper m(kShape, 16, 16, 1);
+    const SetAssociativeArray a(m, kBytes, kWays);
+
+    const std::vector<Candidate> junk(7, Candidate{SlotId{99}, LineId{99}});
+    std::vector<Candidate> out = junk;
+
+    const std::int64_t past_the_end = m.num_lines().get();
+    expect_message("a line the mapper does not have",
+                   range_thrown_by([&] { a.victim_candidates(LineId{past_the_end}, out); }),
+                   "BlockPackMapper: line id out of range",
+                   {"got 9216"});
+
+    CHECK_EQ(check::ssize(out), std::int64_t{7});
+    bool untouched = true;
+    for (std::size_t i = 0; i < out.size(); ++i)
+        untouched = untouched && out[i].slot == junk[i].slot && out[i].line == junk[i].line;
+    CHECK_TRUE(untouched);
+
+    // The other two const verbs refuse the same line the same way. They add no
+    // rejection of their own, so what is pinned is that the refusal arrives at
+    // all rather than a negative set index being formed and indexed with.
+    expect_message("probe refuses it too",
+                   range_thrown_by([&] { (void)a.probe(LineId{past_the_end}); }),
+                   "BlockPackMapper: line id out of range", {});
+    expect_message("free_slot refuses it too",
+                   range_thrown_by([&] { (void)a.free_slot(LineId{past_the_end}); }),
+                   "BlockPackMapper: line id out of range", {});
+    expect_message("and a negative line",
+                   range_thrown_by([&] { (void)a.probe(LineId{-1}); }),
+                   "BlockPackMapper: line id out of range", {"got -1"});
+}
+
+// ---------------------------------------------------------------------------
+// Group P: insert, and invalidate alongside it
+// ---------------------------------------------------------------------------
+
+void test_insert_reports_what_it_displaced() {
+    check::group("A4c P1..P7: eviction reporting, and what an insert leaves alone");
+
+    const BlockPackMapper m(kShape, 16, 16, 1);
+    SetAssociativeArray a(m, kBytes, kWays);
+    const std::int32_t base = static_cast<std::int32_t>(set_of(m, kSets, 5)) * kWays;
+
+    // P1. Into a free slot: nothing was displaced, and both fields say so.
+    const InsertResult cold = a.insert(LineId{5}, SlotId{base});
+    CHECK_TRUE(!cold.evicted);
+    CHECK_EQ(cold.evicted_line, NoLine);
+    CHECK_EQ(a.probe(LineId{5}), SlotId{base});  // P4
+
+    // Fill two more ways, so the untouched-neighbour checks below have
+    // something to be untouched.
+    (void)a.insert(LineId{5 + kSets}, SlotId{base + 1});
+    (void)a.insert(LineId{5 + kSets * 2}, SlotId{base + 2});
+
+    const std::vector<std::int64_t> other_sets_before = observables(a, kSnapLines);
+
+    // P2. Into an occupied slot: the previous occupant is named, not the line
+    // being installed and not merely a flag.
+    const InsertResult hot = a.insert(LineId{5 + kSets * 3}, SlotId{base});
+    CHECK_TRUE(hot.evicted);
+    CHECK_EQ(hot.evicted_line, LineId{5});
+
+    // P3, at this call. The invariant is checked over the whole replay in group
+    // R as well; here it is checked where the two fields are actually written.
+    CHECK_EQ(hot.evicted, hot.evicted_line != NoLine);
+    CHECK_EQ(cold.evicted, cold.evicted_line != NoLine);
+
+    // P4, P5. The new line is where the insert put it and the old one is gone.
+    CHECK_EQ(a.probe(LineId{5 + kSets * 3}), SlotId{base});
+    CHECK_EQ(a.probe(LineId{5}), NoSlot);
+
+    // P6. The other ways of the same set are untouched, which is what catches
+    // an insert that wrote to the wrong way or cleared the set on the way in.
+    CHECK_EQ(a.probe(LineId{5 + kSets}), SlotId{base + 1});
+    CHECK_EQ(a.probe(LineId{5 + kSets * 2}), SlotId{base + 2});
+
+    // P7. And no other set moved. `observables` covers every set sixteen times
+    // over, so this is the whole array minus the two answers that were supposed
+    // to change, checked by replaying the same eviction on a second array.
+    SetAssociativeArray replay(m, kBytes, kWays);
+    (void)replay.insert(LineId{5}, SlotId{base});
+    (void)replay.insert(LineId{5 + kSets}, SlotId{base + 1});
+    (void)replay.insert(LineId{5 + kSets * 2}, SlotId{base + 2});
+    expect_same_observables("the second array matched before the eviction",
+                            other_sets_before, observables(replay, kSnapLines));
+    (void)replay.insert(LineId{5 + kSets * 3}, SlotId{base});
+    expect_same_observables("and matches after it",
+                            observables(a, kSnapLines), observables(replay, kSnapLines));
+}
+
+void test_invalidate_frees_a_slot_and_is_idempotent() {
+    check::group("A4c: invalidate, including on a slot that is already free");
+
+    const BlockPackMapper m(kShape, 16, 16, 1);
+    SetAssociativeArray a(m, kBytes, kWays);
+    const std::int32_t base = static_cast<std::int32_t>(set_of(m, kSets, 5)) * kWays;
+
+    // A full set, so the effect of freeing one way is unambiguous.
+    for (std::int32_t w = 0; w < kWays; ++w) (void)a.insert(LineId{5 + kSets * w}, SlotId{base + w});
+    CHECK_EQ(a.free_slot(LineId{5}), NoSlot);
+
+    // Invalidating a resident slot drops the line: probe stops finding it, the
+    // slot becomes the lowest free way of its set, and the candidate list
+    // reports it as free rather than as still holding the departed line.
+    a.invalidate(SlotId{base + 3});
+    CHECK_EQ(a.probe(LineId{5 + kSets * 3}), NoSlot);
+    CHECK_EQ(a.free_slot(LineId{5}), SlotId{base + 3});
+    std::vector<Candidate> out;
+    a.victim_candidates(LineId{5}, out);
+    CHECK_EQ(out[3].line, NoLine);
+    CHECK_EQ(out[3].slot, SlotId{base + 3});
+
+    // The rest of the set is untouched, which is what catches an invalidate
+    // that cleared the set rather than the way.
+    for (std::int32_t w = 0; w < kWays; ++w) {
+        if (w == 3) continue;
+        CHECK_EQ(a.probe(LineId{5 + kSets * w}), SlotId{base + w});
+    }
+
+    // Invalidating an ALREADY FREE slot leaves it free and changes nothing
+    // else. cache.h states this outright, and the implementation needs no
+    // branch for it, which is exactly why it is worth a check: there is nothing
+    // in the code to read that says the case was considered.
+    const std::vector<std::int64_t> before = observables(a, kSnapLines);
+    a.invalidate(SlotId{base + 3});
+    a.invalidate(SlotId{base + 3});
+    expect_same_observables("invalidate on a free slot is a no-op", before,
+                            observables(a, kSnapLines));
+
+    // And a slot in a set nobody has touched, which is the same case one step
+    // further out: every slot of the array starts free.
+    a.invalidate(SlotId{kSlots - 1});
+    expect_same_observables("including in an untouched set", before,
+                            observables(a, kSnapLines));
+}
+
+void test_the_two_verbs_that_take_a_slot_range_check_it() {
+    check::group("A4c: insert and invalidate refuse a slot outside [0, num_slots)");
+
+    // The slot is range-checked and the line is not, which cache.h calls a
+    // deliberate asymmetry: an out-of-range slot is an out-of-bounds WRITE into
+    // the slot vector, and it is reachable by one plausible mistake, since
+    // `insert(line, free_slot(line))` without testing for NoSlot passes
+    // INT32_MAX here. A line outside the mapper's range is a stored value that
+    // every reader refuses at locate.
+    const BlockPackMapper m(kShape, 16, 16, 1);
+    SetAssociativeArray a(m, kBytes, kWays);
+    CHECK_EQ(a.num_slots(), kSlots);
+
+    expect_message("insert at -1",
+                   range_thrown_by([&] { (void)a.insert(LineId{0}, SlotId{-1}); }),
+                   "SetAssociativeArray::insert",
+                   {"slot -1", "outside [0, 256)"});
+    expect_message("insert one past the end",
+                   range_thrown_by([&] { (void)a.insert(LineId{0}, SlotId{kSlots}); }),
+                   "SetAssociativeArray::insert",
+                   {"slot 256", "outside [0, 256)"});
+    // The mistake the check exists for, spelled out: a caller that passed the
+    // NoSlot it was handed rather than testing for it.
+    expect_message("insert at NoSlot",
+                   range_thrown_by([&] { (void)a.insert(LineId{0}, NoSlot); }),
+                   "SetAssociativeArray::insert", {"2147483647"});
+
+    expect_message("invalidate at -1",
+                   range_thrown_by([&] { a.invalidate(SlotId{-1}); }),
+                   "SetAssociativeArray::invalidate",
+                   {"slot -1", "outside [0, 256)"});
+    expect_message("invalidate one past the end",
+                   range_thrown_by([&] { a.invalidate(SlotId{kSlots}); }),
+                   "SetAssociativeArray::invalidate",
+                   {"slot 256", "outside [0, 256)"});
+    expect_message("invalidate at NoSlot",
+                   range_thrown_by([&] { a.invalidate(NoSlot); }),
+                   "SetAssociativeArray::invalidate", {"2147483647"});
+
+    // Each message names ITS OWN verb, which is the reason the shared check
+    // takes the name rather than reporting the class: a caller with a stray
+    // slot id needs to know which call it reached.
+    expect_absent("insert is not an invalidate message",
+                  range_thrown_by([&] { (void)a.insert(LineId{0}, SlotId{-1}); }), "invalidate");
+
+    // The boundary is open at the top and closed at the bottom, so the last
+    // slot is accepted and nothing was written by any of the refusals above.
+    const InsertResult r = a.insert(LineId{kSlots - 1}, SlotId{kSlots - 1});
+    CHECK_TRUE(!r.evicted);
+    a.invalidate(SlotId{0});
+    a.invalidate(SlotId{kSlots - 1});
+    CHECK_EQ(a.probe(LineId{kSlots - 1}), NoSlot);
+}
+
+// ---------------------------------------------------------------------------
+// Group Q: capacity and conflict
+// ---------------------------------------------------------------------------
+
+void test_capacity_and_conflict() {
+    check::group("A4c Q1, Q2, Q3: one eviction per set overflow, reuse, and assoc 1");
+
+    const BlockPackMapper m(kShape, 16, 16, 1);
+
+    // Q1. associativity + 1 distinct lines into one set costs exactly one
+    // eviction. A set that evicted early is a cache reporting a capacity it
+    // does not have; one that evicted late has written outside its set.
+    SetAssociativeArray a(m, kBytes, kWays);
+    int evictions = 0;
+    for (std::int32_t w = 0; w <= kWays; ++w) {
+        const LineId line{5 + kSets * w};
+        SlotId s = a.free_slot(line);
+        if (s == NoSlot) {
+            std::vector<Candidate> out;
+            a.victim_candidates(line, out);
+            s = out[0].slot;  // a stand-in policy; it only has to be legal
+        }
+        if (a.insert(line, s).evicted) ++evictions;
+    }
+    CHECK_EQ(evictions, 1);
+
+    // Q2. A working set smaller than one set, replayed: one miss per line, then
+    // all hits. This is the property a hit rate is made of, so an off-by-one in
+    // the way scan shows up here as a stream of misses rather than as a number
+    // slightly wrong.
+    SetAssociativeArray b(m, kBytes, kWays);
+    int misses = 0;
+    for (int pass = 0; pass < 5; ++pass) {
+        for (std::int32_t w = 0; w < kWays; ++w) {
+            const LineId line{5 + kSets * w};
+            if (b.probe(line) != NoSlot) continue;
+            ++misses;
+            (void)b.insert(line, b.free_slot(line));
+        }
+    }
+    CHECK_EQ(misses, static_cast<int>(kWays));
+
+    // Q3. Direct-mapped, which is a real configuration and is the width at
+    // which an off-by-one in the way loop stops being visible: two lines
+    // num_sets apart evict each other every time.
+    SetAssociativeArray d(m, 4096, 1);
+    CHECK_EQ(d.num_sets(), std::int64_t{16});
+    CHECK_EQ(d.associativity(), std::int32_t{1});
+    const SlotId only = d.free_slot(LineId{3});
+    CHECK_TRUE(only != NoSlot);
+    CHECK_TRUE(!d.insert(LineId{3}, only).evicted);
+    CHECK_EQ(d.free_slot(LineId{3}), NoSlot);
+    CHECK_EQ(d.free_slot(LineId{19}), NoSlot);  // 3 + 16, the same set
+
+    const InsertResult first = d.insert(LineId{19}, only);
+    CHECK_TRUE(first.evicted);
+    CHECK_EQ(first.evicted_line, LineId{3});
+    const InsertResult second = d.insert(LineId{3}, only);
+    CHECK_TRUE(second.evicted);
+    CHECK_EQ(second.evicted_line, LineId{19});
+}
+
+// ---------------------------------------------------------------------------
+// Group S: the slot numbering, which is white-box on purpose
+// ---------------------------------------------------------------------------
+
+void test_the_slot_numbering_is_a_partition_of_the_array() {
+    check::group("A4c S1..S3, Q4, Q5: a set is exactly its ways, and the sets partition the slots");
+
+    // Explicitly NOT a CacheArray contract test. cache.h says a fully
+    // associative array will number slots differently while the same policies
+    // keep working, so if such a class ever fails these that is correct
+    // behaviour rather than a regression. What IS a contract test is the
+    // partition half below: every slot reachable under exactly one set is what
+    // makes "the storage the sweep paid for is the storage it used" checkable.
+    const BlockPackMapper m(kShape, 16, 16, 1);
+    const SetAssociativeArray a(m, kBytes, kWays);
+
+    std::vector<int> seen(static_cast<std::size_t>(kSlots), 0);
+    std::vector<Candidate> out;
+    bool s1 = true, s2 = true, ascending = true;
+
+    for (std::int64_t s = 0; s < kSets; ++s) {
+        // A line landing in set s. locate is `line % num_sets` for this mapper,
+        // but the test asks rather than assumes.
+        const LineId line{s};
+        CHECK_EQ(set_of(m, kSets, s), s);
+
+        a.victim_candidates(line, out);
+        s1 = s1 && check::ssize(out) == std::int64_t{kWays};
+        const std::int32_t base = static_cast<std::int32_t>(s) * kWays;
+        for (std::int32_t w = 0; w < kWays; ++w) {
+            const std::int32_t got = out[static_cast<std::size_t>(w)].slot.get();
+            s1 = s1 && got == base + w;                        // S1
+            if (w > 0) ascending = ascending && got > out[static_cast<std::size_t>(w - 1)].slot.get();
+            ++seen[static_cast<std::size_t>(got)];             // Q4, Q5
+        }
+        // S2. probe and free_slot answer inside the same range. The array is
+        // empty, so free_slot is the base and probe is NoSlot; the check is
+        // that free_slot's answer belongs to this set and no other.
+        const SlotId f = a.free_slot(line);
+        s2 = s2 && f.get() >= base && f.get() < base + kWays;
+    }
+    CHECK_TRUE(s1);
+    CHECK_TRUE(s2);
+    CHECK_TRUE(ascending);  // O7, restated across every set
+
+    // Q4 and Q5 together: every slot appears under exactly one set. A slot seen
+    // twice is two sets sharing storage, a slot never seen is storage no line
+    // can reach, and both show up only as a hit rate a few points from the
+    // truth.
+    int unreachable = 0, shared = 0;
+    for (int n : seen) {
+        if (n == 0) ++unreachable;
+        if (n > 1) ++shared;
+    }
+    CHECK_EQ(unreachable, 0);
+    CHECK_EQ(shared, 0);
+
+    // S3, across the other geometries K3 and K4 covered, so density is a fact
+    // about the class rather than about one associativity.
+    const SetAssociativeArray direct(m, 4096, 1);
+    const SetAssociativeArray full(m, 4096, 16);
+    for (const SetAssociativeArray* p : {&direct, &full}) {
+        std::vector<int> hit(static_cast<std::size_t>(p->num_slots()), 0);
+        for (std::int64_t s = 0; s < p->num_sets(); ++s) {
+            p->victim_candidates(LineId{s}, out);
+            for (const Candidate& c : out) ++hit[static_cast<std::size_t>(c.slot.get())];
+        }
+        bool dense = true;
+        for (int n : hit) dense = dense && n == 1;
+        CHECK_TRUE(dense);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Group R: randomized replay against an independent model
+// ---------------------------------------------------------------------------
+
+// The model deliberately does NOT recompute slot ids. cache.h states that
+// `set_index * associativity + way` is this class's private business and that a
+// fully associative array will number slots differently while the same policies
+// keep working, so a shadow model that recomputed slot ids that way would test
+// the formula twice and the contract not at all.
+//
+// What it holds instead is, per set, the mapping from whatever slot the ARRAY
+// handed back to the line the model believes is in it. Everything compared
+// below is then a statement the interface actually makes.
+struct Model {
+    std::int64_t num_sets = 0;
+    std::int32_t ways     = 0;
+    // [set] -> the occupied (slot, line) pairs, at most `ways` of them.
+    std::vector<std::vector<std::pair<std::int32_t, std::int64_t>>> sets;
+
+    void reset(std::int64_t s, std::int32_t w) {
+        num_sets = s;
+        ways     = w;
+        sets.assign(static_cast<std::size_t>(s), {});
+    }
+    std::vector<std::pair<std::int32_t, std::int64_t>>& at(std::int64_t s) {
+        return sets[static_cast<std::size_t>(s)];
+    }
+};
+
+// Counted rather than checked per access, so one mismatch is one FAIL line
+// naming how many times it happened rather than tens of thousands of them. The
+// counters are the check; the printed tally is what says the stream reached the
+// path it claims to (F13's lesson, that a large case count can leave the
+// interesting path nearly untouched).
+struct Replay {
+    long accesses = 0, hits = 0, misses = 0, evictions = 0, victim_needed = 0;
+    long bad_residency = 0, bad_stability = 0, bad_eviction = 0, bad_exhaustion = 0,
+         bad_candidate_count = 0, bad_insert_fields = 0;
+};
+
+Replay replay(const AddressMapper& m, SetAssociativeArray& a, int accesses, unsigned seed) {
+    Model model;
+    model.reset(a.num_sets(), a.associativity());
+    Replay r;
+
+    const std::int64_t lines = m.num_lines().get();
+    const std::int64_t hot   = a.num_sets() * 2;  // a working set that actually fills sets
+    std::vector<std::int64_t> recent;
+    std::vector<Candidate> out;
+    std::mt19937 rng(seed);
+
+    for (int i = 0; i < accesses; ++i) {
+        std::int64_t l;
+        const std::int64_t pick = draw(rng, 3);
+        if (pick == 0 || recent.empty()) {
+            l = draw(rng, lines);
+        } else if (pick == 1) {
+            l = draw(rng, hot);
+        } else {
+            l = recent[static_cast<std::size_t>(draw(rng, check::ssize(recent)))];
+        }
+        recent.push_back(l);
+        if (recent.size() > 32) recent.erase(recent.begin());
+
+        const LineId line{l};
+        const std::int64_t set = m.locate(line, a.num_sets()).set_index.get();
+        auto& occupied = model.at(set);
+
+        ++r.accesses;
+        const SlotId found = a.probe(line);
+
+        // Residency, against the model's membership.
+        std::int32_t model_slot = NoSlot.get();
+        for (const auto& entry : occupied)
+            if (entry.second == l) model_slot = entry.first;
+        if (found.get() != model_slot) ++r.bad_residency;
+
+        if (found != NoSlot) {
+            ++r.hits;
+            // Stability: the same slot on a second call while resident.
+            if (a.probe(line) != found) ++r.bad_stability;
+            continue;
+        }
+        ++r.misses;
+
+        // Exhaustion: free_slot answers NoSlot exactly when the model's set is
+        // full, which is the one thing the array knows and the policy does not.
+        const SlotId free = a.free_slot(line);
+        const bool model_full = check::ssize(occupied) >= std::int64_t{model.ways};
+        if ((free == NoSlot) != model_full) ++r.bad_exhaustion;
+
+        SlotId target = free;
+        if (free == NoSlot) {
+            ++r.victim_needed;
+            a.victim_candidates(line, out);
+            if (check::ssize(out) != std::int64_t{model.ways}) ++r.bad_candidate_count;
+            // The lowest-numbered slot, as a stand-in policy: A4c has none, and
+            // the choice only has to be legal rather than smart.
+            target = out[0].slot;
+        }
+
+        const InsertResult got = a.insert(line, target);
+
+        // What the model says was in that slot.
+        std::int64_t displaced = NoLine.get();
+        for (auto& entry : occupied) {
+            if (entry.first == target.get()) {
+                displaced = entry.second;
+                entry.second = l;
+            }
+        }
+        if (displaced == NoLine.get()) occupied.push_back({target.get(), l});
+
+        if (got.evicted_line.get() != displaced) ++r.bad_eviction;
+        if (got.evicted != (got.evicted_line != NoLine)) ++r.bad_insert_fields;  // P3
+        if (got.evicted) ++r.evictions;
+    }
+    return r;
+}
+
+void expect_clean_replay(const char* name, const Replay& r) {
+    if (!check::g_quiet)
+        std::printf("  %-22s %ld accesses, %ld hits, %ld misses, %ld evictions,"
+                    " %.1f%% of misses needed a victim\n",
+                    name, r.accesses, r.hits, r.misses, r.evictions,
+                    r.misses == 0 ? 0.0 : 100.0 * static_cast<double>(r.victim_needed) /
+                                              static_cast<double>(r.misses));
+    CHECK_EQ(r.bad_residency, 0L);
+    CHECK_EQ(r.bad_stability, 0L);
+    CHECK_EQ(r.bad_exhaustion, 0L);
+    CHECK_EQ(r.bad_candidate_count, 0L);
+    CHECK_EQ(r.bad_eviction, 0L);
+    CHECK_EQ(r.bad_insert_fields, 0L);
+    // The stream has to reach the eviction path, or the group is not testing
+    // what its name says. This is the check F13 would have wanted.
+    CHECK_TRUE(r.victim_needed > r.misses / 10);
+}
+
+void test_the_replay_agrees_with_the_model() {
+    check::group("A4c R: randomized replay against an independent model");
+
+    const BlockPackMapper m(kShape, 16, 16, 1);
+
+    // The small geometry first, because it is the one that stresses eviction:
+    // 4 sets of 4 ways fill constantly, where a uniform stream over 32 sets
+    // would barely fill one.
+    SetAssociativeArray small(m, 4096, 4);
+    expect_clean_replay("4 sets x 4 ways", replay(m, small, 20000, 11u));
+
+    // And the plan's L1 geometry, which confirms nothing breaks at scale.
+    SetAssociativeArray l1(m, kBytes, kWays);
+    expect_clean_replay("32 sets x 8 ways", replay(m, l1, 20000, 12u));
+
+    // Direct-mapped, where every miss into an occupied set is an eviction and
+    // the way loop runs once.
+    SetAssociativeArray direct(m, 4096, 1);
+    expect_clean_replay("16 sets x 1 way", replay(m, direct, 20000, 13u));
 }
 
 // ===========================================================================
@@ -687,9 +1518,13 @@ static_assert(std::is_constructible<SetAssociativeArray, const AddressMapper&,
                                     std::int64_t, std::int32_t>::value, "");
 
 // layout.h's new virtual is const and returns a string, so it can be called on
-// the const mapper reference the array holds.
-static_assert(std::is_same<decltype(std::declval<const AddressMapper&>().line_size_terms()),
-                           std::string>::value, "");
+// the const mapper reference the array holds. Since Q3 it also TAKES the line
+// size the caller read, and the whole signature is pinned rather than just the
+// return type: the argument is the mechanism, so an arity that quietly went
+// back to nought would take the read-once guarantee with it and every override
+// in the tree would go on compiling as an unrelated overload.
+static_assert(std::is_same<decltype(&AddressMapper::line_size_terms),
+                           std::string (AddressMapper::*)(std::int64_t) const>::value, "");
 
 }  // namespace
 
@@ -698,6 +1533,7 @@ int main() {
     test_the_direct_mapped_and_fully_associative_ends();
     test_one_mapper_serves_several_arrays();
     test_the_line_size_is_read_exactly_once();
+    test_the_refusal_message_cannot_contradict_itself();
     test_the_array_is_usable_through_the_base();
     test_the_three_positivity_refusals();
     test_the_exactness_refusal_names_all_three_terms();
@@ -706,6 +1542,17 @@ int main() {
     test_the_slot_bound_and_its_boundary();
     test_the_order_the_checks_run_in();
     test_every_refusal_is_invalid_argument();
-    test_the_five_verbs_are_still_stubs();
+    test_probe_finds_a_line_only_where_it_lives();
+    test_probe_is_not_an_access();
+    test_free_slot_is_the_lowest_free_way();
+    test_free_slot_is_deterministic_across_arrays();
+    test_victim_candidates_reports_one_whole_set();
+    test_victim_candidates_leaves_the_buffer_alone_when_it_throws();
+    test_insert_reports_what_it_displaced();
+    test_invalidate_frees_a_slot_and_is_idempotent();
+    test_the_two_verbs_that_take_a_slot_range_check_it();
+    test_capacity_and_conflict();
+    test_the_slot_numbering_is_a_partition_of_the_array();
+    test_the_replay_agrees_with_the_model();
     return check::summary();
 }

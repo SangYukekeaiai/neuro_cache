@@ -1706,16 +1706,16 @@ void test_locate() {
     // The identity, by hand, at a set count that is not the whole range:
     // 5283 = 82 * 64 + 35.
     const Placement p = m.locate(LineId{5283}, 64);
-    CHECK_EQ(p.set_index, std::int64_t{35});
-    CHECK_EQ(p.tag, std::int64_t{82});
-    CHECK_EQ(p.tag * 64 + p.set_index, std::int64_t{5283});
+    CHECK_EQ(p.set_index, SetIndex{35});
+    CHECK_EQ(p.tag, TagId{82});
+    CHECK_EQ(p.tag.get() * 64 + p.set_index.get(), std::int64_t{5283});
 
     // The degenerate array: one set, so every line is in set 0 and the tag IS
     // the line. This is the configuration where a mapper that swapped the two
     // fields is at its most visible and a mapper that returned {0, 0} is not.
     const Placement one = m.locate(LineId{5283}, 1);
-    CHECK_EQ(one.set_index, std::int64_t{0});
-    CHECK_EQ(one.tag, std::int64_t{5283});
+    CHECK_EQ(one.set_index, SetIndex{0});
+    CHECK_EQ(one.tag, TagId{5283});
 
     // Both ends of the range, at several set counts, with the identity and the
     // postcondition together. The postcondition is what the range check buys:
@@ -1727,9 +1727,9 @@ void test_locate() {
         const LineId ids[3] = {LineId{0}, LineId{5283}, LineId{9215}};
         for (LineId l : ids) {
             const Placement q = m.locate(l, num_sets);
-            CHECK_TRUE(q.set_index >= 0);
-            CHECK_TRUE(q.set_index < num_sets);
-            CHECK_EQ(q.tag * num_sets + q.set_index, l.get());
+            CHECK_TRUE(q.set_index.get() >= 0);
+            CHECK_TRUE(q.set_index.get() < num_sets);
+            CHECK_EQ(q.tag.get() * num_sets + q.set_index.get(), l.get());
         }
     }
 
@@ -1740,8 +1740,11 @@ void test_locate() {
         std::vector<LineId> out;
         m.expand(Burst{Coord{1, 2, 80, 0}, Axis::COUT, 512, 1}, out);
         CHECK_EQ(check::ssize(out), std::int64_t{32});
-        std::vector<std::int64_t> sets;
+        std::vector<SetIndex> sets;
         for (LineId l : out) sets.push_back(m.locate(l, 32).set_index);
+        // SetIndex has the ordering and equality operators Tagged gives every
+        // scalar, so the sort and the de-duplication work on the named type and
+        // nothing has to be unwrapped to count distinct sets.
         std::sort(sets.begin(), sets.end());
         sets.erase(std::unique(sets.begin(), sets.end()), sets.end());
         CHECK_EQ(check::ssize(sets), std::int64_t{32});  // one line per set, alias free
@@ -1754,9 +1757,9 @@ void test_locate() {
     CHECK_THROWS(std::out_of_range, m.locate(LineId{INT64_MAX}, 64));
     // And the two ids just inside it, so the check is a boundary rather than a
     // blanket refusal that happens to reject the cases above.
-    CHECK_EQ(m.locate(LineId{0}, 64).set_index, std::int64_t{0});
-    CHECK_EQ(m.locate(LineId{9215}, 64).tag, std::int64_t{143});
-    CHECK_EQ(m.locate(LineId{9215}, 64).set_index, std::int64_t{63});
+    CHECK_EQ(m.locate(LineId{0}, 64).set_index, SetIndex{0});
+    CHECK_EQ(m.locate(LineId{9215}, 64).tag, TagId{143});
+    CHECK_EQ(m.locate(LineId{9215}, 64).set_index, SetIndex{63});
 
     // The message, and the type. out_of_range, not invalid_argument: a LineId
     // outside [0, num_lines()) is well formed and outside THIS layer, which is

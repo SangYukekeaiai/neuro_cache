@@ -41,7 +41,10 @@ ulimit -c 0 2>/dev/null || true
 # untestable from the moment it was created, so A4a's interface would have
 # carried a clean sweep while nothing in it was ever mutated. A4b is a whole
 # constructor of validation and would have done the same, at a larger size.
-FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h include/wcache/set_associative.h src/block_pack.cpp src/set_associative.cpp"
+# A5 adds include/wcache/policy.h, include/wcache/stamp_policy.h and
+# src/stamp_policy.cpp, by the same rule: a unit whose file is not on this line
+# is not mutation tested at all while the summary still reports a clean sweep.
+FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h include/wcache/set_associative.h include/wcache/policy.h include/wcache/stamp_policy.h src/block_pack.cpp src/set_associative.cpp src/stamp_policy.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
@@ -68,9 +71,20 @@ trap 'restore; rm -rf "$BAKDIR"' EXIT
 # mutation. One `make test` (about 17 s) buys every later line its meaning.
 # Bounded parallelism for the builds this script drives. The compile-fail
 # runner takes JOBS the same way, so one setting covers both halves of a case.
-# Not nproc: this is a shared login node, and the cap that actually binds is on
-# CPU time, which parallelism does not reduce.
-JOBS=${JOBS:-8}
+#
+# The old note here said this was a shared login node whose binding cap was on
+# CPU time, which parallelism does not reduce. That was the NCSA Delta
+# constraint and it does not apply: this machine is a standalone workstation,
+# 32 cores, no scheduler, `ulimit -t` unlimited. There is no CPU cap, so a
+# filtered run is a choice about wall time rather than a legal requirement.
+#
+# Thirty-two rather than eight, matching compile_fail.sh's default, and it is
+# that half of the setting that carries the win: `make -j` past 8 buys nothing,
+# because `make test` serializes on the compile-fail driver. This line EXPORTS
+# JOBS, so leaving it at 8 would push the driver back down to 8 for every case
+# in a sweep and undo the change where it compounds. See compile_fail.sh for the
+# measurement.
+JOBS=${JOBS:-32}
 export JOBS
 
 restore
@@ -170,6 +184,9 @@ mutate_pack_h() { mutate_in include/wcache/block_pack.h "$@"; }
 mutate_pack() { mutate_in src/block_pack.cpp "$@"; }
 mutate_sa_h() { mutate_in include/wcache/set_associative.h "$@"; }
 mutate_sa() { mutate_in src/set_associative.cpp "$@"; }
+mutate_pol() { mutate_in include/wcache/policy.h "$@"; }
+mutate_sp_h() { mutate_in include/wcache/stamp_policy.h "$@"; }
+mutate_sp() { mutate_in src/stamp_policy.cpp "$@"; }
 
 echo "== comparison operators"
 mutate kill '<= becomes <'   's|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() <= b|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() < b|'
@@ -202,6 +219,22 @@ mutate kill 'A4a SetIndex aliases LineId' \
     's|using SetIndex = Tagged<std::int64_t, tags::set_index>;|using SetIndex = Tagged<std::int64_t, tags::line>;|'
 mutate kill 'A4a SetIndex aliases SimTime' \
     's|using SetIndex = Tagged<std::int64_t, tags::set_index>;|using SetIndex = Tagged<std::int64_t, tags::sim_time>;|'
+# U16's eighth tagged type, on the same three questions the seventh answers.
+# A tag is a line id only WITHIN one set, so aliasing it to tags::line is the
+# mistake the name exists to stop and is the one a reader is most likely to talk
+# themselves into: both are int64 addresses in a flat space.
+mutate kill 'U16 TagId aliases LineId' \
+    's|using TagId = Tagged<std::int64_t, tags::tag_id>;|using TagId = Tagged<std::int64_t, tags::line>;|'
+mutate kill 'U16 TagId aliases SetIndex' \
+    's|using TagId = Tagged<std::int64_t, tags::tag_id>;|using TagId = Tagged<std::int64_t, tags::set_index>;|'
+# The width under the name. A tag is `line / num_sets` over an int64 line space,
+# so an int32 tag truncates for any array whose line count exceeds 2^31 sets
+# worth -- and, because Tagged's constructor refuses to narrow, it does not
+# truncate silently but stops locate compiling. Either way it is a kill, and the
+# case is here so that the width is pinned rather than inherited from LineId by
+# assumption.
+mutate kill 'U16 TagId narrowed to int32' \
+    's|using TagId = Tagged<std::int64_t, tags::tag_id>;|using TagId = Tagged<std::int32_t, tags::tag_id>;|'
 
 echo "== the type wall itself (killed by compile_fail.sh, not the binary)"
 # Retargeted at A4a. This case used to read `constexpr explicit Tagged(Rep v)`,
@@ -293,20 +326,33 @@ mutate kill 'axis_name falls back'      's|throw std::logic_error("axis_name: un
 # ones killed by a static_assert in test_layout.cpp are marked; the ones killed
 # by a real check are the field order and the destructor.
 # ---------------------------------------------------------------------------
-echo "== A2a: Placement's shape"
-# Both fields are int64 so that `line == tag * num_sets + set_index` holds
-# without a cast. Narrowing set_index makes the identity a 32-bit truncation
-# for any array with more sets than fit, which is silent.
-mutate_layout kill 'set_index narrowed to int32' 's|    std::int64_t set_index;|    std::int32_t set_index;|'
-# Unsigned tag makes `0 <= set_index` vacuous on the sibling field and reopens
-# the v1 line_of bug class (decision B5).
-mutate_layout kill 'tag made unsigned'           's|    std::int64_t tag;|    std::uint64_t tag;|'
-# Field ORDER, which is the one a reader cannot see: locate returns a braced
-# Placement, so swapping the declarations swaps every mapper's answer without
-# touching a single call site. Killed by the conformance identity check, not by
-# a static_assert.
+echo "== A2a/U16: Placement's shape"
+# U16 typed the fields, so these cases changed shape with it. The old ones asked
+# whether a raw int64 field was wide enough and signed; the field is now a
+# SetIndex and a TagId, and the questions worth asking are whether it still has
+# a name at all and whether the two names are still different.
+
+# The U16 revert, one field at a time. This is the mutation the whole increment
+# exists to make loud: with a raw int64 field, `LineId l{p.set_index}` compiles
+# again and the three compile_fail cases that were flipped to reject go green as
+# accepts. Killed at compile time, in compile_fail.sh and at the static_asserts
+# in test_layout.cpp.
+mutate_layout kill 'set_index untyped back to a raw int64' \
+    's|    SetIndex set_index;  // in \[0, num_sets)|    std::int64_t set_index;|'
+mutate_layout kill 'tag untyped back to a raw int64' \
+    's|    TagId    tag;|    std::int64_t tag;|'
+# The subtler revert: both fields keep a NAME, but the same one. A set index and
+# a tag are then interchangeable with each other, which is the confusion the
+# pair was typed to stop, while every "is it tagged" check still passes.
+mutate_layout kill 'tag becomes a second SetIndex' \
+    's|    TagId    tag;|    SetIndex tag;|'
+# Field ORDER. Before U16 this was the case a reader could not see, because
+# locate returns a braced Placement and swapping the declarations swapped every
+# mapper's answer silently. Since the two fields are different types it is a
+# compile error instead, which is a stronger kill and is one of the things U16
+# bought. Kept, because the property is still the property.
 mutate_layout kill 'set_index and tag swap' \
-    's|    std::int64_t set_index;  // in \[0, num_sets)|    std::int64_t tag_SWAP_;|; s|    std::int64_t tag;|    std::int64_t set_index;|; s|    std::int64_t tag_SWAP_;|    std::int64_t tag;|'
+    's|    SetIndex set_index;  // in \[0, num_sets)|    TagId    tag_SWAP_;|; s|    TagId    tag;|    SetIndex set_index;|; s|    TagId    tag_SWAP_;|    TagId    tag;|'
 
 echo "== A2a: the interface stays an interface"
 # Deleting a derived mapper through an AddressMapper* is what the engine does.
@@ -316,7 +362,7 @@ mutate_layout kill 'destructor made non-virtual'  's|virtual ~AddressMapper() = 
 # A pure virtual given a body makes AddressMapper concrete: `AddressMapper m;`
 # starts compiling, and a mapper with no layout at all becomes constructible.
 mutate_layout kill 'expand given a default body'  's|virtual void expand(const Burst\& b, std::vector<LineId>\& out) const = 0;|virtual void expand(const Burst\& b, std::vector<LineId>\& out) const {}|'
-mutate_layout kill 'locate given a default body'  's|virtual Placement locate(LineId line, std::int64_t num_sets) const = 0;|virtual Placement locate(LineId line, std::int64_t num_sets) const { return Placement{0, 0}; }|'
+mutate_layout kill 'locate given a default body'  's|virtual Placement locate(LineId line, std::int64_t num_sets) const = 0;|virtual Placement locate(LineId line, std::int64_t num_sets) const { return Placement{SetIndex{0}, TagId{0}}; }|'
 
 echo "== A2a: the signature is the contract"
 # const on the pure virtuals means no implementation can mutate the mapper
@@ -744,10 +790,16 @@ mutate_pack kill 'A2d the locate message loses its subject' \
     's|reject_range("line id out of range \[0, "|reject_range("[0, "|'
 # The identity is the definition of the pair, and swapping the two fields is
 # silent at a small set count and catastrophic at a large one.
+#
+# Since U16 the swap is of the two VALUES rather than of the two fields: the
+# fields have different types, so `Placement{TagId{...}, SetIndex{...}}` would
+# not compile and would be a weaker mutation, killed by the compiler before it
+# ever reached the identity check. The value swap is the one that still
+# produces a well-typed mapper that is wrong, so it is the one kept.
 mutate_pack kill 'A2d locate swaps set index and tag' \
-    's|    return Placement{v % num_sets, v / num_sets};|    return Placement{v / num_sets, v % num_sets};|'
+    's|    return Placement{SetIndex{v % num_sets}, TagId{v / num_sets}};|    return Placement{SetIndex{v / num_sets}, TagId{v % num_sets}};|'
 mutate_pack kill 'A2d locate divides by num_lines' \
-    's|    return Placement{v % num_sets, v / num_sets};|    return Placement{v % num_lines_, v / num_lines_};|'
+    's|    return Placement{SetIndex{v % num_sets}, TagId{v / num_sets}};|    return Placement{SetIndex{v % num_lines_}, TagId{v / num_lines_}};|'
 
 echo "== A4a: the CacheArray interface (plan 2.2)"
 # Like A2a's, these are killed mostly at COMPILE time rather than by a failing
@@ -882,7 +934,12 @@ mutate_sa kill 'A4b the exactness check divides the wrong way' \
 # deliberately legal (B16), so "65536 is not a whole number of 96-byte lines" is
 # actionable only if the 96 can be traced back to cin_block 12 x cout_block 8.
 mutate_sa kill 'A4b the exactness message drops the terms' \
-    's|               mapper.line_size_terms() + ")");|               ")");|'
+    's|               mapper.line_size_terms(line_bytes) + ")");|               ")");|'
+# The caller half of Q3. Passing a fresh read instead of the value it already
+# holds puts the second read back from this side, so the guarantee can be
+# undone at either end and each end has its own case.
+mutate_sa kill 'Q3 the caller passes a fresh read' \
+    's|mapper.line_size_terms(line_bytes)|mapper.line_size_terms(mapper.line_size_bytes())|'
 mutate_sa kill 'A4b the exactness message drops the line size' \
     's|" is not a whole number of " + std::to_string(line_bytes) + "-byte lines ("|" is not a whole number of lines ("|'
 mutate_sa kill 'A4b the exactness message drops the size' \
@@ -1012,10 +1069,18 @@ echo "== A4b: line_size_terms, on both sides of the virtual"
 # reject cases, to implement a function about diagnostics. The kill is the whole
 # tree failing to compile, which is the point.
 mutate_layout kill 'A4b line_size_terms is made pure' \
-    's|virtual std::string line_size_terms() const { return std::to_string(line_size_bytes()); }|virtual std::string line_size_terms() const = 0;|'
+    's|    virtual std::string line_size_terms(std::int64_t line_bytes) const {|    virtual std::string line_size_terms(std::int64_t line_bytes) const = 0; std::string unused_(std::int64_t line_bytes) const {|'
 # The default has to be correct if uninformative. Empty is neither.
 mutate_layout kill 'A4b the line_size_terms default says nothing' \
-    's|virtual std::string line_size_terms() const { return std::to_string(line_size_bytes()); }|virtual std::string line_size_terms() const { return ""; }|'
+    's|        return std::to_string(line_bytes);|        return "";|'
+# Q3 itself. The default printing line_size_bytes() rather than the value it was
+# handed is exactly the code Q3 replaced, and it is the reason the argument was
+# added: the refusal then contains two reads of one mapper and, for a mapper
+# whose answer moves, its two halves name different numbers. The argument going
+# unused is not a style regression, it is the guarantee being dropped, so it has
+# a case rather than a comment.
+mutate_layout kill 'Q3 the default reads the line size again' \
+    's|        return std::to_string(line_bytes);|        return std::to_string(line_size_bytes());|'
 # BlockPackMapper's override, one factor at a time. The three factors are what
 # the obligation asked for, so dropping any one of them retires it silently.
 mutate_pack kill 'A4b line_size_terms drops weight_bytes' \
@@ -1048,6 +1113,251 @@ mutate_cache kill 'A4b the copy assignment is deleted instead' \
 # build, which is the kill.
 mutate_cache kill 'A4b the default constructor is dropped' \
     '/    CacheArray()                             = default;/d'
+
+echo "== A4c: base_slot, the one piece of geometry the verbs share"
+# A wrong base is wrong for all five verbs at once, which is why it has cases of
+# its own rather than being covered incidentally by whichever verb runs first.
+mutate_sa kill 'A4c base_slot drops the way stride' \
+    's|    return static_cast<std::int32_t>(set_index \* associativity_);|    return static_cast<std::int32_t>(set_index);|'
+# The identity `line == tag * num_sets + set_index` makes the tag look like the
+# natural thing to key on, and at num_sets == 1 a tag genuinely IS the line, so
+# this is the substitution a reader can talk themselves into.
+mutate_sa kill 'A4c base_slot reads the tag' \
+    's|mapper_.locate(line, num_sets_).set_index.get();|mapper_.locate(line, num_sets_).tag.get();|'
+mutate_sa kill 'A4c base_slot locates against the slot count' \
+    's|mapper_.locate(line, num_sets_)|mapper_.locate(line, num_slots_)|'
+
+echo "== A4c: probe"
+mutate_sa kill 'A4c probe returns the set base' \
+    's|        if (slots_\[as_size(base + w)\] == line) return SlotId{base + w};|        return SlotId{base};|'
+mutate_sa kill 'A4c probe compares against NoLine' \
+    's|        if (slots_\[as_size(base + w)\] == line) return|        if (slots_\[as_size(base + w)\] == NoLine) return|'
+mutate_sa kill 'A4c probe reports the way, not the slot' \
+    's|        if (slots_\[as_size(base + w)\] == line) return SlotId{base + w};|        if (slots_\[as_size(base + w)\] == line) return SlotId{w};|'
+# Addressed to probe's body, because the three way loops are textually
+# identical and an unaddressed sed would mutate all three at once, which is
+# three mutations wearing one name.
+mutate_sa kill 'A4c probe scans one way short' \
+    '/^SlotId SetAssociativeArray::probe/,/^}/ s|w < associativity_|w < associativity_ - 1|'
+
+echo "== A4c: free_slot"
+# The lowest free way is what makes the answer a function of the array's state
+# alone, so a cold-start fill is reproducible. A downward scan is still correct
+# and would silently change where every line in a sweep lands.
+mutate_sa kill 'A4c free_slot scans downward' \
+    '/^SlotId SetAssociativeArray::free_slot/,/^}/ s|for (std::int32_t w = 0; w < associativity_; ++w)|for (std::int32_t w = associativity_ - 1; w >= 0; --w)|'
+mutate_sa kill 'A4c free_slot returns the first way untested' \
+    's|        if (slots_\[as_size(base + w)\] == NoLine) return SlotId{base + w};|        return SlotId{base + w};|'
+mutate_sa kill 'A4c free_slot takes an occupied way' \
+    's|        if (slots_\[as_size(base + w)\] == NoLine) return|        if (slots_\[as_size(base + w)\] != NoLine) return|'
+mutate_sa kill 'A4c free_slot never reports exhaustion' \
+    '/^SlotId SetAssociativeArray::free_slot/,/^}/ s|    return NoSlot;|    return SlotId{base};|'
+
+echo "== A4c: victim_candidates"
+# The clear IS the contract (cache.h): an appending version lets a caller that
+# forgot to clear pick a victim from a previous fill in a DIFFERENT set, and the
+# line is then stored where probe can never look for it.
+mutate_sa kill 'A4c victim_candidates drops the clear' \
+    '/    out.clear();/d'
+# And the order of the clear against the range check, which is the other half of
+# the same rule: a throwing call must leave the caller's buffer as it was.
+mutate_sa kill 'A4c victim_candidates clears before the range check' \
+    '/^void SetAssociativeArray::victim_candidates/,/^}/ { /^    out.clear();$/d; s|^    const std::int32_t base = base_slot(line);$|    out.clear();\n    const std::int32_t base = base_slot(line);| }'
+mutate_sa kill 'A4c victim_candidates loops one short' \
+    '/^void SetAssociativeArray::victim_candidates/,/^}/ s|w < associativity_|w < associativity_ - 1|'
+mutate_sa kill 'A4c victim_candidates reports every way free' \
+    's|out.push_back(Candidate{SlotId{base + w}, slots_\[as_size(base + w)\]});|out.push_back(Candidate{SlotId{base + w}, NoLine});|'
+mutate_sa kill 'A4c victim_candidates numbers ways, not slots' \
+    's|out.push_back(Candidate{SlotId{base + w}, slots_\[as_size(base + w)\]});|out.push_back(Candidate{SlotId{w}, slots_\[as_size(base + w)\]});|'
+
+echo "== A4c: insert and invalidate"
+mutate_sa kill 'A4c insert always reports an eviction' \
+    's|    if (previous == NoLine) return InsertResult{false, NoLine};|    if (false) return InsertResult{false, NoLine};|'
+mutate_sa kill 'A4c insert never reports an eviction' \
+    's|    return InsertResult{true, previous};|    return InsertResult{false, NoLine};|'
+mutate_sa kill 'A4c insert names the new line as evicted' \
+    's|    return InsertResult{true, previous};|    return InsertResult{true, line};|'
+mutate_sa kill 'A4c insert writes to slot zero' \
+    's|    slots_\[as_size(s)\] = line;|    slots_[0] = line;|'
+mutate_sa kill 'A4c insert reads slot zero' \
+    's|    const LineId previous = slots_\[as_size(s)\];|    const LineId previous = slots_[0];|'
+mutate_sa kill 'A4c insert drops the slot bound check' \
+    's|    const std::int32_t s = slot_or_reject("insert", slot);|    const std::int32_t s = slot.get();|'
+mutate_sa kill 'A4c invalidate stores a line id' \
+    's|    slots_\[as_size(slot_or_reject("invalidate", slot))\] = NoLine;|    slots_[as_size(slot_or_reject("invalidate", slot))] = LineId{0};|'
+mutate_sa kill 'A4c invalidate does nothing' \
+    's|    slots_\[as_size(slot_or_reject("invalidate", slot))\] = NoLine;|    (void)slot_or_reject("invalidate", slot);|'
+
+echo "== A4c: the shared slot bound"
+mutate_sa kill 'A4c the slot bound is closed at the top' \
+    's@    if (s < 0 || s >= num_slots_) {@    if (s < 0 || s > num_slots_) {@'
+# The message names the VERB rather than the class, because a caller with a
+# stray slot id needs to know which call it reached. Both verbs reporting
+# "insert" would pass any check that only asked whether something was thrown.
+mutate_sa kill 'A4c both verbs report the same name' \
+    's|std::string(verb)|std::string("insert")|'
+
+# ---------------------------------------------------------------------------
+# A5
+# ---------------------------------------------------------------------------
+
+echo "== A5: the stamp and the counter"
+# The sentinel's VALUE is not observable, and this case is here to say so with a
+# proof rather than to be silently dropped.
+#
+# The reasoning it was written on was that zero is smaller than every stamp ever
+# handed out, so raising it above them inverts the preference for a never-filled
+# slot. That reasoning misses the coupling: the constructor seeds the counter
+# from the same constant, `next_stamp_(kNeverStamped + 1)`, so the first stamp
+# handed out is ALWAYS sentinel+1 and every later one is larger. Moving the
+# constant moves the sentinel and the whole stamp sequence together, and the
+# ordering between them cannot change. All three sites that read the constant
+# move with it for the same reason.
+#
+# Measured rather than argued: with this sed applied, a policy with slots 2 and
+# 3 never filled still answers 2, and a policy whose slot 3 was invalidated
+# still answers 3, under both LruPolicy and FifoPolicy. The only value that
+# differs is the absolute stamp, which nothing outside this file can read.
+#
+# So it survives because it changes no behaviour, which is what `allow` means
+# here, and the property it was reaching for is pinned by the three cases below
+# instead: each one moves ONE of the three sites and leaves the other two, which
+# is what actually breaks the ordering.
+mutate_sp allow 'A5 a never-filled slot becomes the last victim' \
+    's|constexpr std::int64_t kNeverStamped = 0;|constexpr std::int64_t kNeverStamped = 9000000000000000000;|' \
+    'the counter is seeded kNeverStamped + 1, so moving the constant moves the sentinel and every stamp together and no order changes'
+# Site 2, the initial fill, moved on its own: every slot starts ABOVE every
+# stamp the counter will hand out, so a never-filled way becomes the LAST
+# victim and the policy evicts a live line while an empty way sits unused.
+# That is the silently wrong hit rate the case above was written to catch.
+mutate_sp kill 'A5 a never-filled slot starts newest' \
+    's|    stamp_.assign(static_cast<std::size_t>(num_slots), kNeverStamped);|    stamp_.assign(static_cast<std::size_t>(num_slots), kNeverStamped + 1000000);|'
+# Site 1, the counter seed, moved on its own and in the other direction: the
+# first stamp handed out is then BELOW the sentinel, so a freshly filled slot
+# outranks a never-filled one as a victim. The `+ 1` is what forbids that, and
+# the case below only pins the ties.
+mutate_sp kill 'A5 the counter starts below the never-stamped value' \
+    's|: next_stamp_(kNeverStamped + 1) {|: next_stamp_(kNeverStamped - 1) {|'
+# Site 3, on_invalidate, moved on its own: an invalidated slot becomes the last
+# victim rather than the first, so the array holds an empty way it will not
+# reuse until every live line in the set has been evicted past it.
+mutate_sp kill 'A5 on_invalidate makes the slot the last victim' \
+    's|    stamp_\[index_or_reject("on_invalidate", slot)\] = kNeverStamped;|    stamp_[index_or_reject("on_invalidate", slot)] = kNeverStamped + 1000000;|'
+mutate_sp kill 'A5 the counter starts at the never-stamped value' \
+    's|: next_stamp_(kNeverStamped + 1) {|: next_stamp_(kNeverStamped) {|'
+# Strictly increasing is what makes two occupied slots' stamps never equal,
+# which is the premise the tie-break argument rests on.
+mutate_sp kill 'A5 the stamp counter does not advance' \
+    '/^    ++next_stamp_;$/d'
+mutate_sp kill 'A5 on_fill does not stamp' \
+    's|void StampPolicy::on_fill(SlotId slot) { stamp(slot); }|void StampPolicy::on_fill(SlotId slot) { (void)slot; }|'
+# on_invalidate is observable rather than a formality: leaving the previous
+# occupant's stamp makes an invalidated slot compete on the age of a line that
+# is gone.
+mutate_sp kill 'A5 on_invalidate leaves the old stamp' \
+    's|    stamp_\[index_or_reject("on_invalidate", slot)\] = kNeverStamped;|    (void)index_or_reject("on_invalidate", slot);|'
+mutate_sp kill 'A5 on_invalidate stamps instead of clearing' \
+    's|    stamp_\[index_or_reject("on_invalidate", slot)\] = kNeverStamped;|    stamp(slot);|'
+
+echo "== A5: LRU against FIFO"
+# The whole of the difference between the two classes, in both directions.
+mutate_sp kill 'A5 LRU does not refresh on a hit' \
+    's|void LruPolicy::on_hit(SlotId slot) { stamp(slot); }|void LruPolicy::on_hit(SlotId slot) { (void)slot; }|'
+mutate_sp kill 'A5 FIFO refreshes on a hit' \
+    's|void FifoPolicy::on_hit(SlotId) {}|void FifoPolicy::on_hit(SlotId slot) { stamp(slot); }|'
+
+echo "== A5: pick_victim, and the order-independence it owes"
+# The plan's A5 exit criterion. Dropping the tie-break makes the answer depend
+# on which arrangement the candidate set arrived in, which is the one regression
+# nothing else announces: with only LRU and FIFO built, both pick "oldest by a
+# stamp" and every fixture still passes.
+mutate_sp kill 'A5 pick_victim drops the tie-break' \
+    's@if (age < oldest || (age == oldest \&\& slot < victim)) {@if (age < oldest) {@'
+mutate_sp kill 'A5 the tie-break prefers the largest slot id' \
+    's@(age == oldest \&\& slot < victim)@(age == oldest \&\& slot > victim)@'
+mutate_sp kill 'A5 pick_victim takes the newest' \
+    's@if (age < oldest ||@if (age > oldest ||@'
+mutate_sp kill 'A5 pick_victim answers the first candidate' \
+    's|    return victim;|    return candidates[0].slot;|'
+mutate_sp kill 'A5 pick_victim skips a candidate' \
+    's|    for (std::size_t i = 1; i < candidates.size(); ++i) {|    for (std::size_t i = 2; i < candidates.size(); ++i) {|'
+# The minimum of nothing has no answer, so the alternative to refusing is
+# returning a slot id that names no candidate, which the caller installs into.
+mutate_sp kill 'A5 pick_victim accepts an empty candidate set' \
+    's|    if (candidates.empty()) {|    if (candidates.size() > 1000000) {|'
+mutate_sp kill 'A5 the stamp bound is closed at the top' \
+    's@if (s < 0 || static_cast<std::size_t>(s) >= stamp_.size()) {@if (s < 0 || static_cast<std::size_t>(s) > stamp_.size()) {@'
+mutate_sp kill 'A5 the slot count check drops the boundary' \
+    's|    if (num_slots < 1) {|    if (num_slots < 0) {|'
+
+echo "== A5: make_policy"
+mutate_sp kill 'A5 make_policy gives FIFO for lru' \
+    's|        case PolicyKind::LRU:  return std::make_unique<LruPolicy>(num_slots);|        case PolicyKind::LRU:  return std::make_unique<FifoPolicy>(num_slots);|'
+mutate_sp kill 'A5 make_policy gives LRU for fifo' \
+    's|        case PolicyKind::FIFO: return std::make_unique<FifoPolicy>(num_slots);|        case PolicyKind::FIFO: return std::make_unique<LruPolicy>(num_slots);|'
+# The one wrong answer for Random: a config naming a policy this build does not
+# have would run to completion under a policy nobody selected, and the results
+# row would attribute a hit rate to the wrong one.
+mutate_sp kill 'A5 make_policy falls back to LRU for random' \
+    's|            reject("make_policy",|            return std::make_unique<LruPolicy>(num_slots); reject("make_policy",|'
+mutate_sp kill 'A5 make_policy ignores the slot count' \
+    's|std::make_unique<LruPolicy>(num_slots)|std::make_unique<LruPolicy>(1)|'
+
+echo "== A5: the interface (policy.h)"
+# All four verbs are pure so a policy cannot be half implemented. These two are
+# killed by compile_fail.sh's tryR cases, since a default body is not something
+# a running binary can observe.
+mutate_pol kill 'A5 on_hit gains a default body' \
+    's|    virtual void on_hit(SlotId slot) = 0;|    virtual void on_hit(SlotId) {}|'
+mutate_pol kill 'A5 pick_victim gains a default body' \
+    's|    virtual SlotId pick_victim(const std::vector<Candidate>& candidates) = 0;|    virtual SlotId pick_victim(const std::vector<Candidate>\&) { return NoSlot; }|'
+# pick_victim being non-const is the openness the criterion protects: a Random
+# policy advances an RNG, and a const signature here is exactly the interface
+# change adding it would force.
+mutate_pol kill 'A5 pick_victim becomes const' \
+    's|    virtual SlotId pick_victim(const std::vector<Candidate>& candidates) = 0;|    virtual SlotId pick_victim(const std::vector<Candidate>\& candidates) const = 0;|'
+# SlotId is the whole of what crosses the array/policy split.
+mutate_pol kill 'A5 on_hit takes a LineId' \
+    's|    virtual void on_hit(SlotId slot) = 0;|    virtual void on_hit(LineId slot) = 0;|'
+# B67's decision on the second polymorphic base in the tree. Both directions,
+# for the reason cache.h's pair has both: deleting also stops the slice, so a
+# suite that only tested the reject side would call that a fix.
+mutate_pol kill 'A5 the policy copy control becomes public' \
+    's|^protected:$|public:|'
+mutate_pol kill 'A5 the policy copy control is deleted instead' \
+    's|    ReplacementPolicy(const ReplacementPolicy&)            = default;|    ReplacementPolicy(const ReplacementPolicy\&)            = delete;|'
+mutate_pol kill 'A5 the policy default constructor is dropped' \
+    '/    ReplacementPolicy()                                    = default;/d'
+# The engine holds a policy as unique_ptr<ReplacementPolicy>, so a non-virtual
+# destructor here destroys the base subobject only and leaks the per-slot state
+# for every policy in the run. It is a warning rather than an error, so the
+# counting subclass in the suite is what catches it.
+mutate_pol kill 'A5 the policy destructor stops being virtual' \
+    's|    virtual ~ReplacementPolicy() = default;|    ~ReplacementPolicy() = default;|'
+
+echo "== A5: the concrete policies (stamp_policy.h)"
+mutate_sp_h kill 'A5 LruPolicy loses final' \
+    's|class LruPolicy final : public StampPolicy {|class LruPolicy : public StampPolicy {|'
+mutate_sp_h kill 'A5 FifoPolicy loses final' \
+    's|class FifoPolicy final : public StampPolicy {|class FifoPolicy : public StampPolicy {|'
+# FifoPolicy overrides one of the four verbs, so "it overrides no others" is a
+# fact about the class rather than something the base guarantees. These two give
+# it an on_invalidate of its own, in the two directions the LRU-side pair above
+# already covers: ignoring the verb leaves an invalidated way competing on the
+# age of a line that is gone, and stamping on it makes that way the LAST victim.
+# Under `inclusion = inclusive` the back-invalidation path is where this lands,
+# so an L2 eviction would leave an L1 way that is empty and unreachable.
+mutate_sp_h kill 'A5 FIFO ignores an invalidate' \
+    '/^class FifoPolicy/,/^};/ s|    void on_hit(SlotId slot) override;|    void on_hit(SlotId slot) override;\n    void on_invalidate(SlotId) override {}|'
+mutate_sp_h kill 'A5 FIFO stamps on an invalidate' \
+    '/^class FifoPolicy/,/^};/ s|    void on_hit(SlotId slot) override;|    void on_hit(SlotId slot) override;\n    void on_invalidate(SlotId slot) override { on_fill(slot); }|'
+# V29's rule made literal: dropping random from the enum makes `policy = random`
+# an unknown NAME rather than a known and unbuilt one, so the run would report a
+# typo where it should report a missing feature.
+mutate_sp_h kill 'A5 random leaves the enum' \
+    's|enum class PolicyKind : std::uint8_t { LRU = 0, FIFO = 1, RANDOM = 2 };|enum class PolicyKind : std::uint8_t { LRU = 0, FIFO = 1 };|'
+mutate_sp_h kill 'A5 PolicyKind widens' \
+    's|enum class PolicyKind : std::uint8_t|enum class PolicyKind : std::int32_t|'
 
 echo
 echo "$((killed + survived + unexpected)) mutations: $killed killed, $survived survived as expected, $unexpected unexpected"

@@ -32,14 +32,28 @@ fail=0
 # what made it the dominant cost of a mutation case: each mutation re-runs this
 # whole file.
 #
-# Eight rather than nproc (32 here). This is a shared login node, the win is
-# most of the way in by eight, and a script that grabs every core is antisocial
-# on a machine other people are working on. JOBS=n overrides it.
+# Thirty-two, which is nproc here, and JOBS=n overrides it.
 #
-# What parallelism does NOT buy, stated because it is the thing to get wrong:
-# the total CPU time is unchanged, and the NCSA Delta cap is on CPU time per
-# process, not wall time. A faster sweep is not a legal unfiltered sweep.
-JOBS=${JOBS:-8}
+# The reason for the old default of eight was the NCSA Delta login node: a
+# shared machine with a CPU-time cap per process, where grabbing every core was
+# antisocial and a faster sweep was not a legal unfiltered one. That is not this
+# machine, and B81 measured it: a standalone workstation, 32 cores, no
+# scheduler, `ulimit -t` unlimited. There is no CPU cap for parallelism to fail
+# to work around and no other user to be antisocial toward, so the default is
+# now the fast answer rather than a policy inherited from a machine this work
+# has never run on.
+#
+# `make -j` past 8 buys nothing, because `make test` serializes on this script,
+# which takes its own JOBS. Measured at A4c/A5, with 214 compile cases, whole
+# `make test` on a warm tree, three runs each:
+#
+#   JOBS=8    4.43  4.44  4.38 s        JOBS=32   2.39  2.16  2.26 s
+#
+# so 4.42 s becomes 2.27 s, a 49% cut, and it compounds across a mutation sweep
+# where every case is a full `make test`. The verdicts are unchanged: the two
+# settings produce byte-identical output, which the buffering below guarantees
+# and which was checked with a diff rather than assumed.
+JOBS=${JOBS:-32}
 
 # Output is buffered per case and printed in SOURCE order at the end, never as
 # the jobs finish. Two properties depend on this and both would be lost by
@@ -124,6 +138,18 @@ tryC() { try "$1" "$2" "$3" '#include <wcache/cache.h>'; }
 # CacheArray needs no layout header.
 tryS() { try "$1" "$2" "$3" '#include <wcache/set_associative.h>'; }
 
+# tryR: the same again with policy.h, for A5. A sixth preamble, and it is the
+# one that carries A5's half of plan 2.2's array/policy split.
+#
+# policy.h includes cache.h and types.h and nothing else, so a case compiled
+# with it proves the policy interface needs nothing but a SlotId and a
+# Candidate. That is not restating a type: the split says a policy "knows
+# nothing about sets or ways", and the way it would erode is a policy that
+# wanted an associativity and reached for the array's header to get one. If
+# policy.h ever grows that dependency the cases below start ACCEPTING, which is
+# the same wall tryC puts around the array in the other direction.
+tryR() { try "$1" "$2" "$3" '#include <wcache/policy.h>'; }
+
 # The one valid configuration every A2b case builds on, so a case that is meant
 # to fail on a type cannot pass or fail on a bad extent instead.
 SHAPE='WeightShape{3, 3, 256, 64}'
@@ -142,7 +168,7 @@ PACK="const BlockPackMapper m($SHAPE, 64, 128, 1);"
 # is testing that the removal is what did the rejecting.
 MAPPER='struct M : AddressMapper {
   void expand(const Burst&, std::vector<LineId>&) const override {}
-  Placement locate(LineId, std::int64_t) const override { return Placement{0, 0}; }
+  Placement locate(LineId, std::int64_t) const override { return Placement{SetIndex{0}, TagId{0}}; }
   LineId num_lines() const override { return LineId{1}; }
   std::int64_t line_size_bytes() const override { return 4; }
 };'
@@ -253,7 +279,7 @@ section "== A2a: the signature is the contract"
 # declaration rather than at the instantiation.
 tryL reject 'override drops const' 'struct M : AddressMapper {
   void expand(const Burst&, std::vector<LineId>&) override {}
-  Placement locate(LineId, std::int64_t) const override { return Placement{0, 0}; }
+  Placement locate(LineId, std::int64_t) const override { return Placement{SetIndex{0}, TagId{0}}; }
   LineId num_lines() const override { return LineId{1}; }
   std::int64_t line_size_bytes() const override { return 4; }
 }; int main(){ M m; (void)m; }'
@@ -262,7 +288,7 @@ tryL reject 'override drops const' 'struct M : AddressMapper {
 # be reachable by accident.
 tryL reject 'expand returns a vector' 'struct M : AddressMapper {
   std::vector<LineId> expand(const Burst&) const override { return {}; }
-  Placement locate(LineId, std::int64_t) const override { return Placement{0, 0}; }
+  Placement locate(LineId, std::int64_t) const override { return Placement{SetIndex{0}, TagId{0}}; }
   LineId num_lines() const override { return LineId{1}; }
   std::int64_t line_size_bytes() const override { return 4; }
 }; int main(){ M m; (void)m; }'
@@ -270,7 +296,7 @@ tryL reject 'expand returns a vector' 'struct M : AddressMapper {
 # against is the same quantity as the ids it is bounding.
 tryL reject 'num_lines returns int64' 'struct M : AddressMapper {
   void expand(const Burst&, std::vector<LineId>&) const override {}
-  Placement locate(LineId, std::int64_t) const override { return Placement{0, 0}; }
+  Placement locate(LineId, std::int64_t) const override { return Placement{SetIndex{0}, TagId{0}}; }
   std::int64_t num_lines() const override { return 1; }
   std::int64_t line_size_bytes() const override { return 4; }
 }; int main(){ M m; (void)m; }'
@@ -278,9 +304,14 @@ tryL reject 'num_lines returns int64' 'struct M : AddressMapper {
 section "== A2a: N12 at the mapper boundary"
 # locate takes a LineId, and Tagged's explicit constructor is what makes the
 # raw-int spelling a compile error rather than a silent reinterpretation.
-tryL reject 'locate(int)'      "$MAPPER int main(){ M m; return (int)m.locate(5, 8).tag; }"
-tryL reject 'locate(SlotId)'   "$MAPPER int main(){ M m; return (int)m.locate(SlotId{1}, 8).tag; }"
-tryL reject 'locate(SimTime)'  "$MAPPER int main(){ M m; return (int)m.locate(SimTime{1}, 8).tag; }"
+#
+# The result is unwrapped with .tag.get() rather than cast. Since U16 the tag is
+# a TagId, so `(int)....tag` would not compile EITHER, and each case would then
+# reject whatever its argument was: three cases reporting a pass while checking
+# nothing. The unwrap leaves the argument as the only thing under test.
+tryL reject 'locate(int)'      "$MAPPER int main(){ M m; return (int)m.locate(5, 8).tag.get(); }"
+tryL reject 'locate(SlotId)'   "$MAPPER int main(){ M m; return (int)m.locate(SlotId{1}, 8).tag.get(); }"
+tryL reject 'locate(SimTime)'  "$MAPPER int main(){ M m; return (int)m.locate(SimTime{1}, 8).tag.get(); }"
 # A line count is not an int64 and a byte count is not a LineId. This is the
 # mix-up the two return types exist to stop: cache_size_bytes / line_size_bytes
 # is a set count, num_lines is a coverage denominator, and nothing sensible
@@ -431,18 +462,22 @@ section "== A2d: locate takes a LineId and a plain set count, and returns neithe
 # N12 at the member that turns an id into an array subscript. A raw int64 line
 # is the spelling that would let a set index, a tag, or a byte count be located
 # by accident, and Tagged's explicit constructor is what makes it an error.
-tryP reject 'locate takes a raw int64'     "int main(){ $PACK return (int)m.locate(5, 8).tag; }"
-tryP reject 'locate takes a SlotId'        "int main(){ $PACK return (int)m.locate(SlotId{1}, 8).tag; }"
+#
+# .tag.get() rather than a cast, for the reason the A2a cases above give: since
+# U16 the tag is a TagId and the cast alone would reject every one of them.
+tryP reject 'locate takes a raw int64'     "int main(){ $PACK return (int)m.locate(5, 8).tag.get(); }"
+tryP reject 'locate takes a SlotId'        "int main(){ $PACK return (int)m.locate(SlotId{1}, 8).tag.get(); }"
 # num_sets is a plain int64 and deliberately not a tagged scalar: it is a
 # geometry of the ARRAY, not of the layout, which is why it is an argument
 # rather than mapper state. A LineId there would be a line count standing in for
 # a set count, which is exactly the confusion the wall exists to stop.
 tryP reject 'locate num_sets is a LineId'  "int main(){ $PACK
-  return (int)m.locate(LineId{0}, LineId{8}).tag; }"
-# Placement's fields are raw int64 (B9), so they do not convert back into an id
-# by copy-initialisation. The braced spelling IS allowed and is an accept case
-# below, which is the B29 gap A4 closes; this case is the half that already
-# holds today.
+  return (int)m.locate(LineId{0}, LineId{8}).tag.get(); }"
+# Placement's set index does not convert back into a line id. Since U16 the
+# field is a SetIndex, so BOTH spellings reject: this copy-initialisation, which
+# rejected before U16 too because Tagged's constructor is explicit, and the
+# braced `LineId l{...set_index}` below, which used to be the accepted half and
+# is now the case that measures the field's type.
 tryP reject 'LineId from set_index'        "int main(){ $PACK
   LineId l = m.locate(LineId{0}, 8).set_index; return (int)l.get(); }"
 
@@ -470,33 +505,60 @@ tryL accept 'used through the base'     "$MAPPER int main(){ M m; const AddressM
   std::vector<LineId> out; r.expand(Burst{Coord{0,0,0,0}, Axis::COUT, 1, 1}, out);
   return (int)out.size(); }"
 tryL accept 'delete through the base'   "$MAPPER int main(){ AddressMapper* p = new M(); delete p; }"
-tryL accept 'locate(LineId, int64)'     "$MAPPER int main(){ M m; return (int)m.locate(LineId{5}, 8).set_index; }"
+tryL accept 'locate(LineId, int64)'     "$MAPPER int main(){ M m; return (int)m.locate(LineId{5}, 8).set_index.get(); }"
 tryL accept 'num_lines is a LineId'     "$MAPPER int main(){ M m; LineId n = m.num_lines(); return (int)n.get(); }"
 # The unwrap is explicit and therefore allowed: N12 asks that the mix be
 # impossible by accident, not that it be impossible.
 tryL accept 'explicit .get() unwrap'    "$MAPPER int main(){ M m;
   return m.num_lines().get() < m.line_size_bytes() ? 1 : 0; }"
-tryL accept 'Placement braced'          'int main(){ Placement p{3, 100}; return (int)(p.tag + p.set_index); }'
-# Decision B9: Placement holds raw int64 fields, not tagged scalars, so these
-# compile on purpose. Recorded as accept cases so that a later unit tightening
-# them has to come here and say so, and so that the size of the gap is written
-# down rather than inferred.
+tryL accept 'Placement braced'          'int main(){ Placement p{SetIndex{3}, TagId{100}};
+  return (int)(p.tag.get() + p.set_index.get()); }'
+# U16: Placement's fields are TYPED, and these four cases are what says so.
 #
-# A4a closed the width half of the gap and only the width half, which is why
-# this block still has three accepts under it. Tagged's constructor is now
-# constrained to non-narrowing sources, so the 32-bit case below rejects. The
-# two int64 -> int64 cases do NOT reject and no narrowing rule can ever make
-# them: Placement::set_index and ::tag are raw int64, LineId and SimTime are
-# int64, and the conversion loses nothing. What is wrong with them is the
-# NAME, not the width, and closing them means typing Placement's fields
-# (SetIndex set_index, a tagged tag), which is an A2 interface change nobody
-# has ruled on. They stay accept, and they are the measure of what is left.
-tryL accept 'set_index is a raw int64'  'int main(){ Placement p{3, 100}; std::int64_t s = p.set_index; return (int)s; }'
-tryL accept 'a set index becomes a LineId' 'int main(){ Placement p{3, 100}; LineId l{p.set_index}; return (int)l.get(); }'
-tryL accept 'a tag becomes a SimTime'      'int main(){ Placement p{3, 100}; SimTime t{p.tag}; return (int)t.get(); }'
-# B29 discharged, half of it: int64 tag into a 32-bit SlotId is a narrowing and
-# the constrained constructor removes the overload, so there is nothing to call.
-tryL reject 'a 64-bit tag becomes a SlotId' 'int main(){ Placement p{3, 100}; SlotId s{p.tag}; return (int)s.get(); }'
+# Three of them were accepts until U16, and they are the reason U16 was asked
+# for. A4a's constrained constructor closed the WIDTH half of B29 and only that
+# half: it could reject `SlotId{tag}` because 64 into 32 loses something, and it
+# could never reject `LineId{set_index}` because both were int64 and nothing was
+# lost. What was wrong with those was the NAME, and no narrowing rule reaches a
+# name. Giving the fields their own types (SetIndex, TagId) is what closes them,
+# and B29's corrected row is closed by this block going all-reject.
+#
+# Each case is a DIFFERENT wall, which is why there are four and not one:
+# leaking out to the raw representation, into a sibling id, into a time, and
+# into a narrower id.
+tryL reject 'set_index is a raw int64'  'int main(){ Placement p{SetIndex{3}, TagId{100}};
+  std::int64_t s = p.set_index; return (int)s; }'
+tryL reject 'a set index becomes a LineId' 'int main(){ Placement p{SetIndex{3}, TagId{100}};
+  LineId l{p.set_index}; return (int)l.get(); }'
+tryL reject 'a tag becomes a SimTime'      'int main(){ Placement p{SetIndex{3}, TagId{100}};
+  SimTime t{p.tag}; return (int)t.get(); }'
+# The one crossing that has to be spelled out, because it is the alias a reader
+# can talk themselves into: a tag and a line id are BOTH signed 64-bit addresses
+# in the same flat space, and `line == tag * num_sets + set_index` makes them
+# look like the same quantity at num_sets == 1. They are not. A tag names a line
+# only WITHIN one set, so a tag used as a line id addresses a different line at
+# every set count but one.
+#
+# Added because the mutation `using TagId = Tagged<std::int64_t, tags::line>`
+# SURVIVED the whole suite: with it, TagId and LineId are one type, and every
+# other case in this block still rejected. This is the case that kills it.
+tryL reject 'a tag becomes a LineId'       'int main(){ Placement p{SetIndex{3}, TagId{100}};
+  LineId l{p.tag}; return (int)l.get(); }'
+# Still a reject, but no longer for the reason it was written for, and that is
+# worth stating rather than leaving for someone to misread later. Before U16 the
+# tag was a raw int64 and this measured B29's WIDTH rule: 64 into 32 narrows, so
+# the constrained constructor removed the overload. Now the tag is a TagId,
+# which converts to nothing at all, so the case is rejected on the name before
+# any width question is asked and it no longer measures width.
+#
+# It is NOT replaced with a new width case. The width rule keeps its own
+# section below ("the non-narrowing constructor rejects on WIDTH"), six cases
+# over three target types, and it is measured on a live member's return value by
+# 'a stride becomes a SlotId', where line_stride really does return a raw int64.
+# Typing Placement's fields did not weaken that rule; it removed the last raw
+# int64 from THIS surface, so there is no longer a width question here to ask.
+tryL reject 'a 64-bit tag becomes a SlotId' 'int main(){ Placement p{SetIndex{3}, TagId{100}};
+  SlotId s{p.tag}; return (int)s.get(); }'
 
 # A2b's controls. The seven cases above are worth nothing unless the ordinary
 # four-argument construction compiles, unless the class really is usable through
@@ -558,17 +620,18 @@ tryP accept 'expand through the base'      "int main(){ $PACK const AddressMappe
   std::vector<LineId> out; r.expand(Burst{Coord{0,0,0,0}, Axis::COUT, 4, 1}, out);
   return (int)out.size(); }"
 tryP accept 'locate(LineId, int64)'        "int main(){ $PACK
-  return (int)m.locate(LineId{0}, 8).set_index; }"
+  return (int)m.locate(LineId{0}, 8).set_index.get(); }"
 tryP accept 'locate through the base'      "int main(){ $PACK const AddressMapper& r = m;
-  return (int)r.locate(LineId{0}, 8).tag; }"
+  return (int)r.locate(LineId{0}, 8).tag.get(); }"
 tryP accept 'Placement from locate'        "int main(){ $PACK
-  Placement p = m.locate(LineId{0}, 8); return (int)(p.tag + p.set_index); }"
-# Still an accept after A4a, and now for a reason worth stating: set_index and
-# LineId are both int64, so this conversion loses nothing and no narrowing rule
-# can reject it. What is wrong with it is the NAME. Closing it means typing
-# Placement's fields, an A2 interface change nobody has ruled on, so it stays
-# here as the measure of what B29 did NOT close.
-tryP accept 'a set index becomes a LineId' "int main(){ $PACK
+  Placement p = m.locate(LineId{0}, 8);
+  return (int)(p.tag.get() + p.set_index.get()); }"
+# U16, on the concrete mapper. The tryL case of the same name pins the wall on a
+# hand-built Placement; this is the same wall on the value locate actually
+# returns, which is the only Placement the engine ever holds. Both are kept
+# because a field type could be reverted on the struct while locate went on
+# constructing tagged values, and then only one of the two would go red.
+tryP reject 'a set index becomes a LineId' "int main(){ $PACK
   LineId l{m.locate(LineId{0}, 8).set_index}; return (int)l.get(); }"
 
 # ---------------------------------------------------------------------------
@@ -789,7 +852,7 @@ section "== A4b: SetAssociativeArray keeps its shape"
 # bytes is 256 lines and every geometry below divides.
 SAMAP='struct SM : AddressMapper {
   void expand(const Burst&, std::vector<LineId>&) const override {}
-  Placement locate(LineId, std::int64_t) const override { return Placement{0, 0}; }
+  Placement locate(LineId, std::int64_t) const override { return Placement{SetIndex{0}, TagId{0}}; }
   LineId num_lines() const override { return LineId{1}; }
   std::int64_t line_size_bytes() const override { return 256; }
 };'
@@ -824,6 +887,92 @@ tryS accept 'the array copied as itself' "$SAMAP int main(){ SM m;
 tryS reject 'the array assigned over'    "$SAMAP int main(){ SM m;
   SetAssociativeArray a(m, 65536, 8); SetAssociativeArray b(m, 4096, 4);
   a = b; return (int)a.num_slots(); }"
+
+# ---------------------------------------------------------------------------
+# A5
+# ---------------------------------------------------------------------------
+
+section "== A5: a ReplacementPolicy needs nothing but SlotId and Candidate"
+# The minimal conforming policy, written out here rather than reached for from
+# stamp_policy.h. That is the point of the preamble rather than a convenience:
+# a case that pulled in the concrete policies would compile against a header
+# that already includes them, and would stop being able to say what policy.h
+# alone provides.
+POL='struct P : ReplacementPolicy {
+  void on_hit(SlotId) override {}
+  void on_fill(SlotId) override {}
+  void on_invalidate(SlotId) override {}
+  SlotId pick_victim(const std::vector<Candidate>&) override { return NoSlot; }
+};'
+tryR accept 'a policy built on policy.h alone' "$POL int main(){ P p; p.on_hit(SlotId{0});
+  std::vector<Candidate> c{Candidate{SlotId{0}, NoLine}};
+  return (int)p.pick_victim(c).get(); }"
+# The array and the mapper are NOT reachable from this header, which is the
+# split as a compile-time fact. These two reject because the names do not exist
+# here at all; if either header is ever pulled in they start accepting.
+tryR reject 'a policy names the array'   'int main(){ SetAssociativeArray* a = nullptr; return a == nullptr; }'
+tryR reject 'a policy names a mapper'    'int main(){ AddressMapper* m = nullptr; return m == nullptr; }'
+# All four verbs are pure, so a policy cannot be half implemented. A default
+# body on any of them is a policy whose forgotten half is silent, which is the
+# one failure mode a hit rate cannot report.
+tryR reject 'a policy omits pick_victim' 'struct Q : ReplacementPolicy {
+  void on_hit(SlotId) override {}
+  void on_fill(SlotId) override {}
+  void on_invalidate(SlotId) override {}
+};
+int main(){ Q q; return 0; }'
+tryR reject 'a policy omits on_hit'      'struct Q : ReplacementPolicy {
+  void on_fill(SlotId) override {}
+  void on_invalidate(SlotId) override {}
+  SlotId pick_victim(const std::vector<Candidate>&) override { return NoSlot; }
+};
+int main(){ Q q; return 0; }'
+# SlotId is the whole of what crosses the split: dense in [0, num_slots) and
+# stable while a line stays resident, so a policy indexes a flat vector with it
+# and never computes a set index. A verb that took a line address instead would
+# be the policy learning where lines live.
+tryR reject 'on_hit takes a LineId'      'struct Q : ReplacementPolicy {
+  void on_hit(LineId) override {}
+  void on_fill(SlotId) override {}
+  void on_invalidate(SlotId) override {}
+  SlotId pick_victim(const std::vector<Candidate>&) override { return NoSlot; }
+};
+int main(){ Q q; return 0; }'
+tryR reject 'pick_victim over slots alone' 'struct Q : ReplacementPolicy {
+  void on_hit(SlotId) override {}
+  void on_fill(SlotId) override {}
+  void on_invalidate(SlotId) override {}
+  SlotId pick_victim(const std::vector<SlotId>&) override { return NoSlot; }
+};
+int main(){ Q q; return 0; }'
+# pick_victim is deliberately NOT const, and this is the case that keeps it so.
+# A Random policy draws from an RNG, which is state it must advance, so a const
+# signature here is exactly the interface change adding it would force (Q5).
+tryR reject 'pick_victim made const'     'struct Q : ReplacementPolicy {
+  void on_hit(SlotId) override {}
+  void on_fill(SlotId) override {}
+  void on_invalidate(SlotId) override {}
+  SlotId pick_victim(const std::vector<Candidate>&) const override { return NoSlot; }
+};
+int main(){ Q q; return 0; }'
+
+section "== A5: copy and move on the policy base are protected"
+# B67's decision applied to the second polymorphic base in the tree, and these
+# are its ONLY guard: `protected:` in policy.h could be moved back to public and
+# nothing else in the suite would go red. Through two base references `p1 = p2`
+# would compile and assign the base subobject only, leaving the derived recency
+# state untouched -- a half-assigned eviction order, reporting a plausible hit
+# rate for a history it never had.
+tryR reject 'policy assignment through references' "$POL int main(){ P p1, p2;
+  ReplacementPolicy& r1 = p1; ReplacementPolicy& r2 = p2; r1 = r2; return 0; }"
+tryR reject 'policy move assignment'     "$POL int main(){ P p1, p2;
+  ReplacementPolicy& r1 = p1; r1 = static_cast<ReplacementPolicy&&>(p2); return 0; }"
+# And the half that is why they are protected rather than deleted: the engine
+# holds one L1 policy per core over 8 to 256 cores, so a policy stays copyable
+# AS ITSELF, where a copy is whole. If this starts failing, `= default` has
+# become `= delete`.
+tryR accept 'a whole derived policy copy' "$POL int main(){ P a; P b{a};
+  b.on_fill(SlotId{0}); return 0; }"
 
 # Every case has been started; wait for the stragglers, then print the whole
 # run in source order and tally it. The tally is done here rather than in the

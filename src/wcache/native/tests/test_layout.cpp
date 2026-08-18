@@ -74,7 +74,7 @@ public:
     }
 
     Placement locate(LineId line, std::int64_t num_sets) const override {
-        return Placement{line.get() % num_sets, line.get() / num_sets};
+        return Placement{SetIndex{line.get() % num_sets}, TagId{line.get() / num_sets}};
     }
 
     LineId num_lines() const override { return LineId{(elements() + pack_ - 1) / pack_}; }
@@ -336,7 +336,7 @@ class SwapsSetAndTag : public PackedRowMajor {
 public:
     using PackedRowMajor::PackedRowMajor;
     Placement locate(LineId line, std::int64_t num_sets) const override {
-        return Placement{line.get() / num_sets, line.get() % num_sets};
+        return Placement{SetIndex{line.get() / num_sets}, TagId{line.get() % num_sets}};
     }
 };
 
@@ -376,7 +376,7 @@ public:
 class EmptyLineSizeTerms : public PackedRowMajor {
 public:
     using PackedRowMajor::PackedRowMajor;
-    std::string line_size_terms() const override { return ""; }
+    std::string line_size_terms(std::int64_t) const override { return ""; }
 };
 
 // And the worse one: terms that are well formed and describe a different line
@@ -387,7 +387,9 @@ public:
 class MisleadingLineSizeTerms : public PackedRowMajor {
 public:
     using PackedRowMajor::PackedRowMajor;
-    std::string line_size_terms() const override { return "cin_block 3 x weight_bytes 5"; }
+    std::string line_size_terms(std::int64_t) const override {
+        return "cin_block 3 x weight_bytes 5";
+    }
 };
 
 // ===========================================================================
@@ -433,27 +435,36 @@ void expect_caught(const char* name, Fn body) {
 // ===========================================================================
 
 void test_placement_is_an_aggregate() {
-    check::group("Placement: two signed 64-bit fields, brace initialised");
+    check::group("Placement: a SetIndex and a TagId, brace initialised");
 
     // Declaration order, with no constructor to keep in step. locate() returns
     // one of these by braced init, so swapping the two field declarations
     // silently swaps every mapper's answer; that is why the order is pinned
     // here by value rather than assumed.
-    const Placement p{3, 100};
-    CHECK_EQ(p.set_index, std::int64_t{3});
-    CHECK_EQ(p.tag, std::int64_t{100});
+    //
+    // Since U16 the two fields are different TYPES, so a swapped braced
+    // initialiser no longer compiles at all and this check no longer carries
+    // the order on its own. It is kept because it still pins the order for a
+    // reader and would still catch a rename of the two fields, and because the
+    // compile-time half belongs in compile_fail.sh rather than here.
+    const Placement p{SetIndex{3}, TagId{100}};
+    CHECK_EQ(p.set_index, SetIndex{3});
+    CHECK_EQ(p.tag, TagId{100});
 
-    Placement q{0, 0};
-    q.set_index = 7;  // assignable, unlike the Tagged scalars
-    q.tag = -1;
-    CHECK_EQ(q.set_index, std::int64_t{7});
-    CHECK_EQ(q.tag, std::int64_t{-1});
+    // Whole-field assignment, which is what an aggregate of two immutable
+    // scalars still allows: the Tagged scalars have no assignment from their
+    // representation, so the value has to be named on the way in.
+    Placement q{SetIndex{0}, TagId{0}};
+    q.set_index = SetIndex{7};
+    q.tag = TagId{-1};
+    CHECK_EQ(q.set_index, SetIndex{7});
+    CHECK_EQ(q.tag, TagId{-1});
 
     // Copying copies values, not a handle.
     Placement r = p;
-    r.tag = 55;
-    CHECK_EQ(r.tag, std::int64_t{55});
-    CHECK_EQ(p.tag, std::int64_t{100});
+    r.tag = TagId{55};
+    CHECK_EQ(r.tag, TagId{55});
+    CHECK_EQ(p.tag, TagId{100});
 }
 
 void test_placement_identity_at_the_boundaries() {
@@ -479,13 +490,13 @@ void test_placement_identity_at_the_boundaries() {
     };
 
     for (const Case& c : cases) {
-        const Placement p{c.line % c.num_sets, c.line / c.num_sets};
-        CHECK_TRUE(p.set_index >= 0);
-        CHECK_TRUE(p.set_index < c.num_sets);
+        const Placement p{SetIndex{c.line % c.num_sets}, TagId{c.line / c.num_sets}};
+        CHECK_TRUE(p.set_index.get() >= 0);
+        CHECK_TRUE(p.set_index.get() < c.num_sets);
         // The multiply is the step that would overflow if these were computed
         // from a fabricated tag rather than from a real line, which is why the
         // cases above all derive the placement from a line id.
-        CHECK_EQ(p.tag * c.num_sets + p.set_index, c.line);
+        CHECK_EQ(p.tag.get() * c.num_sets + p.set_index.get(), c.line);
     }
 
     // What the interface does NOT promise, recorded here so nobody reads the
@@ -713,20 +724,30 @@ static_assert(!std::is_abstract<PackedRowMajor>::value, "");
 static_assert(std::is_base_of<AddressMapper, PackedRowMajor>::value, "");
 static_assert(std::is_convertible<PackedRowMajor*, AddressMapper*>::value, "");
 
-// Placement: an aggregate of two signed 64-bit fields, in that order.
+// Placement: an aggregate of two tagged scalars over signed 64-bit, in that
+// order. U16 typed the fields; before it, both were raw std::int64_t.
 static_assert(std::is_aggregate<Placement>::value, "");
 static_assert(std::is_standard_layout<Placement>::value, "");
 static_assert(std::is_trivially_copyable<Placement>::value, "");
 static_assert(sizeof(Placement) == 2 * sizeof(std::int64_t), "");
-static_assert(std::is_same<decltype(Placement::set_index), std::int64_t>::value, "");
-static_assert(std::is_same<decltype(Placement::tag), std::int64_t>::value, "");
-static_assert(std::is_signed<decltype(Placement::set_index)>::value, "");
-static_assert(std::is_signed<decltype(Placement::tag)>::value, "");
-// layout.h's stated reason for signedness, restated as arithmetic rather than
-// as a trait: on an unsigned field `0 <= set_index` is vacuously true and the
-// bounds check in every array becomes half a check. This says the field can
-// actually hold a value that fails it.
-static_assert(static_cast<decltype(Placement::set_index)>(-1) < 0, "");
+// The types themselves, which is the whole of U16 stated once. These are what
+// go red if either field is reverted to a raw int64, and they are the reason
+// the compile_fail.sh block above them could be flipped to all-reject.
+static_assert(std::is_same<decltype(Placement::set_index), SetIndex>::value, "");
+static_assert(std::is_same<decltype(Placement::tag), TagId>::value, "");
+// And the two are not the same type as each other, which is the property that
+// stops a set index and a tag being written in the wrong order. Stated
+// separately because both asserts above could be satisfied by one alias for the
+// other.
+static_assert(!std::is_same<SetIndex, TagId>::value, "");
+// The representation stays signed under the name. layout.h's stated reason: on
+// an unsigned field `0 <= set_index` is vacuously true and the bounds check in
+// every array becomes half a check. This says the field can actually hold a
+// value that fails it, reached through the type's own rep_type because the
+// field no longer IS its representation.
+static_assert(std::is_signed<SetIndex::rep_type>::value, "");
+static_assert(std::is_signed<TagId::rep_type>::value, "");
+static_assert(static_cast<SetIndex::rep_type>(-1) < 0, "");
 
 // The interface's signatures, pinned. A2b's override must match these, and a
 // silently changed parameter type would turn an override into an overload: the

@@ -60,9 +60,24 @@ inline std::string to_str(const std::vector<std::int64_t>& v) {
     return s + "]";
 }
 
+// Two overloads rather than one, and both are constrained through their return
+// type so that exactly one is viable for any given T. Written as a single
+// unconstrained template plus a tagged-scalar one, the two would have identical
+// signatures and every call would be ambiguous.
+//
+// The second exists because U16 typed Placement's fields, so CHECK_EQ now
+// compares SetIndex against SetIndex and TagId against TagId and has to print
+// them. It only affects PRINTING: eq() still needs `a == b`, and Tagged has no
+// operator== against its representation, so a check comparing a tagged scalar
+// to a raw int is still a compile error. The wall is unchanged.
 template <typename T>
-std::string to_str(const T& v) {
+auto to_str(const T& v) -> decltype(std::to_string(v)) {
     return std::to_string(v);
+}
+
+template <typename T>
+auto to_str(const T& v) -> decltype(std::to_string(v.get())) {
+    return std::to_string(v.get());
 }
 
 template <typename A, typename B>
