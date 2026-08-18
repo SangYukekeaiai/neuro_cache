@@ -87,9 +87,14 @@ public:
     // parameterised over this abstract class, so a guarantee that varied per
     // implementation could not be checked at all.
     //
-    // A burst with `count < 1` throws std::invalid_argument. A core asking for
-    // nothing is malformed at every layer, and admitting it would leave every
-    // consumer below with a request that has no lines to special-case.
+    // A burst with `count < 1` or with `stride < 1` throws
+    // std::invalid_argument. A core asking for nothing is malformed at every
+    // layer, and admitting it would leave every consumer below with a request
+    // that has no lines to special-case. A stride of 0 is the same element
+    // asked for `count` times and a negative stride is a run walking backwards;
+    // `burst_stride` in the format v2 header is a step to the next element of
+    // the run, so neither is a run a trace can describe, and both are malformed
+    // whatever layer they are applied to rather than outside this one.
     //
     // On throwing: every range check must run before the first append, so a
     // call that throws appends nothing and leaves `out` exactly as it was.

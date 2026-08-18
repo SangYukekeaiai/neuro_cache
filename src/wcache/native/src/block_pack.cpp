@@ -336,10 +336,18 @@ LineId BlockPackMapper::line_of(const Coord& c) const {
 //    walk is already increasing for a positive stride, because a block index is
 //    non-decreasing in its coordinate and every line stride is positive, so the
 //    sort is over an already sorted range and the unconditional call costs a
-//    comparison pass. A burst walking backwards is what it is there for.
+//    comparison pass. Since stride < 1 is refused below, no burst this mapper
+//    accepts can walk downward, and that stays true under a permuted flatten
+//    order because every radix is positive whatever the permutation. The sort
+//    is kept anyway: it is what makes the obligation structural rather than
+//    something re-argued per layout, and unique() removes only ADJACENT
+//    equals, so without it the de-duplication would rest on that same
+//    monotonicity argument too.
 //
-//  - A burst with count < 1 is std::invalid_argument, not out_of_range: a
-//    request for no elements is malformed whatever layer it is applied to.
+//  - A burst with count < 1, or with stride < 1, is std::invalid_argument and
+//    not out_of_range: a request for no elements, and a run that stands still
+//    or walks backwards, are malformed whatever layer they are applied to.
+//    Both are checked before the coordinate range check below.
 //
 //  - The far end of the walk computed in int64. `count` and `stride` are both
 //    int32 (B8) and their product is not, so a wild count would wrap into a
@@ -352,6 +360,9 @@ void BlockPackMapper::expand(const Burst& b, std::vector<LineId>& out) const {
     if (b.count < 1) {
         reject("burst count must be >= 1, got " + std::to_string(b.count));
     }
+    // The constructor's spelling of the same rule, reused so the two messages
+    // cannot drift apart: "burst stride must be >= 1, got 0".
+    positive_or_reject("burst stride", b.stride);
 
     const std::int32_t n     = extent_on(shape_, b.axis);
     const std::int64_t start = coord_on(b.anchor, b.axis);
