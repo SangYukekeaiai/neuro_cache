@@ -927,7 +927,7 @@ when the unit that needs it lands.
 | ~~`std::vector`~~, `std::unordered_map` as class templates you *use* rather than write | `std::vector` landed at A4b, as `slots_` in `set_associative.h`; it gets no section of its own, and the one wcache-specific consequence is in section 8. `std::unordered_map` still owed, first at B3 |
 | ~~virtual functions and abstract base classes~~ | landed early, at A2a: section 19 |
 | ~~`override`, `final`~~ | landed at A2b: section 20 |
-| `std::unique_ptr` and ownership | A5 |
+| ~~`std::unique_ptr` and ownership~~ | landed at A5, as `make_policy`'s return type: section 25 |
 | ~~exceptions: `throw` (section 18), custom exception types~~; `noexcept` revisited | `throw` types landed at A2b: section 20. `noexcept` still owed |
 | `std::priority_queue` and custom comparators, for the event queue | B2 |
 | `enum class` for the outcome and reason enums | B3 |
@@ -1973,3 +1973,330 @@ Nothing at run time. Every one of these is a compile-time access rule or a
 defaulted function that generates the same code the compiler was generating
 anyway, and the restructured check trades one multiply for one divide, once per
 array construction.
+
+---
+
+## 25. Interfaces, ownership, and indexing by a tagged scalar (units A4c and A5)
+
+A5 is the first unit in the tree that **owns** an object rather than borrowing
+one, and the first that destroys one through a base pointer. That is where most
+of this section is. The rest is the shape of a three-level class hierarchy and
+the one thing that happens when a `std::vector` has to be indexed by a type that
+is deliberately not an integer.
+
+### An abstract interface and its implementations, in two *headers*
+
+Section 20 covers the header / `.cpp` split, which is about translation units and
+link time. This is a different split and it happens one level up, between two
+headers:
+
+```
+layout.h  (abstract AddressMapper)      block_pack.h  (concrete BlockPackMapper)
+cache.h   (abstract CacheArray)         set_associative.h  (concrete array)
+policy.h  (abstract ReplacementPolicy)  stamp_policy.h     (LRU, FIFO, factory)
+```
+
+Three instances of the same arrangement now. The reason is not symmetry, and it
+is worth stating because "one class per header" is a rule people apply for its
+own sake and this is not that.
+
+**An interface header includes only what the interface's signatures need.**
+`policy.h` includes `<vector>`, `cache.h` and `types.h`, and nothing else. That
+is a checkable claim, and the tree checks it: `compile_fail.sh` compiles cases
+against `cache.h` alone, so a case that compiles is evidence that the array
+interface needs no layout header. Fold the concrete class into the interface
+header and that evidence evaporates silently, because the preamble now
+transitively includes what it was proving it did not need. The cases do not fail;
+they stop meaning anything, which is worse.
+
+The implementation headers pull in more: `stamp_policy.h` adds `<memory>` for
+`std::unique_ptr`, `<cstdint>` and `<cstddef>`. A file that only wants to talk
+about policies in the abstract never pays for those.
+
+### A class that stays abstract without saying `= 0` again
+
+```cpp
+class ReplacementPolicy {
+public:
+    virtual void   on_hit(SlotId)        = 0;
+    virtual void   on_fill(SlotId)       = 0;
+    virtual void   on_invalidate(SlotId) = 0;
+    virtual SlotId pick_victim(const std::vector<Candidate>&) = 0;
+};
+
+class StampPolicy : public ReplacementPolicy {   // still abstract
+public:
+    void   on_fill(SlotId slot) override;
+    void   on_invalidate(SlotId slot) override;
+    SlotId pick_victim(const std::vector<Candidate>& c) override;
+    //  on_hit is not mentioned at all
+};
+
+class LruPolicy  final : public StampPolicy { void on_hit(SlotId) override; };
+class FifoPolicy final : public StampPolicy { void on_hit(SlotId) override; };
+```
+
+`StampPolicy` overrides three of the four pure virtuals and says nothing about
+the fourth. It therefore **inherits `on_hit` as still pure**, and is itself
+abstract:
+
+```
+error: cannot declare variable 'p' to be of abstract type 'wcache::StampPolicy'
+note:   because the following virtual functions are pure within 'StampPolicy':
+note:     'virtual void wcache::ReplacementPolicy::on_hit(wcache::SlotId)'
+```
+
+The thing to notice, coming from C: **there is no keyword for this.**
+Abstractness is not declared, it is the residue of what has not been overridden,
+recomputed by the compiler at every level of the hierarchy. Section 19 stated the
+rule in passing; A5 is the first place in the tree that *uses* it as a design.
+`StampPolicy` holds the whole mechanism (one stamp per slot, victim is the
+smallest stamp) and leaves exactly the one decision that distinguishes the two
+policies to the two leaves, which are three lines each.
+
+`final` on the leaves is section 20's, applied here because a class deriving from
+`LruPolicy` would be inheriting the recency rule in order to disagree with part
+of it.
+
+### `using StampPolicy::StampPolicy;`: inheriting constructors
+
+```cpp
+class LruPolicy final : public StampPolicy {
+public:
+    using StampPolicy::StampPolicy;      // this line
+    void on_hit(SlotId slot) override;
+};
+```
+
+Constructors are the one kind of member that is **not** inherited by default, and
+the reason is sound: a base constructor cannot know about members the derived
+class added, so silently inheriting one would leave them uninitialised.
+
+The `using` declaration says "inherit them anyway". Every constructor of
+`StampPolicy` becomes available as a constructor of `LruPolicy`, so
+`LruPolicy p(256);` finds `StampPolicy(std::int32_t)`. Without it, both leaves
+would need a forwarding constructor whose only job is to pass an argument along:
+
+```cpp
+explicit LruPolicy(std::int32_t n) : StampPolicy(n) {}     // not written
+```
+
+which is the same line twice, and a third time for every policy added later.
+
+**The trap, since it is invisible until it bites.** The inherited constructor
+runs the base's constructor and then default-initialises the derived class's own
+members. Today both leaves have no members, so this is exactly right. The day one
+gains a member, the inherited constructor will not initialise it, and there is no
+diagnostic beyond whatever the member's own default gives. So a policy that adds
+state must either give the member a default member initialiser at its
+declaration, or replace the `using` with a real constructor. Same discipline as
+the zero-initialised members in `set_associative.h`.
+
+### `protected` on an ordinary member function
+
+Section 24 introduced `protected` on the special member functions. Here it labels
+a plain one:
+
+```cpp
+protected:
+    void stamp(SlotId slot);      // stamp_[slot] = next_stamp_++;
+```
+
+Callable from `LruPolicy::on_hit`, which is the whole point, and not from
+outside. `public` would make the recency mechanism part of what a policy promises
+its callers, so the engine could stamp a slot with no event behind it. `private`
+would put it out of reach of the one class that needs it. It is the access level
+that says "this is for my subclasses", and it is the only one that does.
+
+### `const` on a virtual is a decision that binds every future override
+
+Section 19 records that an override may not *drop* the `const` on a base's
+virtual. The other half of that rule is what shows up here: **the base's choice
+is final for every implementation that will ever exist**, including ones nobody
+has written.
+
+```cpp
+virtual SlotId pick_victim(const std::vector<Candidate>& candidates) = 0;   // NOT const
+```
+
+`const` is part of the function's type for override matching. A derived
+`pick_victim` declared without `const`, against a base that has it, does not
+override anything: it is a different function that happens to share a name, and
+`override` turns that from a silent bug into a compile error.
+
+```
+error: 'SlotId RandomPolicy::pick_victim(const std::vector<Candidate>&)'
+       marked 'override', but does not override
+```
+
+So the const-ness has to be right on the interface **before** the implementations
+that need it exist. Here LRU and FIFO could both be `const` at this verb; they
+only read stamps. A Random policy cannot, because drawing from an RNG advances
+it. Making the interface `const` today would buy nothing and would force an
+interface change across both cache levels and every fixture the day Random lands.
+It is left non-`const` once, for a class that does not exist yet.
+
+The practical consequence: a non-`const` member function can only be called
+through a non-`const` reference, so the engine must hold its policies as
+`ReplacementPolicy&` rather than `const ReplacementPolicy&`. That is not a loss,
+since three of the four verbs mutate anyway.
+
+### `std::unique_ptr`, `std::make_unique`, and returning ownership
+
+```cpp
+std::unique_ptr<ReplacementPolicy> make_policy(PolicyKind kind, std::int32_t num_slots) {
+    switch (kind) {
+        case PolicyKind::LRU:  return std::make_unique<LruPolicy>(num_slots);
+        case PolicyKind::FIFO: return std::make_unique<FifoPolicy>(num_slots);
+        ...
+    }
+}
+```
+
+`std::unique_ptr<T>` is a pointer that owns what it points at: when it goes out
+of scope, it calls `delete`. There is exactly one owner at a time, which the type
+enforces by being **move-only**. `auto b = a;` on a `unique_ptr` does not
+compile; `auto b = std::move(a);` does, and leaves `a` null. Copying an owning
+pointer is how a C program frees the same allocation twice, and here it is a
+compile error rather than a rule to remember.
+
+`std::make_unique<LruPolicy>(num_slots)` allocates an `LruPolicy`, forwards
+`num_slots` to its constructor, and wraps the result, all in one expression.
+Preferred over `std::unique_ptr<LruPolicy>(new LruPolicy(num_slots))` because
+there is no point at which a raw pointer exists unowned. In this function it
+matters concretely: `StampPolicy`'s constructor throws for a non-positive
+`num_slots`, and with `make_unique` a throw during construction leaks nothing,
+because no ownership was ever handed over.
+
+**The conversion in the return statement is the interesting part.**
+`make_unique<LruPolicy>` produces a `std::unique_ptr<LruPolicy>`, and the
+function returns `std::unique_ptr<ReplacementPolicy>`. That converts because
+`LruPolicy*` converts to `ReplacementPolicy*`, and `unique_ptr` allows the same
+conversion on itself. It is a move, not a copy, so nothing is duplicated and the
+caller ends up sole owner.
+
+What this replaces, in C, is `Policy* make_policy(...)` plus a documented
+`free_policy()` that every caller must remember to call on every return path
+including the ones that throw. The `unique_ptr` version has the compiler emit the
+free, at the right place, on every path.
+
+### Destroying through a base pointer, and where the virtual destructor earns it
+
+Section 19 states the rule: any class meant to be inherited from and held by base
+pointer gets a virtual destructor, because deleting a derived object through a
+base pointer with a non-virtual one is undefined behaviour. Until A5 that rule was
+**prophylactic**. Nothing in the tree ever destroyed through a base pointer:
+`AddressMapper` is held by `const&`, `SetAssociativeArray` is held as itself.
+
+`make_policy` is the first place it is load-bearing. The returned
+`std::unique_ptr<ReplacementPolicy>` holds a pointer whose *static* type is
+`ReplacementPolicy*` and whose *dynamic* type is `LruPolicy`, and when it goes out
+of scope it calls `delete` on the static type. With
+
+```cpp
+virtual ~ReplacementPolicy() = default;
+```
+
+that dispatches to `~LruPolicy`, then `~StampPolicy` (which frees `stamp_`), then
+the base. Without the `virtual`, only the base destructor runs, `stamp_` is never
+freed, and the usual symptom is a leak rather than a crash. At 8 bytes per slot
+over one policy per core, that leak is not small.
+
+`g++` will warn under `-Wdelete-non-virtual-dtor` when the static type has virtual
+functions and a non-virtual destructor, which catches the common case, but the
+warning is not the guarantee. The declaration is.
+
+Note also that `unique_ptr` does **not** solve this for you. It calls `delete` on
+the type it was told about; whether that reaches the derived destructor is the
+base class's business, not the smart pointer's.
+
+### `std::vector` indexed by a tagged scalar, and the `.get()` boundary
+
+Section 8 records the friction a tagged type causes at construction
+(`std::vector<SlotId> v(4);` does not compile). A4c and A5 hit the other half:
+**a tagged type cannot subscript a vector at all.**
+
+```cpp
+std::vector<std::int64_t> stamp_;
+SlotId slot = ...;
+stamp_[slot] = 1;          // error: no match for 'operator[]'
+```
+
+`std::vector::operator[]` takes `size_type`, which is `std::size_t`. `SlotId` has
+no implicit conversion to anything (section 7's `explicit`), so there is no
+conversion sequence and the call simply does not exist. That is the design
+working, not fighting it: the whole reason `SlotId` is a type is that a raw `int`
+sitting where a slot id belongs is the bug this tree spends effort to prevent.
+
+So the unwrap has to happen, and the discipline is that it happens at **one
+place per class**, not at every subscript:
+
+```cpp
+// stamp_policy.cpp
+std::size_t StampPolicy::index_or_reject(const char* verb, SlotId slot) const {
+    const std::int32_t s = slot.get();
+    if (s < 0 || static_cast<std::size_t>(s) >= stamp_.size()) {
+        throw std::out_of_range(...);
+    }
+    return static_cast<std::size_t>(s);
+}
+
+stamp_[index_or_reject("stamp", slot)] = next_stamp_;
+```
+
+Three things are being done at once here, and only the first is obvious.
+
+**One, the unwrap.** `.get()` returns the `std::int32_t` inside. That call is the
+boundary: above it the code speaks in slot ids, below it in indices, and the
+boundary is a named function rather than a `.get()` scattered through the file.
+`set_associative.cpp` does the same job with a file-local `as_size()`, and states
+the reason in a comment: with the cast spread across subscript expressions
+instead, `-Wsign-conversion` would be answered with several casts rather than one
+reviewable site.
+
+**Two, the sign check happens in signed arithmetic, before the cast.** Writing
+the comparison directly,
+
+```cpp
+if (s >= stamp_.size())      // int32 against size_t
+```
+
+triggers the usual arithmetic conversions, which convert the *signed* operand to
+unsigned. `-Wsign-compare` warns about it, and the reason it warns is that a
+negative `s` becomes an enormous unsigned value. Here that happens to give the
+right answer, since the enormous value is also out of range, but it is right by
+accident. Splitting it into `s < 0` (evaluated as `int32`) and then a cast makes
+the rule explicit and keeps the file warning-clean under `-Wsign-conversion`.
+
+**Three, one check for every verb.** `on_fill`, `on_invalidate`, `stamp` and
+`pick_victim` all route through this function, so no two of them can disagree
+about whether the top of the range is open or closed. `SetAssociativeArray` does
+the same with `slot_or_reject`. The parameter is the *verb name*, not the class
+name, because a caller holding a stray slot id needs to know which call it
+reached.
+
+### What this costs
+
+One indirect call per policy verb, against a function body of one array write.
+`std::unique_ptr` is the size of a raw pointer and its destructor inlines to the
+`delete` you would have written. The inherited constructors and the access labels
+generate nothing at all. `index_or_reject` is one predictable compare against a
+member already in cache, and it is deliberately kept even on `on_hit`, the
+hottest call in the model, because what it prevents is a silent out-of-bounds
+write into `stamp_` when a policy is handed the slot ids of a differently sized
+array.
+
+### What these two units did *not* add to this file
+
+Recorded so the absence does not read as an oversight. All of these appear in
+A4c or A5 and are already covered:
+
+| Feature in this batch | Where it is already explained |
+|---|---|
+| `virtual`, `= 0`, abstract classes, virtual destructors | section 19 |
+| `override`, `final`, the header / `.cpp` split, `[[noreturn]]`, unnamed parameters (`void FifoPolicy::on_hit(SlotId) {}`), picking between the standard exception types | section 20 |
+| `enum class PolicyKind : std::uint8_t`, exhaustive `switch`, the `throw` after it | section 18 |
+| `protected` as an access label, the five special member functions, the trap that declaring any constructor removes the implicit default one | section 24 |
+| `explicit` on a one-argument constructor | section 7 |
+| `constexpr` on a namespace-scope constant (`kNeverStamped`), unnamed namespaces | sections 11 and 1 |
+| where the cast goes, and signed / unsigned mixing | section 22 |

@@ -1,588 +1,997 @@
-# EXPLAIN: increment A4b, `SetAssociativeArray` construction and validation
+# EXPLAIN: three landed increments (`Placement` typing, A4c, A5)
 
 **Erasable.** Overwritten at every increment. The record is `PROGRESS.md`.
 
-Changed files, implementer: `native/include/wcache/set_associative.h` (new),
-`native/src/set_associative.cpp` (new), `native/include/wcache/cache.h`,
+This file covers **three** landed increments rather than one, which B74 authorises
+as a batch. Each gets its own part below and each part is readable on its own:
+
+- **Part I, the `Placement`-typing increment** (U16). Not a unit of the plan: it
+  is the A2-interface change A4a raised and A4b deferred, taken as its own
+  increment so it does not hide inside A4c's diff.
+- **Part II, unit A4c**, the five verb bodies of `SetAssociativeArray`.
+- **Part III, unit A5**, `ReplacementPolicy` plus LRU and FIFO.
+
+Changed files, Part I: `native/include/wcache/types.h`,
 `native/include/wcache/layout.h`, `native/include/wcache/block_pack.h`,
 `native/src/block_pack.cpp`.
-Changed files, reviewer: `native/tests/test_set_associative.cpp` (new),
-`native/tests/mapper_conformance.h`, `native/tests/test_layout.cpp`,
+Changed files, Part II: `native/include/wcache/set_associative.h`,
+`native/src/set_associative.cpp`.
+Changed files, Part III: `native/include/wcache/policy.h` (new),
+`native/include/wcache/stamp_policy.h` (new), `native/src/stamp_policy.cpp`
+(new).
+Reviewer's files across the batch: `native/tests/test_set_associative.cpp`,
+`native/tests/test_stamp_policy.cpp` (new), `native/tests/test_layout.cpp`,
+`native/tests/test_block_pack.cpp`, `native/tests/check.h`,
 `native/tests/compile_fail.sh`, `native/tests/mutation_check.sh`.
 
-A4 as the plan states it is `CacheArray` + `SetAssociativeArray`. A4a built the
-interface; this increment is the **second third**, the concrete class's
-construction and validation. Section 10 says what the last third is.
+Plan reference: v3 Part 2.2 (the array/policy split, the four policy verbs, and
+"`probe` is const and is **not** an access"), Part 2.3 (the same two structures
+at the L2), Part 7 line 1333 (unit A4) and line 1334 (unit A5), Part 3.4's
+`install()` pseudocode (which section 16 disputes), and board decisions B29,
+B65, B67, B73, B74, B75, B76, B77, B78, B80, B83, B84.
 
-Plan reference: v3 Part 7 unit A4 ("`CacheArray` + `SetAssociativeArray` with
-`invalidate` in the interface from the start (N8)", exit criterion "non-exact
-size ÷ (line × assoc) throws"), Part 2.2 (the array/policy split; the array
-knows geometry and holds no recency), Part 2.3 (the same structure at the L2),
-and board decisions B2, B10, B16, B18, B19, B20, B54, plus the two carried
-obligation rows that name A4b.
-
-```
-$ make clean && make test
-202 compile cases, 0 failures
-10521 checks, 0 failures       (test_block_pack)
-   23 checks, 0 failures       (test_cache)
- 9607 checks, 0 failures       (test_layout)
-   81 checks, 0 failures       (test_set_associative, new)
-  294 checks, 0 failures       (test_types)
-exit 0
-```
-
-Warning-clean under `-Wall -Wextra -Wpedantic -Wsign-conversion -Wconversion
--Wshadow`, and green under `MODE=release` as well.
+**No build block in this file, deliberately.** A mutation sweep is running in
+this tree and mutating production files in place, so any `make test` started
+from this role would read mutated sources and report a number that is not the
+tree's. The verified counts for this batch belong in `PROGRESS.md`'s Tested
+column, written by the role that owns that file after the sweep finishes. What
+is stated below about *behaviour* is read from the sources and from the plan,
+not from a run.
 
 ---
+
+# Part I. The `Placement`-typing increment (U16)
 
 ## 1. What landed
 
-One class, one constructor, seven checks, and two obligation rows discharged.
+Two lines of `types.h` and one line of `block_pack.cpp`, and they close a
+question that had been open across three rounds.
 
 ```cpp
-class SetAssociativeArray final : public CacheArray {
-public:
-    SetAssociativeArray(const AddressMapper& mapper,
-                        std::int64_t  cache_size_bytes,
-                        std::int32_t  associativity);
+// types.h: tags::set_index existed at A4a; tags::tag_id is new
+using SetIndex = Tagged<std::int64_t, tags::set_index>;   // the seventh tagged scalar
+using TagId    = Tagged<std::int64_t, tags::tag_id>;      // the eighth
 
-    SlotId probe(LineId) const override;                       // A4c stub
-    SlotId free_slot(LineId) const override;                   // A4c stub
-    void victim_candidates(LineId, std::vector<Candidate>&) const override;  // A4c stub
-    InsertResult insert(LineId, SlotId) override;              // A4c stub
-    void invalidate(SlotId) override;                          // A4c stub
-
-    std::int32_t num_slots()     const override { return num_slots_; }
-    std::int64_t num_sets()      const { return num_sets_; }
-    std::int32_t associativity() const { return associativity_; }
-
-private:
-    const AddressMapper& mapper_;
-    std::int32_t associativity_ = 0;
-    std::int64_t num_sets_      = 0;
-    std::int32_t num_slots_     = 0;
-    std::vector<LineId> slots_;
+// layout.h
+struct Placement {
+    SetIndex set_index;  // in [0, num_sets)
+    TagId    tag;
 };
+
+// block_pack.cpp
+return Placement{SetIndex{v % num_sets}, TagId{v / num_sets}};
 ```
 
-Plus, elsewhere: copy and move control on `CacheArray` (section 8), and a new
-`AddressMapper::line_size_terms()` with an inline default (section 6).
+Before this increment `Placement` was `{ std::int64_t set_index; std::int64_t
+tag; }`: two raw integers, side by side, in the one struct in the tree whose
+whole job is to hand them to a set-associative array.
+
+**`SetIndex`** is which set of an array a line competes in, in `[0, num_sets)`.
+It is the first half of `locate`'s answer. It is `int64` because `locate`'s
+`num_sets` argument is `int64`, so no conversion sits between the argument and
+the answer computed from it.
+
+**`TagId`** is the other half: what tells a line apart from the other lines
+mapping to its set, `line / num_sets`. Also `int64`, matching `LineId`, so no
+width conversion sits between a line id and the tag derived from it.
+
+## 2. Why the type is not called `Tag`
+
+`Tag` is the obvious name and it is the one name this file cannot use, because
+it is already spoken for **twice** inside `types.h`:
+
+```cpp
+template <typename Rep, typename Tag>   // (1) Tag is Tagged's second parameter
+class Tagged { ... };
+
+namespace tags {                        // (2) tags is the namespace of the
+struct set_index;                       //     empty structs that fill it
+struct tag_id;
+}
+```
+
+So the declaration `using Tag = Tagged<std::int64_t, tags::tag>;` would define a
+name out of two other live uses of itself: the template parameter it is an
+instance of, and the namespace whose members supply that parameter. A reader who
+then meets `Tag` in a signature has to work out which of the three is meant, and
+a maintainer who later writes `template <typename Rep, typename Tag>` in a file
+that also uses the scalar has shadowed one with the other. That is precisely the
+class of naming accident the tagged types exist to prevent, and it would be
+committing one in the machinery built to stop it.
+
+**`TagId`** was chosen instead, and it is accurate rather than merely consistent
+with `LineId` / `CoreId` / `SlotId`. Inside one set, a tag *is* what names the
+line; it is an identity in exactly the sense those three are. (B75. Note for the
+B3 obligation that owes a `BurstIndex`: that will be the ninth tagged scalar,
+not the eighth, and this is where the count moved.)
+
+## 3. The identity stays readable; the code pays in `.get()`
+
+The pair is defined by one equation, and it is the plan's own exit criterion for
+A2 (Part 7 line 1331):
+
+```
+line == tag * num_sets + set_index
+```
+
+`Tagged` has no arithmetic, which is the whole point of it, so the code cannot
+spell the identity that way. It spells it:
+
+```cpp
+p.tag.get() * num_sets + p.set_index.get() == line.get()
+```
+
+`layout.h` therefore keeps the readable form in the comment on `Placement`, and
+says outright that **the `.get()`s are the price of the naming and carry no
+meaning of their own**. That sentence is load-bearing rather than polite: the
+failure mode here is a later reader seeing three unwraps inside an arithmetic
+identity, concluding some conversion is happening that matters, and either
+"simplifying" the invariant away or writing a second one beside it. The same
+holds for the bound `0 <= set_index < num_sets`, which is *not* vacuously true,
+because the representation underneath stays signed. (B76.)
+
+## 4. What this closed
+
+**U16 is closed**, under the coordinator's warrant rather than a human answer:
+B73 delegated exactly this class of question on 2026-08-18. It is recorded as a
+coordinator call and not as a human ruling, because the difference matters if
+anyone later reopens it.
+
+**B29's obligation row is finished.** That row had been carried, corrected twice,
+and left at "awaiting a ruling". Its state before this increment: five
+`Tagged`-constructing `accept` cases in `compile_fail.sh`, of which only **two**
+narrowed (int64 to int32) and flipped to `reject` when A4a's non-narrowing
+constructor landed. The other three were int64 to int64, where nothing
+narrows, so no narrowing rule could ever have reached them. Typing the fields is the only thing
+that closes them, and it did, joined by a fourth deliberate flip, `:494 set_index
+is a raw int64`. (B77.)
+
+`:494` is **not** a duplicate of `:639`, and this is written down because it is
+the kind of thing later read as duplication and deleted. `:639` tests that the
+*type* exists. `:494` tests that the *field* has it, proven by reverting the
+field to a raw `int64` and watching only `:494` go green.
+
+**One live mutation survivor was found and closed** (B83). The mutation `TagId
+aliases LineId` survived the entire suite: nothing anywhere distinguished a tag
+from a line id. It is the most tempting alias of the whole set for two reasons
+rather than one: both are signed 64-bit, and at `num_sets == 1` a tag genuinely
+**is** the line, so the alias is not merely type-compatible but occasionally
+true. That earned the one compile case added to the reject set this round, under
+B74's budget: a case earns its place by pinning a contract someone could
+plausibly violate, and a live survivor is the strongest evidence that someone
+could.
+
+**What it did *not* do**: it added no precondition on `tag`. That is a new
+obligation row, not part of the answer, and it is section 16's Q3.
 
 ---
 
-## 2. The running example: one construction, end to end
+# Part II. Unit A4c: the five verb bodies
 
-The configuration is a real one. Take a `3 x 3 x 512 x 512` layer at
-`cin_block = cout_block = 16`, `weight_bytes = 1`, which is B22's own worked
-layout, and give it a 64 KB L1 at associativity 8:
+## 5. The geometry, and one line through the whole array
+
+The running geometry is A4b's, and it is a real one: a `3 x 3 x 512 x 512` layer
+at `cin_block = cout_block = 16`, `weight_bytes = 1`, with a 64 KB L1 at
+associativity 8.
 
 ```cpp
 const BlockPackMapper m(WeightShape{3, 3, 512, 512}, 16, 16, 1);
 SetAssociativeArray  l1(m, 65536, 8);
 ```
 
-Measured, not computed by hand:
+which A4b's constructor validates into:
 
 ```
-line_size_bytes = 256        line_size_terms = cin_block 16 x cout_block 16 x weight_bytes 1
-num_lines       = 9216       (the whole tensor; the cache holds a fraction of it)
-
-L1 65536 / assoc 8   OK   num_sets=32  associativity=8  num_slots=256
+line_size_bytes = 256      num_lines  = 9216       (the whole tensor)
+total_lines     = 256      num_sets   = 32
+associativity   = 8        num_slots  = 256
 ```
 
-Walk the constructor with those numbers in hand.
+So: **32 sets of 8 ways, 256 slots, slot ids `[0, 256)`.**
 
-| Step | What runs | Value |
+Take `LineId{1000}`, which is in range because `1000 < 9216`. Everything below
+follows from `locate`:
+
+```
+locate(1000, 32)  ->  Placement{ SetIndex{1000 % 32}, TagId{1000 / 32} }
+                  ->  Placement{ SetIndex{8},         TagId{31}        }
+```
+
+Check the identity: `31 * 32 + 8 == 1000`. Good.
+
+## 6. `base_slot`, and why a set is exactly `[base, base + associativity())`
+
+`base_slot` is the one piece of geometry all three read-only verbs share:
+
+```cpp
+std::int32_t SetAssociativeArray::base_slot(LineId line) const {
+    const std::int64_t set_index = mapper_.locate(line, num_sets_).set_index.get();
+    return static_cast<std::int32_t>(set_index * associativity_);
+}
+```
+
+For line 1000: `base_slot = 8 * 8 = 64`, so the slots that may hold line 1000 are
+exactly
+
+```
+slot 64  65  66  67  68  69  70  71          <- set 8, all eight ways
+```
+
+**Why a set is a contiguous run.** Slots are laid out set-major: set 0 owns slots
+`[0, 8)`, set 1 owns `[8, 16)`, … set 31 owns `[248, 256)`. Every set has the
+same width, `associativity()`, so set *s* starts at `s * associativity()` and
+ends one before `(s + 1) * associativity()`. Nothing else is needed: one
+multiply gives the base, and every verb is that multiply plus a scan of at most
+`associativity()` cells. There is no per-set indirection, no free list, and no
+way index stored anywhere: the position in `slots_` *is* the way index.
+
+Two facts make the cast in `base_slot` safe rather than hopeful. `locate`
+range-checks the line and bounds the set index at `[0, num_sets_)`, so the
+product is at most `(num_sets_ - 1) * associativity_`, which is `num_slots_ -
+associativity_`. And the constructor bounded `num_slots_` at `INT32_MAX`. So the
+multiply is done in `int64` and the result is *known* to fit an `int32` before
+the cast, not assumed to.
+
+`base_slot` is B65's `set_of`, written at last. A4b deliberately left it
+unwritten because it reads `Placement` and U16 was open; Part I closed U16, so
+it is written here, and written in the form its three callers actually need. It
+returns the **base slot**, not the set index, because the set index alone is used
+by nothing: `probe`, `free_slot` and `victim_candidates` each want the base, so
+returning a `SetIndex` and multiplying at three call sites would be the same
+expression written three times.
+
+**It reads `set_index` and never `tag`**, and that is worth stating rather than
+noticing. The identity `line == tag * num_sets + set_index` makes the tag look
+like the natural thing to compare a resident line against, and forming `tag *
+num_sets` is signed overflow for a large enough tag, which `Placement` has no
+precondition against (section 16, Q3). **No expression anywhere in this class
+forms that product.** The slot array stores whole line ids, so a way scan
+compares line ids directly and the tag half of `locate`'s answer is never
+touched. A4c avoids the hazard entirely by never reading the field.
+
+## 7. Miss, fill, hit, invalidate, with actual slot numbers
+
+Start from a cold array: all 256 slots hold `NoLine`.
+
+### `probe(1000)`: miss
+
+```cpp
+SlotId SetAssociativeArray::probe(LineId line) const {
+    const std::int32_t base = base_slot(line);
+    for (std::int32_t w = 0; w < associativity_; ++w) {
+        if (slots_[as_size(base + w)] == line) return SlotId{base + w};
+    }
+    return NoSlot;
+}
+```
+
+`base = 64`. It compares `slots_[64] … slots_[71]` against `LineId{1000}`. All
+eight hold `NoLine`, which is `LineId{INT64_MAX}`, so none matches.
+
+```
+probe(1000) -> NoSlot                       (SlotId{2147483647})
+```
+
+`NoLine` cannot be mistaken for a resident line here, and that is a fact rather
+than a hope: it is `INT64_MAX`, one past what any mapper can produce, and
+`locate` has already refused any line outside `[0, num_lines())`. That is what
+makes "free" and "holds a line" a single comparison in the scan instead of a
+second valid bit per slot.
+
+### `free_slot(1000)`: the lowest free way
+
+```
+scan 64: NoLine  -> answer
+free_slot(1000) -> SlotId{64}
+```
+
+### `insert(1000, SlotId{64})`: no eviction
+
+```cpp
+const std::int32_t s = slot_or_reject("insert", slot);   // 64, in [0, 256)
+const LineId previous = slots_[64];                      // NoLine
+slots_[64] = LineId{1000};
+return InsertResult{false, NoLine};
+```
+
+```
+insert(1000, 64) -> InsertResult{ evicted = false, evicted_line = NoLine }
+```
+
+### `probe(1000)` again: hit
+
+`base = 64` as before; `slots_[64] == LineId{1000}` on the first comparison.
+
+```
+probe(1000) -> SlotId{64}
+```
+
+Note what did **not** happen: nothing recorded the hit. The engine calls
+`policy.on_hit(SlotId{64})` itself. Section 9 is why.
+
+### `invalidate(SlotId{64})`
+
+```cpp
+slots_[as_size(slot_or_reject("invalidate", slot))] = NoLine;
+```
+
+Slot 64 is free again, and a later `probe(1000)` returns `NoSlot`. Invalidating
+a slot that is already free leaves it free and needs no branch: the write is the
+same either way.
+
+### The full set: `victim_candidates`
+
+Now fill set 8. The lines that map to it are the ones with `line % 32 == 8`:
+
+| line | tag | slot |
 |---|---|---|
-| 1 | `cache_size_bytes >= 1` | 65536, passes |
-| 2 | `associativity >= 1` | 8, passes |
-| 3 | `line_bytes = mapper.line_size_bytes()`, `>= 1` | **256**, read once, passes |
-| 4 | `65536 % 256 != 0` ? | 0, passes |
-| - | `total_lines = 65536 / 256` | **256** |
-| 5 | `total_lines > INT32_MAX` ? | no, passes |
-| 6 | `associativity > total_lines` ? | 8 > 256 is false, passes |
-| 7 | `total_lines % associativity != 0` ? | 256 % 8 = 0, passes |
-| - | assign | `associativity_ = 8`, `num_sets_ = 256 / 8 = 32`, `num_slots_ = 256` |
-| - | `slots_.assign(256, NoLine)` | 256 free slots, the cold start |
+| 8 | 0 | 64 |
+| 40 | 1 | 65 |
+| 72 | 2 | 66 |
+| 104 | 3 | 67 |
+| 136 | 4 | 68 |
+| 168 | 5 | 69 |
+| 200 | 6 | 70 |
+| 232 | 7 | 71 |
 
-The three numbers the class then reports are `num_sets() == 32`,
-`associativity() == 8`, `num_slots() == 256`, and the last of them is what a
-`ReplacementPolicy` at A5 will size its per-slot state from.
+Each was placed by `free_slot` returning the lowest free way, so the eight
+arrived in slot order. Now line 1000 is requested again:
 
-**Why all three accessors exist**, which is B20's argument reused rather than
-tidiness: `num_slots` alone is the same 256 whatever the associativity, so an
-implementation that put the associativity where the set count belongs, or that
-floored a division it should have refused, would look identical from outside
-until A4c's verbs existed to contradict it. Reporting the two factors separately
-is what lets this increment be checked on its own terms. `num_sets` and
-`associativity` are deliberately **not** on `CacheArray`: a fully associative
-array has no meaningful set count, and putting them on the interface would
-invite a policy to read them, which is the 2.2 split leaking.
+```
+probe(1000)      -> NoSlot        (none of slots 64..71 holds 1000)
+free_slot(1000)  -> NoSlot        (none of slots 64..71 holds NoLine)
+victim_candidates(1000, out):
 
----
+  out = [ {64, 8}, {65, 40}, {66, 72}, {67, 104},
+          {68, 136}, {69, 168}, {70, 200}, {71, 232} ]
+```
 
-## 3. The running example: one refusal, end to end
+Eight entries, the whole set, each pairing a slot with the line living in it. The
+line travels **beside** the slot rather than being looked up afterwards, because
+a policy that has to exclude a line (the one with an outstanding MSHR, say) would
+otherwise need a reference back to the array and a slot-to-line accessor, which
+puts the array inside the module the 2.2 split exists to keep out of it. It costs
+nothing: the array is already reading exactly these cells to enumerate the set.
 
-Same mapper, ask for a size that is not a whole number of lines:
+Free ways, when there are any, appear as candidates carrying `NoLine` rather
+than being omitted. In the engine there are never any, because this verb is
+reached only after `free_slot` answered `NoSlot`. Reporting them keeps the list
+one **whole set**, which is what makes "every slot appears under exactly one set"
+checkable from outside.
+
+### `insert` over an occupant
+
+Suppose the policy picks slot 65:
 
 ```cpp
-SetAssociativeArray l1(m, 65000, 8);
+const LineId previous = slots_[65];    // LineId{40}
+slots_[65] = LineId{1000};
+return InsertResult{true, LineId{40}};
 ```
 
-Step 4 fires, and the message is:
-
 ```
-SetAssociativeArray: cache_size_bytes 65000 is not a whole number of 256-byte lines
-                     (cin_block 16 x cout_block 16 x weight_bytes 1)
+insert(1000, 65) -> InsertResult{ evicted = true, evicted_line = LineId{40} }
 ```
 
-Two halves, and the second one is the whole of section 6. Without it the reader
-knows only that 65000 is not a multiple of 256; with it they know which three
-config fields multiplied to 256 and can change one of them. A non-power-of-two
-line size is deliberately legal (B16), so the bracketed half is not decoration:
-`12 x 8 x 1 = 96` is a legal line, and "not a whole number of 96-byte lines" on
-its own is a dead end.
+and `probe(40)` now returns `NoSlot` while `probe(1000)` returns `SlotId{65}`.
 
-Two more refusals on the same geometry, both measured:
+## 8. Three design choices, and what each buys
 
-```
-65536 / assoc 3      256 lines do not divide evenly into sets of 3
-65536 / assoc 512    associativity 512 exceeds the whole cache of 256 lines
-```
+### `free_slot` returns the **lowest** free way
 
-These two are why the checks stay separate rather than being folded. Both are
-"the associativity is wrong", and one message says *the cache cannot be cut into
-sets of that width*, the other says *the cache is smaller than one set*. An
-implementation that dropped either check would still throw on the other case,
-which is exactly the state in which the suite cannot tell that one of them is
-gone.
+The scan runs `w = 0` upward and returns the first `NoLine` it meets. It could
+have returned any free way and still been correct.
 
----
+What the ordering buys is that **the answer is a function of the array's state
+alone**. Two arrays given the same insert sequence agree slot for slot, not just
+set for set. An implementation free to return an arbitrary free way would still
+satisfy every word of `CacheArray`'s contract and would make every fixture below
+it unwritable: the table in section 7 could then only say "line 40 is *somewhere*
+in `[64, 72)`", and a test that asserts that asserts almost nothing. It also
+makes the cold-start behaviour of the whole model deterministic without a rule
+anywhere else in the tree having to say so.
 
-## 4. The seven checks, in order, and what breaks if each runs later
-
-The order is load-bearing, so it is stated in the file rather than left to be
-inferred from the sequence. Taking them in order, with the failure that ordering
-prevents:
-
-**1-3, the three positivity checks** (`cache_size_bytes`, `associativity`,
-`mapper line_size_bytes`). They come first because *every* check after them
-divides by one of the three. Move check 3 after check 4 and `65536 % 0` is a
-division by zero, which is not a diagnosable refusal but a crash or, under
-optimisation, undefined behaviour. All three share one spelling,
-`positive_or_reject`, so the three messages cannot drift apart into three
-slightly different statements of one rule, which is the A2b constructor's recorded
-defect (`KH extent must be >= 1, got 0` beside `cin_block must be >= 1, got 0`),
-not repeated here.
-
-**4, byte exactness**, before `total_lines` is derived. A line count computed
-from a division that was not exact is a number with no meaning, and every check
-after it is written against `total_lines`. Run it later and check 6 compares the
-associativity against a floored count, so an over-associative point could pass
-check 6 on the strength of lines the cache does not have. Refusing rather than
-flooring is D2's requirement: `cache_size_bytes` is echoed verbatim into every
-results row, so a silently floored geometry would make a whole sweep attribute
-its hit rates to a capacity the simulator never had.
-
-**5, the slot-count bound**, `total_lines > INT32_MAX`. Placed here because it is
-a fact about the size and the line size **alone**. Move it after checks 6 and 7
-and a cache too large for a `SlotId` to index gets reported as an associativity
-problem whenever the associativity also fails to divide, which sends the reader
-to the wrong config field. Section 7 has the rest of this one.
-
-**6, associativity against the whole cache**, before check 7. This is the one
-check that adds no rejection: every input it catches also fails check 7, since
-`total_lines % associativity` is `total_lines` itself when the associativity is
-larger, and `total_lines >= 1` here. It exists **only** to change the message.
-Run it after check 7 and `associativity = 512` on a 256-line cache reports "256
-lines do not divide evenly into sets of 512", which describes a rounding problem
-where the real problem is a cache too small to hold a single set. The reviewer
-confirmed this reading independently: step 6 adds no rejection the single
-division would not make, and only changes what the message says.
-
-**7, lines into sets.** Last of the rules, and the likeliest to fire in practice:
-a sweep grid crosses `cache_size_bytes` with `associativity`, and a
-non-power-of-two associativity against a power-of-two size never divides.
-
-Then, and only then, the assignments. That ordering is the same "check, then
-derive" discipline `block_pack.h` records for `num_lines_`: everything computed
-from a validated value is assigned in the body, after the checks, never in the
-initialiser list which runs before them. The three derived members are
-zero-initialised at their declarations so a constructor that throws leaves
-nothing indeterminate.
-
-**One consequence worth stating, because it closes a live hazard.** After check
-4 gives an exact division, check 6 gives `associativity <= total_lines`, and
-check 7 gives an exact second division, `num_sets_ >= 1` follows without a check
-of its own. That is what makes `locate(line, num_sets_)` safe from A2d's
-unvalidated division by `num_sets`, **for calls through this array**. It does not
-answer who owns that guard in general; `locate`'s contract is untouched and U14
-stays open, exactly where A2d left it.
-
----
-
-## 5. The split division, and an overflow that is not a wrong number
-
-The plan's exit criterion is one division:
-
-> non-exact size ÷ (line × assoc) throws
-
-Checks 4 and 7 are that division split in two. They are exactly equivalent, and
-the identity is worth writing out because "I split your check in two" is the kind
-of claim that should not be taken on trust. Write `size = q(L·A) + r`:
-
-- If `size % L != 0` then `size % (L·A) != 0`, because `L` divides `L·A`.
-- If `size % L == 0`, then with `total = size / L`, the remainder
-  `size % (L·A)` is exactly `L · (total % A)`.
-
-So `size % (L·A) == 0` holds precisely when `size % L == 0` **and**
-`total % A == 0`, which is the conjunction of checks 4 and 7. The reviewer
-verified this exhaustively rather than reading the algebra: 14,400,000 triples,
-0 mismatches.
-
-The split buys two things.
-
-**Two distinguishable messages**, which section 3 already showed: one division
-can only say "this combination is wrong", and the two checks say which of the two
-config fields to change.
-
-**The product is never formed, and that is not a micro-optimisation.**
-`line_size_bytes()` is bounded only by `int64`. The mapper
+### `victim_candidates` computes `base_slot` **before** `out.clear()`
 
 ```cpp
-BlockPackMapper(WeightShape{1,1,1,1}, INT32_MAX, INT32_MAX, 2)
+const std::int32_t base = base_slot(line);   // the only thing here that can throw
+out.clear();
+for (...) out.push_back(...);
 ```
 
-is accepted by A2b today and reports `line_size_bytes() == 9223372028264841218`,
-about 9.2 exabytes per line. Multiply that by any associativity above 1 and the
-result is **signed overflow**, which in C++ is undefined behaviour rather than
-wraparound: the compiler is entitled to assume it did not happen and to optimise
-on that basis, so the failure is not "a wrong number" that a later check might
-catch, it is a program with no defined meaning. No cast rescues it either, since
-both operands are already `int64`. This is a different trap from the one
-`CPP_NOTES.md` section 22 records, where the fix is to widen an operand before
-the multiply.
+The order is the contract, not tidiness. `base_slot` calls `locate`, which throws
+`std::out_of_range` for a line outside `[0, num_lines())`. It is the only
+expression in the function that can throw. Putting it first means **a call that
+throws leaves `out` exactly as it was** rather than emptied.
 
-The split form only ever *divides* by that number, and the exabyte mapper is
-refused at check 4 with a well-formed message:
+That matters because the caller's buffer is reused. With `clear()` first, a
+caller that catches the exception and continues finds its buffer silently
+emptied by a call that did nothing else, the same failure `expand` avoids with
+its rule that "every range check must run before the first append", applied here
+to a verb that *assigns* instead of appending.
 
+The `clear()` itself is also the contract rather than tidiness, and it is the
+opposite of `expand`'s choice deliberately. `expand` appends because its
+documented use accumulates a whole tick across cores into one buffer. A candidate
+list is one set's worth, consumed immediately by one `pick_victim` call. An
+appending version would let a caller that forgot to clear pick a victim from a
+previous fill in a **different set**, and the line would then be stored where
+`probe` can never look for it: no crash, just a hit rate quietly below the truth
+for the whole run. Buffer reuse is unaffected, since clearing keeps the capacity.
+
+### `insert` reports `evicted == (evicted_line != NoLine)` **by construction**
+
+```cpp
+if (previous == NoLine) return InsertResult{false, NoLine};
+return InsertResult{true, previous};
 ```
-SetAssociativeArray: cache_size_bytes 65536 is not a whole number of
-                     9223372028264841218-byte lines
-                     (cin_block 2147483647 x cout_block 2147483647 x weight_bytes 2)
+
+Two returns, and neither can produce a pair where the flag and the line disagree.
+The alternative, writing `InsertResult{previous != NoLine, previous}` once, or
+worse, setting the flag on one path and the line on another, leaves open a state
+that has no meaning: `evicted = true` with `evicted_line = NoLine`, or `false`
+with a real line. A caller handling the inclusive branch (4.4, N8) reads the flag
+to decide whether to back-invalidate and reads the line to know *what* to
+back-invalidate. Those two reads must agree, and here they cannot fail to,
+because the only two `InsertResult`s this function can produce are both
+consistent as literals.
+
+Both fields are reported rather than only the bool, because the caller needs
+both: the level counts evictions, and under `inclusion = inclusive` it has to
+know **which** line left the L2 in order to back-invalidate it out of the L1s.
+Reporting only a bool would force the caller to read the slot before inserting:
+the same read done twice, and a rule that is easy to forget once and then
+undercount for a whole sweep.
+
+## 9. Why `probe` being `const` is real, and not a promise
+
+Plan 2.2 requires that "`probe` is const and is **not** an access". The usual way
+that requirement fails is not by someone writing `mutable`: it is by a probe
+recording that it happened (a counter, a last-touched slot, a small cache of the
+last looked-up line) and a later verb reading it back. The `const` keyword does
+not stop that; `mutable` members and pointed-to state are both reachable from a
+`const` member function.
+
+Here it is not a promise, for one reason that can be checked by reading the
+class's private section in full:
+
+```cpp
+const AddressMapper& mapper_;
+std::int32_t associativity_ = 0;
+std::int64_t num_sets_      = 0;
+std::int32_t num_slots_     = 0;
+std::vector<LineId> slots_;
 ```
 
-which is also the reachable route to `num_sets == 0` closed. The reviewer
-confirmed by grep that no such product is formed anywhere in the file.
+**There is no mutable state at all.** Three geometry scalars fixed at
+construction, one reference to a mapper whose own state is fixed at construction
+(and whose `locate` is a `const` virtual, so an override cannot mutate it
+either), and the slot array, which `probe` reads and only the two non-`const`
+verbs write. There is nothing for a probe to record. The property is structural,
+not a rule someone is keeping.
+
+Two things rest on it. A speculative lookup must not perturb the recency stack,
+which is why the engine calls `policy.on_hit` explicitly rather than having the
+array do it. And 4.6's prefetcher tests residency on a path that must not touch
+replacement state **at all**: a prefetch that finds the line resident drops it
+and records nothing (I15). That is only implementable if probing and recording a
+use are two separate calls, which is why the array never names a policy.
+
+The same asymmetry runs through the rest of the class: `insert` range-checks the
+slot and does **not** range-check the line. That is deliberate rather than an
+omission. An out-of-range slot is an out-of-bounds write into `slots_`:
+undefined behaviour, and reachable by one plausible mistake, since
+`insert(line, free_slot(line))` without checking for `NoSlot` passes
+`INT32_MAX` straight in. A line outside the mapper's range is merely a stored
+value, and every path that reads it back goes through `locate` and is refused
+there: wrong, but neither silent nor memory-unsafe.
 
 ---
 
-## 6. The exactness message, `line_size_terms()`, and one thing it does not do
+# Part III. Unit A5: `ReplacementPolicy`, LRU and FIFO
 
-The A2b carried obligation to this unit: the exactness refusal must name
-`cin_block`, `cout_block` and `weight_bytes`, not only their product. The
-constructor holds a `const AddressMapper&` and cannot see any of the three, so
-the mapper has to be asked.
+## 10. The interface, and the one mechanism under both policies
 
-```cpp
-// layout.h, on AddressMapper
-virtual std::string line_size_terms() const { return std::to_string(line_size_bytes()); }
-
-// block_pack.cpp
-std::string BlockPackMapper::line_size_terms() const {
-    return "cin_block " + std::to_string(cin_block_) + " x cout_block " +
-           std::to_string(cout_block_) + " x weight_bytes " + std::to_string(weight_bytes_);
-}
-```
-
-**Why an inline default and not a pure virtual**, which is the part the A4a
-review designed and which I re-checked before building rather than inheriting:
-a pure virtual would oblige *every* `AddressMapper` in the tree to implement a
-function about diagnostics. That is sixteen deliberately non-conforming fakes in
-`test_layout.cpp` and the four `subclass omits ...` reject cases in
-`compile_fail.sh` broken at once, for a message. (A4a's row said thirteen fakes;
-the suite reports sixteen caught now, so the count moved and the argument did
-not.) The default is always correct if uninformative, so a mapper whose line size
-does not decompose into named factors says nothing more and still produces a
-well-formed message. Measured blast radius of the actual change: zero. No fake
-changed, no reject case changed, and the gate did not move on the implementer's
-side of the round.
-
-**And the thing it does not do, which the reviewer caught and I had claimed
-otherwise.** I wrote in `set_associative.cpp` that `line_size_bytes()` is read
-once, "and a mapper free to compute it per call is a mapper free to answer
-differently at step 2 than at step 5". That is true of the **arithmetic** and
-false of the **message**. The inline default's body is
-`std::to_string(line_size_bytes())`, so for a mapper that does not override
-`line_size_terms`, the refusal path asks the mapper a *second* time. Measured
-with a counting fake:
-
-```
-reads=2   ... is not a whole number of 96-byte lines (96)
-```
-
-and with a fake whose second answer differs:
-
-```
-reads=2   ... is not a whole number of 96-byte lines (7)
-```
-
-One message, two reads, and the two halves contradict each other. No geometry
-comes out wrong, since the constructor's own arithmetic still uses the single
-local `line_bytes` and nothing is built on the second answer, but the diagnostic can
-be self-inconsistent for an inconsistent mapper, which is the exact property the
-read-once comment claims to have bought. `BlockPackMapper` is unaffected, since
-its override reads its own members and never calls `line_size_bytes()` at all.
-This is a **known limitation, not a clean property**, and the honest fix if
-anyone wants one is for the default to take the already-read value as an
-argument rather than fetching its own.
-
----
-
-## 7. The `INT32_MAX` slot bound
-
-A4a decided that `num_slots()` returns `int32`, matching `SlotId`'s
-representation, and pushed the refusal of anything larger into "the constructor,
-where the geometry is validated anyway". This is that refusal:
-
-```
-2147483648 lines exceeds the 2147483647 slots a SlotId can name
-```
-
-Slot ids are exactly `[0, num_slots())`. A geometry with more lines than that has
-upper slots no `SlotId` can name: storage the sweep paid for and never used,
-visible only as a hit rate a few points below the truth.
-
-**Why the bound is `INT32_MAX` and not `INT32_MAX - 1`**, which looks like an
-off-by-one and is not. `NoSlot` is `SlotId{INT32_MAX}` (B3's convention, sentinels
-at the top of the range). At `total_lines == INT32_MAX` the largest *valid* slot
-id is `INT32_MAX - 1`, one short of the sentinel, so no real slot can ever be
-mistaken for `NoSlot`. Admitting that last value costs nothing and refusing it
-would be a rule with no failure behind it.
-
-**Why the accepted side of this bound can only be tested by discrimination.**
-`SetAssociativeArray(one_byte_line_mapper, 2147483647, 1)` is accepted, and I ran
-it: it constructs, reports `num_sets = 2147483647`, and allocates
-`2^31 - 1` `LineId`s, about **17 GB**. So a test that constructs it is a test that
-needs 17 GB. The suite therefore checks the rejected side by message and the
-accepted side by the fact that the message *differs*, which is the same technique
-A2d used for the far-end check. That 17 GB is itself a finding, and it is in
-section 12.
-
----
-
-## 8. Copy and move on `CacheArray`: a measurement, not a style choice
-
-A4a left this as A4b's call: `CacheArray` has a virtual destructor and no copy or
-move control, so the compiler generates all four, and the row warned that "a
-by-value copy of a derived array through the base compiles and silently drops the
-derived state".
-
-I measured it before acting, and **the row's mechanism is half wrong**.
-
-**By-value copy through the base was never reachable.** `CacheArray` is abstract,
-so no object of it can exist:
-
-```
-error: cannot allocate an object of abstract type 'wcache::CacheArray'
-```
-
-The `compile_fail.sh` reject cases that pass a base by value are proving
-abstractness, not copy control.
-
-**Assignment through base references was reachable, and it sliced.** This
-compiled, before the change:
+`policy.h` holds the four verbs Part 2.2 names, in the order it names them:
 
 ```cpp
-A a1;  A a2;  a2.derived_state = 9;
-CacheArray& r1 = a1;  CacheArray& r2 = a2;
-r1 = r2;                    // compiles
-return a1.derived_state;    // 7, not 9
+class ReplacementPolicy {
+public:
+    virtual ~ReplacementPolicy() = default;
+    virtual void   on_hit(SlotId slot)        = 0;
+    virtual void   on_fill(SlotId slot)       = 0;
+    virtual void   on_invalidate(SlotId slot) = 0;
+    virtual SlotId pick_victim(const std::vector<Candidate>& candidates) = 0;
+};
 ```
 
-Exit status 7: the assignment copied the base subobject, which holds nothing, and
-left the derived state untouched. A silent partial write. For an array that is a
-half-assigned cache still answering probes, and it reports a hit rate for a
-geometry no level ever had.
+Three notifications and one question, and that asymmetry is the design: the
+array reports what happened to a slot, and the policy is asked only at the point
+where the array genuinely cannot answer. Nothing returns state, because a
+policy's state is its own: D2's victim-age instrument is a statistic computed at
+the eviction site, not a getter on this interface.
 
-**The fix, and why protected rather than deleted:**
+`stamp_policy.h` holds the implementations, in a **separate header**, and for the
+same specific reason `layout.h` / `block_pack.h` and `cache.h` /
+`set_associative.h` are split rather than for symmetry: a `compile_fail.sh` case
+compiled against `policy.h` alone proves the interface needs nothing but a
+`SlotId` and a `Candidate`. Folding the implementations in would make that
+unprovable.
+
+**Both policies are the same machine under one different wire.** Each slot
+carries a stamp; the victim is the smallest stamp among the candidates; the two
+differ only in whether a hit refreshes the stamp. So they share an abstract base
+rather than being written twice, which also means `pick_victim` and the
+order-independence rule are written once and tested once instead of per policy.
 
 ```cpp
+class StampPolicy : public ReplacementPolicy {          // abstract: no on_hit
+    std::vector<std::int64_t> stamp_;   // one per slot, kNeverStamped when empty
+    std::int64_t              next_stamp_;
 protected:
-    CacheArray()                             = default;
-    CacheArray(const CacheArray&)            = default;
-    CacheArray(CacheArray&&)                 = default;
-    CacheArray& operator=(const CacheArray&) = default;
-    CacheArray& operator=(CacheArray&&)      = default;
+    void stamp(SlotId slot);            // stamp_[slot] = next_stamp_++;
+};
+
+class LruPolicy  final : public StampPolicy { void on_hit(SlotId s) override; };  // stamp(s)
+class FifoPolicy final : public StampPolicy { void on_hit(SlotId)   override; };  // {}
 ```
 
-Deleting them would take the operations away from **derived** classes as well.
-The engine holds one L1 per core over a swept range of 8 to 256 cores (plan
-2.5b), so a container of concrete arrays is the ordinary case rather than a
-hypothetical one, and `std::vector<SetAssociativeArray>` needs the derived class
-to be copyable or movable. Protected leaves a derived array copyable **as
-itself**, where a copy is whole and correct, and makes the base unusable as the
-source or target of one, where it would not be. Both halves verified:
+The counter starts at **1**, and `kNeverStamped` is **0**. That is not an
+arbitrary sentinel: it makes "never filled" smaller than every stamp ever handed
+out, so a never-filled slot is automatically the preferred victim, which is the
+right preference on its merits, since such a slot holds no line and evicting it
+costs nothing.
+
+`on_invalidate` writes `kNeverStamped` back, so it is an **observable** verb
+rather than a formality. Leaving the previous occupant's stamp in place would
+make an invalidated slot compete on the age of a line that is gone.
+
+`next_stamp_` is `int64` for the reason `RefusalOrder` is (Q8): it advances once
+per hit or per fill across a whole sweep, and 32 bits is reachable at the corpus
+size while 64 is not.
+
+## 11. LRU and FIFO driving the same array, and diverging
+
+Same array as Part II: 32 sets of 8, set 8 at slots `[64, 72)`. Same access
+sequence, replayed once under each policy. Each policy is constructed with
+`num_slots() == 256`, so `stamp_` has 256 entries, all `0`.
+
+**Steps 1 to 8, the eight fills.** For each line, the engine gets `NoSlot` from
+`probe`, a slot from `free_slot`, calls `insert`, then calls `on_fill`.
+
+| step | line | slot | `on_fill` writes | `next_stamp_` after |
+|---|---|---|---|---|
+| 1 | 8 | 64 | `stamp_[64] = 1` | 2 |
+| 2 | 40 | 65 | `stamp_[65] = 2` | 3 |
+| 3 | 72 | 66 | `stamp_[66] = 3` | 4 |
+| 4 | 104 | 67 | `stamp_[67] = 4` | 5 |
+| 5 | 136 | 68 | `stamp_[68] = 5` | 6 |
+| 6 | 168 | 69 | `stamp_[69] = 6` | 7 |
+| 7 | 200 | 70 | `stamp_[70] = 7` | 8 |
+| 8 | 232 | 71 | `stamp_[71] = 8` | 9 |
+
+Identical under both policies: `on_fill` is `StampPolicy`'s and neither subclass
+overrides it.
+
+**Step 9: line 8 is accessed again.** `probe(8)` returns `SlotId{64}`, and the
+engine calls `on_hit(SlotId{64})`. **Here the two diverge**, and this is the only
+line of the whole run where they differ:
 
 ```
-r1 = r2;                              error: 'operator=' is protected within this context
-SetAssociativeArray b = a;            compiles and runs
-std::vector<SetAssociativeArray> v;   compiles and runs
+LRU   on_hit(64)  ->  stamp(64)  ->  stamp_[64] = 9,  next_stamp_ = 10
+FIFO  on_hit(64)  ->  { }        ->  stamp_[64] = 1,  next_stamp_ =  9
 ```
 
-**Why the defaulted default constructor had to be declared alongside them**, and
-this is the trap in the change rather than a detail: declaring *any* constructor
-suppresses the implicitly generated default constructor. Delete or default a copy
-constructor and `CacheArray()` stops existing, so every derived array in the
-tree, the fakes in `test_cache.cpp`, the `ARRAY` fake in `compile_fail.sh`, and
-`SetAssociativeArray` itself, stops constructing. The one line
-`CacheArray() = default;` is what keeps the rest of the change invisible.
+**Step 10: line 1000 misses into the same set.** `free_slot` returns `NoSlot`,
+`victim_candidates` produces the eight-entry list from section 7, and
+`pick_victim` is called on it.
 
-The reviewer proved the new reject case is non-vacuous by reverting `protected`
-to `public` and showing that the case then compiles, which is the only way to
-know a reject case is rejecting for the reason it names.
+| slot | line | stamp under LRU | stamp under FIFO |
+|---|---|---|---|
+| 64 | 8 | **9** | **1**  ← smallest under FIFO |
+| 65 | 40 | **2**  ← smallest under LRU | 2 |
+| 66 | 72 | 3 | 3 |
+| 67 | 104 | 4 | 4 |
+| 68 | 136 | 5 | 5 |
+| 69 | 168 | 6 | 6 |
+| 70 | 200 | 7 | 7 |
+| 71 | 232 | 8 | 8 |
 
----
+```
+LRU  : pick_victim -> SlotId{65}    insert(1000, 65) -> {true, LineId{40}}
+FIFO : pick_victim -> SlotId{64}    insert(1000, 64) -> {true, LineId{8}}
+```
 
-## 9. Where the class lives, and why it is not in `cache.h`
+**LRU keeps line 8 because it was just used**, and throws out line 40, the
+least recently *used*. **FIFO throws out line 8 anyway**, because it was
+installed first and a hit is the event FIFO is defined to ignore. Two different
+lines leave the cache, from two different slots, off one identical event
+sequence, driving one unchanged array, which is the plan's A5 exit criterion
+made concrete.
 
-v1 put `CacheArray` and `SetAssociativeArray` in one header. This tree does not,
-and the reason is specific rather than symmetry with `layout.h` / `block_pack.h`.
+The fill that follows stamps the new occupant:
 
-`SetAssociativeArray` holds a `const AddressMapper&`, so putting it in `cache.h`
-would make `cache.h` include `layout.h`. `compile_fail.sh`'s `tryC` preamble
-exists precisely to notice that:
+```
+LRU  : on_fill(65) -> stamp_[65] = 10, next_stamp_ = 11
+FIFO : on_fill(64) -> stamp_[64] =  9, next_stamp_ = 10
+```
 
-> cache.h includes types.h and nothing else, so a case compiled with it proves
-> the array interface needs no layout header. If `CacheArray` ever grows a
-> dependency on `AddressMapper`, the A4a cases start failing here rather than
-> being carried silently by a preamble that already included it.
+## 12. Why `pick_victim` breaks ties by the **smallest slot id**
 
-Folding the concrete class in would not have broken those cases; it would have
-quietly made them stop meaning anything, which is worse. So the concrete array
-gets `set_associative.h` and its own `.cpp`, and the reviewer's new
-`test_set_associative.cpp` is a separate file for the same reason: it keeps
-`test_cache.cpp` including only `cache.h`, which is what makes that file evidence
-rather than habit.
-
-**Holding the mapper by reference rather than taking `num_sets` as a number**, in
-one line each: the array needs the mapper regardless, because `locate` is the only
-thing that turns a `LineId` into a set and it is virtual so a future hashed layout
-states its own rule; and given the mapper, `num_sets` is derivable from the two
-config fields, so deriving it once inside the array is one place that can be wrong
-instead of one per construction site. The mapper must outlive the array, which
-costs nothing: one mapper instance serves the whole hierarchy.
-
-`final`, for B10's reason applied one class over: a class deriving from this one
-would be inheriting the set-associative geometry in order to disagree with part of
-it, which is the arrangement that makes a bug in one override invisible in the
-others. A fully associative array is a **sibling** implementation of `CacheArray`.
-
----
-
-## 10. What A4b did not build
-
-**A4c: the five verb bodies.** The way scan, the lowest-free-way rule, the
-replace-not-append candidate list, the insert report, and the invalidate. They
-are declared with `override` and defined as `std::logic_error` stubs naming the
-increment that replaces them, which is exactly B19's convention from A2b:
+This is the important one, and it is not a style choice.
 
 ```cpp
-SlotId SetAssociativeArray::probe(LineId) const {
-    throw std::logic_error("SetAssociativeArray::probe: not implemented (increment A4c)");
+SlotId       victim = candidates[0].slot;
+std::int64_t oldest = stamp_[index_or_reject("pick_victim", victim)];
+
+for (std::size_t i = 1; i < candidates.size(); ++i) {
+    const SlotId       slot = candidates[i].slot;
+    const std::int64_t age  = stamp_[index_or_reject("pick_victim", slot)];
+    if (age < oldest || (age == oldest && slot < victim)) {
+        oldest = age;
+        victim = slot;
+    }
+}
+return victim;
+```
+
+`policy.h` states the obligation the plan puts on this unit: **no implementation
+may depend on the order of `candidates`.** Permuting the vector may not change
+the answer.
+
+The natural way to write this loop is `if (age < oldest)`, keeping the **first**
+minimum seen. That is where order dependence enters, and it is invisible in
+practice until it is not. Two *occupied* slots can never tie, because each stamp
+is a distinct value of a strictly increasing counter. But a slot that has never
+been filled, or one that has been invalidated, carries `kNeverStamped`, and
+**several of those can tie**. With `if (age < oldest)` alone, the answer among
+them is whichever the vector happened to hold first, which is exactly the
+dependency the criterion forbids.
+
+Adding `|| (age == oldest && slot < victim)` makes the result the pair-wise
+minimum of `(stamp, slot_id)` under lexicographic order. That is a **minimum over
+a set**, and a minimum over a set does not depend on the order the set is
+presented in. So order-independence is discharged **mechanically**, by the
+structure of the comparison, rather than by an implementer promising to keep it.
+
+Worked, on a set with a tie. Take the LRU stamps from section 11 and invalidate
+slots 66 and 69 (their lines were back-invalidated by an L2 eviction, 4.4):
+
+```
+slot:   64  65  66  67  68  69  70  71
+stamp:   9   2   0   4   5   0   7   8
+                 ^           ^   two-way tie at kNeverStamped
+```
+
+In the array's natural order, 64 → 71:
+
+```
+init  victim=64 oldest=9
+i=65  2 <  9                     -> victim=65 oldest=2
+i=66  0 <  2                     -> victim=66 oldest=0
+i=67  4 <  0 ? no
+i=68  5 <  0 ? no
+i=69  0 <  0 ? no; 0==0 && 69<66 ? no   -> unchanged
+i=70  7 <  0 ? no
+i=71  8 <  0 ? no
+                                 -> SlotId{66}
+```
+
+Now hand the *same* set in reverse, 71 → 64, which is a legal permutation the
+interface explicitly allows:
+
+```
+init  victim=71 oldest=8
+i=70  7 <  8                     -> victim=70 oldest=7
+i=69  0 <  7                     -> victim=69 oldest=0
+i=68  5 <  0 ? no
+i=67  4 <  0 ? no
+i=66  0 <  0 ? no; 0==0 && 66<69 ? YES  -> victim=66 oldest=0
+i=65  2 <  0 ? no
+i=64  9 <  0 ? no
+                                 -> SlotId{66}
+```
+
+Same answer. Without the tie-break the first run answers 66 and the second
+answers 69, and both are "correct" in the sense that both evict an empty slot,
+which is why this bug does not show up as a failure, only as two builds of the
+same simulator disagreeing about which slot a line landed in.
+
+**Why the criterion exists at all**, since with only LRU and FIFO built both pick
+"oldest by a stamp" and an order-dependent implementation would pass every
+fixture: it keeps the interface open for a policy that does **not** pick by age.
+Random draws a candidate; if the candidate list's order carried meaning, Random's
+draw would silently be a draw over an ordering the array chose rather than over
+the set. Nothing else announces that regression, which is why the obligation is
+stated on the interface where an implementer reads it rather than in a test.
+
+Two more things `pick_victim` does, briefly. It seeds `victim` from
+`candidates[0]` rather than from a sentinel stamp, so there is no "no victim yet"
+state to get wrong and the answer is **one of the candidates by construction**.
+And it refuses an empty candidate set with `std::invalid_argument`, and not as
+defensive padding: the minimum of nothing has no answer, so the alternative to
+refusing is returning a slot id that names no candidate, which the caller then
+installs a line into.
+
+## 13. Why `FifoPolicy::on_hit` is deliberately empty
+
+```cpp
+// stamp_policy.cpp
+void FifoPolicy::on_hit(SlotId) {}
+```
+
+An empty override in a diff reads as an unfinished stub, so both the header and
+the `.cpp` say outright that it is not one. FIFO orders by **insertion**, and
+insertion is what `on_fill` records. A hit is exactly the event this policy is
+*defined* to ignore, and it is the whole of its difference from LRU, and section 11
+is that difference measured.
+
+The parameter is unnamed so the empty body stays warning-clean without a
+cast-to-void.
+
+The cost of the empty body is section 16's Q2: it is also the one verb in the
+policy that performs **no bound check**, because `index_or_reject` lives inside
+`stamp()` and `stamp()` is never called. A foreign slot id is caught under LRU
+and silently accepted under FIFO.
+
+## 14. Random: a placeholder that refuses at config time
+
+Plan Part 7 line 1334: "Random is a placeholder: it stays in the enum, is
+rejected at config load, and is not implemented (Q5)." That is made literal.
+
+```cpp
+enum class PolicyKind : std::uint8_t { LRU = 0, FIFO = 1, RANDOM = 2 };
+
+std::unique_ptr<ReplacementPolicy> make_policy(PolicyKind kind, std::int32_t num_slots) {
+    switch (kind) {
+        case PolicyKind::LRU:  return std::make_unique<LruPolicy>(num_slots);
+        case PolicyKind::FIFO: return std::make_unique<FifoPolicy>(num_slots);
+        case PolicyKind::RANDOM:
+            reject("make_policy",
+                   "policy 'random' is a placeholder and is not implemented; use 'lru' or 'fifo'");
+    }
+    throw std::logic_error("make_policy: unknown PolicyKind");
 }
 ```
 
-`logic_error` and not one of the other two tiers, per B27: calling a function
-nobody has implemented is programmer error, not a malformed argument and not a
-value outside a range.
+**`RANDOM` stays in the enum**, and that is the decision rather than an oversight.
+Drop it and `policy = random` in a config file becomes an *unknown name*, so the
+run reports a typo where it should report a missing feature. Keeping it makes the
+refusal say the true thing (V29).
 
-**`set_of`, deliberately.** The private helper that turns a `LineId` into a set
-index reads `Placement`, and whether `Placement`'s fields become tagged is U16,
-which the human has not ruled on. A4a stopped where it did partly to avoid
-building against a struct that may change shape; writing `set_of` now would have
-walked straight into that. The constructor never calls `locate`, so A4b touches
-nothing U16 affects.
+**`std::invalid_argument`, not `logic_error`.** `logic_error` is the tree's tier
+for programmer error, a function called before it was written. This is a
+**config value refused**: D1's config load reaches this call with a value a human
+typed, and it must be refused under `-DNDEBUG` the same way
+`SetAssociativeArray`'s geometry checks are.
 
-**The slot fill is built but unobservable.** `slots_.assign(num_slots_, NoLine)`
-runs in the constructor, because splitting construction across two increments
-would be worse than one member that nothing can read yet. `slots_` is private and
-the three verbs that could report it are A4c stubs, so at A4b nothing in the tree
-can tell a correct initial fill from a wrong one. That has a consequence for the
-sweep, in section 12.
+**One refusal site.** This is the only place a `PolicyKind` becomes an object, so
+no config path can pick a policy the enum admits and silently fall back to LRU.
+The unreachable `logic_error` after the switch is there for the same reason
+`types.h`'s `Axis` accessors have theirs: falling back to LRU is the one wrong
+answer here, because a config naming a policy this build does not have would then
+run to completion under a policy nobody selected, and the results row would
+attribute a hit rate to the wrong one.
 
----
-
-## 11. What the reviewer's round added
-
-- **`tests/test_set_associative.cpp`**, new, 81 checks, in its own file so
-  `test_cache.cpp` keeps including only `cache.h` (section 9).
-- **Conformance contract 9**, `c_line_size_terms_is_informative`, plus two
-  non-conforming fakes. `line_size_terms` is a new `AddressMapper` virtual, so it
-  belongs in the suite parameterised over the abstract base rather than only in
-  A4b's own file. That is what moved `test_block_pack` to 10521 and `test_layout`
-  to 9607.
-- **14 new compile cases**, 188 to 202, under a new `tryS` preamble, including
-  `base assignment through references` as a **reject** and `a whole derived copy`
-  as an **accept**, which are the two halves of section 8 pinned.
-- **Both obligations I reported were discharged**: `set_associative.{h,cpp}` are
-  in `mutation_check.sh`'s `FILES`, so the unit is not untested code wearing a
-  passing number (B59's failure mode), and the compile cases above exist.
-- **49 A4b mutation cases written, not swept**, since B56 defers the sweep to the
-  Phase A gate. Every `sed` was verified to actually match, which catches the
-  B45/B59 dead-case failure mode at writing time rather than at the gate.
-- **One meta-verification pair, on the exactness check**, and it is the
-  interesting one: three *other* sites were incidentally killing that mutation, so
-  the weaken/restore pair only proved the check load-bearing after those three
-  were disabled. Same masking shape as B60, one round later.
-- **My equivalence claim checked rather than believed**: 14,400,000 triples, 0
-  mismatches, and the no-product claim confirmed by grep.
-- **My read-once claim corrected**, which is section 6.
+`pick_victim` is **not `const`**, and that is the openness the whole
+order-independence criterion is protecting. A Random policy draws from an RNG,
+which is state it must advance. `const` on a virtual is part of the signature, so
+an override may not drop it, so a `const pick_victim` today would be
+exactly the interface change adding Random would force tomorrow, across both
+levels and every fixture built against it. It is left non-`const` now, once, for
+a class that does not exist yet.
 
 ---
 
-## 12. Open questions
+# Part IV. The batch as a whole
 
-**Q1. U16 is still unruled, and it is carried forward unchanged from A4a.**
-Should `Placement`'s fields be typed (`SetIndex set_index` and a tagged tag), so
-that the three remaining `Tagged` accept cases in `compile_fail.sh` can close?
-Nothing in A4b touched it and nothing in A4b depends on it: the constructor never
-calls `locate`, and `set_of` is A4c's. It blocks nothing today. It shapes A2's
-interface, so it is cheapest to answer before A4c writes the first code that
-reads a `Placement`, and it costs `layout.h`'s cast-free
-`line == tag * num_sets + set_index`. A4a's recommendation stands and is only
-that: do it, but as its own increment against `layout.h`, with the second tag
-type named deliberately.
+## 15. What is not built, and why
 
-**Q2. A third site for representability versus plausibility, and it is still
-unowned.** A4b bounds what a `SlotId` can *name*, which is a type fact. It does
-not bound what a machine can *hold*. `SetAssociativeArray(m, 2147483647, 1)` at a
-one-byte line is accepted, constructs, and allocates about **17 GB**; I ran it and
-it succeeded. That is the same shape as the `A2b | D1, unowned` row (a mapper
-reporting a 9.2-exabyte line) and as U15 (`expand` walking 2^31 elements): three
-places now where a value is representable, implausible, and refused by nobody.
-The owner question is unchanged (A2b, D1, or the site itself) and A4b
-deliberately did not answer it.
+**`on_evict`.** The four verbs of Part 2.2 are built and there is no fifth. Part
+3.4's `install()` pseudocode calls one. That is section 16's Q1 and it is a plan
+defect rather than a coding choice, so it is laid out there rather than resolved
+here.
 
-**Q3. The exactness message can read two different line sizes** (section 6). The
-default `line_size_terms()` calls `line_size_bytes()` a second time, so for a
-mapper that does not override it and does not answer consistently, the two halves
-of one message disagree. Measured: `reads == 2`, and a drifting fake produces
-"not a whole number of 96-byte lines (7)". No geometry is wrong, only the
-diagnostic, and `BlockPackMapper` is unaffected. The fix is one signature change
-(pass the already-read value in) and it is not made, because it changes an
-`AddressMapper` virtual that the conformance suite now has a contract for, which
-is a reviewer-visible interface change rather than a comment fix.
+**Random's implementation.** Deliberate, per the plan and Q5. What is built is
+the refusal (section 14) and the interface shape Random needs: a non-`const`
+`pick_victim`, and a candidate **set** whose order carries no meaning. The
+answer to Random's reproducibility question is already settled in the plan and
+costs nothing to keep waiting for: `random_seed` becomes an explicit config
+field emitted in every results row, each cache instance gets its own RNG seeded
+from `(random_seed, level, core_id)`, and Random points run at three seeds with
+mean and spread reported. Until someone wants it, the only obligation on A5 is
+the order-agnosticism section 12 discharges.
 
-**Q4. Three mutations stay unkillable until A4c lands.** The initial slot fill is
-unobservable at A4b (section 10), so three cases the reviewer wrote as `kill`
-will survive if anyone sweeps A4b before A4c exists. They are correct as written
-and should not be weakened to `allow`: the standing rule is that a survivor is
-fixed in the test, and here the test that fixes it is A4c's `probe`. What this
-needs is for the Phase A gate to know that A4b's sweep is only meaningful after
-A4c, rather than reading three survivors as a test gap.
+**No `num_slots()` accessor on `StampPolicy`**, and this is where B20's argument
+for `BlockPackMapper`'s accessors does **not** apply. B20's point was that a
+constructor whose arithmetic is unobservable cannot be checked. Here the sizing
+*is* already observable: `index_or_reject` refuses the first slot id past the end
+and names the count in its message. An accessor would be a second way to read a
+fact the interface already reports.
 
-Q1 is the one that wants an answer from you. Q2 and Q3 are recorded findings
-that block nothing, and Q4 is a note to the gate.
+## 16. Open questions
+
+**Q1 and Q2 want a human eye. Q3 is a carried finding.**
+
+---
+
+### Q1. The plan's `on_evict` discrepancy: a plan defect that needs a ruling
+
+The plan says two different things, and only one of them can be built.
+
+**Part 2.2, line 289**, the authoritative interface row for L1 replacement state:
+
+> `ReplacementPolicy { on_hit, on_fill, on_invalidate, pick_victim }`
+
+Four verbs. Part 2.3's L2 row names the same interface. Nothing in Part 2 anywhere
+mentions a fifth.
+
+**Part 3.4, lines 615-619**, the `install()` pseudocode:
+
+```
+install(cache, line):
+    slot = cache.free_slot(line)
+    if slot == NoSlot:
+        slot = cache.policy.pick_victim(cache.victim_candidates(line))
+    res = cache.insert(line, slot)
+    cache.policy.on_fill(slot)          # line 617
+    if res.evicted:
+        cache.policy.on_evict(slot)     # line 619
+```
+
+`on_evict(slot)` is called **after** `on_fill(slot)`, on the **same slot**.
+
+**Why that ordering cannot be right for any stamp policy.** `on_fill(slot)`
+writes the *new* occupant's stamp. An `on_evict(slot)` arriving afterwards, on
+the same slot, would have to do one of two things, and both are wrong:
+
+- If it records something about the line that *left* (its age, its stamp), it is
+  reading a cell that `on_fill` has already overwritten one line earlier. Under
+  the section 11 sequence, `on_fill(65)` sets `stamp_[65] = 10`; an `on_evict(65)`
+  looking for line 40's age finds 10, the stamp of the line that just replaced it.
+- If it *writes* the slot's state (resets it, ages it), it clobbers the stamp
+  `on_fill` wrote one line earlier, and the freshly installed line inherits the
+  eviction's bookkeeping instead of its own install time.
+
+Either way the fill and the eviction fight over one cell, and the fill loses or
+the evict does.
+
+**Built to Part 2.2's four**, which is the more authoritative of the two: Part 2
+is where the module interfaces are specified, and Part 3.4 is pseudocode for the
+engine that will use them, written before either existed. Section 15 records the
+omission rather than hiding it.
+
+**The trade, so it can be ruled on.** The plausible motive for `on_evict` is
+Part 2.2's own instrument column: **victim age distribution**, which D2 owes. The
+question is where that statistic is computed.
+
+| | Compute at the eviction site (no `on_evict`) | Add `on_evict` to the interface |
+|---|---|---|
+| Where the age comes from | the caller already holds `res.evicted_line` and the slot; the level computes the age from what it knows | the policy reports it, which means the policy needs a getter, or `on_evict` returns a value |
+| Interface cost | none; four verbs stay four | a fifth verb on a base every policy must implement, including Random and any future one |
+| Ordering | no ordering question exists | needs a ruling: `on_evict` **before** `on_fill`, or the two touch different state |
+| Does it break the 2.2 split? | no | risks it: "nothing here returns state, because a policy's state is its own" is `policy.h`'s stated rule, and an `on_evict` that *reports* an age is a getter in disguise |
+
+**If `on_evict` is wanted, the ruling needed is the ordering**, and the answer
+that works is `on_evict(slot)` **before** `on_fill(slot)`, while the slot still
+describes the line that is leaving. That is a change to the plan's line 619, not
+to any code written here.
+
+**This is a plan defect either way.** Whichever answer is taken, Part 2.2 and
+Part 3.4 currently disagree, and the disagreement is silent: an implementer
+reading only 3.4 builds five verbs, an implementer reading only 2.2 builds four,
+and both believe they matched the plan. It should be corrected in the plan
+document rather than resolved by whichever unit happens to notice.
+
+---
+
+### Q2. `FifoPolicy::on_hit` does no bound check, and that is pinned as behaviour rather than as a rule
+
+Every other verb on `StampPolicy` routes through one shared check:
+
+```cpp
+std::size_t StampPolicy::index_or_reject(const char* verb, SlotId slot) const {
+    const std::int32_t s = slot.get();
+    if (s < 0 || static_cast<std::size_t>(s) >= stamp_.size()) {
+        throw std::out_of_range(...);
+    }
+    return static_cast<std::size_t>(s);
+}
+```
+
+`on_fill`, `on_invalidate`, `stamp` and `pick_victim` all call it, so there is one check and
+no two verbs can disagree about the range. `LruPolicy::on_hit` calls `stamp()`,
+so it inherits the check. **`FifoPolicy::on_hit` has an empty body, so it calls
+nothing, so it checks nothing.**
+
+The consequence, concretely: a policy sized for a 256-slot L1 handed
+`on_hit(SlotId{9999})`, a slot id belonging to the L2's array, say, or to a
+differently sized level, throws under LRU and is **silently accepted** under
+FIFO. Same call, same mistake, two different outcomes depending on a config field.
+
+It is not a memory-safety bug. The empty body writes nothing, so there is no
+out-of-bounds access; the id is simply ignored. What it costs is the diagnostic:
+the mistake that LRU catches on the first hit goes unreported under FIFO until
+some *other* verb on the same policy is handed the same bad id.
+
+**Why it is not simply fixed.** Adding a check to an empty body means adding a
+call whose only purpose is to throw, on the hottest verb in the model, in the one
+policy defined to do nothing on that event. That is defensible and it is also a
+real cost. The alternatives are: check in the base by making `on_hit` non-virtual
+and calling a protected hook (which changes the interface Part 2.2 specifies);
+accept the asymmetry and state it as the contract; or state that bound-checking
+is per-verb best effort and not a guarantee of the interface.
+
+**What is true today**: it is pinned as *behaviour*, since the tests record what each
+policy does with a foreign slot id, but no rule anywhere says which of the three
+options above is the intended one. That is the gap. A later reader finding LRU
+strict and FIFO permissive has nothing to tell them whether that is a decision or
+an accident, which is exactly why it is written down here.
+
+---
+
+### Q3. Q2's plausibility bound, now with a **fourth** site, plus one hazard `Placement` still carries
+
+This is the carried row, and this batch adds to it in two ways.
+
+**The fourth site: `StampPolicy` is 8 bytes per slot.** `stamp_` is a
+`std::vector<std::int64_t>`, one entry per slot. At the geometry A4b accepts
+(`total_lines == INT32_MAX`, the largest a `SlotId` can name) that is
+
+```
+2147483647 slots x 8 bytes = 17,179,869,176 bytes  ~= 17.2 GB per policy instance
+```
+
+and it sits **beside** the array's own `slots_`, which is a
+`std::vector<LineId>`, also 8 bytes per slot, also about 17.2 GB. Worse, the
+engine holds **one L1 policy per core** over a swept range of 8 to 256 cores
+(plan 2.5b), so the policy figure multiplies where the array figure already did.
+Nothing refuses it. `StampPolicy`'s constructor checks `num_slots >= 1` and
+allocates whatever it is given.
+
+The four sites now on the same row:
+
+| Site | What is representable and implausible | Raised |
+|---|---|---|
+| `BlockPackMapper` | a mapper reporting a 9.2-exabyte line size, from which D1 computes `num_sets == 0` | A2b |
+| `expand` (U15) | `count = INT32_MAX` at stride 1 walks 2^31 elements into a local vector | A2d |
+| `SetAssociativeArray` | `total_lines == INT32_MAX` allocates ~17.2 GB of `slots_` | A4b |
+| **`StampPolicy`** | **the same geometry allocates ~17.2 GB of `stamp_`, once per core, over 8 to 256 cores** | **A5, this batch** |
+
+**Owner: D1, by B80**, with **one shared bound** rather than four scattered ones,
+because the question is a modelling one (what can a machine hold) rather than a
+typing one (what can this integer represent), and D1 is where the size model
+lives. That is a dated, reasoned deferral rather than an oversight; it is
+recorded again here only because the site count moved, not because the owner
+question reopened.
+
+**U14 and U15's general bound stay open and unowned in the same sense.** A4b's
+constructor guarantees `num_sets_ >= 1`, which closes the reachable division by
+zero *through this array*; that is a narrowing of the reachable set, not an
+answer. `locate`'s contract is untouched, any other caller computing a set count
+is unaffected, and nothing in the tree stops `locate(l, 0)` today.
+
+**And `Placement` still has no precondition on `tag`.** The typing increment
+(Part I) typed the field; it did **not** give it a range. So `tag * num_sets` is
+signed overflow, which is undefined behaviour and not a wrong number, for any `tag >
+INT64_MAX / num_sets`. Typing makes the hazard harder to construct by accident
+and not one bit less present, and reading a `TagId` as though it carried a range
+is exactly the mistake this row exists to prevent.
+
+**Worth saying explicitly: A4c avoids it entirely by never reading the tag.**
+`base_slot` reads `set_index` and nothing else, and `slots_` stores whole line
+ids so a way scan compares line ids directly. The product `tag * num_sets` is
+formed nowhere in `set_associative.cpp`. That is the same defensive shape B63
+took when it split one division in two precisely so the product `line_size_bytes
+* associativity` would never be formed, so the fix, if D1 or whoever gives
+`Placement` a constructor wants one, has a precedent in the tree. It is not a
+defect today because no caller constructs a `Placement` by hand; it becomes one
+the moment something other than `locate` does.
+
+---
+
+**Summary of what wants your attention.** Q1 is a genuine contradiction in the
+plan document and needs your ruling on whether `on_evict` is wanted at all, and
+if so on its ordering. Q2 is a small asymmetry that has been pinned as behaviour
+and wants a stated rule so it does not read later as an accident. Q3 blocks
+nothing and is carried forward with one new site and one restated hazard.
