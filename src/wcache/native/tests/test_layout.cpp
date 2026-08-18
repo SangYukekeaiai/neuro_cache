@@ -365,6 +365,31 @@ public:
     std::int64_t line_size_bytes() const override { return 0; }
 };
 
+// Contract 9, added by A4b. layout.h's line_size_terms has an inline DEFAULT
+// rather than being pure, so no mapper is obliged to override it and every
+// mapper inherits a correct answer for free. These two are the ways an override
+// can still take that away.
+//
+// Empty is the first. SetAssociativeArray's refusal then reads "... 8-byte
+// lines ()", which is a message that has lost the reason it was made
+// actionable, and nothing else in the tree would notice.
+class EmptyLineSizeTerms : public PackedRowMajor {
+public:
+    using PackedRowMajor::PackedRowMajor;
+    std::string line_size_terms() const override { return ""; }
+};
+
+// And the worse one: terms that are well formed and describe a different line
+// size. PackedRowMajor here packs 4 elements of 2 bytes, so its line is 8, and
+// this says 3 x 5. A reader acts on it, changes the wrong config field, and the
+// geometry is still refused. Non-empty is therefore not enough on its own,
+// which is why the contract multiplies the numbers out.
+class MisleadingLineSizeTerms : public PackedRowMajor {
+public:
+    using PackedRowMajor::PackedRowMajor;
+    std::string line_size_terms() const override { return "cin_block 3 x weight_bytes 5"; }
+};
+
 // ===========================================================================
 // The expect-failure driver
 // ===========================================================================
@@ -600,6 +625,8 @@ void test_broken_mappers_are_caught() {
     const LooseNumLines          loose(shape, 4, 2);
     const TightNumLines          tight(shape, 4, 2);
     const ZeroLineSize           zero_bytes(shape, 4, 2);
+    const EmptyLineSizeTerms     no_terms(shape, 4, 2);
+    const MisleadingLineSizeTerms wrong_terms(shape, 4, 2);
 
     expect_caught("expand assigns instead of appending",
                   [&] { conformance::c_appends_not_assigns(assigns, env); });
@@ -633,6 +660,10 @@ void test_broken_mappers_are_caught() {
                   [&] { conformance::c_num_lines_is_exact(tight, env); });
     expect_caught("line_size_bytes is zero",
                   [&] { conformance::c_line_size_bytes_is_usable(zero_bytes, env); });
+    expect_caught("line_size_terms says nothing",
+                  [&] { conformance::c_line_size_terms_is_informative(no_terms, env); });
+    expect_caught("line_size_terms names another line size",
+                  [&] { conformance::c_line_size_terms_is_informative(wrong_terms, env); });
 
     // The control the other way round. Every case above asserts that a check
     // fails; this asserts that the same machinery reports a pass when the

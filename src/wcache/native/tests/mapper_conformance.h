@@ -34,8 +34,10 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstddef>
 #include <exception>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "check.h"
@@ -466,6 +468,58 @@ inline void c_line_size_bytes_is_usable(const AddressMapper& m, const Env&) {
     CHECK_EQ(m.line_size_bytes(), m.line_size_bytes());  // no state, same as locate
 }
 
+// --- contract 9: line_size_terms ---------------------------------------------
+//
+// Added by A4b, and it belongs here rather than in the array's own suite for
+// the reason contract 8 does: line_size_terms is on AddressMapper, so it is a
+// promise every mapper makes and a new layout should inherit the check by
+// adding one run_all line rather than by someone remembering to test it.
+//
+// The promise is deliberately weak, because layout.h gives the function an
+// inline default returning the bare product rather than making it pure: a
+// mapper whose line size does not decompose into named factors is free to say
+// nothing more. What it may NOT do is say nothing at all. The whole point of
+// the function is that SetAssociativeArray's refusal, "65536 is not a whole
+// number of 96-byte lines (...)", stays actionable, and an empty parenthesis
+// is a message that has lost its reason to exist.
+inline void c_line_size_terms_is_informative(const AddressMapper& m, const Env&) {
+    const std::string terms = m.line_size_terms();
+    CHECK_TRUE(!terms.empty());
+    // CHECK_TRUE rather than CHECK_EQ: check.h's to_str has no std::string
+    // overload, and adding one would put a formatting concern into the harness
+    // for one call site. The expression says what it compares.
+    CHECK_TRUE(terms == m.line_size_terms());  // no state, same as locate
+
+    // And it has to name the line size somewhere, whether as the bare product
+    // or as the factors it multiplies out to. A terms string that mentions
+    // neither is a string about some other quantity, which is worse than the
+    // default: it is a message that misdirects rather than one that says less.
+    const std::int64_t bytes = m.line_size_bytes();
+    bool accounted = terms.find(std::to_string(bytes)) != std::string::npos;
+    if (!accounted) {
+        // The factored form. Multiply out every run of digits in the string and
+        // require the product to be the line size, which is the only check that
+        // works without knowing how a given layout decomposes it.
+        std::int64_t product = 1;
+        bool any = false;
+        for (std::size_t i = 0; i < terms.size();) {
+            if (terms[i] >= '0' && terms[i] <= '9') {
+                std::int64_t v = 0;
+                while (i < terms.size() && terms[i] >= '0' && terms[i] <= '9') {
+                    v = v * 10 + (terms[i] - '0');
+                    ++i;
+                }
+                product *= v;
+                any = true;
+            } else {
+                ++i;
+            }
+        }
+        accounted = any && product == bytes;
+    }
+    CHECK_TRUE(accounted);
+}
+
 // Every contract, in one call. This is the line A2d adds.
 inline void run_all(const AddressMapper& m, const Env& e, const char* who) {
     check::group(who);
@@ -479,6 +533,7 @@ inline void run_all(const AddressMapper& m, const Env& e, const char* who) {
     c_locate_identity(m, e);
     c_num_lines_is_exact(m, e);
     c_line_size_bytes_is_usable(m, e);
+    c_line_size_terms_is_informative(m, e);
 }
 
 }  // namespace conformance

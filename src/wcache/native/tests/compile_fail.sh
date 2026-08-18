@@ -117,6 +117,13 @@ tryP() { try "$1" "$2" "$3" '#include <wcache/block_pack.h>'; }
 # included it.
 tryC() { try "$1" "$2" "$3" '#include <wcache/cache.h>'; }
 
+# tryS: the same again with set_associative.h, for A4b. A fifth preamble for
+# the reason tryP is not folded into tryL: the concrete array's header pulls in
+# cache.h AND layout.h, so a case compiled with it proves nothing about which
+# header a name came from, and the A4a cases under tryC must keep proving that
+# CacheArray needs no layout header.
+tryS() { try "$1" "$2" "$3" '#include <wcache/set_associative.h>'; }
+
 # The one valid configuration every A2b case builds on, so a case that is meant
 # to fail on a type cannot pass or fail on a bad extent instead.
 SHAPE='WeightShape{3, 3, 256, 64}'
@@ -727,6 +734,96 @@ tryC accept 'InsertResult braced'        'int main(){ InsertResult r{false, NoLi
 # The array holds no policy state (2.2's hard boundary), so it has no on_hit to
 # call. This is the shape check that would fail if the split ever eroded.
 tryC reject 'array has on_hit'           "$ARRAY int main(){ A a; a.on_hit(SlotId{0}); return 0; }"
+
+# ---------------------------------------------------------------------------
+# A4b
+# ---------------------------------------------------------------------------
+
+section "== A4b: copy and move on the polymorphic base are protected"
+# The defect A4a handed to A4b: CacheArray had a virtual destructor and no copy
+# or move control, so it was a sliceable polymorphic base. What was actually
+# reachable is ASSIGNMENT rather than copying -- the class is abstract, so no
+# object of it can exist and a by-value copy never had anything to copy, which
+# is what the abstractness cases above already prove. `r1 = r2` through two base
+# references compiled and assigned the base subobject only, leaving the derived
+# state untouched: for an array that is a half-assigned cache reporting a hit
+# rate for a geometry no level ever had.
+#
+# These two cases are the whole guard on that decision. Without them the
+# protected access specifier could be deleted, or moved back to public, and
+# nothing in the tree would go red.
+tryC reject 'base assignment through references' "$ARRAY int main(){ A a1, a2;
+  CacheArray& r1 = a1; CacheArray& r2 = a2; r1 = r2; return 0; }"
+tryC reject 'base move assignment'       "$ARRAY int main(){ A a1, a2;
+  CacheArray& r1 = a1; r1 = static_cast<CacheArray&&>(a2); return 0; }"
+# And the other half, which is why the operations are PROTECTED rather than
+# deleted: deleting would take them from derived classes too, and C1 holds one
+# L1 per core over 8 to 256 cores, so a container of concrete arrays is the
+# ordinary case. A derived class stays copyable AS ITSELF, where a copy is
+# whole. If these ever start failing, `= default` has been changed to `= delete`
+# and the engine's per-core arrays stop being storable.
+tryC accept 'a whole derived copy'       "$ARRAY int main(){ A a; A b{a}; return (int)b.num_slots(); }"
+tryC accept 'a whole derived assignment' "$ARRAY int main(){ A a, b; a = b; return (int)a.num_slots(); }"
+tryC accept 'a vector of concrete arrays' '#include <vector>
+struct A : CacheArray {
+  SlotId probe(LineId) const override { return NoSlot; }
+  SlotId free_slot(LineId) const override { return SlotId{0}; }
+  void victim_candidates(LineId, std::vector<Candidate>& out) const override { out.clear(); }
+  InsertResult insert(LineId, SlotId) override { return InsertResult{false, NoLine}; }
+  void invalidate(SlotId) override {}
+  std::int32_t num_slots() const override { return 1; }
+};
+int main(){ std::vector<A> v; v.push_back(A{}); v.push_back(A{}); return (int)v.size(); }'
+# The default constructor has to be declared alongside them: declaring any
+# constructor suppresses the implicit one. This is the case that says so, and it
+# is the one that would catch its removal, since without it every array in the
+# tree stops constructing and this file is where that shows up first.
+tryC accept 'a derived array still default-constructs' "$ARRAY int main(){ A a; return (int)a.num_slots(); }"
+
+section "== A4b: SetAssociativeArray keeps its shape"
+# The mapper these cases construct against is written out here rather than
+# reached for from block_pack.h, and that is the point of the preamble rather
+# than a convenience: set_associative.h takes an abstract AddressMapper, so a
+# case that pulled in the one concrete mapper in the tree would stop being able
+# to say the array needs no particular layout. Its line size is 256, so 65536
+# bytes is 256 lines and every geometry below divides.
+SAMAP='struct SM : AddressMapper {
+  void expand(const Burst&, std::vector<LineId>&) const override {}
+  Placement locate(LineId, std::int64_t) const override { return Placement{0, 0}; }
+  LineId num_lines() const override { return LineId{1}; }
+  std::int64_t line_size_bytes() const override { return 256; }
+};'
+tryS accept 'SetAssociativeArray constructed' "$SAMAP int main(){ SM m;
+  SetAssociativeArray a(m, 65536, 8); return (int)a.num_slots(); }"
+tryS accept 'held by the base'           "$SAMAP int main(){ SM m;
+  SetAssociativeArray a(m, 65536, 8); const CacheArray& r = a; return (int)r.num_slots(); }"
+tryS accept 'deleted through the base'   "$SAMAP int main(){ SM m;
+  CacheArray* p = new SetAssociativeArray(m, 65536, 8); delete p; }"
+# num_sets and associativity are deliberately NOT on the interface: a fully
+# associative array has no meaningful set count, and putting them there would
+# invite a policy to read them, which is plan 2.2's array/policy split leaking.
+# These are the two cases that keep that a decision rather than an accident.
+tryS reject 'num_sets through the base'  "$SAMAP int main(){ SM m;
+  SetAssociativeArray a(m, 65536, 8); const CacheArray& r = a; return (int)r.num_sets(); }"
+tryS reject 'associativity through the base' "$SAMAP int main(){ SM m;
+  SetAssociativeArray a(m, 65536, 8); const CacheArray& r = a; return (int)r.associativity(); }"
+# B10's reason, and the same case BlockPackMapper has: a class deriving from
+# this one would be inheriting the set-associative geometry in order to disagree
+# with part of it. A fully associative array is a sibling of CacheArray.
+tryS reject 'a subclass of the final array' "struct X : SetAssociativeArray {};
+  int main(){ return 0; }"
+# The C1 case made concrete: one L1 per core over 8 to 256 cores, so the real
+# array has to be copyable as itself. This is what the protected-rather-than-
+# deleted half of the decision actually buys.
+tryS accept 'the array copied as itself' "$SAMAP int main(){ SM m;
+  SetAssociativeArray a(m, 65536, 8); SetAssociativeArray b{a}; return (int)b.num_slots(); }"
+# And what it does NOT buy, recorded rather than assumed: the array holds the
+# mapper by REFERENCE, so its copy assignment is implicitly deleted whatever the
+# base does. An array cannot be re-pointed at a different mapper after
+# construction, which is a stronger guarantee than the base's and is free.
+tryS reject 'the array assigned over'    "$SAMAP int main(){ SM m;
+  SetAssociativeArray a(m, 65536, 8); SetAssociativeArray b(m, 4096, 4);
+  a = b; return (int)a.num_slots(); }"
 
 # Every case has been started; wait for the stragglers, then print the whole
 # run in source order and tally it. The tally is done here rather than in the

@@ -36,7 +36,12 @@ ulimit -c 0 2>/dev/null || true
 # above is the rule, and a unit whose file is missing from this line is not
 # mutation tested at all while the summary still reports a clean sweep, which
 # is the same shape of silent lie the baseline guard below exists for.
-FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h src/block_pack.cpp"
+# A4b adds include/wcache/set_associative.h and src/set_associative.cpp, which
+# is B59's precedent applied to the file it was written about: cache.h was
+# untestable from the moment it was created, so A4a's interface would have
+# carried a clean sweep while nothing in it was ever mutated. A4b is a whole
+# constructor of validation and would have done the same, at a larger size.
+FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h include/wcache/set_associative.h src/block_pack.cpp src/set_associative.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
@@ -163,6 +168,8 @@ mutate_layout() { mutate_in include/wcache/layout.h "$@"; }
 mutate_cache() { mutate_in include/wcache/cache.h "$@"; }
 mutate_pack_h() { mutate_in include/wcache/block_pack.h "$@"; }
 mutate_pack() { mutate_in src/block_pack.cpp "$@"; }
+mutate_sa_h() { mutate_in include/wcache/set_associative.h "$@"; }
+mutate_sa() { mutate_in src/set_associative.cpp "$@"; }
 
 echo "== comparison operators"
 mutate kill '<= becomes <'   's|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() <= b|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() < b|'
@@ -802,6 +809,245 @@ mutate_cache kill 'A4a Candidate line becomes a SlotId' \
     's|    LineId line;  // NoLine when the slot is free|    SlotId line;|'
 mutate_cache kill 'A4a InsertResult loses its evicted line' \
     's|    LineId evicted_line;  // that line, or NoLine when `evicted` is false|    // dropped|'
+
+# ---------------------------------------------------------------------------
+# A4b: SetAssociativeArray's construction and validation
+#
+# The names carry an `A4b` prefix, per B40, so `./tests/mutation_check.sh A4b`
+# runs exactly this section. The path would separate A4b from A4a today, since
+# src/set_associative.cpp is a new file, but it will not separate A4b from A4c
+# and the prefix is what keeps the filter working when it stops.
+#
+# Five families:
+#
+#   the positivity    the three checks every later division rests on, plus the
+#                     shared message helper they all speak through
+#   the exactness     the plan's exit criterion, split in two, and the carried
+#                     obligation that the message names the line size's FACTORS
+#   the bounds        the slot bound at INT32_MAX and the associativity bound,
+#                     both pinned by WHICH message comes out rather than by
+#                     something coming out, because a second refusal is always
+#                     waiting behind each of them
+#   the derivation    num_sets, num_slots and associativity_, where num_slots
+#                     alone is the same number under a swapped division
+#   the copy control  cache.h's protected copy and move, killed by
+#                     compile_fail.sh rather than by a failing check
+# ---------------------------------------------------------------------------
+echo "== A4b: the three positivity checks"
+# The boundary, not the sign, which is the distinction every other unit's
+# positivity case draws: `< 1` and `< 0` agree on every negative and disagree
+# only at 0, which is the value a config loader that forgot a field produces.
+mutate_sa kill 'A4b positive_or_reject accepts 0' \
+    's|    if (v < 1) reject|    if (v < 0) reject|'
+mutate_sa kill 'A4b positive_or_reject never fires' \
+    's|    if (v < 1) reject|    if (false) reject|'
+mutate_sa kill 'A4b cache_size_bytes unchecked' \
+    '/    positive_or_reject("cache_size_bytes", cache_size_bytes);/d'
+mutate_sa kill 'A4b associativity unchecked' \
+    '/    positive_or_reject("associativity", associativity);/d'
+# The line size is the one whose absence is not merely a bad geometry: a line
+# size of 0 is a division by zero one line later, so this check is what makes
+# the failure diagnosable rather than a signal. It is also the one no real
+# mapper can reach, since BlockPackMapper refuses it at its own construction,
+# which is why the suite needs a stub mapper to reach the branch at all.
+mutate_sa kill 'A4b the mapper line size is unchecked' \
+    '/    positive_or_reject("mapper line_size_bytes", line_bytes);/d'
+
+echo "== A4b: the message is part of the contract"
+# N11 on this class's surface. A message that only restates the rule does not
+# say which config field was wrong or what it held.
+mutate_sa kill 'A4b the offending value is dropped' \
+    's|" must be >= 1, got " + std::to_string(v)|" must be >= 1"|'
+mutate_sa kill 'A4b the parameter name is dropped' \
+    's|reject(std::string(name) + " must be >= 1|reject(std::string("a parameter") + " must be >= 1|'
+# One spelling of the prefix is what makes every message this class produces
+# findable by the class name, which is block_pack.cpp's convention.
+mutate_sa kill 'A4b the prefix is dropped' \
+    's|throw std::invalid_argument("SetAssociativeArray: " + what);|throw std::invalid_argument(what);|'
+# B27's tiers: a construction failure is invalid_argument because the argument
+# is malformed regardless of layer, and the catch site has to be able to tell it
+# from a bad access.
+mutate_sa kill 'A4b the rejection type changed' \
+    's|throw std::invalid_argument("SetAssociativeArray: " + what);|throw std::runtime_error("SetAssociativeArray: " + what);|'
+
+echo "== A4b: the exactness check, which is the plan's exit criterion"
+mutate_sa kill 'A4b the exactness check never fires' \
+    's|    if (cache_size_bytes % line_bytes != 0) {|    if (false) {|'
+# The operands the wrong way round. It is a real edit rather than a contrived
+# one: `line_bytes % cache_size_bytes` is a well-typed expression that is zero
+# for exactly the geometries nobody runs.
+mutate_sa kill 'A4b the exactness check divides the wrong way' \
+    's|    if (cache_size_bytes % line_bytes != 0) {|    if (line_bytes % cache_size_bytes != 0) {|'
+# The A2b carried obligation to this unit. A non-power-of-two line size is
+# deliberately legal (B16), so "65536 is not a whole number of 96-byte lines" is
+# actionable only if the 96 can be traced back to cin_block 12 x cout_block 8.
+mutate_sa kill 'A4b the exactness message drops the terms' \
+    's|               mapper.line_size_terms() + ")");|               ")");|'
+mutate_sa kill 'A4b the exactness message drops the line size' \
+    's|" is not a whole number of " + std::to_string(line_bytes) + "-byte lines ("|" is not a whole number of lines ("|'
+mutate_sa kill 'A4b the exactness message drops the size' \
+    's|reject("cache_size_bytes " + std::to_string(cache_size_bytes) +|reject("cache_size_bytes " +|'
+# "Read once" is stated in the file as load-bearing: line_size_bytes() is a
+# virtual call whose answer the constructor divides by, and a mapper free to
+# compute it per call is a mapper free to answer differently at the byte check
+# than at the line count. This writes the per-call form, and only the call
+# COUNT can see it, since a consistent mapper gives the same geometry either way.
+mutate_sa kill 'A4b the line size is read per use' \
+    's|    if (cache_size_bytes % line_bytes != 0) {|    if (cache_size_bytes % mapper.line_size_bytes() != 0) {|'
+mutate_sa kill 'A4b total_lines divides the wrong way' \
+    's|    const std::int64_t total_lines = cache_size_bytes / line_bytes;|    const std::int64_t total_lines = line_bytes / cache_size_bytes;|'
+
+echo "== A4b: the slot bound at INT32_MAX"
+# Slot ids are exactly [0, num_slots) and SlotId's representation is int32, so a
+# geometry above the bound has upper slots no SlotId can name: storage the sweep
+# paid for and never used, visible only as a hit rate a few points below the
+# truth.
+#
+# Every case here is killed by WHICH message comes out, not by a message coming
+# out, because the divisibility check is a second refusal waiting behind this
+# one on both test geometries. That is deliberate: the accepted side of this
+# bound cannot be constructed at all, since INT32_MAX slots is a slot vector of
+# about 17 GB that the constructor fills, so message discrimination is the only
+# evidence available.
+mutate_sa kill 'A4b the slot bound never fires' \
+    's|    if (total_lines > INT32_MAX) {|    if (false) {|'
+# The boundary is exact rather than approximate: at total_lines == INT32_MAX the
+# largest slot id is INT32_MAX - 1, one short of NoSlot, so no valid slot can be
+# mistaken for the sentinel. `>=` refuses that geometry.
+mutate_sa kill 'A4b the slot bound is off by one' \
+    's|    if (total_lines > INT32_MAX) {|    if (total_lines >= INT32_MAX) {|'
+mutate_sa kill 'A4b the slot bound message drops the count' \
+    's|        reject(std::to_string(total_lines) + " lines exceeds the " +|        reject(" lines exceeds the " +|'
+mutate_sa kill 'A4b the slot bound message drops the limit' \
+    's|               std::to_string(INT32_MAX) + " slots a SlotId can name");|               " slots a SlotId can name");|'
+
+echo "== A4b: the two associativity refusals"
+# The bound and the divisibility check are both "bad associativity" and an
+# over-associative point fails the divisibility test too, so an implementation
+# that dropped either would still throw on both inputs. Only the text tells them
+# apart, which is what L7 in TEST_DESIGN_CACHE.md exists for.
+mutate_sa kill 'A4b the associativity bound never fires' \
+    's|    if (associativity > total_lines) {|    if (false) {|'
+# The boundary: at assoc == total_lines the geometry is a legal fully
+# associative cache, which is a configuration the sweep grid contains, so a `>=`
+# here refuses a real point.
+mutate_sa kill 'A4b the associativity bound is off by one' \
+    's|    if (associativity > total_lines) {|    if (associativity >= total_lines) {|'
+# The comparison reversed, which refuses every ordinary geometry instead of the
+# exotic one.
+mutate_sa kill 'A4b the associativity bound compares the wrong way' \
+    's|    if (associativity > total_lines) {|    if (total_lines > associativity) {|'
+mutate_sa kill 'A4b the associativity bound message drops the value' \
+    's|        reject("associativity " + std::to_string(associativity) +|        reject("associativity " +|'
+mutate_sa kill 'A4b the divides-into-sets check never fires' \
+    's|    if (total_lines % associativity != 0) {|    if (false) {|'
+mutate_sa kill 'A4b the divides-into-sets check tests the wrong operand' \
+    's|    if (total_lines % associativity != 0) {|    if (associativity % total_lines != 0) {|'
+mutate_sa kill 'A4b the divide message drops the associativity' \
+    's|               std::to_string(associativity));|               "");|'
+
+echo "== A4b: the order the checks run in"
+# set_associative.cpp states the order and calls it load-bearing, and layout.h's
+# tier vocabulary does not settle it, so these pin what the code does rather
+# than a rule anybody wrote (the same shape as U13's sibling on expand). They
+# matter because a sweep grid takes a cross product: a point wrong in two ways
+# is the expected case, and which message it produces is what a reader acts on.
+mutate_sa kill 'A4b the size check runs after the associativity check' \
+    's|    positive_or_reject("cache_size_bytes", cache_size_bytes);||; s|    positive_or_reject("associativity", associativity);|    positive_or_reject("associativity", associativity);\n    positive_or_reject("cache_size_bytes", cache_size_bytes);|'
+mutate_sa kill 'A4b the divide check runs before the associativity bound' \
+    's|    if (associativity > total_lines) {|    if (total_lines % associativity != 0) {\n        reject(std::to_string(total_lines) + " lines do not divide evenly into sets of " +\n               std::to_string(associativity));\n    }\n    if (associativity > total_lines) {|'
+
+echo "== A4b: the derived geometry"
+# num_slots alone is the same number under a swapped division, so an
+# implementation that reported num_sets where the associativity belongs, or that
+# floored where it should refuse, would look identical from outside until A4c.
+# These four are the reason num_sets() and associativity() are exposed at all.
+mutate_sa kill 'A4b num_sets is the associativity' \
+    's|    num_sets_      = total_lines / associativity;|    num_sets_      = associativity;|'
+mutate_sa kill 'A4b num_sets multiplies instead of dividing' \
+    's|    num_sets_      = total_lines / associativity;|    num_sets_      = total_lines * associativity;|'
+mutate_sa kill 'A4b num_slots is the set count' \
+    's|    num_slots_     = static_cast<std::int32_t>(total_lines);|    num_slots_     = static_cast<std::int32_t>(num_sets_);|'
+mutate_sa kill 'A4b the associativity is not stored' \
+    's|    associativity_ = associativity;|    associativity_ = 1;|'
+
+# The slot storage, and these three are recorded as `kill` on purpose although
+# NOTHING in A4b's own suite can reach them.
+#
+# slots_ is private and all three verbs that could report it (probe, free_slot,
+# victim_candidates) are A4c logic_error stubs, so the initial fill is not
+# observable at A4b by anything: deleting the assign, filling it with a real
+# line id, or sizing it by the set count are all invisible from outside the
+# object. That is a gap in the CODE's observability, not in the tests, and no
+# test can be written against it here.
+#
+# They are `kill` rather than `allow` because they are unreachable only until
+# A4c, not by construction the way B41's and B50's are, and B56 moved the sweep
+# to the Phase A gate, by which time A4c's probe and free_slot tests kill all
+# three. Marking them `allow` would make the gate report `killed but was
+# expected to survive` on three cases behaving exactly as designed. Anyone
+# running `./tests/mutation_check.sh A4b` BEFORE A4c lands should expect these
+# three to survive, and that is the finding rather than a defect.
+mutate_sa kill 'A4b the slots are never filled' \
+    '/    slots_.assign(as_size(num_slots_), NoLine);/d'
+mutate_sa kill 'A4b the slots start occupied' \
+    's|    slots_.assign(as_size(num_slots_), NoLine);|    slots_.assign(as_size(num_slots_), LineId{0});|'
+mutate_sa kill 'A4b the slot vector is sized by the set count' \
+    's|    slots_.assign(as_size(num_slots_), NoLine);|    slots_.assign(as_size(static_cast<std::int32_t>(num_sets_)), NoLine);|'
+
+echo "== A4b: the header's accessors and its final"
+mutate_sa_h kill 'A4b SetAssociativeArray loses final' \
+    's|class SetAssociativeArray final : public CacheArray {|class SetAssociativeArray : public CacheArray {|'
+mutate_sa_h kill 'A4b num_slots reports the set count' \
+    's|std::int32_t num_slots() const override { return num_slots_; }|std::int32_t num_slots() const override { return static_cast<std::int32_t>(num_sets_); }|'
+mutate_sa_h kill 'A4b num_sets reports the slot count' \
+    's|std::int64_t num_sets() const { return num_sets_; }|std::int64_t num_sets() const { return num_slots_; }|'
+mutate_sa_h kill 'A4b associativity reports the set count' \
+    's|std::int32_t associativity() const { return associativity_; }|std::int32_t associativity() const { return static_cast<std::int32_t>(num_sets_); }|'
+
+echo "== A4b: line_size_terms, on both sides of the virtual"
+# layout.h's inline default rather than a pure virtual. Making it pure is the
+# change the obligation explicitly rejected: it would oblige every AddressMapper
+# in the tree, including sixteen non-conforming fakes and four `subclass omits`
+# reject cases, to implement a function about diagnostics. The kill is the whole
+# tree failing to compile, which is the point.
+mutate_layout kill 'A4b line_size_terms is made pure' \
+    's|virtual std::string line_size_terms() const { return std::to_string(line_size_bytes()); }|virtual std::string line_size_terms() const = 0;|'
+# The default has to be correct if uninformative. Empty is neither.
+mutate_layout kill 'A4b the line_size_terms default says nothing' \
+    's|virtual std::string line_size_terms() const { return std::to_string(line_size_bytes()); }|virtual std::string line_size_terms() const { return ""; }|'
+# BlockPackMapper's override, one factor at a time. The three factors are what
+# the obligation asked for, so dropping any one of them retires it silently.
+mutate_pack kill 'A4b line_size_terms drops weight_bytes' \
+    's| + " x weight_bytes " + std::to_string(weight_bytes_);|;|'
+mutate_pack kill 'A4b line_size_terms names cin_block twice' \
+    's|std::to_string(cout_block_) + " x weight_bytes "|std::to_string(cin_block_) + " x weight_bytes "|'
+# The override reduced to the default, which is the change that looks like a
+# simplification and is exactly the obligation being undone.
+mutate_pack kill 'A4b line_size_terms reports the bare product' \
+    's|    return "cin_block " + std::to_string(cin_block_) + " x cout_block " +|    return std::to_string(line_size_bytes_); return "cin_block " + std::to_string(cin_block_) + " x cout_block " +|'
+
+echo "== A4b: the copy control on the polymorphic base (cache.h)"
+# The A4a-to-A4b carried obligation. `r1 = r2` through two base references
+# compiled and assigned the base subobject only, leaving the derived state
+# untouched: for an array that is a half-assigned cache reporting a hit rate for
+# a geometry no level ever had. Both cases are killed by compile_fail.sh, since
+# access control is not something a running binary can observe.
+mutate_cache kill 'A4b the copy control becomes public' \
+    's|^protected:$|public:|'
+# Protected rather than DELETED is the other half of the decision, and it has
+# its own case because deleting also stops the slice: a suite that only tested
+# the reject side would call this mutation a fix. C1 holds one L1 per core over
+# 8 to 256 cores, so a container of concrete arrays is the ordinary case.
+mutate_cache kill 'A4b the copy control is deleted instead' \
+    's|    CacheArray(const CacheArray&)            = default;|    CacheArray(const CacheArray\&)            = delete;|'
+mutate_cache kill 'A4b the copy assignment is deleted instead' \
+    's|    CacheArray& operator=(const CacheArray&) = default;|    CacheArray\& operator=(const CacheArray\&) = delete;|'
+# Declaring any constructor suppresses the implicit default one, so this line is
+# what keeps every array in the tree constructible. Dropping it stops the whole
+# build, which is the kill.
+mutate_cache kill 'A4b the default constructor is dropped' \
+    '/    CacheArray()                             = default;/d'
 
 echo
 echo "$((killed + survived + unexpected)) mutations: $killed killed, $survived survived as expected, $unexpected unexpected"
