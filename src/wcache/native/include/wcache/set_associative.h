@@ -75,10 +75,16 @@ public:
 
     // --- the five verbs (A4c) ------------------------------------------------
     //
-    // Declared here and defined as std::logic_error stubs naming the increment
-    // that replaces them, which is the convention B19 set for A2b: a validation
-    // increment you cannot construct cannot be tested, so the stubs make the
-    // class concrete now.
+    // The contracts are CacheArray's and are not restated here; what this class
+    // adds to them is one fact, and it is the whole of the implementation: the
+    // slots that may hold a line are the `associativity()` consecutive ids
+    // starting at `set_index * associativity()`. Every verb below is that
+    // arithmetic plus a scan of at most `associativity()` cells.
+    //
+    // Three of the five throw only what `locate` throws, which is
+    // std::out_of_range for a line outside [0, num_lines()); they add no
+    // rejection of their own. The two that take a SlotId range-check it, for
+    // the reason given on `insert` in the .cpp.
     SlotId probe(LineId line) const override;
     SlotId free_slot(LineId line) const override;
     void victim_candidates(LineId line, std::vector<Candidate>& out) const override;
@@ -103,6 +109,32 @@ public:
     std::int32_t associativity() const { return associativity_; }
 
 private:
+    // The lowest slot id of the set `line` competes in, so the set's slots are
+    // exactly [base_slot(line), base_slot(line) + associativity()). This is
+    // B65's `set_of`, which A4b left unwritten because it reads `Placement` and
+    // U16 was open; U16 has since typed the fields, so it is written here in
+    // the form its three callers actually need. The set index alone is never
+    // used by anything: probe, free_slot and victim_candidates each want the
+    // base, so returning a SetIndex and multiplying at three call sites would
+    // be the same expression written three times.
+    //
+    // It reads `set_index` and never `tag`. That is worth stating because the
+    // identity `line == tag * num_sets + set_index` (layout.h) makes the tag
+    // look like the natural thing to compare on, and forming `tag * num_sets`
+    // is signed overflow for a large enough tag, which `Placement` has no
+    // precondition against. Nothing in this class forms that product: the slot
+    // array stores whole line ids (see slots_ below), so a way scan compares
+    // line ids directly and the tag half of locate's answer is never touched.
+    //
+    // Throws std::out_of_range, from locate, for a line outside
+    // [0, mapper.num_lines()).
+    std::int32_t base_slot(LineId line) const;
+
+    // The shared bound check of `insert` and `invalidate`. Returns the slot's
+    // representation, so a caller that has checked it does not unwrap it a
+    // second time; throws std::out_of_range naming `verb` otherwise.
+    std::int32_t slot_or_reject(const char* verb, SlotId slot) const;
+
     const AddressMapper& mapper_;
 
     // Zero-initialised so a constructor that throws leaves no member
