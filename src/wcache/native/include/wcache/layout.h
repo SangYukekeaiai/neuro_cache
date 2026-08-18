@@ -10,6 +10,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "wcache/types.h"
@@ -127,6 +128,24 @@ public:
     // the config's cache_size_bytes into a set count. Only the layout knows
     // how many elements a line packs, so only the layout can answer.
     virtual std::int64_t line_size_bytes() const = 0;
+
+    // The factors line_size_bytes() is the product of, for a diagnostic that
+    // has to be actionable rather than only true.
+    //
+    // SetAssociativeArray refuses a cache_size_bytes that is not a whole number
+    // of lines, and a non-power-of-two line size is deliberately legal (B16),
+    // so "65536 is not a whole number of 96-byte lines" leaves a reader with no
+    // way to reach the config field that produced the 96. Only the layout knows
+    // what a line packs, which is the same reason line_size_bytes() is on this
+    // interface at all, so only the layout can name the terms.
+    //
+    // A default rather than a pure virtual, and the default is the bare
+    // product. The cost of requiring it is out of proportion to a message: it
+    // would oblige every AddressMapper in the tree, including every test fake,
+    // to implement a function about diagnostics. The default is always correct
+    // if uninformative, so a mapper whose line size does not decompose into
+    // named factors is free to say nothing more.
+    virtual std::string line_size_terms() const { return std::to_string(line_size_bytes()); }
 };
 
 }  // namespace wcache

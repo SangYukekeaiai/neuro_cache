@@ -408,4 +408,16 @@ Placement BlockPackMapper::locate(LineId line, std::int64_t num_sets) const {
     return Placement{v % num_sets, v / num_sets};
 }
 
+// --- A4b: the line size, decomposed ------------------------------------------
+
+// The three factors of line_size_bytes_, in the order the constructor
+// multiplies them, so that a reader who sees "96-byte lines" in
+// SetAssociativeArray's refusal can reach the config fields that produced the
+// 96. The product itself is not repeated: the caller has already printed it,
+// and a second copy is a second thing that can disagree with the first.
+std::string BlockPackMapper::line_size_terms() const {
+    return "cin_block " + std::to_string(cin_block_) + " x cout_block " +
+           std::to_string(cout_block_) + " x weight_bytes " + std::to_string(weight_bytes_);
+}
+
 }  // namespace wcache

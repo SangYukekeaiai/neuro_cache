@@ -130,6 +130,40 @@ public:
     // whose upper slots are unreachable, so an implementation refuses it at
     // construction instead of reporting it here.
     virtual std::int32_t num_slots() const = 0;
+
+protected:
+    // Copy and move are protected rather than public, which is the standard
+    // treatment of a polymorphic base and is here for a measured reason rather
+    // than a stylistic one.
+    //
+    // What was reachable before, and it is assignment rather than copying:
+    //
+    //     CacheArray& r1 = a1;  CacheArray& r2 = a2;
+    //     r1 = r2;              // compiles; assigns the base subobject only
+    //
+    // Run rather than argued: a1's derived state was unchanged afterwards, so
+    // the assignment was a silent partial write. For an array that is a
+    // half-assigned cache, and it reports a hit rate for a geometry no level
+    // ever had. Copying by value was never reachable, because this class is
+    // abstract and no object of it can exist, so the reject cases that pass one
+    // by value are proving abstractness rather than this.
+    //
+    // Protected rather than deleted, which is the half worth stating: deleting
+    // would take the operations away from derived classes as well, and the
+    // engine holds one L1 per core over a range of 8 to 256 cores, so a
+    // container of concrete arrays is the ordinary case rather than a
+    // hypothetical one. Protected leaves a derived class copyable AS ITSELF,
+    // where a copy is whole, and leaves the base unusable as the source or
+    // target of one, where it would not be.
+    //
+    // The default constructor has to be declared alongside them: declaring any
+    // constructor suppresses the implicit default one, and without this line
+    // every array in the tree would stop constructing.
+    CacheArray()                             = default;
+    CacheArray(const CacheArray&)            = default;
+    CacheArray(CacheArray&&)                 = default;
+    CacheArray& operator=(const CacheArray&) = default;
+    CacheArray& operator=(CacheArray&&)      = default;
 };
 
 }  // namespace wcache

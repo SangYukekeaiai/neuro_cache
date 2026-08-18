@@ -23,6 +23,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "wcache/layout.h"
@@ -131,6 +132,12 @@ public:
     // the shape at call time and neither can fail.
     LineId       num_lines()       const override { return LineId{num_lines_}; }
     std::int64_t line_size_bytes() const override { return line_size_bytes_; }
+
+    // The three constructor arguments line_size_bytes_ is the product of, named
+    // and with their values, for SetAssociativeArray's exactness message (A4b).
+    // Out of line rather than beside the two above because it builds a string,
+    // which is the constructor's file's business rather than the header's.
+    std::string line_size_terms() const override;
 
     // --- the derived state, exposed ------------------------------------------
     //
