@@ -37,6 +37,14 @@ void test_round_trip() {
     CHECK_EQ(SlotId{0}.get(), std::int32_t{0});
     CHECK_EQ(SlotId{INT32_MAX}.get(), INT32_MAX);
 
+    // SetIndex (A4a), the seventh tagged type. int64, matching
+    // Placement::set_index and locate's num_sets argument, so no conversion
+    // sits between locate's answer and this type.
+    CHECK_EQ(SetIndex{0}.get(), std::int64_t{0});
+    CHECK_EQ(SetIndex{1}.get(), std::int64_t{1});
+    CHECK_EQ(SetIndex{INT64_MAX}.get(), INT64_MAX);
+    CHECK_EQ(SetIndex{INT64_MIN}.get(), INT64_MIN);
+
     CHECK_EQ(SimTime{0}.get(), std::int64_t{0});
     CHECK_EQ(SimTime{-5}.get(), std::int64_t{-5});
     CHECK_EQ(LocalTick{0}.get(), std::int64_t{0});
@@ -106,10 +114,37 @@ void test_sentinels() {
 
     CHECK_EQ(NoSlot.get(), INT32_MAX);
     CHECK_EQ(NoRefusal.get(), INT64_MAX);
+    CHECK_EQ(NoLine.get(), INT64_MAX);
 
     CHECK_TRUE(SlotId{0} != NoSlot);
     CHECK_TRUE(SlotId{INT32_MAX - 1} != NoSlot);
     CHECK_TRUE(SlotId{INT32_MAX} == NoSlot);
+
+    // NoLine (A4a). It is what a slot holding nothing reports, so that "free"
+    // and "holds a line" are one comparison in the array's way scan rather
+    // than a second valid bit per slot.
+    CHECK_TRUE(LineId{0} != NoLine);
+    CHECK_TRUE(LineId{INT64_MAX - 1} != NoLine);
+    CHECK_TRUE(LineId{INT64_MAX} == NoLine);
+
+    // B3's property, and the reason the sentinel sits at the TOP of the range
+    // rather than at -1 or 0: ordinary `<` puts it last, with no special case
+    // anywhere. A free slot therefore sorts after every occupied one, which is
+    // what lets a victim scan use one comparison.
+    //
+    // 0 and -1 are both checked because a negative id is representable (B5,
+    // every id is signed) and a sentinel at -1 would sort a free slot FIRST,
+    // silently inverting any such scan.
+    CHECK_TRUE(LineId{0} < NoLine);
+    CHECK_TRUE(LineId{-1} < NoLine);
+    CHECK_TRUE(LineId{INT64_MIN} < NoLine);
+    CHECK_TRUE(LineId{INT64_MAX - 1} < NoLine);
+    CHECK_TRUE(!(NoLine < NoLine));
+    CHECK_TRUE(!(NoLine < LineId{0}));
+    // Nothing a mapper can produce collides with it: a real id is in
+    // [0, num_lines()) and num_lines() is bounded by the layout's own overflow
+    // guard at INT64_MAX, so INT64_MAX is one past every id there can be.
+    CHECK_TRUE(NoLine > LineId{INT64_MAX - 1});
 
     // 3.8: key(r) = (r.refusal == NONE, r.refusal). With NONE at the top of
     // the range, a single `<` computes the whole key. Both clauses:
@@ -443,6 +478,38 @@ static_assert(LocalTick{5} + LocalTick{3} == LocalTick{8}, "");
 static_assert(RefusalOrder{7} < NoRefusal, "");
 static_assert(SlotId{0} != NoSlot, "");
 static_assert(LineId{5}.get() == 5, "");
+static_assert(LineId{7} < NoLine, "");
+static_assert(NoLine.get() == INT64_MAX, "");
+static_assert(SetIndex{5}.get() == 5, "");
+
+// A4a's constraint at the type level, which is where the rule actually lives.
+// The run-time checks above cannot see a constructor that does not exist, so
+// the trait is asked directly: these are the same questions compile_fail.sh
+// puts to the compiler, in the build the suite already runs.
+static_assert(detail::converts_without_narrowing<std::int64_t, std::int32_t>::value, "");
+static_assert(detail::converts_without_narrowing<std::int32_t, std::int32_t>::value, "");
+static_assert(!detail::converts_without_narrowing<std::int32_t, std::int64_t>::value, "");
+static_assert(!detail::converts_without_narrowing<std::int64_t, double>::value, "");
+// The declval half, stated as a type-level fact: the trait's answer for `long`
+// does not depend on a value being a constant that fits. `std::int32_t x{5L}`
+// is legal C++ and this must still be false, or the rule would be about
+// values rather than about types.
+static_assert(!detail::converts_without_narrowing<std::int32_t, long>::value, "");
+// A tagged type is not convertible to its own Rep, which is what leaves the
+// implicit copy constructor to handle SlotId b{a}.
+static_assert(!detail::converts_without_narrowing<std::int32_t, SlotId>::value, "");
+static_assert(std::is_copy_constructible<SlotId>::value, "");
+static_assert(std::is_copy_constructible<SetIndex>::value, "");
+
+// SetIndex is a seventh distinct type, not an alias of the int64 ids it shares
+// a width with. This is the A1a obligation stated where a mutation to the
+// using-declaration would be caught even if every compile case were deleted.
+static_assert(!std::is_same<SetIndex, LineId>::value, "");
+static_assert(!std::is_same<SetIndex, SimTime>::value, "");
+static_assert(!std::is_same<SetIndex, LocalTick>::value, "");
+static_assert(!std::is_same<SetIndex, RefusalOrder>::value, "");
+static_assert(std::is_same<SetIndex, Tagged<std::int64_t, tags::set_index>>::value, "");
+static_assert(sizeof(SetIndex) == sizeof(std::int64_t), "");
 
 // Layout: the wrapper must cost nothing, or the whole scheme is a tax.
 static_assert(sizeof(LineId) == sizeof(std::int64_t), "");
@@ -498,6 +565,7 @@ int main() {
     check_ordering<SimTime>("ordering: SimTime");
     check_ordering<LocalTick>("ordering: LocalTick");
     check_ordering<RefusalOrder>("ordering: RefusalOrder");
+    check_ordering<SetIndex>("ordering: SetIndex");
     test_ordering_negative_and_boundary();
     test_sentinels();
     test_arithmetic();

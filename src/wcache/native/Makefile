@@ -84,7 +84,7 @@ TEST_HDRS := $(wildcard tests/*.h)
 # are the only thing connecting a header to a test binary at all.
 LIB_HDRS  := $(wildcard include/wcache/*.h)
 
-.PHONY: all lib test test-compile-fail release clean
+.PHONY: all lib test test-run test-compile-fail release clean
 
 all: lib
 
@@ -98,15 +98,42 @@ lib: $(LIB)
 # is carried to the end. That is check.h's rule ("every failure prints and the
 # run continues") applied one level up: stopping at the first red binary would
 # report one unit's breakage and hide the rest.
-test: $(TEST_BINS) test-compile-fail
+# Shared by `test` and `test-run` so the two cannot drift apart.
+RUN_BINS = rc=0; for b in $(TEST_BINS); do \
+	    echo "===== $$b"; \
+	    $$b || rc=1; \
+	done; exit $$rc
+
+# The prerequisite is $(TEST_BINS) rather than the two phony targets, and the
+# recipe runs the compile-fail driver and the binaries in that order. Under
+# `make -j` two phony prerequisites would run CONCURRENTLY and their output
+# would interleave, which costs the gate the property that makes it readable:
+# each suite's count sitting under its own name. Compilation of the binaries is
+# still parallel, which is where the -j win actually is.
+test: $(TEST_BINS)
 ifeq ($(MODE),release)
 	@echo "warning: MODE=release compiles the asserts out, so the internal"
 	@echo "         invariants are not being exercised."
 endif
-	@rc=0; for b in $(TEST_BINS); do \
-	    echo "===== $$b"; \
-	    $$b || rc=1; \
-	done; exit $$rc
+	@tests/compile_fail.sh
+	@$(RUN_BINS)
+
+# The C++ suites only, without the compile-fail driver. `make test` is still
+# both, and the gate is still `make test`.
+#
+# This exists for mutation_check.sh, which uses it for a mutation to a .cpp.
+# compile_fail.sh compiles every case with -fsyntax-only against include/ and
+# never links the library, so no mutation inside src/*.cpp can change a single
+# one of its verdicts. Verified rather than argued: swapping locate's set index
+# and tag in src/block_pack.cpp leaves compile_fail.sh at 188 cases, 0 failures
+# while turning `make test` red. Running the 188-case pass for those mutations
+# is 188 g++ spawns that cannot report anything, and it was the dominant cost
+# of every .cpp case in the sweep.
+#
+# Header mutations still run the full `make test`, because those cases DO
+# compile against the headers and are usually the only thing that catches them.
+test-run: $(TEST_BINS)
+	@$(RUN_BINS)
 
 # The negative half of A1's exit criterion (N12) and of A2a's (an abstract
 # class stays abstract, an override may not drop its const). A case that must

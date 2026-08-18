@@ -32,11 +32,58 @@ ulimit -c 0 2>/dev/null || true
 # each case, not just the one being mutated, so a case can never inherit the
 # previous case's damage. Basenames are unique across the list, which is what
 # lets one flat backup directory hold them.
-FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h src/block_pack.cpp"
+# A4a adds include/wcache/cache.h. Listing it is not bookkeeping: the comment
+# above is the rule, and a unit whose file is missing from this line is not
+# mutation tested at all while the summary still reports a clean sweep, which
+# is the same shape of silent lie the baseline guard below exists for.
+FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h src/block_pack.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
 trap 'restore; rm -rf "$BAKDIR"' EXIT
+
+# The baseline must be GREEN before a single case runs, and this check is the
+# difference between a result and a rumour.
+#
+# Every case below judges a kill by `if make test; then survived`. That reads
+# the suite's exit status as an answer about the MUTATION, which it only is
+# when the unmutated tree passes. If the baseline is already red, `make test`
+# fails for a reason that has nothing to do with the sed, every case takes the
+# else branch, and the run reports a clean sweep of kills while testing
+# nothing. The failure is silent and it inverts: the more broken the tree, the
+# better the report looks.
+#
+# It is not hypothetical. A4a landed with two compile_fail.sh cases
+# deliberately red (the accept->reject flip B29 called for), and in that state
+# an intentional `allow`, unreachable by construction and therefore
+# guaranteed to survive, was reported as `killed ... but was expected to
+# survive`. That is this harness reporting the exact opposite of the truth.
+#
+# So the precondition is checked rather than assumed, once, before any
+# mutation. One `make test` (about 17 s) buys every later line its meaning.
+# Bounded parallelism for the builds this script drives. The compile-fail
+# runner takes JOBS the same way, so one setting covers both halves of a case.
+# Not nproc: this is a shared login node, and the cap that actually binds is on
+# CPU time, which parallelism does not reduce.
+JOBS=${JOBS:-8}
+export JOBS
+
+restore
+printf 'baseline: '
+if make -j"$JOBS" test >/dev/null 2>&1; then
+    echo "green"
+else
+    echo "RED"
+    echo
+    echo "ERROR: the unmutated tree fails 'make test', so no mutation result from" >&2
+    echo "this run would mean anything: every case would report 'killed' whether" >&2
+    echo "the suite detects it or not. Fix the baseline, then re-run." >&2
+    echo >&2
+    echo "The failing baseline, in full:" >&2
+    make -j"$JOBS" test 2>&1 | tail -30 >&2
+    exit 2
+fi
+echo
 
 # An optional argument runs only the cases whose mutated file path OR case name
 # contains it, so the suite can be worked in parts: each case costs one full
@@ -72,7 +119,24 @@ mutate_in() {
         return
     fi
 
-    if make test >/dev/null 2>&1; then
+    # Which suite can possibly see this mutation.
+    #
+    # compile_fail.sh compiles its cases with -fsyntax-only against include/ and
+    # never links the library, so a mutation inside a .cpp cannot change any of
+    # its 188 verdicts. Running it there is 188 g++ spawns that cannot report
+    # anything, and it was the dominant cost of every .cpp case.
+    #
+    # Verified rather than assumed, because the whole sweep's meaning rests on
+    # it: swapping locate's set index and tag in src/block_pack.cpp leaves
+    # compile_fail.sh at 188 cases / 0 failures while turning `make test` red.
+    # A header mutation still runs the full `make test`, since for several of
+    # them the compile cases are the ONLY thing that catches them.
+    local target=test
+    case "$hdr" in
+        *.cpp) target=test-run ;;
+    esac
+
+    if make -j"$JOBS" "$target" >/dev/null 2>&1; then
         # suite passed, so the mutation was NOT detected
         if [ "$expect" = allow ]; then
             survived=$((survived + 1))
@@ -96,6 +160,7 @@ mutate_in() {
 # stays spelled the way they use it.
 mutate() { mutate_in include/wcache/types.h "$@"; }
 mutate_layout() { mutate_in include/wcache/layout.h "$@"; }
+mutate_cache() { mutate_in include/wcache/cache.h "$@"; }
 mutate_pack_h() { mutate_in include/wcache/block_pack.h "$@"; }
 mutate_pack() { mutate_in src/block_pack.cpp "$@"; }
 
@@ -118,11 +183,63 @@ echo "== sentinels"
 mutate kill 'NoSlot becomes 0'          's|inline constexpr SlotId NoSlot{INT32_MAX};|inline constexpr SlotId NoSlot{0};|'
 mutate kill 'NoRefusal becomes INT64_MIN' 's|inline constexpr RefusalOrder NoRefusal{INT64_MAX};|inline constexpr RefusalOrder NoRefusal{INT64_MIN};|'
 mutate kill 'NoRefusal becomes 0'       's|inline constexpr RefusalOrder NoRefusal{INT64_MAX};|inline constexpr RefusalOrder NoRefusal{0};|'
+# A4a's sentinel. B3 says a sentinel sits at the TOP of its range so ordinary
+# `<` puts it last; these are the two ways to break that. 0 makes line 0 look
+# free, and INT64_MIN sorts a free slot FIRST, inverting any victim scan.
+mutate kill 'A4a NoLine becomes 0'      's|inline constexpr LineId NoLine{INT64_MAX};|inline constexpr LineId NoLine{0};|'
+mutate kill 'A4a NoLine becomes INT64_MIN' 's|inline constexpr LineId NoLine{INT64_MAX};|inline constexpr LineId NoLine{INT64_MIN};|'
+# The seventh tagged type has to be its OWN tag. Pointing it at an existing one
+# makes SetIndex an alias, and `policy.on_hit(SlotId{set_index})` compiles
+# again, which is the exact accident A1a's carried obligation asked A4 to stop.
+mutate kill 'A4a SetIndex aliases LineId' \
+    's|using SetIndex = Tagged<std::int64_t, tags::set_index>;|using SetIndex = Tagged<std::int64_t, tags::line>;|'
+mutate kill 'A4a SetIndex aliases SimTime' \
+    's|using SetIndex = Tagged<std::int64_t, tags::set_index>;|using SetIndex = Tagged<std::int64_t, tags::sim_time>;|'
 
 echo "== the type wall itself (killed by compile_fail.sh, not the binary)"
-mutate kill 'explicit dropped'          's|constexpr explicit Tagged(Rep v)|constexpr Tagged(Rep v)|'
+# Retargeted at A4a. This case used to read `constexpr explicit Tagged(Rep v)`,
+# which A4a deleted: the constructor is now a constrained template taking U.
+# The old expression matched nothing and the run reported `ERROR sed matched
+# nothing`, which is the same rot B45 deleted four A2b cases for. It is
+# retargeted rather than deleted, because what it pins is still true and still
+# worth pinning: `explicit` is the half of the wall that stops the conversion
+# nobody asked for, and it is orthogonal to the narrowing constraint below.
+mutate kill 'explicit dropped'          's|constexpr explicit Tagged(U v)|constexpr Tagged(U v)|'
 mutate kill 'default ctor restored'     's|Tagged() = delete;|constexpr Tagged() : v_(0) {}|'
 mutate kill 'a conversion out is added' 's|constexpr Rep get() const { return v_; }|constexpr Rep get() const { return v_; }\n    constexpr operator Rep() const { return v_; }|'
+
+# == A4a: the non-narrowing constraint itself (B29, U2)
+#
+# The three cases above pin the parts of the wall A1a built. These three pin
+# the part A4a added, and they exist because the constraint is one mechanism
+# spread over three lines of types.h: the trait, the enable_if_t that consumes
+# it, and the ABSENCE of a plain Tagged(Rep) beside it. Break any one and the
+# rule is gone, so a case that only covered the enable_if_t would leave two
+# live ways to reopen exactly the gap B29 was raised for.
+#
+# All three are killed by the two compile_fail.sh cases A4a flipped from
+# accept to reject, `a 64-bit tag becomes a SlotId` and `a stride becomes a
+# SlotId`, which is what makes those flips load-bearing rather than
+# bookkeeping.
+#
+# What each one is worth knowing: under every one of these mutations g++
+# emits only a -Wnarrowing WARNING and compiles the truncation, and
+# compile_fail.sh runs without -Werror. So the suite catches these by the
+# constructor being GONE, never by the compiler objecting to the conversion.
+mutate kill 'A4a the enable_if_t is dropped' \
+    's|typename = std::enable_if_t<detail::converts_without_narrowing<Rep, U>::value>|typename = void|'
+mutate kill 'A4a the trait always says yes' \
+    's|struct converts_without_narrowing : std::false_type {};|struct converts_without_narrowing : std::true_type {};|'
+# The third is the one that pins WHY the plain constructor had to be removed
+# rather than shadowed by the constrained one. Restored beside it, with the
+# historical `: v_(v)` spelling A1a used, an unconstrained Tagged(Rep) is the
+# better match for a narrowing argument -- the conversion happens in the
+# argument, where g++ only warns -- so the constrained template never gets
+# consulted and the wall is back to where B29 found it. This case is the
+# difference between "the constraint is present" and "the constraint is
+# reachable".
+mutate kill 'A4a the plain Tagged(Rep) is restored beside it' \
+    's|    constexpr Rep get() const { return v_; }|    constexpr explicit Tagged(Rep v) : v_(v) {}\n    constexpr Rep get() const { return v_; }|'
 
 # A constant hash is a *correct* hash, only a slow one, so this mutation was
 # predicted to survive. It does not, because test_hash pins the stronger
@@ -624,6 +741,67 @@ mutate_pack kill 'A2d locate swaps set index and tag' \
     's|    return Placement{v % num_sets, v / num_sets};|    return Placement{v / num_sets, v % num_sets};|'
 mutate_pack kill 'A2d locate divides by num_lines' \
     's|    return Placement{v % num_sets, v / num_sets};|    return Placement{v % num_lines_, v / num_lines_};|'
+
+echo "== A4a: the CacheArray interface (plan 2.2)"
+# Like A2a's, these are killed mostly at COMPILE time rather than by a failing
+# check, because A4a is an interface and its content is its shape. That is not
+# a weaker result: `make test` going red is `make test` going red, and a
+# signature that silently changed would reach every array and every policy.
+#
+# The exception is the destructor, which is the one property here that still
+# compiles when it is wrong. It is killed by a run-time check for that reason.
+mutate_cache kill 'A4a the base destructor loses virtual' \
+    's|    virtual ~CacheArray() = default;|    ~CacheArray() = default;|'
+# The five verbs of 2.2, one at a time. A verb deleted from the interface takes
+# the whole abstraction with it: a level that cannot invalidate cannot
+# implement the inclusive branch at all (N8), which is why invalidate is here
+# from the start rather than arriving with C4.
+mutate_cache kill 'A4a probe is dropped' \
+    's|    virtual SlotId probe(LineId line) const = 0;|    // dropped|'
+mutate_cache kill 'A4a free_slot is dropped' \
+    's|    virtual SlotId free_slot(LineId line) const = 0;|    // dropped|'
+mutate_cache kill 'A4a victim_candidates is dropped' \
+    's|    virtual void victim_candidates(LineId line, std::vector<Candidate>\& out) const = 0;|    // dropped|'
+mutate_cache kill 'A4a insert is dropped' \
+    's|    virtual InsertResult insert(LineId line, SlotId slot) = 0;|    // dropped|'
+mutate_cache kill 'A4a invalidate is dropped (N8)' \
+    's|    virtual void invalidate(SlotId slot) = 0;|    // dropped|'
+mutate_cache kill 'A4a num_slots is dropped' \
+    's|    virtual std::int32_t num_slots() const = 0;|    // dropped|'
+# probe is const and is NOT an access (2.2). Dropping the const is what would
+# let a speculative lookup perturb the recency stack, and it is the change the
+# prefetcher of 4.6 must not be able to make by accident (B11, I15).
+mutate_cache kill 'A4a probe loses its const' \
+    's|    virtual SlotId probe(LineId line) const = 0;|    virtual SlotId probe(LineId line) = 0;|'
+mutate_cache kill 'A4a free_slot loses its const' \
+    's|    virtual SlotId free_slot(LineId line) const = 0;|    virtual SlotId free_slot(LineId line) = 0;|'
+mutate_cache kill 'A4a victim_candidates loses its const' \
+    's|std::vector<Candidate>\& out) const = 0;|std::vector<Candidate>\& out) = 0;|'
+# The out parameter is a reference. By value, every candidate list is computed
+# into a copy and thrown away, and the caller reads an empty vector: silent,
+# and a hit rate below the truth for the whole run.
+mutate_cache kill 'A4a candidates are taken by value' \
+    's|std::vector<Candidate>\& out) const = 0;|std::vector<Candidate> out) const = 0;|'
+# N12 on the array's own surface: probe takes the id of a LINE, and insert
+# takes one of each so a swapped call cannot compile.
+mutate_cache kill 'A4a probe takes a SlotId' \
+    's|    virtual SlotId probe(LineId line) const = 0;|    virtual SlotId probe(SlotId line) const = 0;|'
+mutate_cache kill 'A4a insert arguments are swapped' \
+    's|    virtual InsertResult insert(LineId line, SlotId slot) = 0;|    virtual InsertResult insert(SlotId line, LineId slot) = 0;|'
+mutate_cache kill 'A4a invalidate takes a LineId' \
+    's|    virtual void invalidate(SlotId slot) = 0;|    virtual void invalidate(LineId slot) = 0;|'
+# num_slots is int32 because SlotId is: a slot count a SlotId cannot name is a
+# geometry whose upper slots are unreachable storage the sweep paid for.
+mutate_cache kill 'A4a num_slots widens to int64' \
+    's|    virtual std::int32_t num_slots() const = 0;|    virtual std::int64_t num_slots() const = 0;|'
+# The two aggregates. Swapping Candidate's fields is silent at the call site
+# because both are braced, and it is the reason they are different types.
+mutate_cache kill 'A4a Candidate fields are swapped' \
+    's|    SlotId slot;|    LineId line;|; s|    LineId line;  // NoLine when the slot is free|    SlotId slot;|'
+mutate_cache kill 'A4a Candidate line becomes a SlotId' \
+    's|    LineId line;  // NoLine when the slot is free|    SlotId line;|'
+mutate_cache kill 'A4a InsertResult loses its evicted line' \
+    's|    LineId evicted_line;  // that line, or NoLine when `evicted` is false|    // dropped|'
 
 echo
 echo "$((killed + survived + unexpected)) mutations: $killed killed, $survived survived as expected, $unexpected unexpected"

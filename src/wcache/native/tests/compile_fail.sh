@@ -26,31 +26,74 @@ trap 'rm -rf "$TMP"' EXIT
 pass=0
 fail=0
 
-# try <expect: reject|accept> <name> <body> [extra-include-line]
-try() {
-    local expect=$1 name=$2 body=$3 extra=${4:-}
+# Bounded parallelism. Every case is an independent g++ on its own translation
+# unit with -fsyntax-only, so nothing is shared between them and they can run
+# concurrently. Serially the suite is one g++ start-up after another, which is
+# what made it the dominant cost of a mutation case: each mutation re-runs this
+# whole file.
+#
+# Eight rather than nproc (32 here). This is a shared login node, the win is
+# most of the way in by eight, and a script that grabs every core is antisocial
+# on a machine other people are working on. JOBS=n overrides it.
+#
+# What parallelism does NOT buy, stated because it is the thing to get wrong:
+# the total CPU time is unchanged, and the NCSA Delta cap is on CPU time per
+# process, not wall time. A faster sweep is not a legal unfiltered sweep.
+JOBS=${JOBS:-8}
+
+# Output is buffered per case and printed in SOURCE order at the end, never as
+# the jobs finish. Two properties depend on this and both would be lost by
+# letting the children write to the terminal: a diagnostic stays attached to
+# the case that produced it rather than landing in the middle of another
+# case's, and two runs of an unchanged tree print byte-identical output, which
+# is what lets a diff of two runs be evidence.
+#
+# `seq_no` is the position in that order. Headers reserve one too, so a section
+# cannot drift away from the cases under it.
+seq_no=0
+
+# section <text>: a header, reserving its place in the output stream.
+section() {
+    seq_no=$((seq_no + 1))
+    printf '%s\n' "$1" > "$TMP/out.$seq_no"
+}
+
+# run_case <n> <expect> <name> <body> <extra>, run in the background.
+run_case() {
+    local n=$1 expect=$2 name=$3 body=$4 extra=$5
+    local src="$TMP/case.$n.cpp" err="$TMP/err.$n"
     {
         echo '#include <wcache/types.h>'
         [ -n "$extra" ] && echo "$extra"
         echo '#include <cstdint>'
         echo 'using namespace wcache;'
         echo "$body"
-    } > "$TMP/case.cpp"
+    } > "$src"
 
-    if $CXX $FLAGS "$TMP/case.cpp" 2>"$TMP/err"; then
-        local got=accept
+    local got
+    if $CXX $FLAGS "$src" 2>"$err"; then
+        got=accept
     else
-        local got=reject
+        got=reject
     fi
 
     if [ "$got" = "$expect" ]; then
-        pass=$((pass + 1))
-        printf '  ok        %-46s (%s)\n' "$name" "$expect"
+        echo pass > "$TMP/v.$n"
+        printf '  ok        %-46s (%s)\n' "$name" "$expect" > "$TMP/out.$n"
     else
-        fail=$((fail + 1))
-        printf '  FAIL      %-46s expected %s, got %s\n' "$name" "$expect" "$got"
-        [ "$got" = reject ] && sed -n '1,4p' "$TMP/err" | sed 's/^/            /'
+        echo fail > "$TMP/v.$n"
+        {
+            printf '  FAIL      %-46s expected %s, got %s\n' "$name" "$expect" "$got"
+            [ "$got" = reject ] && sed -n '1,4p' "$err" | sed 's/^/            /'
+        } > "$TMP/out.$n"
     fi
+}
+
+# try <expect: reject|accept> <name> <body> [extra-include-line]
+try() {
+    seq_no=$((seq_no + 1))
+    while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n; done
+    run_case "$seq_no" "$1" "$2" "$3" "${4:-}" &
 }
 
 # tryL: the same, with layout.h in the preamble. A2a's cases need Placement and
@@ -65,6 +108,14 @@ tryL() { try "$1" "$2" "$3" '#include <wcache/layout.h>'; }
 # with it proves nothing about which header a name came from, and the A1 and
 # A2a cases must keep proving that.
 tryP() { try "$1" "$2" "$3" '#include <wcache/block_pack.h>'; }
+
+# tryC: the same again with cache.h, for A4a. A fourth preamble for the reason
+# the other three are separate: cache.h includes types.h and nothing else, so a
+# case compiled with it proves the array interface needs no layout header. If
+# CacheArray ever grows a dependency on AddressMapper, the A4a cases start
+# failing here rather than being carried silently by a preamble that already
+# included it.
+tryC() { try "$1" "$2" "$3" '#include <wcache/cache.h>'; }
 
 # The one valid configuration every A2b case builds on, so a case that is meant
 # to fail on a type cannot pass or fail on a bad extent instead.
@@ -92,7 +143,24 @@ MAPPER='struct M : AddressMapper {
 # The same subclass with one override removed, by name.
 omit() { echo "$MAPPER" | grep -v "$1"; }
 
-echo "== N12: the three time-like types do not mix"
+# A minimal complete CacheArray, for A4a, in exactly the role MAPPER plays for
+# A2a. Nothing in it is under test: it is the smallest thing that satisfies the
+# interface, so a case can say "and now instantiate it" and a case that removes
+# one line from it is testing that the removal is what did the rejecting. The
+# bodies are deliberately trivial -- A4a is an interface, and
+# SetAssociativeArray is A4b's.
+ARRAY='struct A : CacheArray {
+  SlotId probe(LineId) const override { return NoSlot; }
+  SlotId free_slot(LineId) const override { return SlotId{0}; }
+  void victim_candidates(LineId, std::vector<Candidate>& out) const override { out.clear(); }
+  InsertResult insert(LineId, SlotId) override { return InsertResult{false, NoLine}; }
+  void invalidate(SlotId) override {}
+  std::int32_t num_slots() const override { return 1; }
+};'
+
+omitA() { echo "$ARRAY" | grep -v "$1"; }
+
+section "== N12: the three time-like types do not mix"
 try reject 'SimTime < LocalTick'        'int main(){ return SimTime{1} < LocalTick{1}; }'
 try reject 'SimTime == RefusalOrder'    'int main(){ return SimTime{1} == RefusalOrder{1}; }'
 try reject 'LocalTick == RefusalOrder'  'int main(){ return LocalTick{1} == RefusalOrder{1}; }'
@@ -100,13 +168,13 @@ try reject 'SimTime <= LocalTick'       'int main(){ return SimTime{1} <= LocalT
 try reject 'SimTime > RefusalOrder'     'int main(){ return SimTime{1} > RefusalOrder{1}; }'
 try reject 'SimTime != LocalTick'       'int main(){ return SimTime{1} != LocalTick{1}; }'
 
-echo "== the id types do not mix, with each other or with time"
+section "== the id types do not mix, with each other or with time"
 try reject 'LineId == SlotId'           'int main(){ return LineId{1} == SlotId{1}; }'
 try reject 'LineId == CoreId'           'int main(){ return LineId{1} == CoreId{1}; }'
 try reject 'SlotId < CoreId'            'int main(){ return SlotId{1} < CoreId{1}; }'
 try reject 'LineId < SimTime'           'int main(){ return LineId{1} < SimTime{1}; }'
 
-echo "== arithmetic is closed except for the one crossing"
+section "== arithmetic is closed except for the one crossing"
 try reject 'LocalTick + SimTime (order)' 'int main(){ return (int)(LocalTick{1} + SimTime{1}).get(); }'
 try reject 'SimTime - LocalTick'         'int main(){ return (int)(SimTime{1} - LocalTick{1}).get(); }'
 try reject 'SimTime + RefusalOrder'      'int main(){ return (int)(SimTime{1} + RefusalOrder{1}).get(); }'
@@ -116,7 +184,7 @@ try reject 'SlotId + SlotId'             'int main(){ return (int)(SlotId{1} + S
 try reject 'CoreId + CoreId'             'int main(){ return (int)(CoreId{1} + CoreId{1}).get(); }'
 try reject 'SimTime += LocalTick'        'int main(){ SimTime a{1}; a += LocalTick{1}; return (int)a.get(); }'
 
-echo "== no implicit conversion in or out (explicit constructor, no operator T)"
+section "== no implicit conversion in or out (explicit constructor, no operator T)"
 try reject 'SimTime t = 5'              'int main(){ SimTime t = 5; return (int)t.get(); }'
 try reject 'int64 from SimTime'         'std::int64_t f(){ return SimTime{5}; } int main(){ return (int)f(); }'
 try reject 'call f(SimTime) with int'   'void f(SimTime); int main(){ f(5); }'
@@ -124,7 +192,7 @@ try reject 'call f(LineId) with SlotId' 'void f(LineId); int main(){ f(SlotId{1}
 try reject 'SimTime a = LocalTick'      'int main(){ SimTime a{1}; a = LocalTick{2}; return (int)a.get(); }'
 try reject 'return LocalTick as SimTime' 'SimTime f(){ return LocalTick{1}; } int main(){ return (int)f().get(); }'
 
-echo "== decision B2: no default construction"
+section "== decision B2: no default construction"
 try reject 'SlotId s;'                  'int main(){ SlotId s; return (int)s.get(); }'
 try reject 'SimTime t;'                 'int main(){ SimTime t; return (int)t.get(); }'
 try reject 'vector<SlotId> v(4)'        '#include <vector>
@@ -132,7 +200,7 @@ int main(){ std::vector<SlotId> v(4); return (int)v.size(); }'
 try reject 'struct member left out'     'struct S { int a; SimTime t; S(int x) : a(x) {} };
 int main(){ S s(1); return (int)s.t.get(); }'
 
-echo "== A1b: geometry, the distinctions that are kept"
+section "== A1b: geometry, the distinctions that are kept"
 # Coord and WeightShape are both four int32s. The whole reason they are two
 # types is that an extent must not be readable as a coordinate.
 try reject 'coord_on(WeightShape)'      'int main(){ return coord_on(WeightShape{1,1,1,1}, Axis::KH); }'
@@ -148,7 +216,7 @@ try reject 'int from Axis'              'int main(){ int a = Axis::CIN; return a
 try reject 'Burst with an int axis'     'int main(){ Burst b{Coord{0,0,0,0}, 3, 4, 1}; return b.count; }'
 try reject 'Burst anchored on a shape'  'int main(){ Burst b{WeightShape{1,1,1,1}, Axis::COUT, 4, 1}; return b.count; }'
 
-echo "== A2a: AddressMapper is abstract and stays abstract"
+section "== A2a: AddressMapper is abstract and stays abstract"
 # The interface exists so the engine never learns which layout it has. An
 # instantiable AddressMapper would be a mapper with no layout at all, which is
 # the one thing every caller would then have to guard against.
@@ -172,7 +240,7 @@ tryL reject 'subclass omits locate'          "$(omit 'Placement locate') int mai
 tryL reject 'subclass omits num_lines'       "$(omit 'LineId num_lines') int main(){ M m; (void)m; }"
 tryL reject 'subclass omits line_size_bytes' "$(omit 'line_size_bytes') int main(){ M m; (void)m; }"
 
-echo "== A2a: the signature is the contract"
+section "== A2a: the signature is the contract"
 # `const` on the pure virtuals is not a hint. An override that drops it does
 # not override, so the class stays abstract, and `override` says so at the
 # declaration rather than at the instantiation.
@@ -200,7 +268,7 @@ tryL reject 'num_lines returns int64' 'struct M : AddressMapper {
   std::int64_t line_size_bytes() const override { return 4; }
 }; int main(){ M m; (void)m; }'
 
-echo "== A2a: N12 at the mapper boundary"
+section "== A2a: N12 at the mapper boundary"
 # locate takes a LineId, and Tagged's explicit constructor is what makes the
 # raw-int spelling a compile error rather than a silent reinterpretation.
 tryL reject 'locate(int)'      "$MAPPER int main(){ M m; return (int)m.locate(5, 8).tag; }"
@@ -218,7 +286,7 @@ tryL reject 'LineId from line_size'  "$MAPPER int main(){ M m; LineId n = m.line
 tryL reject 'expand into vector<SlotId>' "$MAPPER int main(){ M m; std::vector<SlotId> out;
   m.expand(Burst{Coord{0,0,0,0}, Axis::COUT, 1, 1}, out); return (int)out.size(); }"
 
-echo "== A2b: BlockPackMapper is final and fully specified"
+section "== A2b: BlockPackMapper is final and fully specified"
 # B10: a differently NESTED layout is a new AddressMapper subclass, not a
 # variant of this one. A class deriving from BlockPackMapper would inherit the
 # block-packed flatten in order to disagree with part of it, which is the shape
@@ -251,7 +319,7 @@ tryP reject 'int64 from num_lines'        'int main(){ BlockPackMapper m('"$SHAP
 tryP reject 'LineId from line_size_bytes' 'int main(){ BlockPackMapper m('"$SHAPE"', 64, 128, 1);
   LineId n = m.line_size_bytes(); return (int)n.get(); }'
 
-echo "== A2c: the flatten helpers belong to the concrete mapper"
+section "== A2c: the flatten helpers belong to the concrete mapper"
 # line_of, line_stride and block_len are NOT on AddressMapper, and that is the
 # reason the interface has four members rather than seven. The engine holds a
 # mapper through the base (layout.h:34-40), so anything reachable there becomes
@@ -272,7 +340,7 @@ tryP reject 'block_len through the base'   "int main(){ $PACK
 # line_stride would stop being the only way to ask.
 tryP reject 'stride_ is private'           "int main(){ $PACK return (int)m.stride_[0]; }"
 
-echo "== A2c: a coordinate is not a shape, and a stride is not an id"
+section "== A2c: a coordinate is not a shape, and a stride is not an id"
 # Coord and WeightShape are both four int32s and line_of takes the coordinate.
 # A2b already pins the constructor against the swap (it takes the shape); this
 # is the same confusion at the other end, where passing the layer's extents
@@ -314,7 +382,7 @@ tryP reject 'line_of < line_stride'        "int main(){ $PACK
 tryP reject 'vector<LineId> takes a stride' "int main(){ $PACK
   std::vector<LineId> v; v.push_back(m.line_stride(Axis::COUT)); return (int)v.size(); }"
 
-echo "== A2c: an axis is an Axis"
+section "== A2c: an axis is an Axis"
 # Axis is scoped and does not decay, so an int cannot stand in for one. Both
 # helpers take an Axis and both index or switch on it, and line_stride's index
 # is into a four-element array: an int argument would be the one spelling that
@@ -323,7 +391,7 @@ tryP reject 'line_stride(int)'             "int main(){ $PACK return (int)m.line
 tryP reject 'block_len(int)'               "int main(){ $PACK return (int)m.block_len(2); }"
 tryP reject 'line_stride with a bare KH'   "int main(){ $PACK return (int)m.line_stride(KH); }"
 
-echo "== A2d: expand fills a caller's buffer, and cannot be made to drop it"
+section "== A2d: expand fills a caller's buffer, and cannot be made to drop it"
 # The out parameter is a non-const lvalue reference, which is what makes the
 # accumulate pattern layout.h describes possible AND what stops a caller
 # discarding a whole burst by passing a temporary. Both spellings below compile
@@ -352,7 +420,7 @@ tryP reject 'expand returns the lines'     "int main(){ $PACK
   std::vector<LineId> out = m.expand(Burst{Coord{0,0,0,0}, Axis::COUT, 1, 1});
   return (int)out.size(); }"
 
-echo "== A2d: locate takes a LineId and a plain set count, and returns neither"
+section "== A2d: locate takes a LineId and a plain set count, and returns neither"
 # N12 at the member that turns an id into an array subscript. A raw int64 line
 # is the spelling that would let a set index, a tag, or a byte count be located
 # by accident, and Tagged's explicit constructor is what makes it an error.
@@ -371,7 +439,7 @@ tryP reject 'locate num_sets is a LineId'  "int main(){ $PACK
 tryP reject 'LineId from set_index'        "int main(){ $PACK
   LineId l = m.locate(LineId{0}, 8).set_index; return (int)l.get(); }"
 
-echo "== controls: these MUST compile, or every case above is vacuous"
+section "== controls: these MUST compile, or every case above is vacuous"
 try accept 'SimTime < SimTime'          'int main(){ return SimTime{1} < SimTime{2}; }'
 try accept 'SimTime + SimTime'          'int main(){ return (int)(SimTime{1} + SimTime{2}).get(); }'
 try accept 'SimTime + LocalTick'        'int main(){ return (int)(SimTime{1} + LocalTick{2}).get(); }'
@@ -402,20 +470,26 @@ tryL accept 'num_lines is a LineId'     "$MAPPER int main(){ M m; LineId n = m.n
 tryL accept 'explicit .get() unwrap'    "$MAPPER int main(){ M m;
   return m.num_lines().get() < m.line_size_bytes() ? 1 : 0; }"
 tryL accept 'Placement braced'          'int main(){ Placement p{3, 100}; return (int)(p.tag + p.set_index); }'
-# Decision B9 and the A4 carried obligation: Placement holds raw int64 fields,
-# not tagged scalars, so these compile on purpose. Recorded as accept cases so
-# that a later unit tightening them has to come here and say so, and so that
-# the size of the gap is written down rather than inferred.
+# Decision B9: Placement holds raw int64 fields, not tagged scalars, so these
+# compile on purpose. Recorded as accept cases so that a later unit tightening
+# them has to come here and say so, and so that the size of the gap is written
+# down rather than inferred.
 #
-# The gap is wider than "an int64 comes out". Because Tagged's constructor is
-# explicit but its argument is an ordinary function parameter, a braced
-# Placement field converts into ANY tagged scalar, including a 32-bit one,
-# where the conversion is a silent truncation. The last case is the one to
-# look at when A4 adds SetIndex.
+# A4a closed the width half of the gap and only the width half, which is why
+# this block still has three accepts under it. Tagged's constructor is now
+# constrained to non-narrowing sources, so the 32-bit case below rejects. The
+# two int64 -> int64 cases do NOT reject and no narrowing rule can ever make
+# them: Placement::set_index and ::tag are raw int64, LineId and SimTime are
+# int64, and the conversion loses nothing. What is wrong with them is the
+# NAME, not the width, and closing them means typing Placement's fields
+# (SetIndex set_index, a tagged tag), which is an A2 interface change nobody
+# has ruled on. They stay accept, and they are the measure of what is left.
 tryL accept 'set_index is a raw int64'  'int main(){ Placement p{3, 100}; std::int64_t s = p.set_index; return (int)s; }'
 tryL accept 'a set index becomes a LineId' 'int main(){ Placement p{3, 100}; LineId l{p.set_index}; return (int)l.get(); }'
 tryL accept 'a tag becomes a SimTime'      'int main(){ Placement p{3, 100}; SimTime t{p.tag}; return (int)t.get(); }'
-tryL accept 'a 64-bit tag becomes a SlotId' 'int main(){ Placement p{3, 100}; SlotId s{p.tag}; return (int)s.get(); }'
+# B29 discharged, half of it: int64 tag into a 32-bit SlotId is a narrowing and
+# the constrained constructor removes the overload, so there is nothing to call.
+tryL reject 'a 64-bit tag becomes a SlotId' 'int main(){ Placement p{3, 100}; SlotId s{p.tag}; return (int)s.get(); }'
 
 # A2b's controls. The seven cases above are worth nothing unless the ordinary
 # four-argument construction compiles, unless the class really is usable through
@@ -456,17 +530,15 @@ tryP accept 'line_of < num_lines'          "int main(){ $PACK
 # escape hatch tests/test_block_pack.cpp uses on every stride check.
 tryP accept 'explicit .get() plus a stride' "int main(){ $PACK
   return (int)(m.line_of(Coord{0,0,0,0}).get() + m.line_stride(Axis::CIN)); }"
-# The B29 gap, measured on A2c's surface rather than assumed. Tagged's
-# constructor is explicit but its argument is an ordinary function parameter,
-# so a 64-bit stride reaches a 32-bit tagged scalar and is truncated. A stride
-# is a factor of num_lines(), which is an int64 the constructor's overflow
-# guard bounds only at INT64_MAX, so the size that gets lost is not bounded by
-# anything this class checks. What g++ does here is a -Wnarrowing WARNING, not
-# an error: the case is accept, and it is the flags that decide, which is
-# precisely why it is measured rather than assumed. Recorded for the same
-# reason the three Placement ones are: A4's non-narrowing constructor has to
-# come here and flip it, and until then the size of the gap is written down.
-tryP accept 'a stride becomes a SlotId'    "int main(){ $PACK
+# B29 discharged on A2c's surface. A stride is a factor of num_lines(), which
+# is an int64 the constructor's overflow guard bounds only at INT64_MAX, so the
+# size that used to be lost here was not bounded by anything this class checks.
+# Before A4a this was an accept: g++ reported the truncation as a -Wnarrowing
+# WARNING and compiled it anyway, and compile_fail.sh runs without -Werror, so
+# the flags decided and the answer was "accepted and truncated". A4a's
+# constrained constructor removes the overload instead of converting through
+# it, so the call has no candidate and the flags no longer get a say.
+tryP reject 'a stride becomes a SlotId'    "int main(){ $PACK
   SlotId s{m.line_stride(Axis::KH)}; return (int)s.get(); }"
 
 # A2d's controls. The nine cases above are worth nothing unless the ordinary
@@ -484,12 +556,195 @@ tryP accept 'locate through the base'      "int main(){ $PACK const AddressMappe
   return (int)r.locate(LineId{0}, 8).tag; }"
 tryP accept 'Placement from locate'        "int main(){ $PACK
   Placement p = m.locate(LineId{0}, 8); return (int)(p.tag + p.set_index); }"
-# The B29 gap again, measured on A2d's surface: a braced Placement field reaches
-# ANY tagged scalar because Tagged's constructor argument is an ordinary
-# parameter. Recorded as an accept so A4's non-narrowing constructor has to come
-# here and flip it.
+# Still an accept after A4a, and now for a reason worth stating: set_index and
+# LineId are both int64, so this conversion loses nothing and no narrowing rule
+# can reject it. What is wrong with it is the NAME. Closing it means typing
+# Placement's fields, an A2 interface change nobody has ruled on, so it stays
+# here as the measure of what B29 did NOT close.
 tryP accept 'a set index becomes a LineId' "int main(){ $PACK
   LineId l{m.locate(LineId{0}, 8).set_index}; return (int)l.get(); }"
+
+# ---------------------------------------------------------------------------
+# A4a
+# ---------------------------------------------------------------------------
+
+section "== A4a: the non-narrowing constructor rejects on WIDTH (B29, U2)"
+# The rule is about types, not values, and these are the cases that say so.
+# Every one of them compiled before A4a, with g++ reporting a -Wnarrowing
+# warning and truncating anyway; compile_fail.sh runs without -Werror, so
+# "warned" meant "accepted". The constrained constructor removes the overload
+# instead, so there is no longer anything to call.
+try reject 'int64 lvalue into a SlotId'  'int main(){ std::int64_t b = 5; SlotId s{b}; return (int)s.get(); }'
+try reject 'int64 lvalue into a CoreId'  'int main(){ std::int64_t b = 5; CoreId c{b}; return (int)c.get(); }'
+# THE case for the trait being written with std::declval rather than with a
+# value. `std::int32_t x{5L}` is legal C++: a constant expression that fits is
+# a permitted narrowing. If the trait asked its question with a literal, that
+# exception would leak in and the rule would depend on whether the caller
+# happened to write a constant, which is a rule about values wearing a rule
+# about types. declval names a value of the type without being one, so the
+# answer is the same for `5L` and for a run-time int64. Both reject.
+try reject 'a literal 5L into a SlotId'  'int main(){ SlotId s{5L}; return (int)s.get(); }'
+try reject 'a literal 5L into a CoreId'  'int main(){ CoreId c{5L}; return (int)c.get(); }'
+# Float to integer is a narrowing whatever the widths, including one that fits.
+try reject 'a double into a LineId'      'int main(){ LineId l{1.5}; return (int)l.get(); }'
+try reject 'an exact double into a LineId' 'int main(){ LineId l{2.0}; return (int)l.get(); }'
+
+section "== A4a: and the accepts it must NOT have broken"
+# A constraint that rejects everything would pass every case above and be
+# useless. These are the spellings the engine actually writes.
+try accept 'SlotId{5}'                   'int main(){ SlotId s{5}; return (int)s.get(); }'
+try accept 'LineId{5}'                   'int main(){ LineId l{5}; return (int)l.get(); }'
+# Widening is not narrowing: an int32 reaching an int64 id loses nothing.
+try accept 'int32 lvalue into a LineId'  'int main(){ std::int32_t n = 5; LineId l{n}; return (int)l.get(); }'
+# Copy construction. It survives ONLY because the constraint removes the
+# template from the overload set for U = SlotId (there is no int32_t{SlotId}),
+# leaving the implicit copy constructor to take the call. Both spellings,
+# because they take different initialisation paths and a constraint written
+# slightly differently could break one and leave the other.
+try accept 'SlotId b{a}, copy braced'    'int main(){ SlotId a{5}; SlotId b{a}; return (int)b.get(); }'
+try accept 'SlotId b = a, copy assigned' 'int main(){ SlotId a{5}; SlotId b = a; return (int)b.get(); }'
+try accept 'SetIndex copy construction'  'int main(){ SetIndex a{5}; SetIndex b{a}; return (int)b.get(); }'
+# A SetIndex is int64 and locate's answer is int64, so the type it exists to
+# name is reachable from the quantity it names without a cast.
+try accept 'SetIndex from an int64 lvalue' 'int main(){ std::int64_t v = 5; SetIndex s{v}; return (int)s.get(); }'
+try accept 'NoSlot comparison'           'int main(){ return SlotId{1} != NoSlot; }'
+try accept 'NoLine comparison'           'int main(){ return LineId{1} != NoLine; }'
+try accept 'NoLine ordering'             'int main(){ return LineId{1} < NoLine; }'
+try accept 'vector<LineId> v(4, NoLine)' '#include <vector>
+int main(){ std::vector<LineId> v(4, NoLine); return (int)v.size(); }'
+
+section "== A4a: SetIndex is a NAME, not a width (B9, the A1a obligation)"
+# The seventh tagged type earns its place here or nowhere. Every case below has
+# matching widths on both sides, so the narrowing constraint cannot be what
+# rejects them: what rejects them is that the two quantities are different
+# types. This is the distinction A1a's carried obligation asked A4 for --
+# without it a set index and a way index are the same type and
+# `policy.on_hit(SlotId{set_index})` is a spelling the code invites.
+try reject 'SetIndex becomes a LineId'   'int main(){ LineId l{SetIndex{3}}; return (int)l.get(); }'
+try reject 'LineId becomes a SetIndex'   'int main(){ SetIndex s{LineId{3}}; return (int)s.get(); }'
+try reject 'SetIndex becomes a SimTime'  'int main(){ SimTime t{SetIndex{3}}; return (int)t.get(); }'
+try reject 'SetIndex becomes a SlotId'   'int main(){ SlotId s{SetIndex{3}}; return (int)s.get(); }'
+try reject 'SetIndex == SlotId'          'int main(){ return SetIndex{1} == SlotId{1}; }'
+try reject 'SetIndex < LineId'           'int main(){ return SetIndex{1} < LineId{1}; }'
+try reject 'SetIndex + SetIndex'         'int main(){ return (int)(SetIndex{1} + SetIndex{1}).get(); }'
+try reject 'SetIndex s;'                 'int main(){ SetIndex s; return (int)s.get(); }'
+try reject 'SetIndex t = 5'              'int main(){ SetIndex t = 5; return (int)t.get(); }'
+try reject 'int64 from SetIndex'         'std::int64_t f(){ return SetIndex{5}; } int main(){ return (int)f(); }'
+try accept 'SetIndex == SetIndex'        'int main(){ return SetIndex{1} == SetIndex{2}; }'
+# NoLine is a LineId and NoSlot a SlotId, so the two sentinels do not mix
+# either. A slot scan comparing the wrong one would report every slot free.
+try reject 'NoLine == NoSlot'            'int main(){ return NoLine == NoSlot; }'
+try reject 'SlotId s = NoLine'           'int main(){ SlotId s{NoLine}; return (int)s.get(); }'
+
+section "== A4a: the CacheArray interface keeps its shape (plan 2.2)"
+# Same treatment A2a gave AddressMapper: the unit is an interface, so its
+# content IS its shape, and a signature that silently changed would reach every
+# array and every policy built on it.
+tryC accept 'complete array'             "$ARRAY int main(){ A a; (void)a; return 0; }"
+tryC accept 'array through the base'     "$ARRAY int main(){ A a; CacheArray& r = a;
+  return (int)r.insert(LineId{1}, SlotId{0}).evicted; }"
+tryC accept 'delete array through base'  "$ARRAY int main(){ CacheArray* p = new A(); delete p; }"
+# All five verbs of 2.2, plus num_slots, reached through the base. invalidate is
+# on the list from the start (N8), and this is the case that says so: a level
+# that cannot invalidate cannot implement the inclusive branch at all.
+tryC accept 'all five verbs through base' "$ARRAY int main(){ A a; CacheArray& r = a;
+  std::vector<Candidate> out;
+  SlotId s = r.probe(LineId{1});
+  SlotId f = r.free_slot(LineId{1});
+  r.victim_candidates(LineId{1}, out);
+  InsertResult ir = r.insert(LineId{1}, SlotId{0});
+  r.invalidate(SlotId{0});
+  return (int)(s.get() + f.get() + out.size() + ir.evicted + r.num_slots()); }"
+# probe is const and is NOT an access (plan 2.2), so it must be callable on a
+# const array. This is the case that would fail first if probe ever grew a side
+# effect that needed a non-const this, which is the change that would silently
+# perturb the recency stack.
+tryC accept 'probe on a const array'     "$ARRAY int main(){ const A a; const CacheArray& r = a;
+  return (int)r.probe(LineId{1}).get(); }"
+tryC accept 'free_slot on a const array' "$ARRAY int main(){ const A a; const CacheArray& r = a;
+  return (int)r.free_slot(LineId{1}).get(); }"
+tryC accept 'victim_candidates is const' "$ARRAY int main(){ const A a; const CacheArray& r = a;
+  std::vector<Candidate> out; r.victim_candidates(LineId{1}, out); return (int)out.size(); }"
+# Each verb omitted in turn: the class must stay abstract, so a partial array
+# cannot be instantiated. Six cases because an interface with a verb nobody
+# implements is the failure N8 exists to prevent.
+tryC reject 'array omits probe'          "$(omitA 'SlotId probe') int main(){ A a; (void)a; return 0; }"
+tryC reject 'array omits free_slot'      "$(omitA 'free_slot') int main(){ A a; (void)a; return 0; }"
+tryC reject 'array omits victim_candidates' "$(omitA 'victim_candidates') int main(){ A a; (void)a; return 0; }"
+tryC reject 'array omits insert'         "$(omitA 'InsertResult insert') int main(){ A a; (void)a; return 0; }"
+tryC reject 'array omits invalidate'     "$(omitA 'void invalidate') int main(){ A a; (void)a; return 0; }"
+tryC reject 'array omits num_slots'      "$(omitA 'num_slots') int main(){ A a; (void)a; return 0; }"
+# An override may not quietly change a signature. `override` is what turns each
+# of these into an error at the subclass rather than a second, silently
+# unrelated function that leaves the pure virtual unimplemented.
+tryC reject 'probe drops its const'      'struct A : CacheArray {
+  SlotId probe(LineId) override { return NoSlot; }
+  SlotId free_slot(LineId) const override { return SlotId{0}; }
+  void victim_candidates(LineId, std::vector<Candidate>&) const override {}
+  InsertResult insert(LineId, SlotId) override { return InsertResult{false, NoLine}; }
+  void invalidate(SlotId) override {}
+  std::int32_t num_slots() const override { return 1; }
+}; int main(){ A a; (void)a; return 0; }'
+tryC reject 'victim_candidates by value' 'struct A : CacheArray {
+  SlotId probe(LineId) const override { return NoSlot; }
+  SlotId free_slot(LineId) const override { return SlotId{0}; }
+  void victim_candidates(LineId, std::vector<Candidate>) const override {}
+  InsertResult insert(LineId, SlotId) override { return InsertResult{false, NoLine}; }
+  void invalidate(SlotId) override {}
+  std::int32_t num_slots() const override { return 1; }
+}; int main(){ A a; (void)a; return 0; }'
+tryC reject 'num_slots returns int64'    'struct A : CacheArray {
+  SlotId probe(LineId) const override { return NoSlot; }
+  SlotId free_slot(LineId) const override { return SlotId{0}; }
+  void victim_candidates(LineId, std::vector<Candidate>&) const override {}
+  InsertResult insert(LineId, SlotId) override { return InsertResult{false, NoLine}; }
+  void invalidate(SlotId) override {}
+  std::int64_t num_slots() const override { return 1; }
+}; int main(){ A a; (void)a; return 0; }'
+# N12 at the array's own surface. probe takes the id of a LINE; a slot id there
+# is the confusion SlotId and LineId exist to keep apart, and insert's two
+# arguments are one of each, so a swapped call must not compile.
+tryC reject 'probe takes a SlotId'       "$ARRAY int main(){ A a; return (int)a.probe(SlotId{1}).get(); }"
+tryC reject 'probe takes a raw int64'    "$ARRAY int main(){ A a; return (int)a.probe(5).get(); }"
+tryC reject 'insert arguments swapped'   "$ARRAY int main(){ A a;
+  return (int)a.insert(SlotId{0}, LineId{1}).evicted; }"
+tryC reject 'invalidate takes a LineId'  "$ARRAY int main(){ A a; a.invalidate(LineId{1}); return 0; }"
+# victim_candidates appends into the caller's buffer by reference, so a
+# temporary and a const vector must both fail: the same wall A2a put around
+# expand, on the verb that has the same shape.
+tryC reject 'candidates into a temporary' "$ARRAY int main(){ A a;
+  a.victim_candidates(LineId{1}, std::vector<Candidate>{}); return 0; }"
+tryC reject 'candidates into a const vector' "$ARRAY int main(){ A a;
+  const std::vector<Candidate> out; a.victim_candidates(LineId{1}, out); return (int)out.size(); }"
+tryC reject 'candidates into vector<SlotId>' "$ARRAY int main(){ A a;
+  std::vector<SlotId> out; a.victim_candidates(LineId{1}, out); return (int)out.size(); }"
+# Candidate pairs a slot with the line in it, and the two fields are different
+# types precisely so they cannot be written in the wrong order.
+tryC reject 'Candidate fields swapped'   'int main(){ Candidate c{NoLine, NoSlot}; return (int)c.slot.get(); }'
+tryC reject 'InsertResult line is a SlotId' 'int main(){ InsertResult r{true, NoSlot}; return (int)r.evicted; }'
+tryC accept 'Candidate braced'           'int main(){ Candidate c{NoSlot, NoLine}; return (int)c.slot.get(); }'
+tryC accept 'InsertResult braced'        'int main(){ InsertResult r{false, NoLine}; return (int)r.evicted; }'
+# The array holds no policy state (2.2's hard boundary), so it has no on_hit to
+# call. This is the shape check that would fail if the split ever eroded.
+tryC reject 'array has on_hit'           "$ARRAY int main(){ A a; a.on_hit(SlotId{0}); return 0; }"
+
+# Every case has been started; wait for the stragglers, then print the whole
+# run in source order and tally it. The tally is done here rather than in the
+# children on purpose: a child is a separate process and cannot increment the
+# parent's counters, so a version that counted as it went would report zero
+# failures however many there were.
+wait
+
+for i in $(seq 1 "$seq_no"); do
+    [ -f "$TMP/out.$i" ] && cat "$TMP/out.$i"
+    if [ -f "$TMP/v.$i" ]; then
+        if [ "$(cat "$TMP/v.$i")" = pass ]; then
+            pass=$((pass + 1))
+        else
+            fail=$((fail + 1))
+        fi
+    fi
+done
 
 echo
 echo "$((pass + fail)) compile cases, $fail failures"
