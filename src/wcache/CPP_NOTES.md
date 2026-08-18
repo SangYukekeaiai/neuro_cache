@@ -1527,3 +1527,243 @@ One operand is enough; the other is converted to match. This is the same rule
 `blocks_covering` in `block_pack.cpp` already follows for `(extent + block - 1)`,
 and it is worth stating as a rule because the wrong version is not a warning:
 `-Wconversion` complains about narrowing, and this is the opposite mistake.
+
+---
+
+## 23. Constraining a template, and how the tree's type wall was closed (unit A4a)
+
+A1a built the type wall out of `explicit` (section 7) and `= delete` (section 8).
+A4a closed the one hole left in it, and doing so needed four features that are new
+to this tree and have no C analogue at all. They are worth learning together,
+because none of them does anything useful alone.
+
+The hole first, since it is what the machinery is for. `SlotId` holds an
+`std::int32_t` and `Placement::tag` is an `std::int64_t`, so
+
+```cpp
+SlotId s{p.tag};        // 64 bits into 32
+```
+
+is a truncation. Under the old constructor it compiled, with a `-Wnarrowing`
+warning, and a tag of 4294967303 arrived as slot 7. The compiler did complain;
+nothing turned the complaint into a refusal.
+
+### Correcting section 7
+
+Section 7 quotes the constructor as
+
+```cpp
+constexpr explicit Tagged(Rep v) : v_(v) {}
+```
+
+**That is no longer the code.** This file is append-only, so the quote stays where
+it is and this section is the correction. Everything section 7 says about
+`explicit` is still true and still load-bearing; what changed is the parameter.
+It now reads:
+
+```cpp
+template <typename U,
+          typename = std::enable_if_t<detail::converts_without_narrowing<Rep, U>::value>>
+constexpr explicit Tagged(U v) : v_{v} {}
+```
+
+`explicit` still blocks the conversion nobody asked for (`SimTime t = 5`). The
+template blocks the conversion that was asked for but loses information.
+
+### `std::declval<T>()`: a value of type T that never exists
+
+```cpp
+std::declval<T>()
+```
+
+There is no C equivalent because C has no need for one. It names a value of type
+`T` **without constructing one**, which matters because you cannot always
+construct a `T`: `Tagged` has no default constructor, and neither does anything
+else in the tree that follows B2.
+
+It is declared and never defined. Calling it is a link error by design. It exists
+only inside `decltype`, which never evaluates its argument.
+
+### `decltype(expr)`: the type this expression *would* have
+
+```cpp
+decltype(std::int32_t{std::declval<std::int64_t>()})
+```
+
+`decltype` asks the compiler a question about types and runs nothing. The
+expression inside is analysed, its type is reported, and no code is emitted. It is
+the closest C++ has to asking the compiler "would this line be legal?" in a place
+where you can act on the answer.
+
+Here the question is: *if* an `int32_t` were braced-initialised from an `int64_t`,
+what would come out? There are two possible answers, `int32_t` or "that is
+ill-formed", and it is the second one we are hunting.
+
+Why braced initialisation specifically: it is the one context where the language
+forbids a narrowing conversion outright. Not warns, forbids. So the question
+"does `To{From}` compile?" is exactly the question "is `From` to `To`
+non-narrowing?", asked of the compiler rather than answered by hand with a table
+of widths and signednesses.
+
+### `std::void_t<...>`: discard the answer, keep the question
+
+```cpp
+template <typename...> using void_t = void;
+```
+
+That is the entire definition. For any valid argument it is `void`. It looks
+useless and it is exactly the point: it throws the type away and keeps only
+*whether there was a type at all*. If the argument is ill-formed, `void_t` of it
+is ill-formed too, and that failure is the signal.
+
+### Partial specialisation as an if/else on well-formedness
+
+Putting the three together gives a compile-time boolean:
+
+```cpp
+template <typename To, typename From, typename = void>
+struct converts_without_narrowing : std::false_type {};            // fallback
+
+template <typename To, typename From>
+struct converts_without_narrowing<To, From,
+                                  std::void_t<decltype(To{std::declval<From>()})>>
+    : std::true_type {};                                           // preferred
+```
+
+Read it as an if/else. The first is the general case and the answer is "no". The
+second is a **partial specialisation**: it is the same template with the third
+argument pinned to something specific. When the compiler can compute that third
+argument it prefers the specialisation, because a more specific match always wins;
+when it cannot, the specialisation is not a candidate and the general case
+answers.
+
+So `converts_without_narrowing<To, From>::value` is `true` exactly when
+`To{From}` compiles. `std::true_type` and `std::false_type` are standard empty
+structs carrying a `static constexpr bool value`.
+
+### Why `declval` not being a constant expression is load-bearing
+
+This is the part that is easy to get wrong, and getting it wrong produces a rule
+that behaves differently depending on where a value came from.
+
+C++ has a deliberate exception to the narrowing rule: a **constant expression**
+whose value fits is not narrowing. So both of these involve an `int64` source and
+only one is legal:
+
+```cpp
+std::int32_t x{5L};       // legal:      5L is constant and 5 fits
+std::int32_t y{big};      // ill-formed: big is a run-time int64
+```
+
+That exception is correct for values and wrong for a rule about types. Written
+against a real constant, the trait would say "yes" for `SlotId{5L}` and "no" for
+`SlotId{p.tag}`, and the rule would become "may an `int64` become a `SlotId`?
+it depends". `std::declval<From>()` is deliberately **not** a constant
+expression: it names a value of the type and says nothing about which value. So
+the trait answers about the type, uniformly, and the constant-fits exception never
+enters.
+
+### `std::enable_if_t`, and SFINAE
+
+```cpp
+template <bool B, typename T = void> struct enable_if {};                 // no member `type`
+template <typename T>                struct enable_if<true, T> { using type = T; };
+template <bool B, typename T = void> using enable_if_t = typename enable_if<B, T>::type;
+```
+
+`enable_if_t<true>` is a type. `enable_if_t<false>` **is not**: the false
+specialisation has no member `type`, so naming it is an error.
+
+That looks like a strange thing to want until you meet the rule it feeds.
+**SFINAE** stands for *substitution failure is not an error*: when the compiler
+substitutes deduced template arguments into a template's signature and the result
+is ill-formed, it does not report an error, it quietly removes that template from
+the list of candidates and carries on.
+
+So an `enable_if_t` in a signature is a switch. True and the template stays a
+candidate; false and it vanishes. In `Tagged` the switch is wired to the trait, so
+the constructor exists for non-narrowing sources and does not exist for narrowing
+ones. `SlotId s{p.tag}` then fails with "no matching function for call to
+`Tagged<int, tags::slot>::Tagged`", which is a hard error under every flag
+combination, unlike the warning it replaced.
+
+Note the shape of the win: the fix is not a better diagnostic on a bad
+conversion. It is the **removal of the conversion**, so there is nothing left to
+diagnose.
+
+### Why a plain template constructor would hijack copy construction
+
+This is the trap, and it is why the constraint cannot simply be dropped in favour
+of a `static_assert` inside the body.
+
+Write the constructor as an unconstrained template:
+
+```cpp
+template <typename U>
+constexpr explicit Tagged(U v) : v_{v} { static_assert(...); }   // do NOT do this
+```
+
+Now consider copying a non-`const` value:
+
+```cpp
+SlotId a{1};
+SlotId b{a};        // which constructor?
+```
+
+The candidates are the implicit copy constructor, `Tagged(const Tagged&)`, and
+the template with `U = SlotId`. The copy constructor needs a qualification
+adjustment to bind a non-`const` lvalue to a `const&`; the template is an exact
+match. **The template wins**, and copy construction turns into a call that tries
+to initialise `Rep` from a `Tagged`. The `static_assert` fires on a line that is
+merely copying something.
+
+The constraint is what prevents this, and it does so without a special case for
+`Tagged`. For `U = SlotId`, the trait asks whether `std::int32_t{declval<SlotId>()}`
+is well formed. It is not: `Tagged` defines no conversion operator to its
+representation, `get()` being the only exit (section 7's note on the asymmetry).
+So the trait is `false`, the template is removed, and the implicit copy
+constructor is left holding the call.
+
+Both spellings were checked rather than assumed:
+
+```cpp
+SlotId a{1};  SlotId b{a};     // ok, direct-initialisation
+SlotId a{1};  SlotId b = a;    // ok, copy-initialisation
+```
+
+### Why the old constructor had to be removed, not shadowed
+
+The tempting minimal change is to keep `Tagged(Rep)` and add a deleted overload
+for the bad cases. It does not work, and the reason is worth knowing because it
+is a place g++ is more permissive than the standard reads.
+
+In `SlotId s{p.tag}` the narrowing happens while converting an argument to a
+**constructor parameter**, and g++ treats narrowing in that position as
+`-Wnarrowing`, a warning. So `Tagged(Rep)` stays viable, it is a better match than
+any deleted template, and it is exactly what the bad call binds to. Keeping it
+keeps the hole open. Only removing it removes the conversion.
+
+### A measurement worth keeping, about braced member initialisers
+
+The constructor initialises with braces, `v_{v}`, and the natural reading is that
+this is a second line of defence, since a braced initialiser forbids narrowing.
+**It is not.** Measured, by building both variants:
+
+| Variant | `SlotId s{p.tag}` |
+|---|---|
+| constraint removed, braces kept | **compiles**, with `-Wnarrowing` and `-Wconversion` |
+| constraint kept, braces replaced by `v_(v)` | rejected |
+
+The constraint is solely load-bearing. The braces are defeated by the same
+permissiveness described just above, which is exactly why reaching for them as
+the fix does not work. They are kept for stating the rule where the value lands,
+not for enforcing it.
+
+### What this costs
+
+Nothing at run time. `enable_if_t`, `void_t`, `declval` and the trait all
+evaluate during compilation and emit no code; the constructor is still a single
+`constexpr` assignment, still trivially inlined, and `Tagged` is still the same
+size as its representation. Section 15's answer is unchanged. What it costs is
+compile time and one paragraph of reading, which is the trade this whole file
+exists to argue for.
