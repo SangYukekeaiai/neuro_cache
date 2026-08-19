@@ -44,7 +44,14 @@ ulimit -c 0 2>/dev/null || true
 # A5 adds include/wcache/policy.h, include/wcache/stamp_policy.h and
 # src/stamp_policy.cpp, by the same rule: a unit whose file is not on this line
 # is not mutation tested at all while the summary still reports a clean sweep.
-FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h include/wcache/set_associative.h include/wcache/policy.h include/wcache/stamp_policy.h src/block_pack.cpp src/set_associative.cpp src/stamp_policy.cpp"
+# Phase B adds all five of its files: include/wcache/port.h, event.h and mshr.h,
+# and src/port.cpp and src/mshr.cpp. This omission has now bitten twice (cache.h
+# at A4a, set_associative.* at A4b), which is why it is the FIRST thing done to
+# this file in a review round rather than the last. event.h is the one worth
+# naming: it is header-only AND was included by no translation unit at all until
+# tests/test_event.cpp existed, so before this round nothing in the tree either
+# compiled it or could mutate it.
+FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h include/wcache/set_associative.h include/wcache/policy.h include/wcache/stamp_policy.h include/wcache/port.h include/wcache/event.h include/wcache/mshr.h src/block_pack.cpp src/set_associative.cpp src/stamp_policy.cpp src/port.cpp src/mshr.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
@@ -187,6 +194,16 @@ mutate_sa() { mutate_in src/set_associative.cpp "$@"; }
 mutate_pol() { mutate_in include/wcache/policy.h "$@"; }
 mutate_sp_h() { mutate_in include/wcache/stamp_policy.h "$@"; }
 mutate_sp() { mutate_in src/stamp_policy.cpp "$@"; }
+# Phase B. NAMING, because the tree carries a collision that misreads easily:
+# the PLAN's Phase B units are B1 (Port), B2 (EventQueue) and B3 (MshrFile),
+# while PROGRESS.md's DECISIONS are also numbered B1-B104. Every "B1"/"B2"/"B3"
+# case-name prefix below is the plan's UNIT, matching the A2c / A4a / A5
+# prefixes already in this file, which are unit names too (B40).
+mutate_port_h() { mutate_in include/wcache/port.h "$@"; }
+mutate_port() { mutate_in src/port.cpp "$@"; }
+mutate_ev() { mutate_in include/wcache/event.h "$@"; }
+mutate_mshr_h() { mutate_in include/wcache/mshr.h "$@"; }
+mutate_mshr() { mutate_in src/mshr.cpp "$@"; }
 
 echo "== comparison operators"
 mutate kill '<= becomes <'   's|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() <= b|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() < b|'
@@ -1358,6 +1375,376 @@ mutate_sp_h kill 'A5 random leaves the enum' \
     's|enum class PolicyKind : std::uint8_t { LRU = 0, FIFO = 1, RANDOM = 2 };|enum class PolicyKind : std::uint8_t { LRU = 0, FIFO = 1 };|'
 mutate_sp_h kill 'A5 PolicyKind widens' \
     's|enum class PolicyKind : std::uint8_t|enum class PolicyKind : std::int32_t|'
+
+echo "== B1: Port, the occupancy arithmetic (src/port.cpp)"
+# The unit is three lines, so the mutations are the three lines: which of the
+# two stamps the accept comes from, what next_accept advances by, and what is
+# handed back.
+mutate_port kill 'B1 reserve always answers next_accept' \
+    's|    const SimTime accept = (now < next_accept_) ? next_accept_ : now;|    const SimTime accept = next_accept_;|'
+mutate_port kill 'B1 reserve always answers now' \
+    's|    const SimTime accept = (now < next_accept_) ? next_accept_ : now;|    const SimTime accept = now;|'
+mutate_port kill 'B1 the free/busy compare is inverted' \
+    's|    const SimTime accept = (now < next_accept_) ? next_accept_ : now;|    const SimTime accept = (now > next_accept_) ? next_accept_ : now;|'
+mutate_port kill 'B1 ii is never charged' \
+    's|    next_accept_ = accept + ii_;|    next_accept_ = accept;|'
+mutate_port kill 'B1 next_accept advances from now' \
+    's|    next_accept_ = accept + ii_;|    next_accept_ = now + ii_;|'
+# The two quantities confused for each other, in both directions. `ii` is the
+# reciprocal of throughput and `latency` is what one request waits; a channel
+# with 100 cycles of latency at ii 2 has 50 requests in flight and is a
+# completely different machine from one that serializes 100-cycle round trips
+# (2.4). Either of these makes the model the other machine, silently.
+mutate_port kill 'B1 next_accept advances by the latency' \
+    's|    next_accept_ = accept + ii_;|    next_accept_ = accept + latency_;|'
+mutate_port kill 'B1 reserve returns the completion time' \
+    's|    return accept;|    return accept + latency_;|'
+
+echo "== B1: Port, the two rejections"
+mutate_port kill 'B1 a negative field is accepted at -1' \
+    's|    if (v.get() < 0) {|    if (v.get() < -1) {|'
+mutate_port kill 'B1 the ii check is dropped' \
+    '/    non_negative_or_reject("ii", ii);/d'
+mutate_port kill 'B1 the latency check is dropped' \
+    '/    non_negative_or_reject("latency", latency);/d'
+# The ORDER, which port.h states and which decides what a grid point wrong in
+# both fields reports. Inserting the latency check first is the smallest edit
+# that reverses it; the trailing original check then runs a second time and
+# passes, so the only observable change is which field the message names.
+mutate_port kill 'B1 latency is checked before ii' \
+    's|    non_negative_or_reject("ii", ii);|    non_negative_or_reject("latency", latency);\n    non_negative_or_reject("ii", ii);|'
+mutate_port kill 'B1 the rejection is a logic_error' \
+    's|throw std::invalid_argument("Port: " + what);|throw std::logic_error("Port: " + what);|'
+mutate_port kill 'B1 the message drops the offending value' \
+    's|reject(std::string(name) + " must be >= 0, got " + std::to_string(v.get()));|reject(std::string(name) + " must be >= 0");|'
+mutate_port kill 'B1 the message always names ii' \
+    's|reject(std::string(name) + " must be >= 0|reject(std::string("ii") + " must be >= 0|'
+
+echo "== B1: Port, the accessors and the initial stamp (port.h)"
+mutate_port_h kill 'B1 ii() reports the latency' \
+    's|    SimTime ii() const { return ii_; }|    SimTime ii() const { return latency_; }|'
+mutate_port_h kill 'B1 latency() reports the ii' \
+    's|    SimTime latency() const { return latency_; }|    SimTime latency() const { return ii_; }|'
+mutate_port_h kill 'B1 next_accept() reports the ii' \
+    's|    SimTime next_accept() const { return next_accept_; }|    SimTime next_accept() const { return ii_; }|'
+# The run starts at tile_origin[0] == 0 (Part 5), so a port that has never been
+# used is free at 0. A port born busy delays the first access of the run at
+# every level, which shifts every tile_origin and would read as a cache result.
+mutate_port_h kill 'B1 a port is born busy' \
+    's|    SimTime next_accept_{0};|    SimTime next_accept_{1};|'
+
+echo "== B2: EventQueue, 3.6's class table (event.h)"
+# Each of these reverses one row of the class table, and 4.6's worked example is
+# what they cost: a prefetch fill and a demand probe both land at cycle 111, and
+# only Fill before Probe makes that a hit rather than a second fetch and 110
+# more cycles (V23). Every one of them produces a plausible, wrong, perfectly
+# reproducible run.
+mutate_ev kill 'B2 an L2 fill is classed as a probe' \
+    's|        case EventKind::L2Fill:|        case EventKind::L2Fill:  return EventClass::Probe;|'
+mutate_ev kill 'B2 the fills are classed as probes' \
+    's|        case EventKind::L1Fill:  return EventClass::Fill;|        case EventKind::L1Fill:  return EventClass::Probe;|'
+mutate_ev kill 'B2 the barrier is classed as a fill' \
+    's|        case EventKind::Barrier: return EventClass::Barrier;|        case EventKind::Barrier: return EventClass::Fill;|'
+mutate_ev kill 'B2 a probe is classed as a fill' \
+    's|        case EventKind::L2Probe: return EventClass::Probe;|        case EventKind::L2Probe: return EventClass::Fill;|'
+mutate_ev kill 'B2 an issue is classed as a probe' \
+    's|        case EventKind::Issue:   return EventClass::Issue;|        case EventKind::Issue:   return EventClass::Probe;|'
+# The fallback the comment in event.h warns about, and it is the one wrong
+# answer available: a kind silently dispatched at class 0 reorders the run
+# against itself and the result still looks like a result.
+mutate_ev kill 'B2 an unknown kind gets a fallback class' \
+    's|    throw std::logic_error("class_of: unknown EventKind");|    return EventClass::Fill;|'
+mutate_ev kill 'B2 an unknown kind is a runtime_error' \
+    's|throw std::logic_error("class_of: unknown EventKind");|throw std::runtime_error("class_of: unknown EventKind");|'
+# The enumerator VALUES are the order, so renumbering them is renumbering 3.6.
+mutate_ev kill 'B2 Fill is renumbered' \
+    's|    Fill = 0,|    Fill = 9,|'
+mutate_ev kill 'B2 Barrier and Probe collide' \
+    's|    Barrier = 1,|    Barrier = 2,|'
+mutate_ev kill 'B2 EventClass widens' \
+    's|enum class EventClass : std::uint8_t {|enum class EventClass : std::int32_t {|'
+mutate_ev kill 'B2 EventKind widens' \
+    's|enum class EventKind : std::uint8_t {|enum class EventKind : std::int32_t {|'
+
+echo "== B2: EventQueue, the total order (event.h)"
+# One case per field of `(time, class, effective_age, core_id, seq)`, dropped
+# and reversed. D11 asks for a TOTAL order rather than a stable one because
+# under LRU the service order IS the recency stack (D7): one flipped tie leaves
+# a different victim and every access after it diverges.
+mutate_ev kill 'B2 key_less drops the time' \
+    '/    if (!(a.time == b.time)) return a.time < b.time;/d'
+mutate_ev kill 'B2 key_less drops the class' \
+    '/    if (a.cls != b.cls)      return a.cls < b.cls;/d'
+mutate_ev kill 'B2 key_less drops the age' \
+    '/    if (!(a.age == b.age))   return a.age < b.age;/d'
+mutate_ev kill 'B2 key_less drops the core' \
+    '/    if (!(a.core == b.core)) return a.core < b.core;/d'
+mutate_ev kill 'B2 key_less reverses the class' \
+    's|    if (a.cls != b.cls)      return a.cls < b.cls;|    if (a.cls != b.cls)      return a.cls > b.cls;|'
+mutate_ev kill 'B2 key_less reverses the age' \
+    's|    if (!(a.age == b.age))   return a.age < b.age;|    if (!(a.age == b.age))   return a.age > b.age;|'
+mutate_ev kill 'B2 key_less reverses the seq' \
+    's|    return a.seq < b.seq;|    return a.seq > b.seq;|'
+# The seq is the LAST discriminator and the one that makes the order total. A
+# comparison that stops before it leaves ties for std::priority_queue to break,
+# and its arrangement is unspecified.
+mutate_ev kill 'B2 key_less stops before the seq' \
+    's|    return a.seq < b.seq;|    return false;|'
+mutate_ev kill 'B2 the age is compared before the class' \
+    's|    if (a.cls != b.cls)      return a.cls < b.cls;|    if (!(a.age == b.age))   return a.age < b.age;\n    if (a.cls != b.cls)      return a.cls < b.cls;|'
+# The one inversion in the file lives at the single point the container demands
+# it. Undo it and the engine dispatches the LATEST event first, which is not a
+# discrete-event simulation at all.
+mutate_ev kill 'B2 the queue is a max-heap' \
+    's|            return key_less(b.key, a.key);|            return key_less(a.key, b.key);|'
+
+echo "== B2: EventQueue, schedule and pop_min (event.h)"
+mutate_ev kill 'B2 P1 is dropped, the past is schedulable' \
+    's|        if (time < now_) {|        if (time < SimTime{0}) {|'
+# The other direction, and the one that would break the DEFAULT configuration:
+# at 2.5b's zero latencies whole chains run inside one timestamp, so scheduling
+# AT now is ordinary rather than exotic.
+mutate_ev kill 'B2 scheduling at now is refused' \
+    's|        if (time < now_) {|        if (time <= now_) {|'
+mutate_ev kill 'B2 the seq counter does not advance' \
+    '/^        ++next_seq_;$/d'
+mutate_ev kill 'B2 the first seq is 1' \
+    's|EventSeq{next_seq_}|EventSeq{next_seq_ + 1}|'
+mutate_ev kill 'B2 the age never reaches the key' \
+    's|EventKey{time, class_of(kind), age, core, EventSeq{next_seq_}}|EventKey{time, class_of(kind), NoRefusal, core, EventSeq{next_seq_}}|'
+mutate_ev kill 'B2 the core never reaches the key' \
+    's|EventKey{time, class_of(kind), age, core, EventSeq{next_seq_}}|EventKey{time, class_of(kind), age, CoreId{0}, EventSeq{next_seq_}}|'
+mutate_ev kill 'B2 pop_min does not advance now' \
+    '/        now_ = e.key.time;/d'
+mutate_ev kill 'B2 an empty pop is an out_of_range' \
+    's|throw std::logic_error("EventQueue::pop_min: the queue is empty")|throw std::out_of_range("EventQueue::pop_min: the queue is empty")|'
+mutate_ev kill 'B2 now() starts below zero' \
+    's|    SimTime now_{0};|    SimTime now_{-1};|'
+mutate_ev kill 'B2 scheduled() reports the queue depth' \
+    's|    std::int64_t scheduled() const { return next_seq_; }|    std::int64_t scheduled() const { return static_cast<std::int64_t>(q_.size()); }|'
+
+echo "== B3: MshrFile, 3.8's write-once stamp (src/mshr.cpp)"
+mutate_mshr kill 'B3 mark_refused overwrites an existing stamp' \
+    's|    if (r.refusal == NoRefusal) {|    if (true) {|'
+mutate_mshr kill 'B3 mark_refused does not record the reason' \
+    '/        r.reason  = reason;/d'
+mutate_mshr kill 'B3 mark_refused does not stamp at all' \
+    '/        r.refusal = counter.next();/d'
+mutate_mshr kill 'B3 the first stamp is 1' \
+    's|    const RefusalOrder stamp{next_};|    const RefusalOrder stamp{next_ + 1};|'
+mutate_mshr kill 'B3 the refusal counter does not advance' \
+    '/^    ++next_;$/d'
+mutate_mshr_h kill 'B3 issued() reports one too many' \
+    's|    std::int64_t issued() const { return next_; }|    std::int64_t issued() const { return next_ + 1; }|'
+mutate_mshr_h kill 'B3 the request key is reversed' \
+    's|inline bool key_less(const Request\& a, const Request\& b) { return a.refusal < b.refusal; }|inline bool key_less(const Request\& a, const Request\& b) { return a.refusal > b.refusal; }|'
+
+echo "== B3: MshrFile, the constructor"
+mutate_mshr kill 'B3 capacity may be zero' \
+    's|    at_least_or_reject("capacity", capacity, 1);|    at_least_or_reject("capacity", capacity, 0);|'
+mutate_mshr kill 'B3 tgts_per_mshr may be zero' \
+    's|    at_least_or_reject("tgts_per_mshr", tgts_per_mshr, 1);|    at_least_or_reject("tgts_per_mshr", tgts_per_mshr, 0);|'
+mutate_mshr kill 'B3 demand_reserve may be negative' \
+    's|    at_least_or_reject("demand_reserve", demand_reserve, 0);|    at_least_or_reject("demand_reserve", demand_reserve, -1);|'
+# `demand_reserve == capacity` is the DEFAULT demand-only configuration (4.2),
+# not an edge case, so a constructor that rejected equality would reject the
+# shipped defaults.
+mutate_mshr kill 'B3 demand_reserve equal to capacity is refused' \
+    's|    if (demand_reserve > capacity) {|    if (demand_reserve >= capacity) {|'
+mutate_mshr kill 'B3 the demand_reserve relation is dropped' \
+    's|    if (demand_reserve > capacity) {|    if (demand_reserve > 1000000) {|'
+mutate_mshr kill 'B3 tgts is checked before capacity' \
+    's|    at_least_or_reject("capacity", capacity, 1);|    at_least_or_reject("tgts_per_mshr", tgts_per_mshr, 1);\n    at_least_or_reject("capacity", capacity, 1);|'
+mutate_mshr kill 'B3 demand_reserve is checked before tgts' \
+    's|    at_least_or_reject("tgts_per_mshr", tgts_per_mshr, 1);|    at_least_or_reject("demand_reserve", demand_reserve, 0);\n    at_least_or_reject("tgts_per_mshr", tgts_per_mshr, 1);|'
+mutate_mshr kill 'B3 the config rejection is a logic_error' \
+    's|    throw std::invalid_argument("MshrFile: " + what);|    throw std::logic_error("MshrFile: " + what);|'
+mutate_mshr kill 'B3 the caller rejection is an invalid_argument' \
+    's|    throw std::logic_error("MshrFile::" + std::string(verb) + ": " + what);|    throw std::invalid_argument("MshrFile::" + std::string(verb) + ": " + what);|'
+
+echo "== B3: MshrFile, has_slot and the demand reserve"
+# Without this case a grantee is refused by its own reservation, the freed slot
+# is never consumed, and the run stalls on a credit that exists.
+mutate_mshr kill 'B3 a grantee is refused by its own reservation' \
+    '/    if (r.reserved) return true;/d'
+mutate_mshr kill 'B3 has_slot ignores the reserved credits' \
+    's|    const std::int32_t free = capacity_ - live() - reserved_;|    const std::int32_t free = capacity_ - live();|'
+mutate_mshr kill 'B3 has_slot admits one demand too many' \
+    's@    return r.demand ? free > 0 : free > demand_reserve_;@    return r.demand ? free >= 0 : free > demand_reserve_;@'
+# 4.6's whole guarantee: a prefetch may never take the last `demand_reserve`
+# entries, so a demand burst can always allocate. Dropped, off by one, and with
+# the two branches swapped.
+mutate_mshr kill 'B3 a prefetch ignores the reserve' \
+    's@    return r.demand ? free > 0 : free > demand_reserve_;@    return r.demand ? free > 0 : free > 0;@'
+mutate_mshr kill 'B3 the prefetch bound is off by one' \
+    's@    return r.demand ? free > 0 : free > demand_reserve_;@    return r.demand ? free > 0 : free >= demand_reserve_;@'
+mutate_mshr kill 'B3 the demand and prefetch branches swap' \
+    's@    return r.demand ? free > 0 : free > demand_reserve_;@    return r.demand ? free > demand_reserve_ : free > 0;@'
+
+echo "== B3: MshrFile, allocate"
+mutate_mshr kill 'B3 allocate does not check for a live entry' \
+    's|    if (entries_.find(line) != entries_.end()) {|    if (false) {|'
+mutate_mshr kill 'B3 allocate does not check has_slot' \
+    's|    if (!has_slot(primary)) {|    if (false) {|'
+# The primary occupies targets[0], which is what makes 4.1's per-entry bound
+# exact and what puts it through the same retire loop as every later merge.
+mutate_mshr kill 'B3 the primary is not a target' \
+    '/    entry.targets.push_back(&primary);/d'
+mutate_mshr kill 'B3 an entry is always born demand' \
+    's|    Mshr entry{line, primary.core, primary.demand, {}, {}};|    Mshr entry{line, primary.core, true, {}, {}};|'
+mutate_mshr kill 'B3 an entry records the wrong core' \
+    's|    Mshr entry{line, primary.core, primary.demand, {}, {}};|    Mshr entry{line, CoreId{0}, primary.demand, {}, {}};|'
+# A leaked reservation is a credit the file never hands back, so the grant loop
+# stops one waiter short for the rest of the run and the symptom is a stall
+# attributed to the MSHR bound.
+mutate_mshr kill 'B3 allocate does not spend the reservation' \
+    's|    if (primary.reserved) {|    if (false) {|'
+mutate_mshr kill 'B3 allocate leaves the reservation flag set' \
+    '/        primary.reserved = false;/d'
+
+echo "== B3: MshrFile, add_target: I3 and 4.6's promotion"
+mutate_mshr kill 'B3 the target bound is off by one' \
+    's|    if (as_count(e.targets.size()) >= tgts_per_mshr_) return false;|    if (as_count(e.targets.size()) > tgts_per_mshr_) return false;|'
+mutate_mshr kill 'B3 add_target refuses everything' \
+    's|    if (as_count(e.targets.size()) >= tgts_per_mshr_) return false;|    if (true) return false;|'
+mutate_mshr kill 'B3 add_target reports success without merging' \
+    '/    e.targets.push_back(&r);/d'
+# The promotion, in the three ways an `or` can be got wrong. The middle one is
+# the dangerous direction: a prefetch merging onto a demand entry must NOT
+# demote it, because a core IS waiting on that line and the fill would then
+# notify nobody.
+mutate_mshr kill 'B3 a merging target overwrites the demand bit' \
+    's@    e.demand = e.demand || r.demand;@    e.demand = r.demand;@'
+mutate_mshr kill 'B3 promotion is an and' \
+    's@    e.demand = e.demand || r.demand;@    e.demand = e.demand \&\& r.demand;@'
+mutate_mshr kill 'B3 promotion is dropped' \
+    '/    e.demand = e.demand || r.demand;/d'
+
+echo "== B3: MshrFile, the drop rule (N16, I15)"
+# The one rule keeping the waiting population backed one-for-one by demand
+# credits, which is the whole of 4.1's argument. Both indices, separately,
+# because a guard removed from one leaves the other rejecting and a single case
+# would report a pass.
+mutate_mshr kill 'B3 push_line_wait queues a prefetch' \
+    '/^void MshrFile::push_line_wait/,/^}/ s|    if (!r.demand) {|    if (false) {|'
+mutate_mshr kill 'B3 push_slot_wait queues a prefetch' \
+    '/^void MshrFile::push_slot_wait/,/^}/ s|    if (!r.demand) {|    if (false) {|'
+mutate_mshr kill 'B3 push_line_wait stamps the slot reason' \
+    '/^void MshrFile::push_line_wait/,/^}/ s|WaitReason::Line|WaitReason::Slot|'
+mutate_mshr kill 'B3 push_slot_wait stamps the line reason' \
+    '/^void MshrFile::push_slot_wait/,/^}/ s|WaitReason::Slot|WaitReason::Line|'
+# A push that skipped the stamp would put an UNSTAMPED request into a population
+# ordered by stamp, where NoRefusal sorts it last forever: starvation, arriving
+# by omission rather than by a rule.
+mutate_mshr kill 'B3 push_line_wait does not stamp' \
+    '/^void MshrFile::push_line_wait/,/^}/ {/    mark_refused/d}'
+mutate_mshr kill 'B3 push_slot_wait does not stamp' \
+    '/^void MshrFile::push_slot_wait/,/^}/ {/    mark_refused/d}'
+mutate_mshr kill 'B3 push_line_wait does not push' \
+    '/    e.line_wait.push_back(\&r);/d'
+mutate_mshr kill 'B3 push_slot_wait does not push' \
+    '/    slot_wait_.push_back(\&r);/d'
+
+echo "== B3: MshrFile, release_reservation"
+mutate_mshr kill 'B3 release reports a credit it did not free' \
+    's|    if (!r.reserved) return false;|    if (!r.reserved) return true;|'
+mutate_mshr kill 'B3 release does not return the credit' \
+    '/^    --reserved_;$/d'
+mutate_mshr kill 'B3 release leaves the flag set' \
+    '/^    r.reserved = false;$/d'
+
+echo "== B3: MshrFile, the grant loop (I7, 3.8)"
+# 3.8's counterexample is exactly what these two cost: a slot waiter can outlive
+# the allocation of an entry it later merges onto, so the index is NOT in age
+# order and taking the front grants the wrong request.
+mutate_mshr kill 'B3 the grant loop takes the front of the index' \
+    's|        const auto oldest = std::min_element(|        const auto oldest = slot_wait_.begin(); (void)std::min_element(|'
+mutate_mshr kill 'B3 the grant loop takes the newest' \
+    's|            \[\](const Request\* a, const Request\* b) { return key_less(\*a, \*b); });|            [](const Request* a, const Request* b) { return key_less(*b, *a); });|'
+mutate_mshr kill 'B3 the grant loop over-grants by one' \
+    's|    while (live() + reserved_ < capacity_ \&\& !slot_wait_.empty()) {|    while (live() + reserved_ <= capacity_ \&\& !slot_wait_.empty()) {|'
+mutate_mshr kill 'B3 a grant reserves nothing' \
+    '/^        ++reserved_;$/d'
+mutate_mshr kill 'B3 a grantee is not marked reserved' \
+    '/        r->reserved = true;/d'
+mutate_mshr kill 'B3 the grant loop does not pop the index' \
+    '/        slot_wait_.erase(oldest);/d'
+
+echo "== B3: MshrFile, retire, and the order inside it"
+# THE ordering claim of 3.4 and of mshr.h: erase first, so the credit this
+# retire freed is the one the loop can hand out. Collecting first grants one
+# waiter fewer at EVERY retire, which is a stall the sweep would attribute to
+# the MSHR depth. Written as a three-step swap so the two statements really
+# trade places rather than one being duplicated.
+mutate_mshr kill 'B3 retire grants before it erases' \
+    's|    entries_.erase(it);|@@ERASE@@|; s|    collect_grants(out.wake);|    entries_.erase(it);|; s|@@ERASE@@|    collect_grants(out.wake);|'
+mutate_mshr kill 'B3 retire loses the line waiters' \
+    's|    out.wake    = e.line_wait;|    out.wake.clear();|'
+mutate_mshr kill 'B3 retire loses the targets' \
+    's|    out.targets = e.targets;|    out.targets.clear();|'
+# `out` is REPLACED, not appended to, so a caller may reuse one buffer. An
+# appending version hands a later retire an earlier one's wake list a second
+# time, which reinjects a request that is already in flight.
+mutate_mshr kill 'B3 retire appends to the wake buffer' \
+    's|    out.wake    = e.line_wait;|    out.wake.insert(out.wake.end(), e.line_wait.begin(), e.line_wait.end());|'
+mutate_mshr kill 'B3 retire appends to the target buffer' \
+    's|    out.targets = e.targets;|    out.targets.insert(out.targets.end(), e.targets.begin(), e.targets.end());|'
+mutate_mshr kill 'B3 retire does not sort the wake list' \
+    '/    std::stable_sort(out.wake.begin(), out.wake.end(),/,+1d'
+mutate_mshr allow 'B3 the wake sort is not stable' \
+    's|    std::stable_sort(out.wake.begin(), out.wake.end(),|    std::sort(out.wake.begin(), out.wake.end(),|' \
+    'an equivalent mutant: no two members of a wake list can compare equivalent, so stable and unstable agree elementwise'
+# The proof, written out rather than asserted, in B99's shape. Stability only
+# ever matters for elements the comparator calls EQUIVALENT, and 3.8's key over
+# a wake list has none: every member of `e.line_wait` and of `slot_wait_` got
+# there through `push_line_wait` or `push_slot_wait`, both of which call
+# `mark_refused` before pushing, and `mark_refused` draws from a strictly
+# increasing counter that is never reset. So every member carries a distinct
+# stamp and the comparator is a strict total order on the list, under which
+# stable_sort and sort produce the same sequence by definition. The one way a
+# duplicate stamp could appear is the same request pushed onto two indices at
+# once (I5 forbids it, and this class does not enforce it), and even then the
+# two elements are the SAME pointer, so the two sequences are still identical.
+# mshr.cpp says this in its own comment -- "they cannot tie today ... which is
+# exactly why the weaker guarantee is free" -- and the value of stable_sort is
+# that it keeps the answer a function of insertion order IF that ever changes,
+# which is a property about a future, not a behaviour a test can reach today.
+mutate_mshr kill 'B3 the wake list is sorted newest first' \
+    's|                     \[\](const Request\* a, const Request\* b) { return key_less(\*a, \*b); });|                     [](const Request* a, const Request* b) { return key_less(*b, *a); });|'
+mutate_mshr kill 'B3 retire does not erase the entry' \
+    '/    entries_.erase(it);/d'
+# The IDENTITY half of the guard, not the lookup half: a `retire` that only
+# asked whether the line has an entry would erase the real one when handed a
+# different Mshr object naming the same line, report someone else's targets as
+# satisfied, and drop a fill.
+mutate_mshr kill 'B3 retire checks only that the line is live' \
+    's@    if (it == entries_.end() || \&it->second != \&e) {@    if (it == entries_.end()) {@'
+
+echo "== B3: MshrFile, the readers and the request defaults"
+mutate_mshr kill 'B3 live() counts the reservations too' \
+    's|std::int32_t MshrFile::live() const { return as_count(entries_.size()); }|std::int32_t MshrFile::live() const { return as_count(entries_.size()) + reserved_; }|'
+mutate_mshr kill 'B3 slot_wait_depth() always reports zero' \
+    's|std::int32_t MshrFile::slot_wait_depth() const { return as_count(slot_wait_.size()); }|std::int32_t MshrFile::slot_wait_depth() const { return 0; }|'
+mutate_mshr kill 'B3 find never answers' \
+    's|    return it == entries_.end() ? nullptr : \&it->second;|    return nullptr;|'
+# 3.3's defaults on a fresh Request. Each of these is silently true of EVERY
+# request in the run: a fresh request that is a prefetch never waits, one born
+# refused is never stamped, one born at the L2 re-enters at the wrong level
+# (3.5), and one born holding a reservation is admitted by has_slot forever.
+mutate_mshr_h kill 'B3 a fresh request is a prefetch' \
+    's|    bool demand = true;|    bool demand = false;|'
+mutate_mshr_h kill 'B3 a fresh request is born refused' \
+    's|    RefusalOrder refusal = NoRefusal;|    RefusalOrder refusal = RefusalOrder{0};|'
+mutate_mshr_h kill 'B3 a fresh request re-enters at the L2' \
+    's|    Level level = Level::L1;|    Level level = Level::L2;|'
+mutate_mshr_h kill 'B3 a fresh request holds a reservation' \
+    's|    bool reserved = false;|    bool reserved = true;|'
+mutate_mshr_h kill 'B3 a fresh request carries an entry' \
+    's|    Mshr\* mshr1 = nullptr;|    Mshr* mshr1 = reinterpret_cast<Mshr*>(1);|'
+mutate_mshr_h kill 'B3 WaitReason widens' \
+    's|enum class WaitReason : std::uint8_t|enum class WaitReason : std::int32_t|'
+mutate_mshr_h kill 'B3 Level widens' \
+    's|enum class Level : std::uint8_t|enum class Level : std::int32_t|'
 
 echo
 echo "$((killed + survived + unexpected)) mutations: $killed killed, $survived survived as expected, $unexpected unexpected"

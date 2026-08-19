@@ -924,13 +924,13 @@ when the unit that needs it lands.
 
 | Feature | First needed by |
 |---|---|
-| ~~`std::vector`~~, `std::unordered_map` as class templates you *use* rather than write | `std::vector` landed at A4b, as `slots_` in `set_associative.h`; it gets no section of its own, and the one wcache-specific consequence is in section 8. `std::unordered_map` still owed, first at B3 |
+| ~~`std::vector`, `std::unordered_map` as class templates you *use* rather than write~~ | `std::vector` landed at A4b, as `slots_` in `set_associative.h`; it gets no section of its own, and the one wcache-specific consequence is in section 8. `std::unordered_map` landed at plan unit B3, as `entries_` in `mshr.h`: section 26 |
 | ~~virtual functions and abstract base classes~~ | landed early, at A2a: section 19 |
 | ~~`override`, `final`~~ | landed at A2b: section 20 |
 | ~~`std::unique_ptr` and ownership~~ | landed at A5, as `make_policy`'s return type: section 25 |
 | ~~exceptions: `throw` (section 18), custom exception types~~; `noexcept` revisited | `throw` types landed at A2b: section 20. `noexcept` still owed |
-| `std::priority_queue` and custom comparators, for the event queue | B2 |
-| `enum class` for the outcome and reason enums | B3 |
+| ~~`std::priority_queue` and custom comparators, for the event queue~~ | landed at plan unit B2: section 26 |
+| ~~`enum class` for the outcome and reason enums~~ | the reason enums landed at plan unit B3 (`WaitReason`, `Level`) and plan unit B2 added `EventClass` and `EventKind`, all four by section 18's mechanism with nothing new to explain. The **outcome** enum (3.4's five triage results) belongs to plan unit C1 and will add nothing either |
 | move semantics, `&&`, `std::move` | C2 if it becomes hot |
 
 ---
@@ -2300,3 +2300,400 @@ A4c or A5 and are already covered:
 | `explicit` on a one-argument constructor | section 7 |
 | `constexpr` on a namespace-scope constant (`kNeverStamped`), unnamed namespaces | sections 11 and 1 |
 | where the cast goes, and signed / unsigned mixing | section 22 |
+
+---
+
+## 26. A min-heap, a template over a payload, node stability, and one measured piece of undefined behaviour (plan units B1, B2 and B3)
+
+A note on the numbering before anything else, because this section is the first
+to hit it. **The plan's Phase B units are named B1, B2, B3, and `PROGRESS.md`'s
+board decisions are also numbered B1 through B104.** They are different things.
+Below, a unit of the plan is always written "plan unit B2" and a board ruling is
+always written "decision B2". Neither is written bare.
+
+Plan unit B1 (`Port`) introduced no new C++ at all: two `SimTime` members, a
+compare, and a `throw` that section 20 already covers. Everything in this section
+comes from plan units B2 and B3.
+
+### `std::priority_queue`, and getting a min-heap out of a max-heap
+
+```cpp
+// event.h
+private:
+    struct Later {
+        bool operator()(const Event<Payload>& a, const Event<Payload>& b) const {
+            return key_less(b.key, a.key);       // note the swapped arguments
+        }
+    };
+
+    std::priority_queue<Event<Payload>, std::vector<Event<Payload>>, Later> q_;
+```
+
+**`std::priority_queue` is not a container.** It is a *container adaptor*: it owns
+some other container (a `std::vector` unless you say otherwise) and keeps the heap
+property in it using the same `<algorithm>` machinery you could call by hand
+(`std::push_heap`, `std::pop_heap`). What it adds is that you cannot reach past
+the interface and break the invariant.
+
+Its interface is three calls and no more:
+
+```cpp
+q_.push(e);                  // insert,  O(log n)
+const Event<P>& t = q_.top();// look at the winner, O(1), const reference
+q_.pop();                    // remove the winner, O(log n), returns VOID
+```
+
+**`top()` is the element that compares *greatest* under the comparator.** The
+default comparator is `std::less<T>`, so the default `priority_queue` is a
+**max-heap**. The engine loop needs the earliest event, which is a min-heap, so
+something has to be inverted. There are two places to do it, and the choice is
+the interesting part:
+
+- invert the *key comparator*, so `key_less` would actually mean "later than";
+- keep `key_less` meaning what its name says, and invert at the single point where
+  the container demands it, by **swapping the arguments**: `key_less(b.key, a.key)`.
+
+The code does the second. `key_less` is read by the tests, by the oracle in
+`test_event.cpp`, and by anyone reasoning about plan 3.6's key, and a comparator
+whose name lies is a defect waiting for its first reader. The inversion is one
+expression, in a private struct, next to the container that needs it.
+
+**Three template arguments, and you have to write the second to reach the third.**
+`std::priority_queue<T, Container, Compare>` defaults `Container` to
+`std::vector<T>`, but C++ has no way to skip a template argument, so
+`std::vector<Event<Payload>>` is spelled out even though it is the default. That
+is why the declaration looks heavier than it is.
+
+**The comparator is a *type*, not a function.** The `priority_queue` stores an
+object of type `Later`, default-constructed. That is why `Later` is a `struct`
+with an `operator()` rather than a lambda: in C++17 a lambda's type has no name
+you can write in a template argument list, and a closure type has no default
+constructor, so a lambda comparator has to be constructed separately and passed to
+the `priority_queue` constructor. A named struct with `operator()` is spellable
+and default-constructible. The mechanism is the same one section 13 explained for
+`std::hash`: a class whose whole content is a call operator.
+
+Two properties worth stating because the code depends on both:
+
+**`pop()` returns nothing, so reading the winner is two steps.**
+
+```cpp
+Event<Payload> e = q_.top();   // copy out first
+q_.pop();                      // then remove
+now_ = e.key.time;
+return e;
+```
+
+`top()` returns a **`const` reference** into the heap, so the value has to be
+copied before `pop()` invalidates it. This is not an oversight in the standard
+library: separating "look" from "remove" is what lets `pop()` be `noexcept`-ish in
+practice, since a `pop()` that returned by value could throw *after* it had
+already modified the container, leaving the element lost. It is also why
+`pop_min()` returns by value here.
+
+**A `priority_queue` cannot be iterated at all.** There is no `begin()`. That is a
+feature in this tree rather than a limitation: nothing can accidentally read the
+queue in container order and let the heap's internal arrangement leak into a
+result. The only ordering anything can observe is the pop sequence, which is the
+total order plan 3.6 specifies.
+
+### A class template over a payload type, and why it is not a decision in disguise
+
+```cpp
+template <typename Payload>
+struct Event {
+    EventKey  key;
+    EventKind kind;
+    Payload   payload;
+};
+
+template <typename Payload>
+class EventQueue { ... };
+```
+
+Section 5 introduced templates through `Tagged`, where the parameter is a **tag**:
+a type that is never defined, never instantiated, and exists only to make
+`Tagged<int64, sim_time>` a different type from `Tagged<int64, refusal_order>`.
+This is the other use of the same feature, and it is worth separating because they
+look identical on the page and do opposite jobs.
+
+Here `Payload` is a **real type**. It is stored in the struct, copied into the
+queue, and returned from `pop_min`. The template exists because **plan unit B2 does
+not know what an event is about**: it is a `Request`, an `Mshr` entry, a core, or a
+tile, and every one of those belongs to a later unit. Naming a concrete payload
+here would be this unit deciding a downstream unit's storage.
+
+The two ways to dodge that without a template are both worse and both are worth
+naming, because they are the shapes a C programmer reaches for first:
+
+- **`void*`.** Drops the type entirely, so nothing stops a `Request*` being popped
+  as an `Mshr*`, which is precisely the class of accident the whole `Tagged`
+  apparatus exists to prevent.
+- **An opaque integer handle.** Looks type-safe and is not: it forces *this* unit
+  to invent a handle table, a numbering, and a lifetime rule for entries it knows
+  nothing about. That is the same decision the template avoids, taken anyway and
+  hidden behind an `int`.
+
+The ordering, which is all this unit owns, does not depend on the payload at all,
+which is what makes the parameter free rather than speculative generality.
+
+Two consequences, both already half-explained elsewhere in this file:
+
+**The whole class lives in the header** (section 5, "templates live in headers").
+There is no `event.cpp`, and there cannot be one, because the compiler must see the
+body at every instantiation.
+
+**Members of a class template are compiled only when used.** A template that is
+included but never instantiated is barely checked: name lookup that does not depend
+on the parameter happens at definition, everything else waits. So a header-only
+unit is **not** tested by the library building, and `tests/test_event.cpp` says so
+in its own opening comment. That is the C++ form of decision B33's lesson (an
+interface with no implementation still has testable contracts): here, a unit with
+no `.cpp` still needs a test that instantiates it, or a clean build proves nothing.
+
+### `std::unordered_map`, node stability, and why `Request::mshr1` is safe
+
+```cpp
+// mshr.h
+std::unordered_map<LineId, Mshr> entries_;
+
+// mshr.cpp
+Mshr& MshrFile::allocate(LineId line, Request& primary) {
+    ...
+    return entries_.emplace(line, std::move(entry)).first->second;
+}
+```
+
+`std::unordered_map<Key, T>` is a hash table with **separate chaining**: a bucket
+array of pointers, and every element in a separately allocated **node**. That
+implementation is not an accident of one library; the standard's requirements
+force it, and they force it by specifying exactly what survives what.
+
+**The guarantee, which is the whole reason this container was chosen:**
+
+| operation | invalidates iterators | invalidates **references and pointers** to elements |
+|---|---|---|
+| `insert` / `emplace` (no rehash) | no | **no** |
+| `insert` / `emplace` **causing a rehash** | **yes** | **no** |
+| `erase(it)` | only `it` | only the erased element's |
+
+A rehash rebuilds the bucket array and re-links the nodes. **It moves pointers,
+not nodes**, so an `Mshr&` handed out by `allocate` stays valid while any number
+of other lines are allocated and retired around it.
+
+That is load-bearing rather than convenient. `Request::mshr1` is a raw `Mshr*`
+that a request holds across **the entire downstream round trip**: plan 4.1's
+argument is that a request blocked at the L2 never released its L1 MSHR entry, so
+the L2's wait sets are views over L1 entries that already exist (I6b). Concretely,
+an `mshr1` taken at cycle 0 must still point at a live entry when its fill lands
+110 cycles later, during which the same L1 file may have allocated and retired
+entries for a dozen other lines.
+
+**Compare `std::vector<Mshr>`,** which is what the same job would look like with
+the container section 8 already covers: `push_back` may reallocate, and every
+pointer into the vector dangles the moment it does. The header says exactly this.
+An index instead of a pointer would work, but it replaces a pointer whose meaning
+is fixed with an index whose meaning depends on what the vector does to the slots
+of erased entries, which is a policy this class would then have to invent and
+document.
+
+Three smaller things the code depends on:
+
+**`std::hash<LineId>` is what makes a tagged scalar a legal key.** Section 13
+wrote that specialization at A1a, three units before anything used it. This map is
+what it was written for.
+
+**`emplace` returns `std::pair<iterator, bool>`.** So
+`entries_.emplace(line, std::move(entry)).first->second` reads as: `.first` is the
+iterator, `->second` is the mapped `Mshr`, and the reference to it is what is
+returned. The `bool` is discarded here because `allocate` has already refused the
+duplicate-line case with a `throw`, which is the stricter answer.
+
+**Nothing ever iterates it, and that is a deliberate discipline.** A hash map's
+iteration order is unspecified and may differ between library versions, builds, or
+insertion histories. In a simulator whose whole exit criterion is bit-identical
+re-runs (plan unit B2, D11), letting that order reach a result is a reproducibility
+bug that no test failure announces. So every read of `entries_` is a lookup by line
+or a `size()`, and the header states it. If a later unit ever needs to walk the
+file, it must sort what it walks.
+
+### `std::stable_sort` versus `std::sort`, and when stability is observable at all
+
+```cpp
+// mshr.cpp, at the end of retire()
+std::stable_sort(out.wake.begin(), out.wake.end(),
+                 [](const Request* a, const Request* b) { return key_less(*a, *b); });
+```
+
+Section 22 introduced `std::sort`. The difference here is one word:
+
+| | guarantee | typical implementation | cost |
+|---|---|---|---|
+| `std::sort` | none about equivalent elements | introsort (quicksort with a heapsort fallback) | O(n log n), no extra memory |
+| `std::stable_sort` | elements that compare **equivalent** keep their relative order | merge sort | O(n log n) with a temporary buffer; O(n log^2 n) if it cannot allocate one |
+
+**Stability is observable only when two things are both true.** The comparator must
+call two elements equivalent (neither `less(a,b)` nor `less(b,a)`), **and** those
+two elements must be distinguishable by something the program later reads. If the
+comparator is a strict total order over the elements actually present, no two are
+ever equivalent, and `sort` and `stable_sort` produce **identical output** on every
+input. The choice is then unobservable and is purely about cost.
+
+That is exactly the situation here, and the code says so:
+
+> Stable, so that if two stamps ever tie the result is still a function of
+> insertion order rather than of the sort's internals. They cannot tie today,
+> since every member of both indices was stamped by the write-once counter (I2),
+> and that is exactly why the weaker guarantee is free.
+
+The comparator is `a.refusal < b.refusal`, and refusal stamps are unique across
+the whole run (I2). So there are no ties, nothing is paid in output, and the only
+cost is a merge sort instead of an introsort over a list bounded by the wait
+population.
+
+**What the weaker guarantee buys is a failure mode, not a behaviour.** If the
+uniqueness invariant ever weakens (a second stamp source, or a request reaching
+the list unstamped and carrying `NoRefusal`), the answer stays a function of
+insertion order rather than of the sort's internal pivot choices. Compare this
+with plan unit B2's lesson in `EXPLAIN.md`: a result that is reproducible only
+because the implementation happens to be deterministic is the shape that passes a
+reproducibility test while being wrong.
+
+**There is a stronger move, and this tree uses it elsewhere.** A5's `pick_victim`
+(section 25, decision B93) faced the same problem and solved it in the
+*comparator* instead: it breaks stamp ties on the smallest slot id, which makes
+the answer invariant under **any** permutation of the input, not just under the
+input order. That is stronger where a second meaningful field exists. Here it does
+not: two requests with the same refusal stamp would have no second field with an
+agreed meaning, so preserving insertion order is the honest fallback rather than a
+weaker choice made out of habit.
+
+### Signed integer overflow is undefined behaviour, and the optimiser will use that
+
+This one is a measurement from this round, not a rule quoted from the standard,
+and it is the most useful thing in this section.
+
+**The rule.** Unsigned integer arithmetic wraps modulo 2^N, and that wrap is
+**defined** by the standard. Signed integer overflow is **undefined behaviour**.
+"Undefined" does not mean "some implementation-defined number"; it means the
+compiler may assume it never happens and optimise on that assumption. The textbook
+consequence is that a compiler may fold `x + 1 > x` to `true` for signed `x`,
+because the only way it could be false is a path the standard says cannot exist.
+
+**The measurement.** The randomized soak in `tests/test_mshr.cpp` drives the MSHR
+file with a linear congruential generator. A linear congruential generator's entire
+mechanism **is** the wrap: it multiplies by a large constant and relies on the
+truncation. The first version of that line kept the state in an `int64_t`:
+
+```cpp
+std::int64_t rng = 12345;                                    // WRONG
+auto next = [&rng]() {
+    rng = rng * 6364136223846793005 + 1442695040888963407;    // signed overflow -> UB
+    return (rng >> 17) & 0x7fffffff;
+};
+```
+
+What happened:
+
+- at `-O0` (the `fixture` build) the stream was a reasonable pseudo-random walk and
+  the soak exercised allocations, merges, both wait indices, retires and grants;
+- at `-O2` (the `release` build) **the stream collapsed into an allocate/retire
+  alternation** that reached none of the paths the soak exists to reach;
+- **and the test still reported zero mismatches.** The independent model agreed
+  with the file, perfectly, about a stream that tested nothing.
+
+That last line is the shape worth memorising: the failure did not look like a
+failure. Nothing threw, nothing compared unequal, and the check that was supposed
+to be the strongest in the file was silently checking almost nothing.
+
+**Only the coverage floors caught it.** The soak counts allocations, merges,
+line-waits, slot-waits, retires, drops, grants and releases, and asserts a minimum
+for each. Those floors went unmet at `-O2`, which is the only signal there was.
+
+**The fix is one type.**
+
+```cpp
+std::uint64_t rng = 12345;                                   // defined wrap
+auto next = [&rng]() {
+    rng = rng * 6364136223846793005ULL + 1442695040888963407ULL;
+    return static_cast<std::int64_t>((rng >> 17) & 0x7fffffffULL);
+};
+```
+
+Both builds now drive the same stream, which is also what makes a soak failure
+reproducible between them.
+
+**Why this belongs in this file.** It is a freshly measured example of why the
+release-mode gate exists. The Makefile builds `fixture` at `-O0 -g` and `release`
+at `-O2 -DNDEBUG`, with no `-fwrapv` and no sanitizers, and the suite is required
+to be green in **both**. Before this round the argument for that requirement was
+that `-DNDEBUG` compiles the asserts out; this is the first time in this tree that
+the two builds have been measured to **behave differently on the same source**.
+
+It is also the third instance of one recurring lesson, and the other two are
+already on the record:
+
+| shape | what the compiler does | how it is caught |
+|---|---|---|
+| a narrowing conversion into `Tagged` (decision B29, A4a) | `-Wnarrowing` **warning**, not an error, and `compile_fail.sh` runs without `-Werror` | SFINAE, at compile time, by construction |
+| a destructor that loses its `virtual` (decision B104) | **warning**, not an error | a runtime destructor count through a base-pointer `unique_ptr` |
+| **signed overflow in a wrapping accumulator** (this round) | **no diagnostic at all**, and the optimiser is entitled to act on it | a runtime coverage floor |
+
+**In this suite, a defect the compiler is allowed to ignore is caught at run time
+or not at all**, and the amount of it that is caught at run time is exactly the
+amount someone wrote a floor or a counter for.
+
+**The rule this tree follows, stated so it does not have to be re-derived.** A
+counter or accumulator whose intended behaviour *includes* wrapping is
+**unsigned**, with a cast at the boundary where it becomes a value. A quantity that
+must **never** wrap stays **signed** (decision B5's convention for the ids), so
+that the overflow remains undefined and a future sanitizer run or a bound check can
+find it, rather than being silently defined into a wrong answer.
+
+The two related hazards already recorded elsewhere are the same undefined
+behaviour reasoned about rather than observed: `tag * num_sets` in U16's
+obligation row, and section 24's "a product no cast can save". This round is the
+first time the tree has watched one actually change a result.
+
+### What this costs
+
+`std::priority_queue` compiles to `std::push_heap` and `std::pop_heap` over a
+`std::vector`: one comparison chain per sift step, no allocation beyond the
+vector's growth, and no indirection per element. `Later::operator()` is a call to a
+`constexpr` function on five scalars and inlines to the compare chain you would
+have written.
+
+The `Payload` template parameter costs nothing at run time and one instantiation
+per distinct payload at compile time.
+
+`std::unordered_map` is the expensive one and is the only container here that
+allocates per element: one node per live MSHR entry, plus a bucket array that
+grows by rehash. That is bought deliberately, for the reference stability
+`Request::mshr1` needs; the alternative was not a cheaper container but an index
+scheme with a policy to maintain.
+
+`std::stable_sort` allocates a temporary buffer where `std::sort` does not. The
+list being sorted is one entry's line waiters plus the grants of one retire,
+bounded by I11 and by the credit supply, so it is small and the allocation is the
+dominant cost of the call rather than the comparisons.
+
+The unsigned LCG costs nothing over the signed one; it is the same multiply.
+
+### What this batch did *not* add to this file
+
+Recorded so the absence does not read as an oversight. All of these appear in the
+Phase B sources and are already covered:
+
+| Feature in this batch | Where it is already explained |
+|---|---|
+| `enum class EventClass / EventKind / WaitReason / Level` with an explicit `: std::uint8_t`, and the `throw` after an exhaustive `switch` (`class_of`) | section 18 |
+| `struct` as a plain data carrier with member initialisers (`Request`, `Mshr`, `EventKey`, `RetireResult`) | section 18 |
+| the header / `.cpp` split, `[[noreturn]]` refusal helpers, and choosing between `std::invalid_argument` and `std::logic_error` | section 20 |
+| `constexpr` on `class_of` and on `event.h`'s `key_less` | section 11 |
+| `inline` on a free function defined in a header (`mshr.h`'s `key_less` for requests) | section 12, which explains the same one-definition problem for a variable; on a function `inline` licenses the definition to appear in every translation unit that includes the header, and the `constexpr` functions beside it are `inline` implicitly |
+| `std::vector` as a member, and why `std::vector<SlotId> v(4)` does not compile | sections 8 and 25 |
+| the `.get()` boundary, `static_cast` placement, and signed / unsigned mixing in `as_count` | sections 22 and 25 |
+| `std::hash` on a tagged scalar, which is what lets `LineId` key the map | section 13 |
+| `std::min_element` with a comparator, in `collect_grants` | section 22's `<algorithm>` note; it is `std::sort`'s comparator convention with one element returned instead of a range reordered |
+| operator overloading on `SimTime` (`accept + ii_` in `Port::reserve`) | section 9, and the deliberate absence of arithmetic on the other tagged scalars is section 21's "a delta is not a tagged type" |
+| `std::move` into `emplace` | still owed, and it stays owed: it appears once, as an optimisation of a copy that would also have been correct, so section 17's move-semantics row is unchanged and still points at plan unit C2 |

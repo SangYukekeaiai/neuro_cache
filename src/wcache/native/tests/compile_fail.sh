@@ -150,6 +150,37 @@ tryS() { try "$1" "$2" "$3" '#include <wcache/set_associative.h>'; }
 # the same wall tryC puts around the array in the other direction.
 tryR() { try "$1" "$2" "$3" '#include <wcache/policy.h>'; }
 
+# Phase B's three preambles. NAMING, because the tree carries a collision: the
+# PLAN's Phase B units are B1 (Port), B2 (EventQueue) and B3 (MshrFile), while
+# PROGRESS.md's DECISIONS are also numbered B1-B104. Every "B1"/"B2"/"B3" in the
+# sections below is the plan's unit.
+#
+# tryPort: port.h, which includes types.h and nothing else. A case compiled with
+# it proves the timing primitive needs no layout, no array and no MSHR, which is
+# what "Phase B: timing primitives, the clock exists and the hierarchy does not"
+# means as a compile-time fact rather than as a sentence in a plan.
+tryPort() { try "$1" "$2" "$3" '#include <wcache/port.h>'; }
+
+# tryEvent: event.h. This preamble is also the reason `make test` compiles the
+# header at all: before B2's tests, event.h was included by NO translation unit
+# in the tree, so nothing built it. Same shape as cache.h's state before A4a,
+# which B59 recorded.
+tryEvent() { try "$1" "$2" "$3" '#include <wcache/event.h>'; }
+
+# tryMshr: mshr.h, an eighth preamble for tryPort's reason. The MSHR file holds
+# no port and no clock (it "cannot violate P2 by predicting a time, since it
+# holds no clock"), so a case compiled here proves it reaches neither.
+tryMshr() { try "$1" "$2" "$3" '#include <wcache/mshr.h>'; }
+
+# tryBoth: event.h AND mshr.h in one translation unit. It exists for exactly one
+# question, and it is a question no single-header preamble can ask: both headers
+# declare a free function named `key_less` in namespace wcache, one over 3.6's
+# EventKey and one over 3.8's Request. They are different keys for different
+# populations, and the engine includes both headers, so "these two overloads
+# coexist and each call resolves" has to be measured somewhere.
+tryBoth() { try "$1" "$2" "$3" '#include <wcache/event.h>
+#include <wcache/mshr.h>'; }
+
 # The one valid configuration every A2b case builds on, so a case that is meant
 # to fail on a type cannot pass or fail on a bad extent instead.
 SHAPE='WeightShape{3, 3, 256, 64}'
@@ -973,6 +1004,262 @@ tryR reject 'policy move assignment'     "$POL int main(){ P p1, p2;
 # become `= delete`.
 tryR accept 'a whole derived policy copy' "$POL int main(){ P a; P b{a};
   b.on_fill(SlotId{0}); return 0; }"
+
+# ---------------------------------------------------------------------------
+# Phase B, units B1 (Port), B2 (EventQueue) and B3 (MshrFile)
+# ---------------------------------------------------------------------------
+
+section "== B3: BurstIndex is a NAME, and CoreId is the name it must not be"
+# The ninth tagged scalar earns its place here or nowhere, and it earns it on
+# ONE case: a CoreId and a BurstIndex are both int32 and both signed, so the
+# non-narrowing constructor cannot separate them and `explicit` cannot either.
+# Only the name catches the swap. `Request` holds them side by side (3.3), so
+# `Request{core, line, burst}` written with two arguments transposed is a
+# spelling the struct invites, and the swap is the whole reason the type exists.
+try reject 'CoreId == BurstIndex'        'int main(){ return CoreId{1} == BurstIndex{1}; }'
+try reject 'BurstIndex < CoreId'         'int main(){ return BurstIndex{1} < CoreId{2}; }'
+try reject 'CoreId{BurstIndex}'          'int main(){ CoreId c{BurstIndex{1}}; return (int)c.get(); }'
+try reject 'BurstIndex{CoreId}'          'int main(){ BurstIndex b{CoreId{1}}; return (int)b.get(); }'
+try reject 'f(CoreId) with a BurstIndex' 'void f(CoreId); int main(){ f(BurstIndex{1}); }'
+try reject 'f(BurstIndex) with a CoreId' 'void f(BurstIndex); int main(){ f(CoreId{1}); }'
+# And the rest of the wall every tagged scalar gets, so the ninth is not the one
+# type in the tree with a weaker one.
+try reject 'BurstIndex == LineId'        'int main(){ return BurstIndex{1} == LineId{1}; }'
+try reject 'BurstIndex == SimTime'       'int main(){ return BurstIndex{1} == SimTime{1}; }'
+try reject 'BurstIndex + BurstIndex'     'int main(){ return (int)(BurstIndex{1} + BurstIndex{1}).get(); }'
+try reject 'BurstIndex b;'               'int main(){ BurstIndex b; return (int)b.get(); }'
+try reject 'BurstIndex b = 5'            'int main(){ BurstIndex b = 5; return (int)b.get(); }'
+try reject 'int32 from BurstIndex'       'std::int32_t f(){ return BurstIndex{5}; } int main(){ return (int)f(); }'
+# int32 like CoreId, per B5s width convention, so an int64 narrows and the
+# constrained constructor removes the overload rather than truncating.
+try reject 'int64 lvalue into a BurstIndex' 'int main(){ std::int64_t v = 5; BurstIndex b{v}; return (int)b.get(); }'
+try accept 'BurstIndex{5}'               'int main(){ BurstIndex b{5}; return (int)b.get(); }'
+try accept 'BurstIndex == BurstIndex'    'int main(){ return BurstIndex{1} == BurstIndex{2}; }'
+try accept 'BurstIndex copy construction' 'int main(){ BurstIndex a{5}; BurstIndex b{a}; return (int)b.get(); }'
+try accept 'int32 lvalue into a BurstIndex' 'int main(){ std::int32_t n = 5; BurstIndex b{n}; return (int)b.get(); }'
+
+section "== B2: EventSeq is not the other counter in the same key"
+# The tenth tagged scalar, and its case is the adjacency: 3.6 keys events on
+# `(time, class, effective_age, core_id, seq)`, whose THIRD field is a refusal
+# stamp and whose FIFTH is this. Both are monotonic int64 counters, so an
+# implementation that compared them in the wrong order would be comparing two
+# counters of the same width and would produce a plausible, wrong, and perfectly
+# reproducible event order. They count different things: a refusal stamp is
+# written once per REQUEST at its first refusal, this once per EVENT.
+try reject 'EventSeq == RefusalOrder'    'int main(){ return EventSeq{1} == RefusalOrder{1}; }'
+try reject 'EventSeq < RefusalOrder'     'int main(){ return EventSeq{1} < RefusalOrder{1}; }'
+try reject 'RefusalOrder{EventSeq}'      'int main(){ RefusalOrder r{EventSeq{1}}; return (int)r.get(); }'
+try reject 'EventSeq{RefusalOrder}'      'int main(){ EventSeq s{RefusalOrder{1}}; return (int)s.get(); }'
+try reject 'EventSeq == SimTime'         'int main(){ return EventSeq{1} == SimTime{1}; }'
+try reject 'EventSeq + EventSeq'         'int main(){ return (int)(EventSeq{1} + EventSeq{1}).get(); }'
+try reject 'EventSeq s;'                 'int main(){ EventSeq s; return (int)s.get(); }'
+try reject 'EventSeq s = 5'              'int main(){ EventSeq s = 5; return (int)s.get(); }'
+try reject 'int64 from EventSeq'         'std::int64_t f(){ return EventSeq{5}; } int main(){ return (int)f(); }'
+try accept 'EventSeq{5}'                 'int main(){ EventSeq s{5}; return (int)s.get(); }'
+try accept 'EventSeq < EventSeq'         'int main(){ return EventSeq{1} < EventSeq{2}; }'
+try accept 'EventSeq from an int64 lvalue' 'int main(){ std::int64_t v = 5; EventSeq s{v}; return (int)s.get(); }'
+
+section "== B1: Port takes two SimTimes and hands back an accept time"
+tryPort accept 'Port constructed'        'int main(){ Port p(SimTime{1}, SimTime{0}); return (int)p.ii().get(); }'
+# No default construction: a Port with no numbers is one whose `ii` and
+# `latency` nobody chose, and both are config fields (2.5b).
+tryPort reject 'Port p;'                 'int main(){ Port p; (void)p; return 0; }'
+tryPort reject 'Port with one argument'  'int main(){ Port p(SimTime{1}); (void)p; return 0; }'
+tryPort reject 'Port from raw ints'      'int main(){ Port p(1, 0); (void)p; return 0; }'
+# N12 at this unit's surface. A latency is a SimTime, not a trace-local tick:
+# Part 5 keeps ONE clock by removing absolute trace time from the design, and a
+# LocalTick reaching a port is exactly where the two would rejoin.
+tryPort reject 'latency is a LocalTick'  'int main(){ Port p(SimTime{1}, LocalTick{0}); (void)p; return 0; }'
+tryPort reject 'ii is a LocalTick'       'int main(){ Port p(LocalTick{1}, SimTime{0}); (void)p; return 0; }'
+tryPort reject 'ii is a RefusalOrder'    'int main(){ Port p(RefusalOrder{1}, SimTime{0}); (void)p; return 0; }'
+tryPort reject 'reserve takes a raw int' 'int main(){ Port p(SimTime{1}, SimTime{0}); return (int)p.reserve(5).get(); }'
+tryPort reject 'reserve takes a LocalTick' 'int main(){ Port p(SimTime{1}, SimTime{0});
+  return (int)p.reserve(LocalTick{5}).get(); }'
+tryPort accept 'reserve takes a SimTime' 'int main(){ Port p(SimTime{1}, SimTime{0});
+  return (int)p.reserve(SimTime{5}).get(); }'
+# The accept time does not fall out of its type on the way back, which is what
+# keeps `accept + latency` (3.4s own spelling) a SimTime rather than an int.
+tryPort reject 'int64 from reserve'      'int main(){ Port p(SimTime{1}, SimTime{0});
+  std::int64_t t = p.reserve(SimTime{0}); return (int)t; }'
+tryPort accept 'accept + latency'        'int main(){ Port p(SimTime{1}, SimTime{7});
+  return (int)(p.reserve(SimTime{0}) + p.latency()).get(); }'
+# `reserve` MUTATES the port: it advances `next_accept`. A const port therefore
+# cannot reserve, which is the compile-time statement of "reservations are
+# non-preemptive and are never released" -- there is no read-only way to ask.
+tryPort reject 'reserve on a const Port' 'int main(){ const Port p(SimTime{1}, SimTime{0});
+  return (int)p.reserve(SimTime{0}).get(); }'
+tryPort accept 'the readers are const'   'int main(){ const Port p(SimTime{1}, SimTime{2});
+  return (int)(p.ii().get() + p.latency().get() + p.next_accept().get()); }'
+tryPort reject 'next_accept_ is private' 'int main(){ Port p(SimTime{1}, SimTime{0});
+  return (int)p.next_accept_.get(); }'
+# One port per resource, held in a container: the engine holds `l1_port[c]` over
+# 8 to 256 cores (2.5b), so the class stays copyable as itself.
+tryPort accept 'a vector of ports'       '#include <vector>
+int main(){ std::vector<Port> v; v.push_back(Port(SimTime{1}, SimTime{0})); return (int)v.size(); }'
+
+section "== B2: schedule owns the seq and the class, and cannot be told otherwise"
+tryEvent accept 'a queue is scheduled and popped' 'int main(){ EventQueue<int> q;
+  q.schedule(SimTime{0}, EventKind::Issue, NoRefusal, CoreId{0}, 1);
+  return q.pop_min().payload; }'
+# 3.6s "assigned at SCHEDULE time" made unrepresentable rather than promised.
+# Two events given the same seq would stop the order being total exactly where a
+# tie needs breaking, and the only way to be sure of that is for the caller to
+# have no way to supply one.
+tryEvent reject 'schedule takes a seq'   'int main(){ EventQueue<int> q;
+  q.schedule(SimTime{0}, EventKind::Issue, NoRefusal, CoreId{0}, EventSeq{0}, 1); return 0; }'
+# The class is DERIVED from the kind through class_of rather than passed, so a
+# handler cannot schedule a fill under the probe class. That mutation reverses
+# V23s worked example and reports a plausible, wrong, reproducible answer.
+tryEvent reject 'schedule takes a class' 'int main(){ EventQueue<int> q;
+  q.schedule(SimTime{0}, EventClass::Fill, NoRefusal, CoreId{0}, 1); return 0; }'
+# The key's third and fifth fields are two int64 counters, so the two arguments
+# that carry them must not be interchangeable at the call site either.
+tryEvent reject 'an EventSeq where the age goes' 'int main(){ EventQueue<int> q;
+  q.schedule(SimTime{0}, EventKind::Issue, EventSeq{0}, CoreId{0}, 1); return 0; }'
+tryEvent reject 'a BurstIndex where the core goes' 'int main(){ EventQueue<int> q;
+  q.schedule(SimTime{0}, EventKind::Issue, NoRefusal, BurstIndex{0}, 1); return 0; }'
+tryEvent reject 'a LocalTick where the time goes' 'int main(){ EventQueue<int> q;
+  q.schedule(LocalTick{0}, EventKind::Issue, NoRefusal, CoreId{0}, 1); return 0; }'
+# EventKey's five fields in the plans order, and the same swap on the struct.
+tryEvent accept 'EventKey braced'        'int main(){ EventKey k{SimTime{1}, EventClass::Fill,
+  RefusalOrder{1}, CoreId{0}, EventSeq{2}}; return (int)k.seq.get(); }'
+tryEvent reject 'EventKey age and seq swapped' 'int main(){ EventKey k{SimTime{1},
+  EventClass::Fill, EventSeq{1}, CoreId{0}, RefusalOrder{2}}; return (int)k.core.get(); }'
+# The two enums are vocabulary, not arithmetic. class_of maps one to the other
+# and neither decays to an int, so an event kind cannot be used as an index and
+# a class cannot be handed back where a kind was wanted.
+tryEvent reject 'class_of takes a class' 'int main(){ return (int)class_of(EventClass::Fill); }'
+tryEvent reject 'int from an EventClass' 'int main(){ int c = class_of(EventKind::Issue); return c; }'
+tryEvent reject 'EventClass in arithmetic' 'int main(){ return EventClass::Fill == 0; }'
+tryEvent reject 'EventKind in arithmetic' 'int main(){ return (int)(EventKind::Issue + 1); }'
+# class_of is constexpr, which is what lets a static dispatch table be built
+# from it later without the 3.6 mapping being written a second time.
+tryEvent accept 'class_of is constexpr' 'static_assert(class_of(EventKind::L1Fill) == EventClass::Fill, "");
+int main(){ return 0; }'
+# The payload is a template parameter because at B2 the hierarchy does not
+# exist. A queue that only worked over an integer handle would be this unit
+# deciding a later ones storage.
+tryEvent accept 'a non-numeric payload'  '#include <string>
+int main(){ EventQueue<std::string> q;
+  q.schedule(SimTime{0}, EventKind::Issue, NoRefusal, CoreId{0}, std::string("x"));
+  return (int)q.pop_min().payload.size(); }'
+# pop_min mutates; the three readers do not.
+tryEvent reject 'pop_min on a const queue' 'int main(){ const EventQueue<int> q;
+  return q.pop_min().payload; }'
+tryEvent accept 'the readers are const'  'int main(){ const EventQueue<int> q;
+  return (int)(q.empty() ? q.size() + (std::size_t)q.now().get() + (std::size_t)q.scheduled() : 0); }'
+tryEvent reject 'the heap is private'    'int main(){ EventQueue<int> q; return (int)q.q_.size(); }'
+
+section "== B3: a Request carries three DIFFERENT ids, in one order"
+tryMshr accept 'a demand request braced' 'int main(){ Request r{CoreId{0}, LineId{7}, BurstIndex{3}};
+  return (int)r.line.get(); }'
+tryMshr accept 'a prefetch request braced' 'int main(){ Request r{CoreId{0}, LineId{7},
+  BurstIndex{3}, false}; return r.demand ? 1 : 0; }'
+# THE case the ninth tagged scalar exists for, and the reason it is here rather
+# than only in the types section above: this is the struct that puts a CoreId
+# and a BurstIndex side by side, both int32, both small counts, so the swap is
+# the accident the field order invites.
+tryMshr reject 'Request core and burst swapped' 'int main(){ Request r{BurstIndex{0}, LineId{7},
+  CoreId{3}}; return (int)r.line.get(); }'
+tryMshr reject 'Request core and line swapped'  'int main(){ Request r{LineId{7}, CoreId{0},
+  BurstIndex{3}}; return (int)r.line.get(); }'
+# The first three fields have no defaults, so a forgotten initialiser cannot
+# silently mean core 0 / line 0 / the first burst of the tile (B2s rule).
+tryMshr reject 'Request r;'              'int main(){ Request r; return (int)r.line.get(); }'
+tryMshr reject 'Mshr m;'                 'int main(){ Mshr m; return (int)m.line.get(); }'
+tryMshr accept 'Mshr braced'             'int main(){ Mshr m{LineId{1}, CoreId{0}, true, {}, {}};
+  return (int)m.targets.size(); }'
+tryMshr reject 'Mshr line and core swapped' 'int main(){ Mshr m{CoreId{0}, LineId{1}, true, {}, {}};
+  return (int)m.targets.size(); }'
+# P5 as a compile-time fact: a wait index stores POINTERS because it selects
+# over structures the engine already owns rather than buffering them. A vector
+# of Requests here would have invented hardware, and 4.1s bound would become an
+# argument about simulator memory instead of about credits.
+tryMshr reject 'targets hold Requests by value' 'int main(){ Mshr m{LineId{1}, CoreId{0}, true,
+  {}, {}}; Request r{CoreId{0}, LineId{1}, BurstIndex{0}}; m.targets.push_back(r);
+  return (int)m.targets.size(); }'
+
+section "== B3: MshrFile takes a counter, and speaks in ids"
+tryMshr accept 'MshrFile constructed'    'int main(){ RefusalCounter c; MshrFile f(4, 2, 1, c);
+  return (int)f.capacity(); }'
+# The counter is a REFERENCE parameter, one per run, shared by every file,
+# because a request refused at the L1 and again at the L2 keeps its original
+# stamp. A file that could be built without one would be a file with a private
+# stamp sequence, and cross-level seniority would silently stop meaning
+# anything (3.8).
+tryMshr reject 'MshrFile without a counter' 'int main(){ MshrFile f(4, 2, 1); return (int)f.capacity(); }'
+tryMshr reject 'MshrFile f;'             'int main(){ MshrFile f; return (int)f.capacity(); }'
+tryMshr reject 'MshrFile takes a counter by value' 'int main(){ MshrFile f(4, 2, 1, RefusalCounter{});
+  return (int)f.capacity(); }'
+tryMshr reject 'find takes a raw int'    'int main(){ RefusalCounter c; MshrFile f(4, 2, 1, c);
+  return f.find(5) == nullptr; }'
+tryMshr reject 'find takes a SlotId'     'int main(){ RefusalCounter c; MshrFile f(4, 2, 1, c);
+  return f.find(SlotId{5}) == nullptr; }'
+tryMshr accept 'find takes a LineId'     'int main(){ RefusalCounter c; MshrFile f(4, 2, 1, c);
+  return f.find(LineId{5}) == nullptr; }'
+# find is NOT const: the caller merges onto the entry it gets back.
+tryMshr reject 'find on a const file'    'int main(){ RefusalCounter c; const MshrFile f(4, 2, 1, c);
+  return f.find(LineId{5}) == nullptr; }'
+tryMshr accept 'the readers are const'   'int main(){ RefusalCounter c; const MshrFile f(4, 2, 1, c);
+  Request r{CoreId{0}, LineId{1}, BurstIndex{0}};
+  return f.live() + f.reserved() + f.slot_wait_depth() + (f.has_slot(r) ? 1 : 0); }'
+# `retire` fills a caller-owned buffer by non-const reference, which is what
+# lets one buffer be reused across retires AND what stops a caller discarding a
+# whole wake list into a temporary. The same wall A2d put around `expand`.
+tryMshr reject 'retire into a temporary' 'int main(){ RefusalCounter c; MshrFile f(4, 2, 1, c);
+  Request r{CoreId{0}, LineId{1}, BurstIndex{0}}; Mshr& e = f.allocate(LineId{1}, r);
+  f.retire(e, RetireResult{}); return 0; }'
+tryMshr reject 'slot_wait_ is private'   'int main(){ RefusalCounter c; MshrFile f(4, 2, 1, c);
+  return (int)f.slot_wait_.size(); }'
+# A stamp is not a count. `next()` hands out a RefusalOrder and `issued()` a
+# plain int64, and V18 compares one against the other, so the two must not be
+# assignable to each other or that comparison stops meaning anything.
+tryMshr accept 'a stamp is a RefusalOrder' 'int main(){ RefusalCounter c; RefusalOrder o = c.next();
+  return (int)o.get(); }'
+tryMshr accept 'issued is a plain count' 'int main(){ RefusalCounter c; std::int64_t n = c.issued();
+  return (int)n; }'
+tryMshr reject 'int64 from next()'       'int main(){ RefusalCounter c; std::int64_t s = c.next();
+  return (int)s; }'
+# Copy-initialisation, which is the ACCIDENTAL spelling: `RefusalOrder o =
+# c.issued()` is a count silently becoming a stamp. The braced
+# `RefusalOrder{c.issued()}` stays legal and is deliberately not tested as a
+# reject, because both are int64 and no narrowing rule reaches it -- N12 asks
+# that the mix be impossible by accident, not that it be impossible.
+tryMshr reject 'RefusalOrder from issued()' 'int main(){ RefusalCounter c; RefusalOrder o = c.issued();
+  return (int)o.get(); }'
+# WaitReason and Level are both scoped uint8 enums declared in one header, so
+# they are exactly the pair that could be passed for each other. mark_refused
+# takes the reason.
+tryMshr accept 'mark_refused takes a WaitReason' 'int main(){ RefusalCounter c;
+  Request r{CoreId{0}, LineId{1}, BurstIndex{0}}; mark_refused(r, WaitReason::Slot, c);
+  return (int)r.refusal.get(); }'
+tryMshr reject 'mark_refused takes a Level' 'int main(){ RefusalCounter c;
+  Request r{CoreId{0}, LineId{1}, BurstIndex{0}}; mark_refused(r, Level::L1, c); return 0; }'
+tryMshr reject 'WaitReason == Level'     'int main(){ return WaitReason::Slot == Level::L1; }'
+tryMshr reject 'int from a Level'        'int main(){ int l = Level::L2; return l; }'
+tryMshr reject 'Level in arithmetic'     'int main(){ return (int)(Level::L1 + 1); }'
+# The refusal stamp is a RefusalOrder on the request too, so a raw counter value
+# cannot be written into it by hand and bypass mark_refuseds write-once rule.
+tryMshr reject 'refusal assigned a raw int' 'int main(){ Request r{CoreId{0}, LineId{1},
+  BurstIndex{0}}; r.refusal = 5; return (int)r.refusal.get(); }'
+
+section "== B2 and B3: the two key_less overloads coexist"
+# Both headers declare a free `key_less` in namespace wcache: 3.6s key over an
+# EventKey, and 3.8s over a Request. The engine includes both, so this is the
+# one question neither single-header preamble can ask, and the answer must be
+# that each call resolves on its argument type rather than becoming ambiguous.
+tryBoth accept 'both key_less overloads resolve' 'int main(){
+  EventKey a{SimTime{1}, EventClass::Fill, RefusalOrder{1}, CoreId{0}, EventSeq{0}};
+  EventKey b{SimTime{2}, EventClass::Fill, RefusalOrder{1}, CoreId{0}, EventSeq{1}};
+  Request p{CoreId{0}, LineId{1}, BurstIndex{0}};
+  Request q{CoreId{1}, LineId{2}, BurstIndex{0}};
+  return (key_less(a, b) ? 1 : 0) + (key_less(p, q) ? 2 : 0); }'
+# And they are not interchangeable: an EventKey is not a Request and neither
+# comparison accepts the others population.
+tryBoth reject 'key_less mixes the two keys' 'int main(){
+  EventKey a{SimTime{1}, EventClass::Fill, RefusalOrder{1}, CoreId{0}, EventSeq{0}};
+  Request p{CoreId{0}, LineId{1}, BurstIndex{0}};
+  return key_less(a, p) ? 1 : 0; }'
 
 # Every case has been started; wait for the stragglers, then print the whole
 # run in source order and tally it. The tally is done here rather than in the
