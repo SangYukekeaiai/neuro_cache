@@ -110,9 +110,11 @@ struct core;
 struct slot;
 struct set_index;
 struct tag_id;
+struct burst_index;
 struct sim_time;
 struct local_tick;
 struct refusal_order;
+struct event_seq;
 }  // namespace tags
 
 // Every id below is signed, and that is a convention rather than a preference:
@@ -163,6 +165,22 @@ using SetIndex = Tagged<std::int64_t, tags::set_index>;
 // anyway, which is the point: a tag is a line id only within one set.
 using TagId = Tagged<std::int64_t, tags::tag_id>;
 
+// Which burst of a core's tile, in trace order: `Request.burst` and the
+// `cursor` / `pf_cursor` of plan 3.3. The ninth tagged scalar, and the one the
+// carried obligation "v3 plan -> B3" asked this unit for.
+//
+// It exists for the SetIndex reason one level up. A Request holds a core id and
+// a burst index side by side, both small counts, so `Request{..., burst = c}`
+// with the two arguments swapped is a spelling the struct invites and neither
+// `explicit` nor the non-narrowing constructor can see: they are the same width
+// and the same signedness. Naming the quantity is what makes the refusal about
+// meaning rather than about size.
+//
+// int32, matching CoreId, per B5's width convention: a burst index counts the
+// bursts of one core inside one tile, which is tens in the corpus, and
+// `Burst::count` and `Burst::stride` are int32 for the same reason (B8).
+using BurstIndex = Tagged<std::int32_t, tags::burst_index>;
+
 // Simulated time. The engine has no tick; `now` is the timestamp of the event
 // being dispatched (P1).
 using SimTime = Tagged<std::int64_t, tags::sim_time>;
@@ -175,6 +193,21 @@ using LocalTick = Tagged<std::int64_t, tags::local_tick>;
 // refusal, not a tick. 64-bit because a run's total refusals can exceed 32 bits
 // at 1024 cores (plan Part 9 Q8).
 using RefusalOrder = Tagged<std::int64_t, tags::refusal_order>;
+
+// Schedule order, 3.6: the value of the event queue's counter when an event was
+// SCHEDULED, which is the last field of the total order and the one that makes
+// it total. The tenth tagged scalar.
+//
+// Distinct from RefusalOrder although both are monotonic int64 counters that sit
+// in the same key, and that adjacency is exactly why it is tagged: 3.6's key is
+// `(time, class, effective_age, core_id, seq)`, whose third field is a refusal
+// stamp and whose fifth is this, so an implementation that compared them in the
+// wrong order would be comparing two counters of the same width and produce a
+// plausible, wrong, and perfectly reproducible event order. The two count
+// different things: a refusal stamp is written once per request at its first
+// refusal and may be shared by several events of that request, while this is
+// written once per event and is never reused.
+using EventSeq = Tagged<std::int64_t, tags::event_seq>;
 
 // Sentinels. Both sit at the top of their range so that ordinary `<` puts them
 // last, which is what makes the comparisons below single-valued.
