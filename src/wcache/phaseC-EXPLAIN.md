@@ -1,3 +1,5 @@
+> Recovered from commit working tree (uncommitted Phase C EXPLAIN.md). This document explains increment Phase C.
+> Provenance header added during the 2026-08-18 documentation recovery; the body below is byte-for-byte as committed.
 # EXPLAIN: all of Phase C (plan units C1 `CacheLevel`, C2 the engine, C3 the core, C4 inclusion, C5 prefetch)
 
 **Erasable.** Overwritten at every increment. The record is `PROGRESS.md`.

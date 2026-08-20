@@ -931,7 +931,7 @@ when the unit that needs it lands.
 | ~~exceptions: `throw` (section 18), custom exception types~~; `noexcept` revisited | `throw` types landed at A2b: section 20. `noexcept` still owed |
 | ~~`std::priority_queue` and custom comparators, for the event queue~~ | landed at plan unit B2: section 26 |
 | ~~`enum class` for the outcome and reason enums~~ | the reason enums landed at plan unit B3 (`WaitReason`, `Level`) and plan unit B2 added `EventClass` and `EventKind`, all four by section 18's mechanism with nothing new to explain. The **outcome** enum (3.4's five triage results) belongs to plan unit C1 and will add nothing either |
-| move semantics, `&&`, `std::move` | C2 if it becomes hot |
+| ~~move semantics, `&&`, `std::move`~~ | landed at plan units C1 and C2, and **not** because anything became hot: `std::move` on a `std::unique_ptr` in `CacheLevel`'s constructor, and a `std::vector` of a move-only class in the engine, where the move is what makes the container legal rather than what makes it fast. Section 27 |
 
 ---
 
@@ -2697,3 +2697,377 @@ Phase B sources and are already covered:
 | `std::min_element` with a comparator, in `collect_grants` | section 22's `<algorithm>` note; it is `std::sort`'s comparator convention with one element returned instead of a range reordered |
 | operator overloading on `SimTime` (`accept + ii_` in `Port::reserve`) | section 9, and the deliberate absence of arithmetic on the other tagged scalars is section 21's "a delta is not a tagged type" |
 | `std::move` into `emplace` | still owed, and it stays owed: it appears once, as an optimisation of a copy that would also have been correct, so section 17's move-semantics row is unchanged and still points at plan unit C2 |
+
+---
+
+## 27. An arena with a free list, a container of move-only levels, and an interface implemented by its own caller (plan units C1 through C5)
+
+Phase C is the first code in this tree that **owns objects whose lifetime is
+longer than one call and shorter than the run**, and the first where two classes
+call into each other. Both are C++ problems with no C analogue worth the name: in C
+you would `malloc` a pool and pass function pointers, and the interesting part
+would be the bookkeeping rather than the language. Here the language takes a
+position on both, and five of its positions are new to this file.
+
+It also discharges section 17's move-semantics row, though not for the reason that
+row expected: nothing became hot. `std::move` appears because a container of
+move-only objects and a `unique_ptr` conversion are the only legal spellings of
+what the code does.
+
+### `std::deque` as an arena, and why raw pointers into it stay valid
+
+```cpp
+// engine.h
+std::deque<Request> arena_;
+std::vector<Request*> free_;
+
+// engine.cpp
+Request& Engine::acquire(CoreId c, LineId line, BurstIndex k, bool demand) {
+    if (free_.empty()) { arena_.push_back(Request{c, line, k, demand}); return arena_.back(); }
+    Request* r = free_.back();
+    free_.pop_back();
+    *r = Request{c, line, k, demand};      // assigned WHOLE, see below
+    return *r;
+}
+```
+
+A `Request` is pointed at from three places while it lives: an MSHR entry's
+`targets`, a wait index (`line_wait` or `slot_wait_`), and the engine's own event
+payloads sitting in the queue. Some of those pointers are taken at cycle 0 and
+dereferenced 110 cycles and a hundred allocations later. So the container holding
+requests must promise that **inserting more of them does not move the ones already
+there**, and the standard containers differ exactly on that promise:
+
+| container | `push_back` invalidates iterators | `push_back` invalidates **references and pointers** to existing elements | per-element allocation |
+|---|---|---|---|
+| `std::vector` | yes, on reallocation | **yes**, on reallocation | no |
+| `std::deque` | **yes, always** | **no** | no: one block per several elements |
+| `std::list` | no | no | yes, one per element |
+| `std::unordered_map` | yes, on rehash | no (section 26) | yes, one node per element |
+
+`std::deque` is a two-level structure: an array of pointers to fixed-size blocks.
+Growing it appends a **block** and may reallocate the array of block pointers, which
+is why iterators (which know their position in that array) are invalidated while
+the elements themselves never move. That distinction has no C analogue and is the
+whole reason the container was chosen: a `std::vector<Request>` would dangle every
+outstanding pointer on its first reallocation, silently, with the symptom appearing
+one fill later as a request whose `core` field is somebody else's.
+
+Two smaller choices inside it:
+
+- **the arena is never erased from.** Freeing a request means pushing its address
+  onto `free_`, so `arena_` only ever grows to the high-water mark of
+  simultaneously live requests, which the credit supply already bounds (plan 4.1).
+  Erasing from the middle of a deque **does** invalidate everything, so not erasing
+  is the property that keeps the table above true;
+- **reuse assigns the whole struct**, `*r = Request{...}`, rather than writing the
+  fields that changed. A field added to `Request` later would otherwise be left
+  carrying the previous occupant's value, and the worst of those is silent: a stale
+  `refusal` gives a fresh request someone else's seniority and reorders the FIFO
+  for the rest of the run.
+
+`std::vector<std::unique_ptr<Request>>` would also have been stable, since the
+pointee never moves. It costs one allocation per request and one more indirection
+per access, and it buys ownership semantics this code does not want (see the next
+subsection).
+
+### Pointer lifetime across a data-structure boundary: who owns, who borrows, who clears
+
+There are exactly three kinds of pointer to a `Request` and one kind to an `Mshr`,
+and each has a stated rule rather than a smart pointer:
+
+| pointer | from | to | rule that keeps it valid |
+|---|---|---|---|
+| `arena_` elements | the engine | the request | owner; released only through `release` |
+| `Mshr::targets`, `Mshr::line_wait`, `MshrFile::slot_wait_` | the MSHR file | requests | borrow. P5: "a wait list stores nothing; it selects" |
+| `Request::mshr1` | a request at **one** level | an entry in **another** level's map | borrow. Kept valid by `unordered_map`'s node stability (section 26) |
+| `EventPayload::req` / `::entry` | the queue | either | borrow, for the interval between `schedule` and `dispatch` |
+
+Nothing here is a `std::shared_ptr`, deliberately, and the reason is worth stating
+because reaching for one is the reflex: shared ownership would make the lifetime
+**unobservable**, and this model's whole termination check (D12) is the claim that
+when the queue empties, nothing is outstanding. A request that nothing points at is
+a bug to report, not garbage to collect quietly.
+
+What replaces the smart pointer is two disciplines the compiler cannot check, so
+both are written down and one is checked at run time:
+
+**Ordering, at the one place a dangle could be created.** `retire` erases the
+`Mshr` from the map, which invalidates pointers to *that* element only. The
+requests that point at it are nulled **first**:
+
+```cpp
+for (Request* t : e.targets) { t->mshr1 = nullptr; t->level = Level::L1; }
+lvl.mshrs().retire(e, retire_);     // only now is the entry destroyed
+```
+
+Doing it in the other order forms a dangling pointer even if nothing dereferences
+it, and forming one is already undefined behaviour in the standard's reading.
+
+**A precondition on the release**, checked because it is cheap exactly here:
+
+```cpp
+void Engine::release(Request& r) {
+    if (r.on_wait_index || r.reserved || r.mshr1 != nullptr) engine_error("release", ...);
+    free_.push_back(&r);
+}
+```
+
+Returning a request to the free list while something still points at it is the
+use-after-free this design's raw pointers make possible; the three bits above are
+the complete list of things that can still point at it, and each is maintained by
+the structure that does the pointing.
+
+### A `std::vector` of a move-only class with reference members
+
+```cpp
+// engine.cpp
+l1_.reserve(static_cast<std::size_t>(n_cores));
+for (std::int32_t c = 0; c < n_cores; ++c) l1_.emplace_back(Level::L1, mapper, params.l1, counter_);
+```
+
+`CacheLevel` holds two `std::unique_ptr`s and a `const AddressMapper&`, and its
+`MshrFile` holds a `RefusalCounter&`. That combination decides all five special
+members without a single `= delete` being written:
+
+| special member | status | what decided it |
+|---|---|---|
+| copy constructor | **deleted** | a `unique_ptr` member is not copyable |
+| move constructor | implicitly defaulted | no user-declared copy, move or destructor suppresses it |
+| copy assignment | **deleted** | a reference member cannot be rebound, and a `unique_ptr` cannot be copied |
+| move assignment | **deleted** | a reference member cannot be rebound |
+| destructor | implicit | nothing owns a raw resource |
+
+A **reference member** is the interesting one for a C programmer: `T& x;` is not a
+pointer field. It is bound once, at construction, and there is no operation in the
+language that rebinds it, so the compiler deletes both assignment operators rather
+than inventing one. The consequence is a container that supports some operations
+and not others:
+
+| operation on `std::vector<CacheLevel>` | needs | works here |
+|---|---|---|
+| `emplace_back`, `push_back`, growth | MoveInsertable | **yes** |
+| `resize(n)` | default constructor | no |
+| `erase`, `insert` in the middle, `std::sort` | move **assignment** | no |
+
+That is a feature rather than a limitation, and it is worth naming: nothing can
+reorder or remove a level, so `l1_[c]` is core `c`'s L1 for the whole run, by the
+type system rather than by convention.
+
+Two details in those two lines:
+
+- **`emplace_back` constructs in place** from the arguments, calling
+  `CacheLevel(Level, const AddressMapper&, const LevelParams&, RefusalCounter&)`
+  directly inside the vector's storage. `push_back` would need a temporary to move
+  from, which is legal here (the move constructor exists) and pointless;
+- **`reserve` first, and not for speed.** Growth moves the elements, which is
+  legal and correct. But the engine hands out `CacheLevel&` and `Port&` from this
+  vector, and a reference taken before a growth would dangle after it. Reserving
+  the final size makes every address stable from the first element, so the
+  question never arises. (Within the constructor it could not arise anyway; the
+  point is that it cannot arise later either.)
+
+**The `std::move` this batch actually needed** is in `CacheLevel`'s constructor:
+
+```cpp
+auto array = std::make_unique<SetAssociativeArray>(mapper, params.cache_size_bytes, params.associativity);
+num_sets_  = array->num_sets();          // read off the CONCRETE type
+array_     = std::move(array);           // then move it behind the abstract handle
+```
+
+Three things happen in that one line, and none of them is an optimisation:
+
+1. **`std::move` does not move anything.** It is a cast to an rvalue reference,
+   `static_cast<T&&>`, which is how you tell overload resolution to pick the move
+   operation. The move itself is `unique_ptr`'s assignment operator;
+2. **the cast is mandatory**, because `std::unique_ptr` has no copy assignment at
+   all. Without it the line does not compile, which is the language enforcing that
+   ownership was transferred rather than duplicated;
+3. **`unique_ptr<SetAssociativeArray>` converts to `unique_ptr<CacheArray>`**
+   through a converting constructor that exists exactly when the pointer types
+   convert. This is where section 25's virtual destructor earns its keep: the
+   `unique_ptr<CacheArray>` will call `delete` through a `CacheArray*`, and only a
+   virtual destructor makes that destroy the derived object.
+
+### Implementing an interface that your own member calls back into
+
+```cpp
+// prefetcher.h                       // engine.h
+class PrefetchIssuer { ... };         class Engine final : public PrefetchIssuer { ... };
+class Prefetcher {                    // engine_core.cpp, at the end of on_issue:
+    virtual void on_demand_issue(PrefetchIssuer& mem, ...) = 0;
+};                                    prefetcher_->on_demand_issue(*this, c, k, now);
+```
+
+The engine owns a `std::unique_ptr<Prefetcher>` and the prefetcher has to call back
+into the engine to reserve a port and schedule a probe. Written directly that is a
+**dependency cycle**: `engine.h` would include `prefetcher.h` and `prefetcher.h`
+would include `engine.h`, which `#pragma once` turns from an infinite loop into a
+compile error about an incomplete type.
+
+The cycle is broken by putting an abstract class in the middle. `prefetcher.h`
+includes **only `types.h`**: it knows there is something that can answer
+`n_bursts_in_tile` and accept `issue_prefetch`, and nothing else. The engine
+derives from that something and passes `*this`, which converts implicitly from
+`Engine&` to `PrefetchIssuer&` because the base is public and unambiguous.
+
+Three notes on the mechanism:
+
+- **the interface is deliberately two calls**, and that is a design constraint
+  expressed as a type. A prefetcher that could read a core's cursor, a cache's
+  contents or an MSHR's occupancy could make decisions the PE can observe, and
+  plan 4.6's "the PE is not changed" would become an argument instead of a
+  property. Narrowing the interface is how the argument was made unnecessary;
+- **`final` on a class** (not on a function, which section 20 covered) forbids
+  further derivation. It also lets the compiler devirtualise calls through an
+  `Engine*`, since no override can exist below it. Here it mostly documents that
+  the engine is the end of that hierarchy;
+- **calling a virtual on `*this` is safe here and is not always.** During a base
+  class's constructor the object is not yet of the derived type, so a virtual call
+  dispatches to the base version, which for a pure virtual is undefined behaviour.
+  `Engine`'s constructor never calls a virtual on itself; the hook fires from
+  `on_issue`, long after construction. Worth knowing because the shape "constructor
+  creates the object that will call me back" invites exactly that mistake.
+
+### An abstract interface standing in for a unit that does not exist
+
+`trace.h` declares `TileTrace` with seven pure virtual functions and has **no
+`.cpp` at all**. Nothing in the library implements it; the only implementations are
+the reviewer's fakes in the test tree, and plan unit A3 will add the real one.
+
+For a C programmer the surprising part is that this links. Three facts make it work:
+
+- **a pure virtual function needs no definition.** `= 0` says the slot in the
+  vtable is empty and the class cannot be instantiated;
+- **the destructor is not pure and does need one**, which is why it is
+  `virtual ~TileTrace() = default;` in the header. A derived object destroyed
+  through a `TileTrace*` needs that slot filled (section 25);
+- **the vtable has to be emitted somewhere.** A class with a non-inline virtual
+  function has a *key function*, and the vtable goes in that function's translation
+  unit. `TileTrace` has none, so the compiler emits the vtable as a weak (COMDAT)
+  symbol in every translation unit that needs it and the linker merges the copies.
+  That is why a header-only interface never produces a duplicate-symbol error, and
+  it is the same mechanism that lets templates live in headers (section 5).
+
+The design point is the one A2 already established with `AddressMapper` versus
+`BlockPackMapper` (decisions B10, B23): the engine holds `const TileTrace&` and
+never learns which reader it has, so unit A3 can land later touching no engine
+line, and a fixture can drive a whole simulated run from a hand-written trace with
+no corpus file on disk. The protected-and-defaulted copy control on the base is
+decision B67's rule, reused for the third time (sections 24 and 25).
+
+### Returning a classification instead of taking a callback
+
+```cpp
+enum class TriageOutcome : std::uint8_t { Hit, Merged, BlockedTargets, BlockedPool, Forwarded,
+                                          DroppedArrayHit, DroppedEntry, DroppedNoSlot, DroppedReserve };
+
+TriageOutcome CacheLevel::triage(Request& r, std::vector<Request*>& granted);
+```
+
+`triage` performs every state change plan 3.4 asks for and then **returns what
+happened**. The alternatives are worth spelling out because the callback shape is
+the reflex in an event-driven simulator:
+
+| shape | cost |
+|---|---|
+| `std::function<void(Request&)> on_hit, on_forward, ...` | type erasure and a heap allocation per stored callable, an indirect call per branch, and the level now needs the engine's vocabulary in its own signature |
+| a virtual `TriageListener` the engine implements | no allocation, still an indirect call, still the coupling, and a second interface to keep in step with the outcome set |
+| **return the outcome** | one byte in a register and a `switch` in the caller; the level's header names no engine type |
+
+There is a correctness argument on top of the cost one, and it is the reason this
+shape was chosen rather than merely preferred: a callback fires **in the middle**
+of `triage`, while the level's own state is half-updated. Returning means the
+caller acts only after the level is consistent, which is what lets the engine
+schedule events, touch the other level and reach a core from inside its handler
+without any reentrancy question.
+
+The companion idiom is the **out-parameter that is replaced, not appended to**:
+
+```cpp
+TriageOutcome CacheLevel::triage(Request& r, std::vector<Request*>& granted) {
+    granted.clear();     // the CALLEE clears, and the header says so
+    ...
+```
+
+The caller keeps one `granted_` buffer and reuses it across every call, so a hot
+path that runs once per probe never allocates. Returning a `std::vector` by value
+would allocate per call; appending instead of clearing would work but moves the
+obligation to the caller, where forgetting it is silent and unbounded. The same
+convention is already used by `CacheArray::victim_candidates` and
+`MshrFile::retire`, so it is a tree-wide rule rather than one function's habit.
+
+(C++ has `[[nodiscard]]` for a return value that must not be ignored. This tree
+does not use it anywhere; noted so its absence reads as a choice not yet made
+rather than as a feature nobody knew about.)
+
+### Scratch buffers, and the re-entrancy hazard that forced two of them
+
+```cpp
+// engine.h
+std::vector<LineId> lines_;      // E_Issue's demand expansion
+std::vector<LineId> pf_lines_;   // issue_prefetch's expansion
+std::vector<Request*> granted_;
+RetireResult retire_;
+```
+
+Four buffers held as members so no event handler allocates on a hot path. The
+first two are separate on purpose, and the reason is a hazard that has no C
+analogue only because in C you would see it:
+
+**A range-`for` over a `std::vector` holds iterators into that vector.** Anything
+inside the loop body that can reach `clear()`, `push_back()` or any growth on the
+same vector invalidates them, and the invalidation is silent because the container
+looks like an object rather than the pointer it contains. It is `realloc` moving
+your buffer while you hold an index into the old one.
+
+Here the reentrant path is real rather than theoretical: `on_issue` walks `lines_`
+scheduling one probe per line, and the same handler then calls the prefetcher,
+which calls back into `Engine::issue_prefetch`, which expands a **second** burst.
+With one shared buffer that call would clear and refill the vector the outer
+handler is working from, and the code would be correct today only because the loop
+happens to have finished first. Two buffers make it unrepresentable instead of
+currently-unreached, which is the same standard the rest of this tree holds itself
+to.
+
+### What this costs
+
+`std::deque` allocates one block per several `Request`s rather than one per
+request, and the free list is a `std::vector<Request*>` that reaches the
+high-water mark once and then never grows. Indexing it is one extra indirection
+over a vector, and the engine never indexes it: it holds the pointers directly.
+
+`std::vector<CacheLevel>` with `reserve` is one allocation for the whole
+hierarchy. Move-only costs nothing at run time; the deleted assignment operators
+are a compile-time fact.
+
+**The virtual calls are the one real cost, and they are on the hot path.** Every
+`serve` asks the trace for a `gap`, every `E_Issue` asks the mapper to expand a
+burst and asks the prefetcher for a decision, and none of those can be inlined
+across the abstract boundary. That is what buys A3's absence, one policy object
+rather than a branch, and one `CacheLevel` for both levels. It is an indirect call
+per query, not per line-of-code, and the alternative was compiling the trace reader
+into the engine.
+
+`TriageOutcome` is a `std::uint8_t` returned in a register, and `is_dropped` is a
+`constexpr` chain of comparisons on it.
+
+### What this batch did *not* add to this file
+
+Recorded so the absence does not read as an oversight. All of these appear in the
+Phase C sources and are already covered:
+
+| Feature in this batch | Where it is already explained |
+|---|---|
+| `std::unique_ptr` members and a factory returning ownership (`make_prefetcher`, mirroring `make_policy`) | section 25 |
+| abstract base classes, `= 0`, and the virtual destructor (`Prefetcher`, `PrefetchIssuer`, `TileTrace`) | sections 19 and 25, with only the vtable-emission point new above |
+| `protected` and defaulted copy control on an interface (decision B67's rule, third use) | sections 24 and 25 |
+| `override` and `final` **on functions** (`NoPrefetcher`, `NextBurstPrefetcher`) | section 20; `final` on a **class** is new and is above |
+| `enum class ... : std::uint8_t` (`TriageOutcome`, `Inclusion`, `Phase`) and the `throw` after an exhaustive `switch` (`dispatch`, `make_prefetcher`) | section 18 |
+| `struct` as a plain data carrier with member initialisers (`LevelParams`, `EngineParams`, `CoreState`, `EventPayload`, `EngineStats`) | section 18 |
+| the header / `.cpp` split, `[[noreturn]]` refusal helpers, and choosing between `std::invalid_argument` and `std::logic_error` | section 20; the one new wrinkle is that `engine.cpp` and `engine_core.cpp` are **two** `.cpp` files for one class, which the language permits without comment |
+| `constexpr` free functions (`is_dropped`, `as_duration`) | section 11 |
+| `std::unordered_map` node stability, relied on again by `Request::mshr1` across the whole round trip | section 26, unchanged |
+| `std::vector` indexed by a tagged scalar, and the `.get()` / `static_cast` boundary | sections 25 and 22 |
+| arithmetic on `SimTime` only (`accept + latency`, `now + step`), and the deliberate absence of it on every other tagged scalar | sections 9 and 21 |
+| unnamed parameters (`NoPrefetcher::on_demand_issue(PrefetchIssuer&, CoreId, BurstIndex, SimTime) {}`) | section 20 |
