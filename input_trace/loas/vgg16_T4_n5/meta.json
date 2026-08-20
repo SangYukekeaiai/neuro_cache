@@ -1,0 +1,109 @@
+{
+ "captured_at": "2026-07-17T16:00:27.567232",
+ "arch": "vgg16",
+ "timestep": 4,
+ "batch_size": 64,
+ "n_samples": 5,
+ "dataset": "cifar10",
+ "dtype": "uint8",
+ "layers": {
+  "layer_01_features_3": [
+   4,
+   5,
+   64,
+   32,
+   32
+  ],
+  "layer_02_features_7": [
+   4,
+   5,
+   64,
+   16,
+   16
+  ],
+  "layer_03_features_10": [
+   4,
+   5,
+   128,
+   16,
+   16
+  ],
+  "layer_04_features_14": [
+   4,
+   5,
+   128,
+   8,
+   8
+  ],
+  "layer_05_features_17": [
+   4,
+   5,
+   256,
+   8,
+   8
+  ],
+  "layer_06_features_20": [
+   4,
+   5,
+   256,
+   8,
+   8
+  ],
+  "layer_07_features_24": [
+   4,
+   5,
+   256,
+   4,
+   4
+  ],
+  "layer_08_features_27": [
+   4,
+   5,
+   512,
+   4,
+   4
+  ],
+  "layer_09_features_30": [
+   4,
+   5,
+   512,
+   4,
+   4
+  ],
+  "layer_10_features_34": [
+   4,
+   5,
+   512,
+   2,
+   2
+  ],
+  "layer_11_features_37": [
+   4,
+   5,
+   512,
+   2,
+   2
+  ],
+  "layer_12_features_40": [
+   4,
+   5,
+   512,
+   2,
+   2
+  ]
+ },
+ "subset": {
+  "of": "vgg16_T4_all",
+  "n": 5,
+  "seed": 0,
+  "sample_indices": [
+   2697,
+   3078,
+   5110,
+   6367,
+   8502
+  ],
+  "selected_by": "numpy.random.default_rng(seed).choice(n_samples, n, replace=False), sorted",
+  "made_by": "scripts/subset_input_traces.py"
+ }
+}

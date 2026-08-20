@@ -37,6 +37,13 @@ input_trace/
 # data, so the *.json rule above does not apply to them either.
 !src/wcache/examples/**
 
+# input_trace/ is ignored above as captured data, but the loas subset under it
+# is a deliberate 13.6 MB fold of 5 samples (of 10,000) cut by
+# scripts/subset_input_traces.py, so the pipeline runs from the repo rather
+# than from a sibling capture repo that no longer exists.
+!input_trace/
+!input_trace/loas/**
+
 # Local Gurobi installation and license files
 gurobi_server1302/
 gurobi.lic

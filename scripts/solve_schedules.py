@@ -25,8 +25,12 @@ sys.path.insert(0, "src")
 import tracegen
 from archmodels.trace import valid_layer_names
 
-DEFAULT_TRACE_ROOT = pathlib.Path("/u/yyu9/neuro_cache_trace/input_trace/loas")
-DEFAULT_TRACE_DIRS = ["vgg16_T4_all", "resnet19_T4_all"]
+# The sibling capture repo this used to point at, /u/yyu9/neuro_cache_trace,
+# was deleted between the 2026-08-11 and 2026-08-12 home snapshots. The
+# in-repo traces are a 5-sample subset of the same capture, cut by
+# scripts/subset_input_traces.py; pass --trace-root to use a full capture.
+DEFAULT_TRACE_ROOT = pathlib.Path("input_trace/loas")
+DEFAULT_TRACE_DIRS = ["vgg16_T4_n5", "resnet19_T4_n5"]
 DEFAULT_ARCH_YAML = {
     "loas": "configs/arch/loas.yaml",
     "spinalflow": "configs/arch/spinalflow.yaml",

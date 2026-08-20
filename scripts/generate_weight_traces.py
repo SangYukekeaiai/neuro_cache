@@ -49,8 +49,12 @@ import tracegen
 from archmodels import ARCH_NATIVE_BRIDGES
 from archmodels.trace import load_layer_trace, valid_layer_names
 
-DEFAULT_TRACE_ROOT = pathlib.Path("/u/yyu9/neuro_cache_trace/input_trace/loas")
-DEFAULT_TRACE_DIRS = ["resnet19_T4_all", "vgg16_T4_all"]
+# The sibling capture repo this used to point at, /u/yyu9/neuro_cache_trace,
+# was deleted between the 2026-08-11 and 2026-08-12 home snapshots. The
+# in-repo traces are a 5-sample subset of the same capture, cut by
+# scripts/subset_input_traces.py; pass --trace-root to use a full capture.
+DEFAULT_TRACE_ROOT = pathlib.Path("input_trace/loas")
+DEFAULT_TRACE_DIRS = ["resnet19_T4_n5", "vgg16_T4_n5"]
 
 # --all-layers only: chunk size for regenerate_layer's inner loop (bounds
 # peak memory -- the native call holds every requested sample's full
@@ -267,7 +271,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--arch", required=True, choices=sorted(ARCH_NATIVE_BRIDGES))
     p.add_argument("--all-layers", action="store_true",
                    help="Reconstruct every valid layer of --trace-dirs instead of one --trace-dir/--layer combo.")
-    p.add_argument("--trace-dir", help="e.g. vgg16_T4_all (single-combo mode only)")
+    p.add_argument("--trace-dir", help="e.g. vgg16_T4_n5 (single-combo mode only)")
     p.add_argument("--layer", help="e.g. layer_01_features_3 (single-combo mode only)")
     p.add_argument("--trace-dirs", nargs="+", default=DEFAULT_TRACE_DIRS,
                    help="--all-layers mode only (default: both).")

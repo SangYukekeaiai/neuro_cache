@@ -1,0 +1,158 @@
+{
+ "captured_at": "2026-07-17T15:59:58.961045",
+ "arch": "resnet19",
+ "timestep": 4,
+ "batch_size": 64,
+ "n_samples": 5,
+ "dataset": "cifar10",
+ "dtype": "uint8",
+ "layers": {
+  "layer_01_layer1_0_conv1": [
+   4,
+   5,
+   64,
+   32,
+   32
+  ],
+  "layer_02_layer1_0_conv2": [
+   4,
+   5,
+   128,
+   16,
+   16
+  ],
+  "layer_03_layer1_0_shortcut_0": [
+   4,
+   5,
+   64,
+   32,
+   32
+  ],
+  "layer_04_layer1_1_conv1": [
+   4,
+   5,
+   128,
+   16,
+   16
+  ],
+  "layer_05_layer1_1_conv2": [
+   4,
+   5,
+   128,
+   16,
+   16
+  ],
+  "layer_06_layer1_2_conv1": [
+   4,
+   5,
+   128,
+   16,
+   16
+  ],
+  "layer_07_layer1_2_conv2": [
+   4,
+   5,
+   128,
+   16,
+   16
+  ],
+  "layer_08_layer2_0_conv1": [
+   4,
+   5,
+   128,
+   16,
+   16
+  ],
+  "layer_09_layer2_0_conv2": [
+   4,
+   5,
+   256,
+   8,
+   8
+  ],
+  "layer_10_layer2_0_shortcut_0": [
+   4,
+   5,
+   128,
+   16,
+   16
+  ],
+  "layer_11_layer2_1_conv1": [
+   4,
+   5,
+   256,
+   8,
+   8
+  ],
+  "layer_12_layer2_1_conv2": [
+   4,
+   5,
+   256,
+   8,
+   8
+  ],
+  "layer_13_layer2_2_conv1": [
+   4,
+   5,
+   256,
+   8,
+   8
+  ],
+  "layer_14_layer2_2_conv2": [
+   4,
+   5,
+   256,
+   8,
+   8
+  ],
+  "layer_15_layer3_0_conv1": [
+   4,
+   5,
+   256,
+   8,
+   8
+  ],
+  "layer_16_layer3_0_conv2": [
+   4,
+   5,
+   512,
+   4,
+   4
+  ],
+  "layer_17_layer3_0_shortcut_0": [
+   4,
+   5,
+   256,
+   8,
+   8
+  ],
+  "layer_18_layer3_1_conv1": [
+   4,
+   5,
+   512,
+   4,
+   4
+  ],
+  "layer_19_layer3_1_conv2": [
+   4,
+   5,
+   512,
+   4,
+   4
+  ]
+ },
+ "subset": {
+  "of": "resnet19_T4_all",
+  "n": 5,
+  "seed": 0,
+  "sample_indices": [
+   2697,
+   3078,
+   5110,
+   6367,
+   8502
+  ],
+  "selected_by": "numpy.random.default_rng(seed).choice(n_samples, n, replace=False), sorted",
+  "made_by": "scripts/subset_input_traces.py"
+ }
+}
