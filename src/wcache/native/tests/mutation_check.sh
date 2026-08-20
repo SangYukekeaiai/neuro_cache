@@ -44,6 +44,15 @@ ulimit -c 0 2>/dev/null || true
 # A5 adds include/wcache/policy.h, include/wcache/stamp_policy.h and
 # src/stamp_policy.cpp, by the same rule: a unit whose file is not on this line
 # is not mutation tested at all while the summary still reports a clean sweep.
+# Phase C adds all eight of ITS files: include/wcache/trace.h, cache_level.h,
+# engine.h and prefetcher.h, and src/cache_level.cpp, engine.cpp,
+# engine_core.cpp and prefetcher.cpp. This omission has now bitten three times
+# (cache.h at A4a, set_associative.* at A4b, and all of Phase B), which is why
+# extending this line is the FIRST thing done to this file in a review round.
+# trace.h is the one worth naming: it is a pure interface with no executable
+# code at all, so nothing in it can produce a wrong number and only its SHAPE
+# can be mutated -- which is exactly the argument A2a's section already makes,
+# and exactly why leaving it off the list would have been invisible.
 # Phase B adds all five of its files: include/wcache/port.h, event.h and mshr.h,
 # and src/port.cpp and src/mshr.cpp. This omission has now bitten twice (cache.h
 # at A4a, set_associative.* at A4b), which is why it is the FIRST thing done to
@@ -51,7 +60,7 @@ ulimit -c 0 2>/dev/null || true
 # naming: it is header-only AND was included by no translation unit at all until
 # tests/test_event.cpp existed, so before this round nothing in the tree either
 # compiled it or could mutate it.
-FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h include/wcache/set_associative.h include/wcache/policy.h include/wcache/stamp_policy.h include/wcache/port.h include/wcache/event.h include/wcache/mshr.h src/block_pack.cpp src/set_associative.cpp src/stamp_policy.cpp src/port.cpp src/mshr.cpp"
+FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h include/wcache/set_associative.h include/wcache/policy.h include/wcache/stamp_policy.h include/wcache/port.h include/wcache/event.h include/wcache/mshr.h include/wcache/trace.h include/wcache/cache_level.h include/wcache/engine.h include/wcache/prefetcher.h src/block_pack.cpp src/set_associative.cpp src/stamp_policy.cpp src/port.cpp src/mshr.cpp src/cache_level.cpp src/engine.cpp src/engine_core.cpp src/prefetcher.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
@@ -204,6 +213,21 @@ mutate_port() { mutate_in src/port.cpp "$@"; }
 mutate_ev() { mutate_in include/wcache/event.h "$@"; }
 mutate_mshr_h() { mutate_in include/wcache/mshr.h "$@"; }
 mutate_mshr() { mutate_in src/mshr.cpp "$@"; }
+# Phase C. Same naming trap as Phase B, one letter along: the PLAN's Phase C
+# units are C1 (CacheLevel), C2 (the handlers), C3 (the core state machine and
+# barrier), C4 (inclusion) and C5 (prefetching), while PROGRESS.md's DECISIONS
+# are numbered B1-B126. Every "C1".."C5" case-name prefix below is the plan's
+# UNIT. A third spelling exists and is NOT used here: Parts 2.1, 3.1 and 4.1 of
+# the plan write "C1" and "C2" for two of v3's own changes, the core model of
+# 4.5 and the prefetcher of 4.6.
+mutate_tr() { mutate_in include/wcache/trace.h "$@"; }
+mutate_cl_h() { mutate_in include/wcache/cache_level.h "$@"; }
+mutate_cl() { mutate_in src/cache_level.cpp "$@"; }
+mutate_eng_h() { mutate_in include/wcache/engine.h "$@"; }
+mutate_eng() { mutate_in src/engine.cpp "$@"; }
+mutate_engc() { mutate_in src/engine_core.cpp "$@"; }
+mutate_pf_h() { mutate_in include/wcache/prefetcher.h "$@"; }
+mutate_pf() { mutate_in src/prefetcher.cpp "$@"; }
 
 echo "== comparison operators"
 mutate kill '<= becomes <'   's|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() <= b|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() < b|'
@@ -1527,7 +1551,7 @@ echo "== B3: MshrFile, 3.8's write-once stamp (src/mshr.cpp)"
 mutate_mshr kill 'B3 mark_refused overwrites an existing stamp' \
     's|    if (r.refusal == NoRefusal) {|    if (true) {|'
 mutate_mshr kill 'B3 mark_refused does not record the reason' \
-    '/        r.reason  = reason;/d'
+    '/r.reason[[:space:]]*= reason;/d'
 mutate_mshr kill 'B3 mark_refused does not stamp at all' \
     '/        r.refusal = counter.next();/d'
 mutate_mshr kill 'B3 the first stamp is 1' \
@@ -1569,17 +1593,21 @@ mutate_mshr kill 'B3 a grantee is refused by its own reservation' \
     '/    if (r.reserved) return true;/d'
 mutate_mshr kill 'B3 has_slot ignores the reserved credits' \
     's|    const std::int32_t free = capacity_ - live() - reserved_;|    const std::int32_t free = capacity_ - live();|'
+# The condition is `is_prefetch_at_issue(r)`, so the PREFETCH arm is the `?`
+# side and the DEMAND arm is the `:` side. Mind which arm each case is aiming
+# at: reading the `?` side as the demand arm mutates the opposite behaviour
+# from the one the case name claims, and the case would still report a kill.
 mutate_mshr kill 'B3 has_slot admits one demand too many' \
-    's@    return r.demand ? free > 0 : free > demand_reserve_;@    return r.demand ? free >= 0 : free > demand_reserve_;@'
+    's@is_prefetch_at_issue(r) ? free > demand_reserve_ : free > 0;@is_prefetch_at_issue(r) ? free > demand_reserve_ : free >= 0;@'
 # 4.6's whole guarantee: a prefetch may never take the last `demand_reserve`
 # entries, so a demand burst can always allocate. Dropped, off by one, and with
 # the two branches swapped.
 mutate_mshr kill 'B3 a prefetch ignores the reserve' \
-    's@    return r.demand ? free > 0 : free > demand_reserve_;@    return r.demand ? free > 0 : free > 0;@'
+    's@is_prefetch_at_issue(r) ? free > demand_reserve_ : free > 0;@is_prefetch_at_issue(r) ? free > 0 : free > 0;@'
 mutate_mshr kill 'B3 the prefetch bound is off by one' \
-    's@    return r.demand ? free > 0 : free > demand_reserve_;@    return r.demand ? free > 0 : free >= demand_reserve_;@'
+    's@is_prefetch_at_issue(r) ? free > demand_reserve_ : free > 0;@is_prefetch_at_issue(r) ? free >= demand_reserve_ : free > 0;@'
 mutate_mshr kill 'B3 the demand and prefetch branches swap' \
-    's@    return r.demand ? free > 0 : free > demand_reserve_;@    return r.demand ? free > demand_reserve_ : free > 0;@'
+    's@is_prefetch_at_issue(r) ? free > demand_reserve_ : free > 0;@is_prefetch_at_issue(r) ? free > 0 : free > demand_reserve_;@'
 
 echo "== B3: MshrFile, allocate"
 mutate_mshr kill 'B3 allocate does not check for a live entry' \
@@ -1626,9 +1654,9 @@ echo "== B3: MshrFile, the drop rule (N16, I15)"
 # because a guard removed from one leaves the other rejecting and a single case
 # would report a pass.
 mutate_mshr kill 'B3 push_line_wait queues a prefetch' \
-    '/^void MshrFile::push_line_wait/,/^}/ s|    if (!r.demand) {|    if (false) {|'
+    '/^void MshrFile::push_line_wait/,/^}/ s|if (is_prefetch_at_issue(r)) {|if (false) {|'
 mutate_mshr kill 'B3 push_slot_wait queues a prefetch' \
-    '/^void MshrFile::push_slot_wait/,/^}/ s|    if (!r.demand) {|    if (false) {|'
+    '/^void MshrFile::push_slot_wait/,/^}/ s|if (is_prefetch_at_issue(r)) {|if (false) {|'
 mutate_mshr kill 'B3 push_line_wait stamps the slot reason' \
     '/^void MshrFile::push_line_wait/,/^}/ s|WaitReason::Line|WaitReason::Slot|'
 mutate_mshr kill 'B3 push_slot_wait stamps the line reason' \
@@ -1666,7 +1694,7 @@ mutate_mshr kill 'B3 the grant loop over-grants by one' \
 mutate_mshr kill 'B3 a grant reserves nothing' \
     '/^        ++reserved_;$/d'
 mutate_mshr kill 'B3 a grantee is not marked reserved' \
-    '/        r->reserved = true;/d'
+    '/r->reserved[[:space:]]*= true;/d'
 mutate_mshr kill 'B3 the grant loop does not pop the index' \
     '/        slot_wait_.erase(oldest);/d'
 
@@ -1679,14 +1707,14 @@ echo "== B3: MshrFile, retire, and the order inside it"
 mutate_mshr kill 'B3 retire grants before it erases' \
     's|    entries_.erase(it);|@@ERASE@@|; s|    collect_grants(out.wake);|    entries_.erase(it);|; s|@@ERASE@@|    collect_grants(out.wake);|'
 mutate_mshr kill 'B3 retire loses the line waiters' \
-    's|    out.wake    = e.line_wait;|    out.wake.clear();|'
+    's|out.wake[[:space:]]*= e.line_wait;|out.wake.clear();|'
 mutate_mshr kill 'B3 retire loses the targets' \
     's|    out.targets = e.targets;|    out.targets.clear();|'
 # `out` is REPLACED, not appended to, so a caller may reuse one buffer. An
 # appending version hands a later retire an earlier one's wake list a second
 # time, which reinjects a request that is already in flight.
 mutate_mshr kill 'B3 retire appends to the wake buffer' \
-    's|    out.wake    = e.line_wait;|    out.wake.insert(out.wake.end(), e.line_wait.begin(), e.line_wait.end());|'
+    's|out.wake[[:space:]]*= e.line_wait;|out.wake.insert(out.wake.end(), e.line_wait.begin(), e.line_wait.end());|'
 mutate_mshr kill 'B3 retire appends to the target buffer' \
     's|    out.targets = e.targets;|    out.targets.insert(out.targets.end(), e.targets.begin(), e.targets.end());|'
 mutate_mshr kill 'B3 retire does not sort the wake list' \
@@ -1745,6 +1773,234 @@ mutate_mshr_h kill 'B3 WaitReason widens' \
     's|enum class WaitReason : std::uint8_t|enum class WaitReason : std::int32_t|'
 mutate_mshr_h kill 'B3 Level widens' \
     's|enum class Level : std::uint8_t|enum class Level : std::int32_t|'
+
+# ---------------------------------------------------------------------------
+# Phase C: the engine
+#
+# C1 is CacheLevel and triage, C2 the six event handlers plus retire/reinject,
+# C3 the core state machine and the tile barrier, C4 inclusion, C5 prefetching.
+# The suites are tests/test_cache_level.cpp, tests/test_engine.cpp and
+# tests/test_prefetch.cpp, sharing tests/engine_fixture.h.
+#
+# Two families dominate, and they are the two the plan itself says are
+# load-bearing:
+#
+#   the ORDER   3.5's re-entry level, 3.6's classes, 3.8's stamp order, and the
+#               merge-and-sort at every retire. Under LRU the service order IS
+#               the eviction order (D7), so an ordering mutation is a wrong
+#               answer that is perfectly reproducible -- which is decision
+#               B121's lesson and the reason these cases are checked against
+#               ORACLES rather than against a second run.
+#   the RULES   4.5's self-timed recurrence, 4.6's four drops and the credit
+#               budget, and 4.4's inclusion guard, each of which produces a
+#               plausible timeline when broken.
+# ---------------------------------------------------------------------------
+echo "== C1: triage, branch by branch (src/cache_level.cpp)"
+mutate_cl kill 'C1 an array hit does not move recency' \
+    's|        policy_->on_hit(slot);||'
+mutate_cl kill 'C1 a prefetch array hit is not dropped' \
+    's|        if (at_issue) return TriageOutcome::DroppedArrayHit;||'
+mutate_cl kill 'C1 a prefetch merges onto a matching entry' \
+    's|        if (at_issue) return TriageOutcome::DroppedEntry;||'
+mutate_cl kill 'C1 the two no-slot drops are swapped' \
+    's|return free > 0 ? TriageOutcome::DroppedReserve : TriageOutcome::DroppedNoSlot;|return free > 0 ? TriageOutcome::DroppedNoSlot : TriageOutcome::DroppedReserve;|'
+mutate_cl kill 'C1 a forwarded request does not take its entry' \
+    's|        r.mshr1 = &e;||'
+# 3.5's trap, at the one place the field is written: a request that re-enters at
+# the L1 finds its OWN entry, merges into itself, and waits for a fill nobody
+# will request. The symptom is D12's deadlock, several thousand events later.
+mutate_cl kill 'C1 a forwarded request re-enters at the L1' \
+    's|        r.level = Level::L2;||'
+mutate_cl kill 'C1 the re-entry rule is applied at the L2 instead' \
+    's|    if (level_ == Level::L1) {|    if (level_ == Level::L2) {|'
+mutate_cl kill 'C1 granted is appended to rather than replaced' \
+    's|    granted.clear();||'
+mutate_cl kill 'C1 a released reservation does not re-run the grant loop' \
+    's|        if (mshrs_.release_reservation(r)) mshrs_.collect_grants(granted);|        (void)mshrs_.release_reservation(r);|'
+mutate_cl kill 'C1 I5 is not refused at the only place it can break' \
+    's|        refuse_if_waiting("triage", r);||'
+mutate_cl kill 'C1 install does not refuse a duplicate line' \
+    's@    if (array_->probe(line) != NoSlot) {@    if (false) {@'
+mutate_cl kill 'C1 install ignores free ways' \
+    's|    SlotId slot = array_->free_slot(line);|    SlotId slot = NoSlot;|'
+mutate_cl kill 'C1 install does not tell the policy' \
+    's|    policy_->on_fill(slot);||'
+mutate_cl kill 'C1 bank_of takes the wrong end of the set index' \
+    's|bank_high_bits_ ? set / sets_per_bank_ : set % banks;|bank_high_bits_ ? set % banks : set / sets_per_bank_;|'
+# The third intentional `allow` in this file, in B99's shape: unreachable, not
+# untested. At `banks == 1` the shortcut and the arithmetic agree for every
+# line, by two identities rather than by inspection: `set % 1 == 0` for every
+# set, and `sets_per_bank_ == num_sets_ / 1 == num_sets_`, so
+# `set / sets_per_bank_ == 0` for every set index, which `locate` bounds at
+# `[0, num_sets)`. Both branches therefore return 0, and the clamp below cannot
+# fire because 0 < 1. The only difference is one extra `locate` call, which is
+# not observable through any interface the engine has: `locate` is const, it
+# throws only for a line outside the layer, and a line outside the layer cannot
+# reach `bank_of` because `expand` refused it first. So the mutation is
+# equivalent and no test can kill it.
+mutate_cl allow 'C1 bank_of loses its single-bank shortcut' \
+    's|    if (banks == 1) return 0;  // the L1, and the L2 at its 2.5b default||' \
+    'equivalent at banks == 1: set % 1 and set / num_sets are both 0 for every set'
+
+echo "== C1: the outcome set itself (include/wcache/cache_level.h)"
+mutate_cl_h kill 'C1 is_dropped forgets DroppedArrayHit' \
+    's@    return o == TriageOutcome::DroppedArrayHit || o == TriageOutcome::DroppedEntry ||@    return o == TriageOutcome::DroppedEntry ||@'
+mutate_cl_h kill 'C1 is_dropped forgets DroppedReserve' \
+    's@           o == TriageOutcome::DroppedNoSlot || o == TriageOutcome::DroppedReserve;@           o == TriageOutcome::DroppedNoSlot;@'
+mutate_cl_h kill 'C1 Merged and BlockedTargets collapse' \
+    's|    BlockedTargets  = 2,|    BlockedTargets  = 1,|'
+
+echo "== C2: the loop and the six handlers (src/engine.cpp)"
+mutate_eng kill 'C2 dispatch sends an L1 fill to the L2 handler' \
+    's|        case EventKind::L1Fill:  on_l1_fill(\*e.payload.entry, now); return;|        case EventKind::L1Fill:  on_l2_fill(*e.payload.entry, now); return;|'
+mutate_eng kill 'C2 reinject always re-enters at the L1 (3.5)' \
+    's|    if (r.level == Level::L1) {|    if (true) {|'
+mutate_eng kill 'C2 reinject resets the refusal stamp (3.8, I10)' \
+    's|, r.refusal, r.core,|, NoRefusal, r.core,|'
+mutate_eng kill 'C2 the wake list is reinjected in reverse (I7b)' \
+    's|    for (Request\* w : wake) reinject(\*w, now);|    for (auto it = wake.rbegin(); it != wake.rend(); ++it) reinject(**it, now);|'
+mutate_eng kill 'C2 an L1 hit does not complete the core line' \
+    's|            core_line_done(r, now);||'
+mutate_eng kill 'C2 a dropped prefetch does not return its credit' \
+    's|        --stats_.pf_outstanding.at(idx(r.core));||'
+mutate_eng kill 'C2 grants are never reinjected' \
+    's|^    reinject_all(granted_, now);||'
+mutate_eng kill 'C2 the return leg is not charged on a fill' \
+    's|        queue_.schedule(now + params_.l2_to_l1_latency, EventKind::L1Fill, NoRefusal, t->core,|        queue_.schedule(now, EventKind::L1Fill, NoRefusal, t->core,|'
+mutate_eng kill 'C2 the return leg is not charged on an L2 hit' \
+    's|            queue_.schedule(now + params_.l2_to_l1_latency, EventKind::L1Fill, NoRefusal, r.core,|            queue_.schedule(now, EventKind::L1Fill, NoRefusal, r.core,|'
+mutate_eng kill 'C2 an L1 fill does not install the line' \
+    's|    lvl.install(line);||'
+mutate_eng kill 'C2 a filled prefetch does not return its credit' \
+    's|        if (!t->demand) --stats_.pf_outstanding.at(idx(t->core));||'
+# The dangling-pointer obligation plan unit B3 recorded against C2. Without this
+# loop the request is released while still carrying a pointer into an entry that
+# `retire` has just erased, which the arena refuses by name.
+mutate_eng kill 'C2 mshr1 is not cleared before the entry is erased' \
+    's|        t->mshr1 = nullptr;||'
+mutate_eng kill 'C2 the engine sizes tile_origin without its final entry' \
+    's|    tile_origin_.assign(static_cast<std::size_t>(n_tiles) + 1, SimTime{0});|    tile_origin_.assign(static_cast<std::size_t>(n_tiles), SimTime{0});|'
+# The fourth intentional `allow`, and the reason is I6 rather than the test
+# suite: the guard fires only in a state the engine cannot construct. `mshr1`
+# and `level` are written together in `CacheLevel::triage` at the one site that
+# forwards, and cleared together in `on_l1_fill` before the entry is erased, so
+# every request reaching `on_l2_probe` -- whether forwarded there or reinjected
+# from an L2 wait index -- holds its L1 entry by construction. Removing a check
+# that never fires cannot change any run, which is the definition of an
+# equivalent mutant. The behaviour it guards IS tested: test_engine.cpp's V11
+# fixture drives a request through an L2 slot-wait and back.
+mutate_eng allow 'C2 the I6 guard at the L2 is removed' \
+    's@    if (r.level != Level::L2 || r.mshr1 == nullptr) {@    if (false) {@' \
+    'a guard over a state I6 makes unreachable; removing it changes no run'
+
+echo "== C4: inclusion (src/engine.cpp)"
+mutate_eng kill 'C4 back-invalidation is not guarded by the knob' \
+    's|res.evicted && params_.inclusion == Inclusion::Inclusive|res.evicted|'
+mutate_eng kill 'C4 back-invalidations are not counted' \
+    's|            ++stats_.back_invalidations;||'
+mutate_eng kill 'C4 the scan stops at the first L1 holding the line' \
+    's|            ++stats_.back_invalidations;|            ++stats_.back_invalidations;\n            return;|'
+mutate_eng kill 'C4 the invalidated line is not invalidated' \
+    's|            l1_\[c\].array().invalidate(s);||'
+
+echo "== C3: the core state machine and the barrier (src/engine_core.cpp)"
+mutate_engc kill 'C3 the service floor does not stop at the tile seam' \
+    's|    const SimTime want = cs.cursor == BurstIndex{0}|    const SimTime want = false|'
+mutate_engc kill 'C3 the cursor is not reset at a tile start' \
+    's|        cs.cursor        = BurstIndex{0};||'
+mutate_engc kill 'C3 the prefetch cursor is not reset at a tile start' \
+    's|        prefetcher_->on_tile_start(cid);||'
+mutate_engc kill 'C3 a core with no bursts never clears the barrier' \
+    's|        if (trace_.n_bursts(cid, tile) == 0) {|        if (false) {|'
+mutate_engc kill 'C3 the barrier fires one core early' \
+    's|    if (cores_remaining_ > 0) return;|    if (cores_remaining_ > 1) return;|'
+mutate_engc kill 'C3 the tile tail is not charged (Q10)' \
+    's|    queue_.schedule(now + as_duration(trace_.tile_tail(tile)), EventKind::Barrier, NoRefusal,|    queue_.schedule(now, EventKind::Barrier, NoRefusal,|'
+mutate_engc kill 'C3 tile_origin is written to the tile that just ended' \
+    's|    tile_origin_.at(static_cast<std::size_t>(tile) + 1) = now;|    tile_origin_.at(static_cast<std::size_t>(tile)) = now;|'
+mutate_engc kill 'C3 issued_at is not recorded' \
+    's|^    cs.issued_at     = now;||'
+mutate_engc kill 'C3 the core is not marked stalled (I16)' \
+    's|^    cs.phase         = Phase::Stalled;||'
+mutate_engc kill 'C3 core_stall is not accumulated' \
+    's|    stats_.core_stall.at(idx(c)) += (now - want).get();||'
+mutate_engc kill 'C3 served_time is not advanced' \
+    's|^    cs.served_time = now;||'
+mutate_engc kill 'C3 the barrier is reached one burst late' \
+    's|    if (cs.cursor.get() == trace_.n_bursts(c, cs.tile)) {|    if (cs.cursor.get() > trace_.n_bursts(c, cs.tile)) {|'
+# N14 and D13, as a mutation: scheduling the next issue at `now` rather than at
+# `now + max(gap, ii)` discards the trace spacing entirely, which is the same
+# class of error as v2 adding it to an absolute tick.
+mutate_engc kill 'C3 the next issue carries no spacing (N14)' \
+    's|    queue_.schedule(now + step_after(c, cs.tile, BurstIndex{cs.cursor.get() - 1}),|    queue_.schedule(now,|'
+mutate_engc kill 'C3 the service floor takes the minimum' \
+    's|    return gap < params_.core_accept_ii ? params_.core_accept_ii : gap;|    return gap < params_.core_accept_ii ? gap : params_.core_accept_ii;|'
+
+echo "== C5: the prefetch sink (src/engine_core.cpp)"
+mutate_engc kill 'C5 the prefetcher is never called' \
+    's|    prefetcher_->on_demand_issue(\*this, c, k, now);||'
+mutate_engc kill 'C5 the budget is off by one (I14)' \
+    's|        if (in_fly >= cap) {|        if (in_fly > cap) {|'
+mutate_engc kill 'C5 the demand reserve is not subtracted from the budget' \
+    's|    const std::int32_t cap = lvl.mshrs().capacity() - lvl.mshrs().demand_reserve();|    const std::int32_t cap = lvl.mshrs().capacity();|'
+mutate_engc kill 'C5 prefetch lines in flight are not counted' \
+    's|        ++in_fly;||'
+mutate_engc kill 'C5 a prefetch is issued as a demand request (I15)' \
+    's|        Request& r = acquire(core, line, k, false);|        Request\& r = acquire(core, line, k, true);|'
+mutate_engc kill 'C5 the tile length is read from the next tile' \
+    's|    return trace_.n_bursts(core, cs.tile);|    return trace_.n_bursts(core, cs.tile + 1);|'
+
+echo "== C5: next_burst(d) itself (src/prefetcher.cpp)"
+mutate_pf kill 'C5 the cursor is allowed to fall behind the core' \
+    's|    if (cursor < next) cursor = next;||'
+mutate_pf kill 'C5 the fetch-ahead is one burst short' \
+    's|    while (cursor <= last && cursor < n_burst) {|    while (cursor < last \&\& cursor < n_burst) {|'
+mutate_pf kill 'C5 the fetch-ahead runs one burst past the tile' \
+    's@    while (cursor <= last && cursor < n_burst) {@    while (cursor <= last \&\& cursor <= n_burst) {@'
+mutate_pf kill 'C5 a budget refusal is ignored (N16)' \
+    's|        if (!mem.issue_prefetch(core, BurstIndex{cursor}, now)) return;|        (void)mem.issue_prefetch(core, BurstIndex{cursor}, now);|'
+mutate_pf kill 'C5 on_tile_start does not reset the cursor' \
+    's|    pf_cursor_.at(static_cast<std::size_t>(core.get())) = 0;||'
+mutate_pf kill 'C5 distance 0 is accepted as next_burst' \
+    's|    if (distance < 1) {|    if (distance < 0) {|'
+mutate_pf kill 'C5 none is built as next_burst' \
+    's|            return std::make_unique<NoPrefetcher>();|            return std::make_unique<NextBurstPrefetcher>(1, n_cores);|'
+mutate_pf kill 'C5 the fetch-ahead distance is ignored' \
+    's|    const std::int32_t last    = k.get() + distance_;|    const std::int32_t last    = k.get() + 1;|'
+
+echo "== C5: the interface (include/wcache/prefetcher.h)"
+mutate_pf_h kill 'C5 issue_prefetch stops reporting the budget' \
+    's|    virtual bool issue_prefetch(CoreId core, BurstIndex k, SimTime now) = 0;|    virtual void issue_prefetch(CoreId core, BurstIndex k, SimTime now) = 0;|'
+mutate_pf_h kill 'C5 on_tile_start loses the core it is about' \
+    's|    virtual void on_tile_start(CoreId core) = 0;|    virtual void on_tile_start() = 0;|'
+mutate_pf_h kill 'C5 the prefetcher may read the memory system by value' \
+    's|    virtual void on_demand_issue(PrefetchIssuer& mem, CoreId core, BurstIndex k, SimTime now) = 0;|    virtual void on_demand_issue(PrefetchIssuer mem, CoreId core, BurstIndex k, SimTime now) = 0;|'
+
+echo "== C3: the one crossing from trace time to simulated time (include/wcache/engine.h)"
+mutate_eng_h kill 'C3 as_duration loses the offset' \
+    's|constexpr SimTime as_duration(LocalTick d) { return SimTime{0} + d; }|constexpr SimTime as_duration(LocalTick d) { (void)d; return SimTime{0}; }|'
+
+echo "== A3: TileTrace, whose whole content is its shape (include/wcache/trace.h)"
+mutate_tr kill 'A3 gap loses its const' \
+    's|    virtual LocalTick gap(CoreId core, std::int32_t tile, BurstIndex k) const = 0;|    virtual LocalTick gap(CoreId core, std::int32_t tile, BurstIndex k) = 0;|'
+mutate_tr kill 'A3 gap returns a SimTime instead of a spacing' \
+    's|    virtual LocalTick gap(CoreId core|    virtual SimTime gap(CoreId core|'
+mutate_tr kill 'A3 local_tick takes a raw integer core' \
+    's|    virtual LocalTick local_tick(CoreId core, std::int32_t tile, BurstIndex k) const = 0;|    virtual LocalTick local_tick(std::int64_t core, std::int32_t tile, BurstIndex k) const = 0;|'
+mutate_tr kill 'A3 burst is returned by value' \
+    's|    virtual const Burst& burst(CoreId core, std::int32_t tile, BurstIndex k) const = 0;|    virtual Burst burst(CoreId core, std::int32_t tile, BurstIndex k) const = 0;|'
+
+echo "== B3: the two fields Phase C added to the MSHR file"
+mutate_mshr_h kill 'B3 is_prefetch_at_issue ignores the entry it holds (P1)' \
+    's@    return !r.demand && r.mshr1 == nullptr;@    return !r.demand;@'
+mutate_mshr kill 'B3 wait-index membership is not recorded (I5)' \
+    's|    r.on_wait_index = true;||'
+mutate_mshr kill 'B3 a granted request is left marked as waiting' \
+    's|        r->on_wait_index = false;||'
+mutate_mshr kill 'B3 line waiters are left marked as waiting' \
+    's|    for (Request\* w : out.wake) w->on_wait_index = false;||'
+mutate_mshr kill 'B3 the demand reserve is applied to the wrong requests' \
+    's|    return is_prefetch_at_issue(r) ? free > demand_reserve_ : free > 0;|    return is_prefetch_at_issue(r) ? free > 0 : free > demand_reserve_;|'
 
 echo
 echo "$((killed + survived + unexpected)) mutations: $killed killed, $survived survived as expected, $unexpected unexpected"

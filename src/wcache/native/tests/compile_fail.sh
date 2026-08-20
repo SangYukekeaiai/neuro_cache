@@ -1261,6 +1261,65 @@ tryBoth reject 'key_less mixes the two keys' 'int main(){
   Request p{CoreId{0}, LineId{1}, BurstIndex{0}};
   return key_less(a, p) ? 1 : 0; }'
 
+# ---------------------------------------------------------------------------
+# Phase C. Four contracts, chosen under decision B74's slimming rule: a
+# compile-fail case earns its place only where it pins something a later reader
+# could plausibly write. Restating "this type is tagged" once per new type is
+# what that rule exists to stop, so the seven new types of Phase C get no cases
+# at all and these four do.
+#
+# tryEngine: engine.h, which pulls in the whole hierarchy. There is no
+# minimal-preamble claim to make here, unlike tryC or tryR: the engine is the
+# thing that joins every unit, so a case compiled with it proves nothing about
+# where a name came from and is not trying to.
+# ---------------------------------------------------------------------------
+tryEngine() { try "$1" "$2" "$3" '#include <wcache/engine.h>'; }
+
+section "Phase C: the contracts a later reader could plausibly break"
+
+# N12 survives `as_duration`. engine.h adds the ONE crossing from a trace
+# spacing to a simulated duration, and the risk it creates is that a reader now
+# believes the two clocks are comparable. They are not: the crossing produces a
+# SimTime and nothing compares a SimTime with a LocalTick.
+tryEngine reject 'C3 a SimTime is compared with a LocalTick' \
+    'int f() { return as_duration(LocalTick{1}) < LocalTick{2} ? 1 : 0; }'
+tryEngine accept 'C3 control: two SimTimes compare' \
+    'int f() { return as_duration(LocalTick{1}) < SimTime{2} ? 1 : 0; }'
+
+# 3.7's outcomes are five states "distinguished ONLY by what releases them", and
+# the collapse the plan warns about starts with treating one of them as a
+# success flag. An enum class is what makes `if (triage(...))` a compile error
+# rather than a reading of Hit as false.
+tryEngine reject 'C1 a TriageOutcome is used as a condition' \
+    'int f(TriageOutcome o) { return o ? 1 : 0; }'
+tryEngine accept 'C1 control: a TriageOutcome is compared' \
+    'int f(TriageOutcome o) { return o == TriageOutcome::Hit ? 1 : 0; }'
+
+# The engine owns a deque of requests that the MSHR entries, the wait indices
+# and `Request::mshr1` all point into (P5). A copy would duplicate that arena
+# and leave every pointer in the copy aimed at the original, which is a sweep
+# driver holding two engines and getting one of them silently wrong. It is
+# already impossible, and this is what keeps it impossible.
+tryEngine reject 'C2 an Engine is copied' \
+    'void f(Engine& e) { Engine c(e); (void)c; }'
+tryEngine accept 'C2 control: an Engine is referred to' \
+    'void f(Engine& e) { Engine& r = e; (void)r; }'
+
+# 4.6: "One hook, called from E_Issue, returning NOTHING", and that is the whole
+# of "the PE is not changed": C5 is reachable from the core only through a call
+# that cannot affect it. A policy that wanted to report something back is the
+# plausible violation, and it is refused at the override rather than at the call.
+tryEngine reject 'C5 a prefetcher reports back from its hook' \
+    'struct P : Prefetcher {
+       bool on_demand_issue(PrefetchIssuer&, CoreId, BurstIndex, SimTime) override { return true; }
+       void on_tile_start(CoreId) override {} };
+     int f() { P p; (void)p; return 0; }'
+tryEngine accept 'C5 control: a prefetcher that returns nothing' \
+    'struct P : Prefetcher {
+       void on_demand_issue(PrefetchIssuer&, CoreId, BurstIndex, SimTime) override {}
+       void on_tile_start(CoreId) override {} };
+     int f() { P p; (void)p; return 0; }'
+
 # Every case has been started; wait for the stragglers, then print the whole
 # run in source order and tally it. The tally is done here rather than in the
 # children on purpose: a child is a separate process and cannot increment the
