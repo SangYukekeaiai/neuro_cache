@@ -36,16 +36,43 @@ Seed, indices, and method are recorded in each `meta.json` under `subset`.
 conda run -n base python scripts/subset_input_traces.py --n 20 --seed 0
 ```
 
-It reads the full captures from the home-directory snapshot by default. The
-sibling capture repo `/u/yyu9/neuro_cache_trace/` that used to hold them was
-deleted between the 2026-08-11 and 2026-08-12 daily snapshots, and the newest
-snapshot that still has it is
+## Where the full captures live
+
+```
+/work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas/{vgg16_T4_all,resnet19_T4_all}
+```
+
+26 GB, on the `bebv` allocation rather than in `$HOME`. Alongside them are
+`capture/` (the LoAS grabber that produced them), `model/` (the checkpoints it
+needs), `tests/`, and the original `README.md` and slurm script, so a re-capture
+is possible without the snapshot.
+
+To run the pipeline on the full 10,000 samples instead of the committed five,
+point `--trace-root` at that path:
+
+```
+conda run -n base python scripts/solve_schedules.py \
+    --trace-root /work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas \
+    --trace-dirs vgg16_T4_all resnet19_T4_all
+```
+
+`scripts/subset_input_traces.py --src <that path>` cuts a wider subset from the
+same place.
+
+## How this was recovered, in case it happens again
+
+These lived in a sibling repo at `/u/yyu9/neuro_cache_trace/`, which was deleted
+between the 2026-08-11 and 2026-08-12 daily home snapshots. Delta home is NFS
+and exposes read-only snapshots at `/u/yyu9/.snapshot/`, one per day, retained
+roughly 30 days, and `.snapshot` exists at every level of the tree. The copy
+above came from
 
 ```
 /u/yyu9/.snapshot/snapshot-daily-_2026-08-11_17_00_00_UTC/neuro_cache_trace/
 ```
 
-Daily snapshots retain roughly 30 days, so that copy expires around 2026-09-10.
-After that, the full captures have to be re-captured from the LoAS checkpoints
-with `capture/run_loas.py` from the same snapshot, and only what has been
-copied out survives. `ls /u/yyu9/.snapshot/` lists what is still available.
+which expires around 2026-09-10. Looping the snapshots and testing for a path is
+how the deletion date was bracketed: the newest snapshot still holding it is the
+last day the file existed. Note that `/projects` and `/work` are Lustre and have
+**no** snapshots, so only `$HOME` is recoverable this way, which is the reason
+the durable copy above is the one that matters.
