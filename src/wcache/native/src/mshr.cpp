@@ -106,7 +106,12 @@ bool MshrFile::has_slot(const Request& r) const {
     // demand burst can always allocate: prefetching can delay demand but never
     // starve it (B12). At `demand_reserve == capacity` this is false for every
     // prefetch, which is the budget being zero rather than a special case.
-    return r.demand ? free > 0 : free > demand_reserve_;
+    //
+    // The reserve applies to a prefetch AT ISSUE. A prefetch that has already
+    // been forwarded holds an L1 entry and is a fetch this file cannot cancel,
+    // so refusing it here would strand that entry rather than save a credit; see
+    // `is_prefetch_at_issue`.
+    return is_prefetch_at_issue(r) ? free > demand_reserve_ : free > 0;
 }
 
 Mshr& MshrFile::allocate(LineId line, Request& primary) {
@@ -158,18 +163,20 @@ bool MshrFile::add_target(Mshr& e, Request& r) {
 }
 
 void MshrFile::push_line_wait(Mshr& e, Request& r) {
-    if (!r.demand) {
+    if (is_prefetch_at_issue(r)) {
         caller_error("push_line_wait", "a prefetch is dropped, never queued (N16)");
     }
     mark_refused(r, WaitReason::Line, counter_);
+    r.on_wait_index = true;
     e.line_wait.push_back(&r);
 }
 
 void MshrFile::push_slot_wait(Request& r) {
-    if (!r.demand) {
+    if (is_prefetch_at_issue(r)) {
         caller_error("push_slot_wait", "a prefetch is dropped, never queued (N16)");
     }
     mark_refused(r, WaitReason::Slot, counter_);
+    r.on_wait_index = true;
     slot_wait_.push_back(&r);
 }
 
@@ -197,7 +204,10 @@ void MshrFile::collect_grants(std::vector<Request*>& out) {
             [](const Request* a, const Request* b) { return key_less(*a, *b); });
         Request* r = *oldest;
         slot_wait_.erase(oldest);
-        r->reserved = true;
+        // Off the index and holding a credit instead. One of the two places a
+        // request leaves an index, so one of the two places I5's bit is cleared.
+        r->on_wait_index = false;
+        r->reserved      = true;
         ++reserved_;
         out.push_back(r);
     }
@@ -215,6 +225,12 @@ void MshrFile::retire(Mshr& e, RetireResult& out) {
     // caller reusing one buffer keeps its capacity.
     out.targets = e.targets;
     out.wake    = e.line_wait;
+
+    // The other place a request leaves an index: this entry's line waiters all
+    // leave together, since a target list never drains incrementally and the
+    // whole set resolves at retire (3.7). I5's bit is cleared here rather than
+    // by the engine because the exit is here.
+    for (Request* w : out.wake) w->on_wait_index = false;
 
     entries_.erase(it);
 

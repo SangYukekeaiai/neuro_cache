@@ -122,6 +122,25 @@ struct Request {
     // second queue: it is what stops a wake producing a thundering herd racing
     // for one freed slot.
     bool reserved = false;
+
+    // On a wait index right now: I5's first half, "a request is on at most one
+    // wait index, and holds at most one reservation".
+    //
+    // Added by plan unit C2, which owns I5, and put on the REQUEST rather than
+    // in the engine for the reason the invariant was hard to place at all: a
+    // request can sit on an index of the L1 file or of the L2 file, and no one
+    // file can see the other's. A bit the request carries is visible to both, so
+    // membership is one fact in one place instead of the engine reconstructing
+    // the population across two files.
+    //
+    // It is the wait-index counterpart of `reserved`, which already carried the
+    // second half of I5 the same way. Set by `push_line_wait` / `push_slot_wait`
+    // and cleared where a request LEAVES an index, which is `retire` for a line
+    // waiter and `collect_grants` for a slot waiter -- the only two exits either
+    // index has. The REFUSAL is `CacheLevel::triage`'s, one level up: this class
+    // holds one file, a request can be refused at either of two, and the caller
+    // is what sees both.
+    bool on_wait_index = false;
 };
 
 // One outstanding line (3.3).
@@ -184,6 +203,34 @@ public:
 private:
     std::int64_t next_ = 0;
 };
+
+// A prefetch that is still AT ISSUE, which is where 4.6's four differences
+// apply and the only place a request may be dropped.
+//
+// The distinction is `mshr1`, and it is I6 read as a fact rather than as a
+// check: a request holds an L1 MSHR entry exactly when it has been forwarded,
+// which is exactly when it is at the L2. So this is false for every request the
+// L2 ever sees.
+//
+// Why the L2 is different, and it is 4.6's own last table row: "identical below
+// this point". A prefetch at the L1 has nothing behind it, which is why it must
+// be dropped rather than queued -- 4.1's argument is that a wait index is a view
+// over structures that already exist, and a prefetch waiting at the L1 would
+// occupy a selection set with no entry behind it. A prefetch at the L2 has
+// exactly the backing 4.1 asks for: it holds an L1 entry, and it holds it across
+// the whole downstream round trip. Dropping it there would also be an operation
+// the plan never defines, since the L1 entry it already took would then be
+// unfillable and the run would deadlock at D12's check.
+//
+// Part 8 reads the same way: prefetch drops are "refused AT ISSUE, broken out by
+// reason", and the reasons it lists are the L1's.
+//
+// One spelling, read by `has_slot` and by both wait pushes here and by
+// `CacheLevel::triage`, so the four cannot drift into disagreeing about what a
+// prefetch is.
+inline bool is_prefetch_at_issue(const Request& r) {
+    return !r.demand && r.mshr1 == nullptr;
+}
 
 // 3.8's `mark_refused`, write-once at the FIRST refusal at any level.
 //
@@ -325,6 +372,13 @@ public:
     // rule keeping the waiting population backed one-for-one by demand credits;
     // I15 states it as an invariant, and it is cheaper to make it
     // unrepresentable here than to look for it in a sweep.
+    //
+    // Both SET `Request::on_wait_index` and neither checks it. I5's refusal is
+    // `CacheLevel::triage`'s, which is the only code that pushes in a run and
+    // the only code that sees both files; this class records membership so that
+    // check has something to read. Keeping the refusal out of here also keeps
+    // this class able to express a state a fixture may want and the engine
+    // cannot reach.
     void push_line_wait(Mshr& e, Request& r);
     void push_slot_wait(Request& r);
 
@@ -357,6 +411,20 @@ public:
     // Throws std::logic_error when `e` is not an entry of this file.
     void retire(Mshr& e, RetireResult& out);
 
+    // Pops as many slot waiters as there are free credits, oldest first,
+    // reserving one credit for each (3.8's `collect_grants`). APPENDS to `out`;
+    // it does not inject, because injection reserves a port and this class has
+    // no hierarchy (decision B120).
+    //
+    // Public rather than private, which it was at plan unit B3, because a retire
+    // is not the only thing that frees a credit. 3.8: "a grantee that turns out
+    // not to need its slot (it re-triaged into a hit or a merge) releases the
+    // reservation, immediately granting the next waiter." `release_reservation`
+    // returns true at exactly that moment, and decision B120 records that "C1
+    // and C2 re-run the grant loop"; with this private they could not, and the
+    // freed credit would sit unspent until the next unrelated retire.
+    void collect_grants(std::vector<Request*>& out);
+
     std::int32_t capacity() const { return capacity_; }
     std::int32_t tgts_per_mshr() const { return tgts_per_mshr_; }
     std::int32_t demand_reserve() const { return demand_reserve_; }
@@ -373,11 +441,6 @@ public:
     std::int32_t slot_wait_depth() const;
 
 private:
-    // Pops as many slot waiters as there are free credits, oldest first,
-    // reserving one credit for each (3.8's `collect_grants`). Appends to `out`;
-    // it does not inject, because injection is the engine's.
-    void collect_grants(std::vector<Request*>& out);
-
     std::int32_t capacity_;
     std::int32_t tgts_per_mshr_;
     std::int32_t demand_reserve_;
