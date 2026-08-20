@@ -1,0 +1,2580 @@
+{
+ "arch": "spinalflow",
+ "trace_dir": "vgg16_T4_all",
+ "layer_name": "layer_01_features_3",
+ "sample_idx": 0,
+ "workload_dims": {
+  "KH": 3,
+  "KW": 3,
+  "CIN": 64,
+  "COUT": 64,
+  "HO": 32,
+  "WO": 32,
+  "T": 4,
+  "shape": "snn-layer"
+ },
+ "dram_num_steps": 1,
+ "noc_num_steps": 2,
+ "tiles": [
+  {
+   "dram_i": 0,
+   "noc_i": 0,
+   "mac_cycles": 24,
+   "lif_cycles": null,
+   "ticks": [
+    {
+     "tick": 0,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 6, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 0, 8, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 1,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 0, 15, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 2,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 0, 21, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 3,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 22, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 0, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 0, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 22, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 0, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 0, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 0, 22, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 4,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 0, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 0, 23, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 5,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 27, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 0, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 0, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 0, 34, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 6,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 0, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 0, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 0, 42, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 7,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 0, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 0, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 0, 45, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 8,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 0, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 45, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 0, 60, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 9,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 0, 62, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 10,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 1, 8, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 11,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 1, 15, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 12,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 1, 22, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 1, 21, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 13,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 1, 22, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 1, 22, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 14,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 1, 23, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 15,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 2, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 1, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 1, 34, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 16,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 2, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 1, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 1, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 1, 42, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 17,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 2, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 1, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 1, 45, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 18,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 2, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 1, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 1, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 1, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 1, 60, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 19,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 2, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 2, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 1, 62, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 20,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 2, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 1, 45, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 2, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 2, 8, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 21,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 2, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 1, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 2, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 2, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 2, 15, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 22,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 2, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 2, 22, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 1, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 2, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 2, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 2, 21, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 23,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [2, 1, 6, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [1, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [1, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [1, 2, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [1, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [1, 2, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [2, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [1, 2, 23, 0, 64]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "dram_i": 0,
+   "noc_i": 1,
+   "mac_cycles": 24,
+   "lif_cycles": null,
+   "ticks": [
+    {
+     "tick": 0,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 6, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 0, 8, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 1,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 0, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 0, 15, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 2,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 0, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 0, 21, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 3,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 22, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 0, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 0, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 22, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 0, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 0, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 0, 22, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 4,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 0, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 0, 23, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 5,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 27, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 0, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 0, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 0, 34, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 6,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 0, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 0, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 0, 42, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 7,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 0, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 0, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 0, 45, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 8,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 0, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 45, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 0, 60, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 9,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 0, 62, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 10,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 1, 8, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 11,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 1, 15, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 12,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 1, 22, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 0, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 1, 21, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 13,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 1, 22, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 1, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 1, 22, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 14,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 1, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 1, 23, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 15,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 2, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 1, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 1, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 1, 34, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 16,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 2, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 1, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 1, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 1, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 1, 42, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 17,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 2, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 1, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 1, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 1, 45, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 18,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 2, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 1, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 1, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 1, 35, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 1, 60, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 19,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 2, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 1, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 2, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 1, 62, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 20,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 2, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 1, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 1, 45, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 2, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 2, 8, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 21,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 2, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 2, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 1, 47, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 2, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 2, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 2, 15, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 22,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [0, 2, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 2, 15, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 2, 22, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 1, 49, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 2, 34, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [0, 2, 62, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 2, 21, 0, 64]
+       ]
+      }
+     ]
+    },
+    {
+     "tick": 23,
+     "cores": [
+      {
+       "core_id": 0,
+       "weight_addresses": [
+        [1, 1, 6, 0, 64]
+       ]
+      },
+      {
+       "core_id": 1,
+       "weight_addresses": [
+        [0, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 2,
+       "weight_addresses": [
+        [0, 2, 21, 0, 64]
+       ]
+      },
+      {
+       "core_id": 3,
+       "weight_addresses": [
+        [0, 2, 23, 0, 64]
+       ]
+      },
+      {
+       "core_id": 4,
+       "weight_addresses": [
+        [0, 1, 60, 0, 64]
+       ]
+      },
+      {
+       "core_id": 5,
+       "weight_addresses": [
+        [0, 2, 42, 0, 64]
+       ]
+      },
+      {
+       "core_id": 6,
+       "weight_addresses": [
+        [1, 0, 8, 0, 64]
+       ]
+      },
+      {
+       "core_id": 7,
+       "weight_addresses": [
+        [0, 2, 23, 0, 64]
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

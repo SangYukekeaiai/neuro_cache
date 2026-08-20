@@ -31,6 +31,12 @@ input_trace/
 # extension rules above do not apply to it.
 !configs/**
 
+# src/wcache/examples/ holds committed example traces: small slices of the
+# generated corpus, cut by make_examples.py so plan unit A3 can be built and
+# reviewed against corpus-shaped data. Source-controlled fixtures, not captured
+# data, so the *.json rule above does not apply to them either.
+!src/wcache/examples/**
+
 # Local Gurobi installation and license files
 gurobi_server1302/
 gurobi.lic

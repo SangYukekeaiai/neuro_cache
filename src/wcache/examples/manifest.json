@@ -1,0 +1,172 @@
+{
+ "generated_by": "src/wcache/examples/make_examples.py",
+ "corpus_root": "outputs/weight_traces",
+ "slice": {
+  "n_tiles": 2,
+  "n_cores": 8,
+  "n_ticks": 24,
+  "n_flat_addresses": 32
+ },
+ "mac_cycles": "rewritten to max_tick_in_slice + original tile_tail; every other field is copied verbatim from the source sample",
+ "examples": [
+  {
+   "file": "loas_vgg16_layer01_v2.json",
+   "source": "loas/vgg16_T4_all/layer_01_features_3/sample_00000.json.gz",
+   "why": "the ordinary case: every core busy every tick, gap == 1 throughout, tile_tail == 1, burst spans 16 COUT",
+   "format": "v2",
+   "source_tiles": 32,
+   "source_mac_cycles": [
+    127,
+    144
+   ],
+   "bytes": 42094,
+   "n_tiles": 2,
+   "bursts": 384,
+   "cores": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "gap_min": 1,
+   "gap_max": 1,
+   "gap_zero_count": 0,
+   "tail": [
+    1,
+    1
+   ],
+   "spans": [
+    16
+   ],
+   "empty_core_tiles": 0,
+   "short_cores": 0
+  },
+  {
+   "file": "ptb_resnet19_layer01_v2.json",
+   "source": "ptb/resnet19_T4_all/layer_01_layer1_0_conv1/sample_00000.json.gz",
+   "why": "the only measured non-trivial tile_tail: compute outlives the last weight burst by ~20 cycles, so the tile seam is not free",
+   "format": "v2",
+   "source_tiles": 64,
+   "source_mac_cycles": [
+    142,
+    155
+   ],
+   "bytes": 42079,
+   "n_tiles": 2,
+   "bursts": 384,
+   "cores": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "gap_min": 1,
+   "gap_max": 1,
+   "gap_zero_count": 0,
+   "tail": [
+    21,
+    21
+   ],
+   "spans": [
+    16
+   ],
+   "empty_core_tiles": 0,
+   "short_cores": 0
+  },
+  {
+   "file": "prosperity_vgg16_layer01_v2.json",
+   "source": "prosperity/vgg16_T4_all/layer_01_features_3/sample_00000.json.gz",
+   "why": "sparse core participation: some cores issue nothing in a tile (n_bursts == 0 is legal) and another runs out of work mid-window",
+   "format": "v2",
+   "source_tiles": 8,
+   "source_mac_cycles": [
+    209,
+    204
+   ],
+   "bytes": 31765,
+   "n_tiles": 2,
+   "bursts": 285,
+   "cores": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "gap_min": 1,
+   "gap_max": 1,
+   "gap_zero_count": 0,
+   "tail": [
+    1,
+    1
+   ],
+   "spans": [
+    64
+   ],
+   "empty_core_tiles": 4,
+   "short_cores": 1
+  },
+  {
+   "file": "spinalflow_vgg16_layer01_v2.json",
+   "source": "spinalflow/vgg16_T4_all/layer_01_features_3/sample_00000.json.gz",
+   "why": "a burst four times longer than loas/ptb: 64 COUT per burst, so a single burst can span several lines under a narrow cout_block",
+   "format": "v2",
+   "source_tiles": 8,
+   "source_mac_cycles": [
+    587,
+    558
+   ],
+   "bytes": 42098,
+   "n_tiles": 2,
+   "bursts": 384,
+   "cores": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "gap_min": 1,
+   "gap_max": 1,
+   "gap_zero_count": 0,
+   "tail": [
+    1,
+    1
+   ],
+   "spans": [
+    64
+   ],
+   "empty_core_tiles": 0,
+   "short_cores": 0
+  },
+  {
+   "file": "gustavsnn_vgg16_layer01_v1_legacy.json",
+   "source": "gustavsnn/vgg16_T4_all/layer_01_features_3/sample_00000.json.gz",
+   "why": "the legacy flat shape, still on disk for all 31 gustavsnn layers: no tick, no core_id, so the engine cannot be driven from it at all",
+   "format": "v1",
+   "source_tiles": 512,
+   "source_mac_cycles": [
+    219,
+    252
+   ],
+   "bytes": 1875,
+   "n_tiles": 2,
+   "bursts": 64,
+   "spans": [
+    8
+   ]
+  }
+ ]
+}
