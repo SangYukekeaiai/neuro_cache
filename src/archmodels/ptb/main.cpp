@@ -13,7 +13,7 @@
 //
 // trace.bin: flat uint8, row-major [T, B_full, Cin_full, Hin_full, Win_full].
 //
-// out.bin (all int32): for each tile (outer), for each sample (inner):
+// out.bin (all int32): for each sample (outer), for each tile (inner):
 //   tile_idx, sample_idx, mac_cycles, num_ticks
 //   per tick (ascending): tick_value, num_addresses_at_tick
 //     per address: kh, kw, cin, cout_start, cout_end  (5 int32, tick omitted --
@@ -44,7 +44,7 @@ int32_t read_i32(std::ifstream& fh) {
     return v;
 }
 
-void write_i32(std::ofstream& fh, int32_t v) {
+void write_i32(std::ostream& fh, int32_t v) {
     fh.write(reinterpret_cast<const char*>(&v), sizeof(v));
 }
 
@@ -111,15 +111,28 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::ofstream out_fh(out_path, std::ios::binary);
-    if (!out_fh) {
-        std::cerr << "ptbgen: cannot open output file " << out_path << "\n";
-        return 2;
+    // `-` means stdout, which is what makes this binary a stream producer with
+    // no change to what it writes (see the Phase D campaign plan, 10.3(b)).
+    std::ofstream out_file;
+    std::ostream* out = nullptr;
+    if (out_path == "-") {
+        out = &std::cout;
+    } else {
+        out_file.open(out_path, std::ios::binary);
+        if (!out_file) {
+            std::cerr << "ptbgen: cannot open output file " << out_path << "\n";
+            return 2;
+        }
+        out = &out_file;
     }
+    std::ostream& out_fh = *out;
 
-    for (int32_t tile_idx = 0; tile_idx < num_tiles; ++tile_idx) {
-        const TileSpec& tile = tiles[tile_idx];
-        for (int32_t sample_idx : sample_indices) {
+    // Sample-outer, tile-inner. A stream consumer needs one sample's tiles
+    // contiguously; under the old nesting it would have to buffer every sample
+    // before it could emit tile 1. See the Phase D campaign plan, 10.4.
+    for (int32_t sample_idx : sample_indices) {
+        for (int32_t tile_idx = 0; tile_idx < num_tiles; ++tile_idx) {
+            const TileSpec& tile = tiles[tile_idx];
             SampleResult result = reconstruct_sample(trace.data(), shape, tile, sample_idx);
             write_i32(out_fh, tile_idx);
             write_i32(out_fh, sample_idx);

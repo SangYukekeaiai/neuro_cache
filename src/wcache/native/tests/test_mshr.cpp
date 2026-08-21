@@ -1004,6 +1004,44 @@ void test_the_wake_list_is_one_key_ordered_population() {
     CHECK_TRUE(other->line_wait[0] == &other_line);
 }
 
+// D4/V6's first half: a LINE waiter is woken onto a resident line and a SLOT
+// waiter is not, and the two are told apart by a bit `retire` writes.
+//
+// It matters because the engine reads that bit at the re-probe and counts
+// `hits_downgraded_to_miss` when the re-probe misses anyway. Marking the slot
+// waiters too would count every ordinary grant-then-allocate as a downgrade,
+// which is the whole population rather than the exception.
+void test_retire_marks_line_waiters_as_woken_onto_a_resident_line() {
+    check::group("B3: D4, retire marks the LINE waiters and not the slot waiters");
+
+    Arena arena;
+    RefusalCounter counter;
+    MshrFile f(1, 1, 0, counter);
+
+    Request& p = arena.demand(0, 7);
+    Mshr& e    = f.allocate(LineId{7}, p);
+
+    // The target list is full at one, so a second request for the same line
+    // waits on THIS entry and is released by its fill.
+    Request& liner = arena.demand(1, 7);
+    f.push_line_wait(e, liner);
+
+    // A request for another line has no entry to wait on and no free slot, so it
+    // waits for any entry and is released by ANY retire, with no promise at all
+    // about its own line.
+    Request& slotter = arena.demand(2, 9);
+    f.push_slot_wait(slotter);
+
+    CHECK_TRUE(!liner.line_resident_at_wake);
+    CHECK_TRUE(!slotter.line_resident_at_wake);
+
+    RetireResult out;
+    f.retire(e, out);
+    CHECK_EQ(check::ssize(out.wake), 2);
+    CHECK_TRUE(liner.line_resident_at_wake);
+    CHECK_TRUE(!slotter.line_resident_at_wake);
+}
+
 void test_retire_replaces_its_output_and_refuses_a_foreign_entry() {
     check::group("B3: retire's out parameter, and a foreign entry");
 
@@ -1049,7 +1087,7 @@ void test_retire_replaces_its_output_and_refuses_a_foreign_entry() {
     expect_message("an entry of another file", foreign, "MshrFile::retire",
                    {"3", "not a live entry"});
 
-    Mshr stale{LineId{2}, CoreId{0}, true, {}, {}};
+    Mshr stale{LineId{2}, CoreId{0}, true, false, SimTime{0}, {}, {}};
     const std::string gone =
         caller_thrown_by([&f, &stale, &ignored] { f.retire(stale, ignored); });
     expect_message("an already-retired entry", gone, "MshrFile::retire",
@@ -1063,7 +1101,7 @@ void test_retire_replaces_its_output_and_refuses_a_foreign_entry() {
     // targets as satisfied, which double-serves a core and drops a fill.
     Request& live_p = arena.demand(0, 42);
     (void)f.allocate(LineId{42}, live_p);
-    Mshr impostor{LineId{42}, CoreId{9}, true, {}, {}};
+    Mshr impostor{LineId{42}, CoreId{9}, true, false, SimTime{0}, {}, {}};
     const std::string other_object =
         caller_thrown_by([&f, &impostor, &ignored] { f.retire(impostor, ignored); });
     expect_message("a different object for a live line", other_object, "MshrFile::retire",
@@ -1427,6 +1465,7 @@ int main() {
     test_the_credit_this_retire_freed_is_the_one_it_hands_out();
     test_the_3_8_counterexample();
     test_the_wake_list_is_one_key_ordered_population();
+    test_retire_marks_line_waiters_as_woken_onto_a_resident_line();
     test_retire_replaces_its_output_and_refuses_a_foreign_entry();
     test_the_line_wait_bound_i11();
     test_a_soak_against_the_model();

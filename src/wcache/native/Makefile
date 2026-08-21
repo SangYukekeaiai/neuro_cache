@@ -6,6 +6,9 @@
 #   make            fixture build, -O0 -g, asserts LIVE
 #   make test       build and run every tests/test_*.cpp, one binary each,
 #                   then the compile-fail driver
+#   make test-cli   build apps/ and run the three end-to-end CLI scripts,
+#                   including v1_pipe.sh, the V1 gate. Needs python3 and the
+#                   checked-in examples/ fixtures, so it is NOT part of `test`
 #   make release    sweep build,   -O2 -DNDEBUG, asserts compiled out
 #   make clean      remove build/
 #
@@ -84,9 +87,34 @@ TEST_HDRS := $(wildcard tests/*.h)
 # are the only thing connecting a header to a test binary at all.
 LIB_HDRS  := $(wildcard include/wcache/*.h)
 
-.PHONY: all lib test test-run test-compile-fail release clean
+# The programs. They live under apps/ and NOT under src/, because $(SRCS) is
+# `$(wildcard src/*.cpp)`: a main() there would be archived into libwcache.a
+# and collide with every test binary's own main().
+#
+# Named one by one rather than derived from a wildcard through a
+# $(BUILDDIR)/% pattern rule. That pattern would also match
+# $(BUILDDIR)/libwcache.a and every $(BUILDDIR)/*.o, which is the same trap the
+# `test_%` stem below is spelled out to avoid, and it would give make two
+# candidate rules for an object whose source moved. A second program is one
+# more line here.
+APP_BINS := $(BUILDDIR)/wcache_run $(BUILDDIR)/wcache_sweep
 
-all: lib
+.PHONY: all lib apps test test-cli test-run test-compile-fail release clean
+
+all: lib apps
+
+apps: $(APP_BINS)
+
+# No -Itests: a program is not a test and must not reach into the test headers.
+# apps/app_support.h is what the two programs share; it is reached by a quoted
+# include from the source's own directory, so no -I is needed for it either.
+APP_HDRS := $(wildcard apps/*.h)
+
+$(BUILDDIR)/wcache_run: apps/wcache_run.cpp $(APP_HDRS) $(LIB_HDRS) $(LIB) | $(BUILDDIR)
+	$(CXX) $(CXXFLAGS) $< $(LIB) -o $@
+
+$(BUILDDIR)/wcache_sweep: apps/wcache_sweep.cpp $(APP_HDRS) $(LIB_HDRS) $(LIB) | $(BUILDDIR)
+	$(CXX) $(CXXFLAGS) $< $(LIB) -o $@
 
 lib: $(LIB)
 
@@ -116,7 +144,30 @@ ifeq ($(MODE),release)
 	@echo "         invariants are not being exercised."
 endif
 	@tests/compile_fail.sh
-	@$(RUN_BINS)
+	@rc=0; ( $(RUN_BINS) ) || rc=$$?; \
+	  echo "note: the end-to-end CLI gate (invariant V1) is a separate target:"; \
+	  echo "      make test-cli   [needs python3 and the examples/ fixtures]"; \
+	  exit $$rc
+
+# The three end-to-end CLI scripts, which drive the built programs over a
+# checked-in fixture slice. v1_pipe.sh is invariant V1's gate, and it is
+# non-vacuous: it also points the same check at two deliberately broken runs and
+# requires it to go red.
+#
+# This is a SEPARATE target and deliberately not a prerequisite of `test`.
+# `test` compiles and runs C++ only, so it is green wherever a compiler is, and
+# that is the property worth keeping: these three scripts need python3 on PATH,
+# an importable `tracegen`, and the checked-in examples/ fixtures, none of which
+# `test` needs today. Folding them in would trade a gate that always runs for a
+# gate that runs where the environment happens to suit it, and a V1 check that
+# is skipped on a bare machine is worse than one that is named and run. It also
+# builds apps/, which `test` does not (see mutation_check.sh on that gap).
+#
+# PYTHON overrides the interpreter, as in the scripts themselves.
+test-cli: apps
+	@tests/run_cli.sh
+	@tests/sweep_cli.sh
+	@tests/v1_pipe.sh
 
 # The C++ suites only, without the compile-fail driver. `make test` is still
 # both, and the gate is still `make test`.

@@ -752,6 +752,51 @@ static_assert(std::is_same<decltype(&EventQueue<int>::schedule),
 
 }  // namespace
 
+// ===========================================================================
+// peek_min: reading the next event without consuming it
+// ===========================================================================
+
+void test_peek_min_does_not_pop() {
+    check::group("Task 4: peek_min returns the same event pop_min would, twice");
+    EventQueue<int> q;
+    q.schedule(SimTime{5}, EventKind::Issue, NoRefusal, CoreId{0}, 7);
+    q.schedule(SimTime{3}, EventKind::Issue, NoRefusal, CoreId{0}, 9);
+    CHECK_EQ(q.peek_min().payload, 9);
+    CHECK_EQ(q.peek_min().payload, 9);
+    CHECK_EQ(q.pop_min().payload, 9);
+    CHECK_EQ(q.peek_min().payload, 7);
+}
+
+// A peek is not a pop, so it must not move `now` either: a driver that parks on
+// a peeked barrier would otherwise arrive at that barrier's timestamp without
+// having dispatched it.
+void test_peek_min_leaves_now_alone() {
+    check::group("Task 4: peek_min does not advance now");
+    EventQueue<int> q;
+    q.schedule(SimTime{4}, EventKind::Issue, NoRefusal, CoreId{0}, 1);
+    q.schedule(SimTime{9}, EventKind::Issue, NoRefusal, CoreId{0}, 2);
+    CHECK_EQ(q.pop_min().payload, 1);
+    CHECK_EQ(q.now(), SimTime{4});
+    CHECK_EQ(q.peek_min().payload, 2);
+    CHECK_EQ(q.now(), SimTime{4});
+    CHECK_EQ(q.size(), std::size_t{1});
+}
+
+void test_peek_min_on_an_empty_queue_throws() {
+    check::group("Task 4: peek_min on an empty queue throws");
+    EventQueue<int> q;
+    // `logic_thrown_by` and not CHECK_THROWS, for pop_min's reason: out_of_range
+    // and invalid_argument both DERIVE from logic_error, so a catch on the base
+    // accepts either and the tier B27 puts this error in stops being tested.
+    const std::string peeked = logic_thrown_by([&q] { return q.peek_min().payload; });
+    expect_message("peeking an empty queue", peeked, "EventQueue::peek_min", {"empty"});
+
+    q.schedule(SimTime{0}, EventKind::Issue, NoRefusal, CoreId{0}, 0);
+    (void)q.pop_min();
+    const std::string again = logic_thrown_by([&q] { return q.peek_min().payload; });
+    expect_message("peeking a drained queue", again, "EventQueue::peek_min", {"empty"});
+}
+
 int main() {
     test_class_of_maps_every_kind();
     test_the_class_order_decides_a_same_cycle_tie();
@@ -766,5 +811,8 @@ int main() {
     test_popping_an_empty_queue_is_refused();
     test_the_payload_is_carried_unchanged();
     test_now_tracks_the_last_pop();
+    test_peek_min_does_not_pop();
+    test_peek_min_leaves_now_alone();
+    test_peek_min_on_an_empty_queue_throws();
     return check::summary();
 }

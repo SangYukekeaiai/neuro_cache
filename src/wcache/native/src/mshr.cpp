@@ -138,7 +138,10 @@ Mshr& MshrFile::allocate(LineId line, Request& primary) {
     // fill through the same loop as every later merge and there is no second
     // path that could satisfy it differently. It is also what makes 4.1's
     // per-entry bound `n_cores - tgts_per_mshr` exact rather than off by one.
-    Mshr entry{line, primary.core, primary.demand, {}, {}};
+    // `pf_opened` and `first_request` are written here and never again: R8's
+    // anchor is the FIRST request for the line, so a later demand promoting the
+    // entry must leave both alone or the head start it measures disappears.
+    Mshr entry{line, primary.core, primary.demand, !primary.demand, primary.issued_at, {}, {}};
     entry.targets.push_back(&primary);
 
     // Spent here rather than by a second call the caller must remember (see the
@@ -230,7 +233,16 @@ void MshrFile::retire(Mshr& e, RetireResult& out) {
     // leave together, since a target list never drains incrementally and the
     // whole set resolves at retire (3.7). I5's bit is cleared here rather than
     // by the engine because the exit is here.
-    for (Request* w : out.wake) w->on_wait_index = false;
+    //
+    // Every one of them was woken by the fill of the line it was waiting on, so
+    // the line is resident at this instant and the re-probe that follows is a
+    // hit unless something evicts it first (D4, V6). The bit records that,
+    // before `collect_grants` appends slot waiters, which carry no such
+    // guarantee.
+    for (Request* w : out.wake) {
+        w->on_wait_index         = false;
+        w->line_resident_at_wake = true;
+    }
 
     entries_.erase(it);
 

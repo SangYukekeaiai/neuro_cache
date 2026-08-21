@@ -62,8 +62,14 @@ void Engine::start_tile(std::int32_t tile, SimTime now) {
         cs.cursor        = BurstIndex{0};
         cs.pending_lines = 0;
         cs.issued_at     = now;
+        cs.burst_anchor  = now;
         cs.served_time   = now;
         cs.phase         = Phase::Computing;
+
+        // 4.6's pollution window is the tile: "how many of those evicted lines
+        // were themselves demanded soon after". A line lost two tiles ago is not
+        // what that measures.
+        pf_evicted_.at(c).clear();
 
         // The fetch-ahead cursor starts over: the next tile's activations do not
         // exist until the barrier resolves, so the first burst of every tile is
@@ -87,7 +93,8 @@ void Engine::start_tile(std::int32_t tile, SimTime now) {
 }
 
 void Engine::barrier_arrive(CoreId c, SimTime now) {
-    cores_.at(idx(c)).phase = Phase::AtBarrier;
+    cores_.at(idx(c)).phase           = Phase::AtBarrier;
+    cores_.at(idx(c)).barrier_arrival = now;
 
     // A countdown, not a scan (Part 5). No polling, and `barrier_slack_cycles`
     // falls out as the cost of the lock-step assumption.
@@ -117,6 +124,17 @@ void Engine::on_barrier(std::int32_t tile, SimTime now) {
     // effect, and reachable in the unbounded baseline where every latency is
     // zero (3.6, V26).
     tile_origin_.at(static_cast<std::size_t>(tile) + 1) = now;
+
+    // Part 8's `barrier_slack_cycles`, and the seventh bucket of the stall
+    // breakdown: the cycles each core spent parked at the barrier waiting for
+    // the tile to end. Charged here rather than at the arrival because
+    // `tile_origin[N+1]` is what this event measures, and the arrival cannot
+    // know it.
+    for (std::size_t c = 0; c < cores_.size(); ++c) {
+        const std::int64_t slack = (now - cores_[c].barrier_arrival).get();
+        stats_.stall_barrier[c] += slack;
+        stats_.stall_total[c] += slack;
+    }
 
     if (tile + 1 < trace_.n_tiles()) {
         start_tile(tile + 1, now);
@@ -173,11 +191,20 @@ void Engine::on_issue(CoreId c, BurstIndex k, SimTime now) {
 
     cs.pending_lines = static_cast<std::int32_t>(lines_.size());
     cs.issued_at     = now;
+    // R8's anchor starts at the burst's own issue and is only ever lowered, by a
+    // line a prefetch already had in flight or already had resident. So
+    // `fetch_latency >= core_stall` is structural: under N14 this instant IS the
+    // `want` that `serve` recomputes.
+    cs.burst_anchor  = now;
     cs.phase         = Phase::Stalled;
+
+    // 4.6's coverage ceiling: the first burst of a tile can never be prefetched.
+    ++stats_.demand_bursts;
+    if (k.get() > 0) ++stats_.pf_bursts_eligible;
 
     CacheLevel& lvl = l1_.at(idx(c));
     for (const LineId line : lines_) {
-        Request& r           = acquire(c, line, k, true);
+        Request& r           = acquire(c, line, k, true, now);
         const SimTime accept = lvl.port(0).reserve(now);
         queue_.schedule(accept + lvl.port(0).latency(), EventKind::L1Probe, r.refusal, c,
                         EventPayload{&r, nullptr, k, cs.tile});
@@ -189,12 +216,16 @@ void Engine::on_issue(CoreId c, BurstIndex k, SimTime now) {
     prefetcher_->on_demand_issue(*this, c, k, now);
 }
 
-void Engine::core_line_done(Request& r, SimTime now) {
+void Engine::core_line_done(Request& r, SimTime now, SimTime anchor) {
     // A prefetch completes nobody (4.6, I15). The check is here rather than at
     // the two call sites so that neither can forget it.
     if (!r.demand) return;
 
     CoreState& cs = cores_.at(idx(r.core));
+    // R8: the burst's anchor is the EARLIEST first request among its lines, so
+    // one term per burst however many lines it spans. A per-line sum would scale
+    // with `lines_per_burst` and break the `d = 0` identity the ruling rests on.
+    if (anchor < cs.burst_anchor) cs.burst_anchor = anchor;
     if (cs.pending_lines <= 0) {
         engine_error("core_line_done", "core " + std::to_string(r.core.get()) +
                                            " completed a line with none outstanding");
@@ -203,10 +234,11 @@ void Engine::core_line_done(Request& r, SimTime now) {
     // N7: the burst is atomic, so the core takes delivery only when the last
     // line of it lands.
     if (cs.pending_lines > 0) return;
-    serve(r.core, now);
+    // The LAST line to land is what the burst's wait is attributed to (Part 8).
+    serve(r.core, now, r.cause);
 }
 
-void Engine::serve(CoreId c, SimTime now) {
+void Engine::serve(CoreId c, SimTime now, StallCause cause) {
     CoreState& cs = cores_.at(idx(c));
 
     // `want` is the cycle the core's own schedule says this burst was due. For
@@ -238,12 +270,49 @@ void Engine::serve(CoreId c, SimTime now) {
                                   std::to_string(want.get()) + ") (I13)");
     }
 
-    // The two Part 8 quantities 3.4b writes by name. With prefetching off they
-    // are equal by construction and reporting both is a free consistency check;
-    // with it on, their DIFFERENCE is the latency the policy hid, and it is the
-    // single number the policy should be judged on.
-    stats_.core_stall.at(idx(c)) += (now - want).get();
-    stats_.fetch_latency.at(idx(c)) += (now - cs.issued_at).get();
+    // The two Part 8 quantities 3.4b writes by name, under ruling R8: the stall
+    // is measured against the core's own schedule and the fetch against the
+    // instant the LINE was first requested, so their difference is the latency
+    // the prefetcher hid and nothing else.
+    //
+    // A throw and not an assert, for D12's reason: the sweep build is -DNDEBUG,
+    // and a negative hidden latency that survives into a CSV is a result nobody
+    // can tell from a real one.
+    if (cs.burst_anchor > want) {
+        engine_error("serve", "core " + std::to_string(c.get()) + " burst " +
+                                  std::to_string(cs.cursor.get()) + " has a line anchor at " +
+                                  std::to_string(cs.burst_anchor.get()) +
+                                  ", later than its own schedule (" + std::to_string(want.get()) +
+                                  "), which would make hidden_latency negative (R8)");
+    }
+    const std::int64_t stall = (now - want).get();
+    stats_.core_stall.at(idx(c)) += stall;
+    stats_.fetch_latency.at(idx(c)) += (now - cs.burst_anchor).get();
+
+    // Part 8's stall breakdown. `stall_total` is accumulated here and the eight
+    // causes at their own sites, so V21 compares two independently built
+    // numbers rather than restating one of them.
+    stats_.stall_total.at(idx(c)) += stall;
+    switch (cause) {
+        case StallCause::L1Slot:  stats_.stall_l1_slot.at(idx(c)) += stall; break;
+        case StallCause::L1Line:  stats_.stall_l1_line.at(idx(c)) += stall; break;
+        case StallCause::L1Port:  stats_.stall_l1_port.at(idx(c)) += stall; break;
+        case StallCause::L2Slot:  stats_.stall_l2_slot.at(idx(c)) += stall; break;
+        case StallCause::L2Line:  stats_.stall_l2_line.at(idx(c)) += stall; break;
+        case StallCause::L2Port:  stats_.stall_l2_port.at(idx(c)) += stall; break;
+        case StallCause::Channel: stats_.stall_channel.at(idx(c)) += stall; break;
+        case StallCause::Barrier:
+        case StallCause::None:
+            // Neither can reach a served burst: `Barrier` is charged per tile
+            // and never written to a request, and `None` cannot survive a
+            // triage (see `StallCause`). A throw and not an assert, for D12's
+            // reason: the sweep build is -DNDEBUG, and a cause that fell
+            // through here would leave V21's cycles in no bucket at all.
+            engine_error("serve", "core " + std::to_string(c.get()) + " burst " +
+                                      std::to_string(cs.cursor.get()) + " was served with " +
+                                      std::to_string(stall) +
+                                      " cycles of stall and no attributable cause (V21)");
+    }
 
     cs.served_time = now;
     cs.cursor      = BurstIndex{cs.cursor.get() + 1};
@@ -293,7 +362,9 @@ bool Engine::issue_prefetch(CoreId core, BurstIndex k, SimTime now) {
             ++stats_.pf_budget_exhausted;
             return false;
         }
-        Request& r = acquire(core, line, k, false);
+        Request& r = acquire(core, line, k, false, now);
+        // 4.6's denominator: the four outcome states below sum to this.
+        ++stats_.pf_issued;
         // A REAL port slot: at `l1_ii = 1` every prefetch takes a cycle the
         // demand stream could have used, which is one of the four things 4.6
         // says this costs.

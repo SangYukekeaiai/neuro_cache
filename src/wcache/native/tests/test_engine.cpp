@@ -305,23 +305,21 @@ void test_the_barrier_measures_the_last_service() {
 // ===========================================================================
 
 void test_core_stall_and_fetch_latency_are_equal_by_construction() {
-    check::group("C3: ORACLE -- core_stall == fetch_latency, always (Part 8, P2)");
+    check::group("C3: ORACLE -- core_stall == fetch_latency with prefetching off");
 
     // Part 8 says the two are "equal by construction" with prefetching OFF and
-    // that with it ON their DIFFERENCE is "the latency the policy hid", and that
-    // difference is "the single number the policy should be judged on".
+    // that with it ON their DIFFERENCE is "the latency the policy hid".
     //
-    // Under v3's own recurrence they are equal ALWAYS, not only with prefetching
-    // off, and the argument is two lines of 3.4b: `serve` computes
-    // `want = served_time + max(gap, ii)` and schedules the next `E_Issue` at
-    // exactly `now + max(gap, ii)`, so `issued_at`, which is the timestamp of
-    // that event, IS `want` for every burst after the first; and for the first
-    // burst of a tile both are `tile_origin + local_tick(c, 0)`. So
-    // `served - want` and `served - issued_at` are the same number term by term
-    // and the difference is identically zero under EVERY policy.
+    // The equality here is the first half, and the argument is two lines of
+    // 3.4b: `serve` computes `want = served_time + max(gap, ii)` and schedules
+    // the next `E_Issue` at exactly `now + max(gap, ii)`, so `issued_at`, which
+    // is the timestamp of that event, IS `want` for every burst after the first;
+    // and for the first burst of a tile both are `tile_origin + local_tick`. No
+    // prefetch runs, so ruling R8's line anchor never moves off the burst's own
+    // issue and the two integrals agree term by term.
     //
-    // Checked here on a run with real misses, and again in test_prefetch.cpp
-    // with the prefetcher on, which is where Part 8's claim actually fails.
+    // The second half is test_prefetch.cpp's, where the difference is nonzero at
+    // every distance above zero.
     FakeTrace tr = three_core_two_tile_trace();
     LinearMapper map(64);
 
@@ -988,6 +986,708 @@ void test_two_runs_of_one_configuration_agree() {
 
 }  // namespace
 
+// ===========================================================================
+// Task 4: run_to_barrier, the cooperative form of the same loop
+// ===========================================================================
+
+// A trace with enough contention that the event order is a real ordering
+// decision rather than a replay: four tiles, three cores, a block of lines all
+// three share plus one block private to each, and a different tail per tile.
+FakeTrace lockstep_trace() {
+    FakeTrace tr(3);
+    for (std::int32_t t = 0; t < 4; ++t) {
+        const std::int32_t tile = tr.add_tile(3 + t);
+        for (std::int32_t c = 0; c < 3; ++c) {
+            tr.add_burst(tile, c, c, 4 * t, 2);              // shared by all three cores
+            tr.add_burst(tile, c, c + 5, 20 + 4 * t + c);    // private to this core
+        }
+    }
+    return tr;
+}
+
+// Non-zero latencies at both levels and `ii = 1`, so misses, fills and refusals
+// interleave and the dispatch order is worth comparing.
+EngineParams lockstep_params() {
+    EngineParams p    = fx::unbounded_params(8, 2);
+    p.l1              = fx::level(8, 2, 4, 2);
+    p.l2              = fx::level(8, 2, 4, 2);
+    p.l1.ii           = SimTime{1};
+    p.l2.ii           = SimTime{1};
+    p.l2.latency      = SimTime{2};
+    p.l2_miss_latency = SimTime{17};
+    p.dram_ii         = SimTime{3};
+    return p;
+}
+
+// SELF, and here the property IS "these two agree": `run()` and a
+// `run_to_barrier` loop are two drivers over one timeline, so the claim under
+// test is exactly that swapping the driver changes nothing. The oracle for the
+// timeline itself is `test_unbounded_baseline_reproduces_the_trace` above.
+//
+// The comparison is on the whole observable end state AND on the mapper log,
+// which is the finest event trace available without a hook in production code:
+// it distinguishes two events at one timestamp by which array they touched and
+// in what order, so a reordered dispatch shows up here even when the cycle
+// counts happen to agree.
+void test_run_to_barrier_walks_the_same_timeline_run_does() {
+    check::group("Task 4: run_to_barrier walks the same timeline run() does");
+    const FakeTrace tr   = lockstep_trace();
+    const EngineParams p = lockstep_params();
+
+    LinearMapper m_whole(64);
+    EventLog log_whole;
+    m_whole.set_recorder(&log_whole);
+    Engine whole(m_whole, tr, p);
+    whole.run();
+
+    LinearMapper m_step(64);
+    EventLog log_step;
+    m_step.set_recorder(&log_step);
+    Engine stepped(m_step, tr, p);
+    for (std::int32_t t = 0; t < tr.n_tiles(); ++t) CHECK_EQ(stepped.run_to_barrier(), t);
+    CHECK_EQ(stepped.run_to_barrier(), -1);
+
+    CHECK_TRUE(log_whole.lines.size() > 100);
+    CHECK_TRUE(log_step.lines == log_whole.lines);
+    CHECK_EQ(stepped.queue().scheduled(), whole.queue().scheduled());
+    CHECK_EQ(stepped.queue().now(), whole.queue().now());
+    CHECK_EQ(stepped.queue().size(), whole.queue().size());
+
+    for (std::int32_t t = 0; t <= tr.n_tiles(); ++t)
+        CHECK_EQ(stepped.tile_origin(t), whole.tile_origin(t));
+
+    for (std::int32_t c = 0; c < tr.n_cores(); ++c) {
+        const std::size_t i = static_cast<std::size_t>(c);
+        const CoreState& a  = stepped.core(CoreId{c});
+        const CoreState& b  = whole.core(CoreId{c});
+        CHECK_EQ(a.tile, b.tile);
+        CHECK_EQ(a.cursor.get(), b.cursor.get());
+        CHECK_TRUE(a.phase == b.phase);
+        CHECK_EQ(a.pending_lines, b.pending_lines);
+        CHECK_EQ(a.issued_at, b.issued_at);
+        CHECK_EQ(a.served_time, b.served_time);
+        CHECK_EQ(stepped.stats().core_stall.at(i), whole.stats().core_stall.at(i));
+        CHECK_EQ(stepped.stats().fetch_latency.at(i), whole.stats().fetch_latency.at(i));
+        CHECK_EQ(stepped.stats().pf_outstanding.at(i), whole.stats().pf_outstanding.at(i));
+    }
+    CHECK_EQ(stepped.stats().back_invalidations, whole.stats().back_invalidations);
+    CHECK_EQ(stepped.stats().pf_budget_exhausted, whole.stats().pf_budget_exhausted);
+}
+
+// The pause point is BEFORE the barrier is dispatched, and that is the whole
+// reason the primitive exists: `on_barrier` calls `start_tile`, which reads
+// tile N+1's bursts, so a driver that has to move a shared trace window must
+// get control while tile N+1 is still unread.
+void test_run_to_barrier_parks_with_the_barrier_still_queued() {
+    check::group("Task 4: parking leaves the barrier queued and the clock behind it");
+    const FakeTrace tr = lockstep_trace();
+    LinearMapper map(64);
+    Engine e(map, tr, lockstep_params());
+
+    CHECK_EQ(e.run_to_barrier(), 0);
+    CHECK_TRUE(!e.queue().empty());
+    CHECK_TRUE(e.queue().peek_min().kind == EventKind::Barrier);
+    CHECK_EQ(e.queue().peek_min().payload.tile, 0);
+    // ORACLE: a barrier is scheduled at the last service plus `tile_tail`, and
+    // tile 0's tail is 3 here, so a clock that had run through the barrier
+    // would be at or past its timestamp instead of strictly behind it.
+    CHECK_TRUE(e.queue().now() < e.queue().peek_min().key.time);
+    // `on_barrier` is the only thing that moves a core off its tile, so an
+    // undispatched barrier leaves all three cores on tile 0.
+    for (std::int32_t c = 0; c < tr.n_cores(); ++c) CHECK_EQ(e.core(CoreId{c}).tile, 0);
+
+    // Resuming dispatches the parked barrier and runs on to the next one.
+    CHECK_EQ(e.run_to_barrier(), 1);
+    CHECK_EQ(e.queue().peek_min().payload.tile, 1);
+    for (std::int32_t c = 0; c < tr.n_cores(); ++c) CHECK_EQ(e.core(CoreId{c}).tile, 1);
+}
+
+// A tile no core issues into schedules its barrier from `start_tile` directly,
+// so the resume path hands one barrier straight to the next with no event in
+// between. That is the case where a driver that only parks on events it
+// dispatched would skip a window.
+void test_run_to_barrier_parks_on_a_tile_with_no_bursts() {
+    check::group("Task 4: a tile with no bursts still parks at its own barrier");
+    FakeTrace tr(2);
+    tr.add_tile(4);  // no core issues anything in tile 0
+    const std::int32_t t1 = tr.add_tile(2);
+    tr.add_burst(t1, 0, 0, 0);
+    tr.add_tile(3);  // nor in tile 2
+
+    // ORACLE: `oracle_tile_origin` reads the trace and the plan's rules only,
+    // and it skips a core with no bursts, so an empty tile advances by its tail
+    // alone. Checking the STEPPED driver against it, rather than against another
+    // engine, is what keeps this off the self-comparison list.
+    const std::vector<std::int64_t> want = fx::oracle_tile_origin(tr);
+
+    LinearMapper map(64);
+    Engine stepped(map, tr, fx::unbounded_params());
+    CHECK_EQ(stepped.run_to_barrier(), 0);
+    CHECK_EQ(stepped.run_to_barrier(), 1);
+    CHECK_EQ(stepped.run_to_barrier(), 2);
+    CHECK_EQ(stepped.run_to_barrier(), -1);
+    for (std::int32_t t = 0; t <= tr.n_tiles(); ++t)
+        CHECK_EQ(stepped.tile_origin(t).get(), want.at(static_cast<std::size_t>(t)));
+}
+
+// The same oracle on a loaded trace: three cores, four tiles, a per-tile tail
+// that changes, driven entirely through `run_to_barrier`. It answers the
+// question the equivalence check above cannot, because there both sides are
+// engines: is the STEPPED timeline the one the plan's own rules predict?
+void test_run_to_barrier_reproduces_the_unbounded_timeline() {
+    check::group("Task 4: the stepped driver reproduces the unbounded baseline");
+    const FakeTrace tr = lockstep_trace();
+    const std::vector<std::int64_t> want = fx::oracle_tile_origin(tr);  // ORACLE
+
+    LinearMapper map(64);
+    Engine e(map, tr, fx::unbounded_params());
+    for (std::int32_t t = 0; t < tr.n_tiles(); ++t) CHECK_EQ(e.run_to_barrier(), t);
+    CHECK_EQ(e.run_to_barrier(), -1);
+    for (std::int32_t t = 0; t <= tr.n_tiles(); ++t)
+        CHECK_EQ(e.tile_origin(t).get(), want.at(static_cast<std::size_t>(t)));
+}
+
+// ===========================================================================
+// Task 15: finish(), the end of a run a driver parked
+// ===========================================================================
+
+// The driver `wcache_run` uses, written here as it is written there: the window
+// is moved first and the engine is then run to the barrier, so the LAST tile
+// leaves a barrier queued that no further advance will ever resume. Only
+// `finish` dispatches it, and until it does `tile_origin(n_tiles)` is not the
+// makespan.
+//
+// ORACLE: `fx::oracle_tile_origin` reads the trace and the plan's rules, so the
+// last entry is predicted rather than copied off another engine.
+void test_finish_dispatches_the_barrier_a_driver_parked_on() {
+    check::group("Task 15: finish dispatches the barrier the driver parked on");
+    const FakeTrace tr = lockstep_trace();
+    const std::vector<std::int64_t> want = fx::oracle_tile_origin(tr);  // ORACLE
+
+    LinearMapper map(64);
+    Engine e(map, tr, fx::unbounded_params());
+    std::int32_t advanced = 0;
+    for (;;) {
+        if (advanced == tr.n_tiles()) break;  // stands in for trace.advance()
+        ++advanced;
+        if (e.run_to_barrier() < 0) break;
+    }
+    CHECK_EQ(advanced, tr.n_tiles());
+    // The last tile's barrier is still queued, which is the state finish exists
+    // for: the makespan entry has not been written yet.
+    CHECK_TRUE(!e.queue().empty());
+    CHECK_TRUE(e.queue().peek_min().kind == EventKind::Barrier);
+    CHECK_EQ(e.queue().peek_min().payload.tile, tr.n_tiles() - 1);
+    CHECK_EQ(e.tile_origin(tr.n_tiles()).get(), 0);
+
+    e.finish();
+    CHECK_TRUE(e.queue().empty());
+    for (std::int32_t t = 0; t <= tr.n_tiles(); ++t)
+        CHECK_EQ(e.tile_origin(t).get(), want.at(static_cast<std::size_t>(t)));
+    for (std::int32_t c = 0; c < tr.n_cores(); ++c)
+        CHECK_TRUE(e.core(CoreId{c}).phase == Phase::Done);
+}
+
+// Nothing pending is legal and is the checks alone: a second drain must not
+// advance the clock, dispatch an event or charge a counter again. The trace is
+// the one Task 11's waste case uses, so `pf_issued` and `pf_wasted` are both
+// nonzero and a `finish` that re-ran any part of the run would move them.
+void test_finish_after_the_run_has_ended_changes_nothing() {
+    check::group("Task 15: finish on a completed run is the checks and nothing else");
+    FakeTrace tr          = FakeTrace(1);
+    const std::int32_t t0 = tr.add_tile(2);
+    for (std::int32_t k = 0; k < 8; ++k) tr.add_burst(t0, 0, k * 30, k);
+
+    LinearMapper map(64);
+    EngineParams p      = fx::unbounded_params(1, 2);  // one set, two ways
+    p.l1                = fx::level(1, 2, 4, 2, 1);
+    p.l1.ii             = SimTime{0};
+    p.l2.latency        = SimTime{10};
+    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_distance = 2;
+    Engine e(map, tr, p);
+    e.run();
+    const std::int64_t makespan = e.tile_origin(tr.n_tiles()).get();
+    const std::int64_t issued   = e.stats().pf_issued;
+    const std::int64_t wasted   = e.stats().pf_wasted;
+    const std::int64_t events   = e.stats().events;
+    CHECK_TRUE(issued > 0);
+    CHECK_TRUE(wasted > 0);
+
+    e.finish();
+    CHECK_EQ(e.tile_origin(tr.n_tiles()).get(), makespan);
+    CHECK_EQ(e.stats().pf_issued, issued);
+    CHECK_EQ(e.stats().pf_wasted, wasted);
+    CHECK_EQ(e.stats().events, events);
+    CHECK_EQ(e.queue().now().get(), makespan);
+}
+
+// An engine nothing has stepped has no barrier pending either, and the drain is
+// then the whole layer. Checked against the oracle rather than against `run`,
+// so the two drivers are not proving each other.
+void test_finish_on_an_untouched_engine_runs_the_whole_layer() {
+    check::group("Task 15: finish alone runs a layer nothing has stepped");
+    const FakeTrace tr = lockstep_trace();
+    const std::vector<std::int64_t> want = fx::oracle_tile_origin(tr);  // ORACLE
+
+    LinearMapper map(64);
+    Engine e(map, tr, fx::unbounded_params());
+    e.finish();
+    for (std::int32_t t = 0; t <= tr.n_tiles(); ++t)
+        CHECK_EQ(e.tile_origin(t).get(), want.at(static_cast<std::size_t>(t)));
+}
+
+// ===========================================================================
+// Task 11 (D2a): the Part 8 counters
+// ===========================================================================
+
+// The trace both R8 worked cases run on, parameterised by the one thing that
+// separates them: the spacing between the second and third burst.
+//
+//   burst 0  line 0, cold, so it costs the full 10-cycle L2 access
+//   burst 1  line 0 again, resident by then, so it is a free L1 hit
+//   burst 2  line 5, which the prefetcher fetches at burst 1's issue
+//
+// Burst 1 exists so that the prefetch for burst 2 is issued from a burst that
+// costs nothing. With `gap` the spacing of burst 2, the prefetch has a head
+// start of exactly `gap` cycles over the demand that wants it, which is the
+// quantity both cases are about.
+FakeTrace r8_trace(std::int64_t gap) {
+    FakeTrace tr(1);
+    const std::int32_t t0 = tr.add_tile(1);
+    tr.add_burst(t0, 0, 0, 0);
+    tr.add_burst(t0, 0, 0, 0);
+    tr.add_burst(t0, 0, gap, 5);
+    return tr;
+}
+
+EngineParams r8_params(std::int32_t distance) {
+    // Every access free except the L2's own 10-cycle port latency, so a miss
+    // costs exactly 10 and every number below is that 10 split between the core
+    // and the prefetcher.
+    EngineParams p      = fx::unbounded_params();
+    p.l2.latency        = SimTime{10};
+    p.prefetch_policy   = distance == 0 ? PrefetchKind::None : PrefetchKind::NextBurst;
+    p.prefetch_distance = distance;
+    return p;
+}
+
+// A contended run with real misses at both levels, used by the V21 and the
+// never-negative cases. Four cores walking overlapping four-line bursts out of
+// a twenty-line pool, so they collide at the shared L2 and every refusal path
+// is reachable: L1 and L2 slot waits, L1 and L2 line waits, L2 hits, and full
+// misses down the channel.
+FakeTrace contended_trace(std::int32_t n_tiles, std::int32_t n_bursts) {
+    FakeTrace tr(4);
+    for (std::int32_t t = 0; t < n_tiles; ++t) {
+        const std::int32_t tile = tr.add_tile(6);
+        for (std::int32_t c = 0; c < 4; ++c)
+            for (std::int32_t k = 0; k < n_bursts; ++k)
+                tr.add_burst(tile, c, k * 12, (((t * 4 + c) * n_bursts + k) * 3) % 20, 4);
+    }
+    return tr;
+}
+
+EngineParams contended_params() {
+    EngineParams p    = fx::unbounded_params(4, 2);  // 8 lines per L1: it evicts
+    // `fx::level` leaves `l1.ii` at 1, the campaign's own default, so the L1
+    // port queues and an L1 hit that nothing ever refused is delayed by it.
+    // That delay is `StallCause::L1Port`, and V21 stays an equality only
+    // because it has a bucket.
+    p.l1              = fx::level(4, 2, 2, 2, 1);
+    p.l2              = fx::level(8, 2, 2, 1, 0);
+    p.l2.ii           = SimTime{0};
+    p.l2.latency      = SimTime{10};
+    p.l2_miss_latency = SimTime{100};
+    p.dram_ii         = SimTime{5};  // the channel pipelines, and it queues
+    return p;
+}
+
+// V21, as an equality rather than a reporting convenience.
+//
+// ORACLE for the partition: the eight causes are charged at the refusal and
+// forward sites, and `stall_total` is accumulated independently, in `serve` and
+// at the barrier, from `served - want`. Neither number is computed from the
+// other, so the equality is a real check and not an identity.
+//
+// The partition is exhaustive at every `l1_latency`, and `l1.ii` is left at the
+// campaign's own 1 here so the case that once escaped it -- an L1 hit nothing
+// refused, delayed by the port it queued on -- is inside the run rather than
+// configured away.
+void test_the_stall_breakdown_sums_to_total_stall() {
+    check::group("Task 11: V21, the stall breakdown sums to total stall");
+    FakeTrace tr = contended_trace(3, 4);
+    LinearMapper map(64);
+    Engine e(map, tr, contended_params());
+    e.run();
+
+    const EngineStats& s = e.stats();
+    std::int64_t total = 0;
+    std::int64_t by_cause[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    for (std::size_t c = 0; c < s.stall_total.size(); ++c) {
+        const std::int64_t parts = s.stall_l1_slot[c] + s.stall_l1_line[c] +
+                                   s.stall_l1_port[c] + s.stall_l2_slot[c] +
+                                   s.stall_l2_line[c] + s.stall_l2_port[c] +
+                                   s.stall_channel[c] + s.stall_barrier[c];
+        CHECK_EQ(parts, s.stall_total[c]);
+        CHECK_EQ(s.stall_total[c], s.core_stall[c] + s.stall_barrier[c]);
+        total += s.stall_total[c];
+        by_cause[0] += s.stall_l1_slot[c];
+        by_cause[1] += s.stall_l1_line[c];
+        by_cause[2] += s.stall_l1_port[c];
+        by_cause[3] += s.stall_l2_slot[c];
+        by_cause[4] += s.stall_l2_line[c];
+        by_cause[5] += s.stall_l2_port[c];
+        by_cause[6] += s.stall_channel[c];
+        by_cause[7] += s.stall_barrier[c];
+    }
+    // Not vacuous: the run really stalls, and seven of the eight causes carry
+    // some of it, so the equality is not eight zeroes agreeing.
+    //
+    // The eighth, `stall_l1_line`, is unreachable through THIS mapper and not
+    // through the model: an L1 line wait needs two requests for one line at one
+    // core's L1, and a core has one burst in flight whose lines `LinearMapper`
+    // maps one to one. `BlockPackMapper` maps several COUT coordinates onto one
+    // line, which is where the corpus reaches it.
+    CHECK_TRUE(total > 0);
+    for (std::size_t i = 0; i < 8; ++i) {
+        if (i == 1) continue;
+        CHECK_TRUE(by_cause[i] > 0);
+    }
+    CHECK_EQ(by_cause[1], std::int64_t{0});
+}
+
+// The feeder V21 lost before `StallCause::L1Port` existed, isolated.
+//
+// ORACLE, arithmetic rather than a re-run: burst 0 misses on four lines and
+// warms the array; burst 1 asks for the same four and hits every time. Nothing
+// refuses either burst and every latency below the L1 is 0, so the ONLY delay
+// burst 1 pays is its own core's L1 port, which at `ii = 1` accepts the four
+// lines at t, t+1, t+2 and t+3. The last of them is what serves the burst, so
+// the burst is served three cycles after its own schedule and all three belong
+// to the L1 port. Burst 0's three cycles are the same queue, but its lines went
+// on to miss, so they are the channel's. The eighth cycle is the tile tail: the
+// core arrives at the barrier at its own last service and the tile owes one
+// more cycle of compute, which is barrier slack and not a memory wait.
+void test_an_l1_array_hit_is_charged_to_the_l1_port() {
+    check::group("V21: an unrefused L1 hit pays the L1 port and is charged to it");
+    FakeTrace tr(1);
+    const std::int32_t t0 = tr.add_tile(1);
+    tr.add_burst(t0, 0, 0, 0, 4);    // tick 0, lines 0..3: four misses
+    tr.add_burst(t0, 0, 100, 0, 4);  // tick 100, the same four lines: four hits
+    LinearMapper map(64);
+    EngineParams p = fx::unbounded_params(64, 4);
+    p.l1.ii        = SimTime{1};
+    Engine e(map, tr, p);
+    e.run();
+
+    const EngineStats& s = e.stats();
+    CHECK_EQ(s.l1_hits, std::int64_t{4});
+    CHECK_EQ(s.stall_l1_port[0], std::int64_t{3});
+    CHECK_EQ(s.stall_channel[0], std::int64_t{3});
+    CHECK_EQ(s.stall_barrier[0], std::int64_t{1});
+    CHECK_EQ(s.stall_total[0], std::int64_t{7});
+}
+
+// The second feeder, and the reason V21 no longer needs `l1_latency == 0`.
+//
+// ORACLE: the same two bursts with a free port (`ii = 0`) and an L1 that costs
+// two cycles to answer. All four lines of burst 1 are accepted at once and each
+// completes two cycles later, so the burst is served two cycles late and both
+// cycles are the L1's own access, which is the same bucket the queueing goes
+// to: they are the port's two fields.
+void test_the_l1_access_latency_is_charged_to_the_l1_port() {
+    check::group("V21: the L1 access latency has a bucket too");
+    FakeTrace tr(1);
+    const std::int32_t t0 = tr.add_tile(1);
+    tr.add_burst(t0, 0, 0, 0, 4);
+    tr.add_burst(t0, 0, 100, 0, 4);
+    LinearMapper map(64);
+    EngineParams p = fx::unbounded_params(64, 4);
+    p.l1.latency   = SimTime{2};
+    Engine e(map, tr, p);
+    e.run();
+
+    const EngineStats& s = e.stats();
+    CHECK_EQ(s.stall_l1_port[0], std::int64_t{2});
+    CHECK_EQ(s.stall_l1_port[0] + s.stall_channel[0] + s.stall_barrier[0], s.stall_total[0]);
+}
+
+// The memory and model-health counters exist and count the events they name.
+//
+// ORACLE: `l1_accesses` is the number of demand L1 triages the run performs,
+// which the mapper log counts independently, since every array probe reaches
+// `locate` and the L1 is the level asked for `kL1Sets` sets.
+void test_the_memory_counters_count_what_they_name() {
+    check::group("Task 11: the memory and health counters");
+    FakeTrace tr = contended_trace(3, 4);
+    LinearMapper map(64);
+    const EngineParams p = contended_params();
+    Engine e(map, tr, p);
+    e.run();
+
+    const EngineStats& s = e.stats();
+    CHECK_TRUE(s.l1_accesses > 0);
+    // Strictly between: the run has real hits and real misses at both levels,
+    // so a counter that answered "every access" or "no access" fails here.
+    CHECK_TRUE(s.l1_hits > 0);
+    CHECK_TRUE(s.l1_hits < s.l1_accesses);
+    CHECK_TRUE(s.l2_accesses > 0);
+    CHECK_TRUE(s.l2_hits > 0);
+    CHECK_TRUE(s.l2_hits < s.l2_accesses);
+    // Every line the L2 misses on goes to the channel, and nothing else does.
+    CHECK_TRUE(s.dram_accesses > 0);
+    CHECK_TRUE(s.dram_accesses <= s.l2_accesses);
+    // One event dispatched per handler call, so the count is at least one issue
+    // and one probe per demand line plus one barrier per tile.
+    CHECK_TRUE(s.events > s.l1_accesses);
+    // Occupancy is sampled where `live()` changes, so a run with misses has
+    // samples and every sample is within the file's capacity.
+    CHECK_TRUE(check::ssize(s.l1_mshr_occupancy) > 0);
+    CHECK_TRUE(check::ssize(s.l2_mshr_occupancy) > 0);
+    std::int32_t peak = 0;
+    for (std::int32_t v : s.l1_mshr_occupancy) peak = std::max(peak, v);
+    CHECK_TRUE(peak > 0);
+    CHECK_TRUE(peak <= p.l1.mshrs);
+    CHECK_TRUE(s.max_wait_depth >= 0);
+}
+
+// 4.6's four outcome states, and the sum Part 8 asks for.
+//
+// Part 8: "every prefetch issued ends in exactly one of four states and the
+// four must sum", the fourth being `dropped`, broken out by reason. A prefetch
+// still resident and undemanded when the run ends is charged as wasted, since
+// the core never got there, which is what makes the sum exact rather than
+// approximate.
+void test_the_four_prefetch_states_sum_to_issued() {
+    check::group("Task 11: timely + late + wasted + dropped == pf_issued");
+    FakeTrace tr = contended_trace(3, 6);
+    LinearMapper map(64);
+    EngineParams p = contended_params();
+    // A real prefetch budget: `l1_mshrs - l1_demand_reserve` is four lines, one
+    // whole burst, and the reserve is `lines_per_burst` so a demand burst can
+    // always allocate however far ahead the prefetcher has run (4.2, B12).
+    p.l1.mshrs          = 8;
+    p.l1.demand_reserve = 4;
+    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_distance = 2;
+    Engine e(map, tr, p);
+    e.run();
+
+    const EngineStats& s = e.stats();
+    const std::int64_t dropped = s.pf_dropped_array_hit + s.pf_dropped_entry +
+                                 s.pf_dropped_no_slot + s.pf_dropped_reserve +
+                                 s.pf_dropped_targets_full;
+    CHECK_EQ(s.pf_timely + s.pf_late + s.pf_wasted + dropped, s.pf_issued);
+    CHECK_TRUE(s.pf_issued > 0);
+    // Not vacuous: both of the states that mean the prefetcher did something
+    // are reached, so the sum is not one term carrying everything.
+    CHECK_TRUE(s.pf_timely > 0);
+    CHECK_TRUE(s.pf_late > 0);
+    CHECK_TRUE(dropped > 0);
+    // The coverage ceiling is the count of bursts that are not first in their
+    // tile, which the trace fixes: 4 cores x 3 tiles x 5 non-first bursts.
+    CHECK_EQ(s.pf_bursts_eligible, std::int64_t{60});
+}
+
+void test_prefetch_off_leaves_every_new_counter_at_zero() {
+    check::group("Task 11: with prefetching off the prefetch block is all zero");
+    FakeTrace tr = contended_trace(3, 6);
+    LinearMapper map(64);
+    Engine e(map, tr, contended_params());
+    e.run();
+
+    const EngineStats& s = e.stats();
+    CHECK_EQ(s.pf_issued, std::int64_t{0});
+    CHECK_EQ(s.pf_timely, std::int64_t{0});
+    CHECK_EQ(s.pf_late, std::int64_t{0});
+    CHECK_EQ(s.pf_wasted, std::int64_t{0});
+    CHECK_EQ(s.pf_pollution_evictions, std::int64_t{0});
+    CHECK_EQ(s.pf_dropped_targets_full, std::int64_t{0});
+    // The ceiling is a property of the trace and is reported whether or not a
+    // prefetcher is on, since it is what coverage would be measured against.
+    CHECK_EQ(s.pf_bursts_eligible, std::int64_t{60});
+}
+
+// 4.6's other two outcomes, on an L1 too small to hold what the prefetcher
+// fetches.
+//
+// ORACLE: one core, eight single-line bursts, an L1 of two lines and a distance
+// of two, so the prefetcher runs two bursts ahead of a core that can only hold
+// one line besides the one it is using. Seven prefetches are issued, all seven
+// land, and the arithmetic of a two-line array decides the rest: five of the
+// seven are evicted before the core reaches them and then demanded, which is
+// waste and pollution at once, and two survive to be hit.
+void test_a_prefetch_evicted_before_use_is_waste_and_then_pollution() {
+    check::group("Task 11: 4.6's wasted state and the pollution term");
+    FakeTrace tr(1);
+    const std::int32_t t0 = tr.add_tile(2);
+    for (std::int32_t k = 0; k < 8; ++k) tr.add_burst(t0, 0, k * 30, k);
+    LinearMapper map(64);
+    EngineParams p      = fx::unbounded_params(1, 2);  // one set, two ways
+    p.l1                = fx::level(1, 2, 4, 2, 1);
+    p.l1.ii             = SimTime{0};
+    p.l2.latency        = SimTime{10};
+    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_distance = 2;
+    Engine e(map, tr, p);
+    e.run();
+
+    const EngineStats& s = e.stats();
+    CHECK_EQ(s.pf_issued, std::int64_t{7});
+    CHECK_EQ(s.pf_timely, std::int64_t{2});
+    CHECK_EQ(s.pf_late, std::int64_t{0});
+    CHECK_EQ(s.pf_wasted, std::int64_t{5});
+    // Every one of the five was demanded later in the same tile, which is what
+    // makes them pollution rather than merely useless: the eviction they caused
+    // is paid for by the miss that follows.
+    CHECK_EQ(s.pf_pollution_evictions, std::int64_t{5});
+}
+
+// ===========================================================================
+// Task 12 (D2b): ruling R8, the line-anchored fetch latency
+// ===========================================================================
+
+// R8 case 1, timely. ORACLE: the whole timeline is derived by hand above
+// `r8_trace`, and every number below is read off it.
+//
+//   burst 0  issued 0, served 10   stall 10, anchor 0  (its own issue), fetch 10
+//   burst 1  issued 11, served 11  stall 0,  anchor 11 (its own issue), fetch 0
+//   burst 2  issued 21, served 21  stall 0,  anchor 11 (the PREFETCH's issue),
+//                                  so fetch 10, the whole line latency, hidden.
+void test_r8_timely_prefetch_contributes_its_whole_line_latency_to_hidden() {
+    check::group("Task 12, R8 case 1 (timely): stall 0, fetch 10, hidden 10");
+    FakeTrace tr = r8_trace(10);
+    LinearMapper map(64);
+    Engine e(map, tr, r8_params(1));
+    e.run();
+
+    const EngineStats& s = e.stats();
+    CHECK_EQ(s.core_stall[0], std::int64_t{10});
+    CHECK_EQ(s.fetch_latency[0], std::int64_t{20});
+    CHECK_EQ(s.fetch_latency[0] - s.core_stall[0], std::int64_t{10});
+    CHECK_EQ(s.pf_timely, std::int64_t{1});
+    CHECK_EQ(s.pf_late, std::int64_t{0});
+}
+
+// R8 case 2, late merge. The same trace with burst 2 three cycles after burst
+// 1's service instead of ten, so the prefetch is still outstanding when the
+// demand arrives and the demand merges onto it.
+//
+//   burst 2  issued 14, served 21  stall 7, anchor 11, fetch 10, hidden 3,
+//            which is exactly the prefetch's three-cycle head start.
+void test_r8_late_merge_contributes_exactly_its_head_start() {
+    check::group("Task 12, R8 case 2 (late merge): head start 3 -> hidden 3");
+    FakeTrace tr = r8_trace(3);
+    LinearMapper map(64);
+    Engine e(map, tr, r8_params(1));
+    e.run();
+
+    const EngineStats& s = e.stats();
+    CHECK_EQ(s.core_stall[0], std::int64_t{17});
+    CHECK_EQ(s.fetch_latency[0], std::int64_t{20});
+    CHECK_EQ(s.fetch_latency[0] - s.core_stall[0], std::int64_t{3});
+    CHECK_EQ(s.pf_late, std::int64_t{1});
+    CHECK_EQ(s.pf_timely, std::int64_t{0});
+}
+
+// R8 case 3, the invariant the ruling turns on: at `d = 0` the hidden latency
+// is identically zero, per core and in total.
+//
+// Run over four tiles and four cores that all walk the SAME lines, one cycle
+// apart, so a core's demand routinely merges onto a line another core's demand
+// put in flight EARLIER. That is the case an anchor allowed to reach back to an
+// earlier request would break, and the check below is what keeps it closed.
+void test_r8_hidden_latency_is_identically_zero_at_distance_zero() {
+    check::group("Task 12, R8 case 3: at d = 0, hidden_latency is IDENTICALLY 0");
+    FakeTrace tr(4);
+    for (std::int32_t t = 0; t < 4; ++t) {
+        const std::int32_t tile = tr.add_tile(9);
+        for (std::int32_t c = 0; c < 4; ++c)
+            for (std::int32_t k = 0; k < 5; ++k)
+                tr.add_burst(tile, c, (k * 5) + c, (t * 5) + k);  // one line, four cores
+    }
+    LinearMapper map(64);
+    Engine e(map, tr, contended_params());
+    e.run();
+
+    const EngineStats& s = e.stats();
+    std::int64_t stall = 0, fetch = 0;
+    for (std::size_t c = 0; c < s.core_stall.size(); ++c) {
+        CHECK_EQ(s.fetch_latency[c], s.core_stall[c]);
+        stall += s.core_stall[c];
+        fetch += s.fetch_latency[c];
+    }
+    CHECK_EQ(fetch - stall, std::int64_t{0});
+    CHECK_TRUE(stall > 0);
+    // Not vacuous: L2 probes that neither hit nor reached the channel are
+    // requests that merged onto a line already in flight, which is the case
+    // this fixture exists to reach.
+    CHECK_TRUE(s.l2_accesses > s.l2_hits + s.dram_accesses);
+}
+
+// R8 for a burst spanning several lines: the anchor is the EARLIEST among them,
+// not the one belonging to whichever line happens to land last.
+//
+// ORACLE, derived by hand. One core, two two-line bursts, `l2_latency` 10 and
+// everything else free.
+//
+//   t = 0   burst 0 issues lines 2 and 3, both cold. The prefetcher then tries
+//           burst 1, which is lines 1 and 2: line 1 is fetched, and line 2 is
+//           dropped at burst 0's own entry.
+//   t = 10  all three lines land. Burst 0 is served: stall 10, fetch 10.
+//   t = 15  burst 1 is issued and served in the same cycle, since both its lines
+//           are resident. Its lines are walked in address order, so the line the
+//           prefetcher fetched is the FIRST to land and the demand-fetched one
+//           is the LAST. The earliest anchor is the prefetch's issue at 0, so
+//           the burst contributes 15; the last line's anchor, 15, would
+//           contribute nothing.
+//
+// The 15 is larger than the 10 cycles the fetch itself took, because R8 anchors
+// on the request and the line then sat resident for five cycles before the core
+// arrived. That is the ruling as written.
+void test_r8_takes_the_earliest_anchor_across_the_lines_of_a_burst() {
+    check::group("Task 12: R8 anchors a multi-line burst on its EARLIEST line");
+    FakeTrace tr(1);
+    const std::int32_t t0 = tr.add_tile(1);
+    tr.add_burst(t0, 0, 0, 2, 2);
+    tr.add_burst(t0, 0, 5, 1, 2);
+    LinearMapper map(64);
+    Engine e(map, tr, r8_params(1));
+    e.run();
+
+    const EngineStats& s = e.stats();
+    CHECK_EQ(s.core_stall[0], std::int64_t{10});
+    CHECK_EQ(s.fetch_latency[0], std::int64_t{25});
+    CHECK_EQ(s.pf_timely, std::int64_t{1});
+    CHECK_EQ(s.pf_dropped_entry, std::int64_t{1});
+}
+
+void test_r8_hidden_latency_is_never_negative() {
+    check::group("Task 12: hidden_latency >= 0 under contention at every distance");
+    FakeTrace tr = contended_trace(3, 6);
+    for (std::int32_t d : {0, 1, 2, 4, 8}) {
+        LinearMapper map(64);
+        EngineParams p      = contended_params();
+        p.prefetch_policy   = (d == 0) ? PrefetchKind::None : PrefetchKind::NextBurst;
+        p.prefetch_distance = d;
+        Engine e(map, tr, p);
+        e.run();
+        const EngineStats& s = e.stats();
+        for (std::size_t c = 0; c < s.core_stall.size(); ++c) {
+            CHECK_TRUE(s.fetch_latency[c] >= s.core_stall[c]);
+            const std::int64_t parts = s.stall_l1_slot[c] + s.stall_l1_line[c] +
+                                       s.stall_l1_port[c] + s.stall_l2_slot[c] +
+                                       s.stall_l2_line[c] + s.stall_l2_port[c] +
+                                       s.stall_channel[c] + s.stall_barrier[c];
+            CHECK_EQ(parts, s.stall_total[c]);
+            // A prefetch turns misses into array hits, so the bucket the hits
+            // land in has to carry weight at every distance and not only at 0.
+            CHECK_TRUE(s.stall_l1_port[c] > 0);
+        }
+    }
+}
+
 int main() {
     test_unbounded_baseline_reproduces_the_trace();
     test_a_tile_whose_cores_all_idle_still_advances();
@@ -1010,5 +1710,24 @@ int main() {
     test_the_arena_refuses_to_release_a_request_that_is_still_held();
     test_eight_cores_under_pressure();
     test_two_runs_of_one_configuration_agree();
+    test_run_to_barrier_walks_the_same_timeline_run_does();
+    test_run_to_barrier_parks_with_the_barrier_still_queued();
+    test_run_to_barrier_parks_on_a_tile_with_no_bursts();
+    test_run_to_barrier_reproduces_the_unbounded_timeline();
+    test_finish_dispatches_the_barrier_a_driver_parked_on();
+    test_finish_on_an_untouched_engine_runs_the_whole_layer();
+    test_finish_after_the_run_has_ended_changes_nothing();
+    test_the_stall_breakdown_sums_to_total_stall();
+    test_an_l1_array_hit_is_charged_to_the_l1_port();
+    test_the_l1_access_latency_is_charged_to_the_l1_port();
+    test_the_memory_counters_count_what_they_name();
+    test_the_four_prefetch_states_sum_to_issued();
+    test_prefetch_off_leaves_every_new_counter_at_zero();
+    test_a_prefetch_evicted_before_use_is_waste_and_then_pollution();
+    test_r8_timely_prefetch_contributes_its_whole_line_latency_to_hidden();
+    test_r8_late_merge_contributes_exactly_its_head_start();
+    test_r8_takes_the_earliest_anchor_across_the_lines_of_a_burst();
+    test_r8_hidden_latency_is_identically_zero_at_distance_zero();
+    test_r8_hidden_latency_is_never_negative();
     return check::summary();
 }

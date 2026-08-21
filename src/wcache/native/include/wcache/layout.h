@@ -77,12 +77,14 @@ public:
 
     // --- what an implementation must accept ---------------------------------
     //
-    // A burst along ANY axis. `b.axis` and `b.stride` come from the format v2
-    // header, and today's corpus always says COUT with stride 1, but a trace
-    // written as [kh, kw, cout, cin_start, cin_end] bursts along CIN and is
-    // the same struct. An implementation therefore reads the walked axis out
-    // of the burst; it may not assume COUT, and it may not assume that the
-    // walked axis is one it blocks. A burst along KH is legal and, under a
+    // A burst along ANY axis. `b.axis` and `b.stride` come from the stream
+    // header's `burst_dim` and `burst_stride`, which the trace generator emits
+    // (ruling R1 of 2026-08-20, closing U27), and
+    // every burst in today's corpus is COUT with stride 1, but a trace written
+    // as [kh, kw, cout, cin_start, cin_end] bursts along CIN and is the same
+    // struct. An implementation therefore reads the walked axis out of the
+    // burst; it may not assume COUT, and it may not assume that the walked
+    // axis is one it blocks. A burst along KH is legal and, under a
     // block-packed layout, touches `count` distinct lines because KH is not
     // blocked.
     //
@@ -108,8 +110,8 @@ public:
     // layer, and admitting it would leave every consumer below with a request
     // that has no lines to special-case. A stride of 0 is the same element
     // asked for `count` times and a negative stride is a run walking backwards;
-    // `burst_stride` in the format v2 header is a step to the next element of
-    // the run, so neither is a run a trace can describe, and both are malformed
+    // a stride is the step to the next element of the run, so neither is a run
+    // a trace can describe, and both are malformed
     // whatever layer they are applied to rather than outside this one.
     //
     // On throwing: every range check must run before the first append, so a

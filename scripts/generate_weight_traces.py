@@ -48,6 +48,7 @@ sys.path.insert(0, "src")
 import tracegen
 from archmodels import ARCH_NATIVE_BRIDGES
 from archmodels.trace import load_layer_trace, valid_layer_names
+from nocsim.schedule.decode import schedule_from_strategy
 
 # The sibling capture repo this used to point at, /u/yyu9/neuro_cache_trace,
 # was deleted between the 2026-08-11 and 2026-08-12 home snapshots. The
@@ -265,6 +266,75 @@ def run_all_layers(args: argparse.Namespace) -> int:
 
 
 # ----------------------------------------------------------------------
+# Mode 3: --stream, one WCTS stream on stdout, nothing materialized
+# ----------------------------------------------------------------------
+
+def emit_stream(trace, sink, *, n_cores, spatial_factors, dump_path=None, dump_tiles=None) -> int:
+    """Writes `trace` as one WCTS stream to the binary file object `sink` and,
+    when --dump-trace is set, a second stream to `dump_path` stopping after
+    `dump_tiles` tile frames. Returns the total burst count of the stream.
+
+    Not a byte tee, despite the campaign plan's 10.6 wording: a second pass over
+    data already in memory produces a VALID short stream instead of a truncated
+    one and cannot get the trailer wrong. Its tile frames are byte-identical to
+    the ones the consumer saw, which is what 10.6 actually asks for.
+    """
+    total = tracegen.stream_weight_trace(trace, sink, n_cores=n_cores,
+                                         spatial_factors=spatial_factors)
+    sink.flush()
+    if dump_path is not None:
+        with open(dump_path, "wb") as fh:
+            tracegen.stream_weight_trace(trace, fh, n_cores=n_cores,
+                                         spatial_factors=spatial_factors,
+                                         max_tiles=dump_tiles)
+    return total
+
+
+def run_stream(args: argparse.Namespace) -> int:
+    """One (arch, trace_dir, layer, sample) reconstructed and written straight to
+    stdout as a WCTS stream. Every log line goes to stderr, because stdout is the
+    pipe the consumer reads."""
+    requested = _resolve_samples(args)
+    if len(requested) != 1:
+        print(f"ERROR: --stream needs exactly one sample, the selection resolved to "
+              f"{len(requested)}; use --sample-start N --sample-count 1", file=sys.stderr)
+        return 2
+
+    schedule_path = pathlib.Path(args.schedule_cache) / args.arch / args.trace_dir / f"{args.layer}.json"
+    if not schedule_path.exists():
+        print(f"ERROR: no cached schedule at {schedule_path} -- run solve_schedules.py first",
+              file=sys.stderr)
+        return 1
+
+    artifact, prob, tiles = tracegen.load_schedule(schedule_path)
+    # n_cores is the MACHINE size, so it comes from the schedule's spatial
+    # unrolling rather than from max(core_id) in the data, which undercounts
+    # whenever some core drew no work. schedule_from_strategy is pure, so
+    # rebuilding it here costs nothing beyond what load_schedule already did.
+    # nocsim's dim indices are parsers.layer's DIM_* (0=KH .. 6=T), which are
+    # the WCTS wire codes, so spatial_factors passes through untranslated.
+    schedule = schedule_from_strategy(artifact.result["strategy"], prob)
+    spatial_factors = dict(schedule.spatial_factors)
+    n_cores = 1
+    for factor in spatial_factors.values():
+        n_cores *= factor
+
+    trace = load_layer_trace(pathlib.Path(args.trace_root) / args.trace_dir, args.layer, mmap=True)
+    print(f"Streaming {args.arch}/{args.trace_dir}/{args.layer} sample {requested[0]} "
+          f"({len(tiles)} tiles, {n_cores} cores)", file=sys.stderr)
+
+    layer_traces = tracegen.reconstruct_samples(
+        args.arch, trace, tiles, requested, args.trace_dir, args.layer,
+        artifact.workload["problem"], artifact.dram_num_steps,
+    )
+    total = emit_stream(layer_traces[0], sys.stdout.buffer, n_cores=n_cores,
+                        spatial_factors=spatial_factors,
+                        dump_path=args.dump_trace, dump_tiles=args.dump_trace_tiles)
+    print(f"Streamed {total} burst(s)", file=sys.stderr)
+    return 0
+
+
+# ----------------------------------------------------------------------
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -293,10 +363,33 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--seed", type=int, default=0, help="Seed for the samples beyond the canonical 100.")
     p.add_argument("--workers", type=int, default=1)
     p.add_argument("--force", action="store_true", help="Regenerate samples even if already present.")
+    p.add_argument("--stream", action="store_true",
+                   help="Emit one WCTS stream on stdout instead of writing sample_NNNNN.json.gz "
+                        "files. Requires exactly one (arch, trace-dir, layer, sample) to be "
+                        "selected; every log line goes to stderr.")
+    p.add_argument("--dump-trace", metavar="PATH",
+                   help="With --stream: also write the stream to PATH, byte-identical to what the "
+                        "consumer sees. Off by default, so the normal path materializes nothing.")
+    p.add_argument("--dump-trace-tiles", type=int, metavar="N",
+                   help="With --dump-trace: stop the dump after N tile frames and write the "
+                        "trailer, so it is a valid short stream.")
     args = p.parse_args()
 
     if args.sample_count is not None and args.n_samples != 100:
         p.error("specify --sample-count or --n-samples, not both")
+    if args.dump_trace_tiles is not None and not args.dump_trace:
+        p.error("--dump-trace-tiles needs --dump-trace")
+    if args.stream:
+        if args.all_layers:
+            p.error("--stream emits one stream for one layer; --all-layers selects many")
+        if args.workers > 1:
+            p.error("--stream is serial: N workers cannot share one stdout pipe. Run N "
+                    "independent producer-consumer pipeline pairs instead (campaign plan 10.4).")
+        if not args.trace_dir or not args.layer:
+            p.error("--trace-dir and --layer are required with --stream")
+        return args
+    if args.dump_trace:
+        p.error("--dump-trace only applies to --stream")
     if args.all_layers:
         if args.sample_count is not None:
             p.error("--sample-count is not supported with --all-layers; use --n-samples")
@@ -310,6 +403,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.stream:
+        return run_stream(args)
     if args.all_layers:
         return run_all_layers(args)
     return run_one_combo(args)

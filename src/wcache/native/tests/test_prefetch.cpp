@@ -663,29 +663,47 @@ void test_dropping_a_prefetch_at_the_l2_would_strand_its_l1_entry() {
 // P2, with the prefetcher on
 // ===========================================================================
 
-void test_the_hidden_latency_is_not_measurable_from_part_8s_two_counters() {
-    check::group("C5: FINDING -- P2, core_stall and fetch_latency are equal with prefetch ON");
+void test_r8_makes_the_hidden_latency_measurable() {
+    check::group("C5: R8 -- the hidden latency is zero at d = 0 and positive above it");
 
     // Part 8: "with prefetching on, their DIFFERENCE is the latency the policy
     // hid, and it is the single number the policy should be judged on."
     //
-    // Under v3's recurrence the two are identical term by term under EVERY
-    // policy, because `E_Issue` is scheduled at exactly the `want` that `serve`
-    // recomputes, so `issued_at == want` for every burst. The difference is
-    // therefore identically zero and measures nothing. The run below hides 330
-    // cycles of latency against the d = 0 run and still reports a difference of
-    // zero for every core.
+    // Under the pre-R8 definition `fetch_latency = served - issued_at` that
+    // difference was identically zero at EVERY distance, because `E_Issue` is
+    // scheduled at exactly the `want` that `serve` recomputes, so
+    // `issued_at == want` for every burst. U19 measured it and G7 recorded that
+    // the prefetch study therefore had no metric.
+    //
+    // R8 anchors the fetch on the LINE's first request instead. This is the
+    // measurement U19 made, re-run: equal at `d = 0`, where nothing is
+    // prefetched and nothing can be hidden, and strictly greater at every
+    // distance above it.
     FakeTrace tr = sweep_trace(60, 4);
-    for (std::int32_t d : {0, 1, 2}) {
+    std::int64_t hidden_at_1 = 0;
+    for (std::int32_t d : {0, 1, 2, 4, 8}) {
         LinearMapper map(64);
         EngineParams p      = miss_params();
         p.prefetch_policy   = d == 0 ? PrefetchKind::None : PrefetchKind::NextBurst;
         p.prefetch_distance = d;
         Engine eng(map, tr, p);
         eng.run();
-        CHECK_EQ(eng.stats().core_stall.at(0), eng.stats().fetch_latency.at(0));
-        CHECK_TRUE(eng.stats().core_stall.at(0) > 0);
+        const std::int64_t stall  = eng.stats().core_stall.at(0);
+        const std::int64_t fetch  = eng.stats().fetch_latency.at(0);
+        const std::int64_t hidden = fetch - stall;
+        CHECK_TRUE(stall > 0);
+        if (d == 0) {
+            CHECK_EQ(fetch, stall);
+        } else {
+            CHECK_TRUE(hidden > 0);
+        }
+        if (d == 1) hidden_at_1 = hidden;
+        std::printf("  d = %d: core_stall %lld, fetch_latency %lld, hidden %lld\n", d,
+                    static_cast<long long>(stall), static_cast<long long>(fetch),
+                    static_cast<long long>(hidden));
     }
+    // Not vacuous: the metric is large where the pre-R8 one was zero.
+    CHECK_TRUE(hidden_at_1 > 100);
 }
 
 }  // namespace
@@ -706,6 +724,6 @@ int main() {
     test_a_prefetch_never_waits_at_the_l1();
     test_a_prefetch_DOES_wait_at_the_l2_which_I15_forbids();
     test_dropping_a_prefetch_at_the_l2_would_strand_its_l1_entry();
-    test_the_hidden_latency_is_not_measurable_from_part_8s_two_counters();
+    test_r8_makes_the_hidden_latency_measurable();
     return check::summary();
 }

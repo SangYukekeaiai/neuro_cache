@@ -1167,8 +1167,8 @@ tryMshr reject 'Request core and line swapped'  'int main(){ Request r{LineId{7}
 # silently mean core 0 / line 0 / the first burst of the tile (B2s rule).
 tryMshr reject 'Request r;'              'int main(){ Request r; return (int)r.line.get(); }'
 tryMshr reject 'Mshr m;'                 'int main(){ Mshr m; return (int)m.line.get(); }'
-tryMshr accept 'Mshr braced'             'int main(){ Mshr m{LineId{1}, CoreId{0}, true, {}, {}};
-  return (int)m.targets.size(); }'
+tryMshr accept 'Mshr braced'             'int main(){ Mshr m{LineId{1}, CoreId{0}, true, false,
+  SimTime{0}, {}, {}}; return (int)m.targets.size(); }'
 tryMshr reject 'Mshr line and core swapped' 'int main(){ Mshr m{CoreId{0}, LineId{1}, true, {}, {}};
   return (int)m.targets.size(); }'
 # P5 as a compile-time fact: a wait index stores POINTERS because it selects

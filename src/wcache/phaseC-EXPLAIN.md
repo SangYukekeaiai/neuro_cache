@@ -939,9 +939,28 @@ Four obligations ride along with it, all already on `PROGRESS.md` rows:
    carried, which is precisely D13;
 3. report the count of `gap == 0` pairs, which must be **zero** for V20's shift to
    be exact. The engine does not assume it, because `max(gap, core_accept_ii)`
-   advances the clock either way;
-4. report the `tile_tail` histogram, since it is 0 across most of the corpus and
-   20 on all 64 tiles of ptb `layer_01` and `layer_03`.
+   advances the clock either way. **Discharged 2026-08-20** by the corpus survey:
+   the count is 0, and `gap` is exactly 1 everywhere, min and max alike, over
+   124 format v2 layers and 76,150,578 bursts;
+4. report the `tile_tail` histogram. **Discharged 2026-08-20, and it corrected
+   the record it was meant to confirm**: the tail is **never 0**. It is 1 on 116
+   of the 124 v2 layers and runs 1 to 22 on the other 8, all ptb, the largest
+   being 17 to 22 over 64 tiles with mode 21. `trace.h`'s `>= 1 by construction`
+   holds; Q10's "0 across most of the corpus, 20 on all 64 tiles" was off by one
+   and was a distribution rather than a constant.
+
+**Header comments corrected 2026-08-20 to stop asserting a format that does not
+exist.** `types.h` said "Format v2 carries `burst_dim` and `burst_stride` as
+header fields ... so `axis` and `stride` are read from the header and never
+assumed", and `layout.h` said `b.axis` and `b.stride` "come from the format v2
+header". A v2 header is `arch`, `trace_dir`, `layer_name`, `sample_idx`,
+`workload_dims`, `dram_num_steps`, `noc_num_steps` and nothing else, in every
+file on disk and in `LayerWeightTrace` in `src/tracegen.py`. Both comments now
+say the two values are supplied by the reader and name **U27**, which is the
+open question of whether the fields should instead be added to the format. The
+`expand` **contract is unchanged**: an implementation still reads the walked axis
+out of the burst and may not assume COUT. U25, U26 and U28 are untouched, since
+each needs a ruling rather than a correction.
 
 Until A3 lands, **every engine number in this tree comes from a hand-written
 trace**, and that is the first thing to remember when reading any figure below.

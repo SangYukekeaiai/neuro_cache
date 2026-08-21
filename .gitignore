@@ -34,8 +34,15 @@ input_trace/
 # src/wcache/examples/ holds committed example traces: small slices of the
 # generated corpus, cut by make_examples.py so plan unit A3 can be built and
 # reviewed against corpus-shaped data. Source-controlled fixtures, not captured
-# data, so the *.json rule above does not apply to them either.
-!src/wcache/examples/**
+# data, so the *.json rule above does not apply to them either. Scoped to the
+# fixture extension rather than to `**`, which would also re-include the
+# __pycache__/ that line 2 ignores.
+!src/wcache/examples/*.json
+
+# profiling/*/grids/ holds hand-written sweep tier definitions: the files that
+# decide every sweep point. Config source, not captured data, so the *.json rule
+# above does not apply to them.
+!profiling/**/grids/*.json
 
 # input_trace/ is ignored above as captured data, but the loas subset under it
 # is a deliberate 13.6 MB fold of 5 samples (of 10,000) cut by

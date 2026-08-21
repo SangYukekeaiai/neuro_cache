@@ -198,6 +198,20 @@ public:
         return e;
     }
 
+    // The same event `pop_min` would return, left in the queue and without
+    // moving `now`.
+    //
+    // This is what lets a driver decide whether to dispatch the next event
+    // before it has committed to dispatching it, which is how a run is paused at
+    // a chosen kind of event rather than at a chosen time. `now` deliberately
+    // stays put: a peeked event has not happened.
+    //
+    // Throws std::logic_error on an empty queue, for pop_min's reason.
+    const Event<Payload>& peek_min() const {
+        if (q_.empty()) throw std::logic_error("EventQueue::peek_min: the queue is empty");
+        return q_.top();
+    }
+
     bool empty() const { return q_.empty(); }
     std::size_t size() const { return q_.size(); }
 

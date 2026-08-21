@@ -78,22 +78,24 @@ public:
     //
     // Precondition: `0 <= k < n_bursts(core, tile) - 1`.
     //
-    // Non-negative over the corpus, and `>= 1` everywhere measured (Q11, closed
-    // with corpus data: every core emits exactly one burst per tick). A3 owes
-    // the count of `gap == 0` pairs, which must be zero for V20's shift to be
-    // exact; the engine does not assume it, since `max(gap, core_accept_ii)` is
-    // what advances the clock either way.
+    // Exactly 1 over the corpus, min and max alike (Q11, discharged 2026-08-20
+    // by the survey of 124 format v2 layers and 76,150,578 bursts: no (core,
+    // tick) pair anywhere carries more than one burst, so burst index and local
+    // tick are in bijection inside a (core, tile)). The `gap == 0` count A3 owed
+    // is therefore 0 and V20's shift is exact; the engine does not assume it,
+    // since `max(gap, core_accept_ii)` is what advances the clock either way.
     virtual LocalTick gap(CoreId core, std::int32_t tile, BurstIndex k) const = 0;
 
     // `mac_cycles[tile] - max_tick[tile]`, the compute the tile still owes after
-    // its last weight burst is served (Q10, closed 2026-08-17 with corpus data).
+    // its last weight burst is served (Q10, closed 2026-08-17 with corpus data,
+    // numbers corrected 2026-08-20 by the full survey).
     //
     // Charged once at the tile level rather than per core, because the trace
     // stores `mac_cycles` already reduced to the max over that tile's cores, so
-    // per-core tails do not exist on disk. Measured 0 across loas, prosperity,
-    // spinalflow and most of ptb, and 20 cycles, 11.7% of a 172-cycle tile, on
-    // all 64 tiles of ptb `layer_01` and `layer_03`, so charging nothing was not
-    // a safe default.
+    // per-core tails do not exist on disk. Over the 124 format v2 layers the
+    // tail is never 0: it is 1 on 116 of them, and runs 1 to 22 on the other 8,
+    // all ptb, the largest being 17 to 22 over 64 tiles with mode 21. So
+    // charging nothing was not a safe default.
     //
     // `>= 1` by construction, which the engine relies on for more than accuracy:
     // it is what makes the tile seam advance the clock, so a tile whose cores

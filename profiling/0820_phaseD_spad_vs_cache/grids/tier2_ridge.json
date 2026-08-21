@@ -1,0 +1,177 @@
+{
+ "comment": "Tier 2 one-factor-at-a-time ridge (plan 4.4), pivoting on L1 8 KB, line 32 B (cin_block 2), L2 512 KB, d=4: 5+3+3+6 axis points minus 3 repeats of the nominal = 14 distinct configs, plus 6.3's l1_mshrs=4 calibration row = 15. The line axis puts 3 layout groups in this grid (13 + 1 + 1 configs), so each trace is 3 stream passes.",
+ "expected_configs": 15,
+ "arm": "cache",
+ "base": {
+  "cout_block": 16,
+  "weight_bytes": 1,
+  "l1_assoc": 8,
+  "l2_assoc": 16,
+  "policy": "lru",
+  "inclusion": "non_inclusive",
+  "l2_banks": 1,
+  "l2_ii": 1,
+  "core_accept_ii": 1,
+  "l1_latency": 0,
+  "l2_to_l1_latency": 0,
+  "l2_latency": 10,
+  "l2_miss_latency": 100,
+  "l1_mshrs": 16,
+  "l1_tgts_per_mshr": 20,
+  "l2_mshrs": 20,
+  "l2_tgts_per_mshr": 12
+ },
+ "configs": [
+  {
+   "l1_size_bytes": 8192,
+   "cin_block": 2,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 4
+  },
+  {
+   "l1_size_bytes": 2048,
+   "cin_block": 2,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 4
+  },
+  {
+   "l1_size_bytes": 4096,
+   "cin_block": 2,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 4
+  },
+  {
+   "l1_size_bytes": 16384,
+   "cin_block": 2,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 4
+  },
+  {
+   "l1_size_bytes": 32768,
+   "cin_block": 2,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 4
+  },
+  {
+   "l1_size_bytes": 8192,
+   "cin_block": 1,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 4
+  },
+  {
+   "l1_size_bytes": 8192,
+   "cin_block": 4,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 4
+  },
+  {
+   "l1_size_bytes": 8192,
+   "cin_block": 2,
+   "l2_size_bytes": 262144,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 4
+  },
+  {
+   "l1_size_bytes": 8192,
+   "cin_block": 2,
+   "l2_size_bytes": 1048576,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 4
+  },
+  {
+   "l1_size_bytes": 8192,
+   "cin_block": 2,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "none",
+   "prefetch_distance": 0
+  },
+  {
+   "l1_size_bytes": 8192,
+   "cin_block": 2,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 1
+  },
+  {
+   "l1_size_bytes": 8192,
+   "cin_block": 2,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 2
+  },
+  {
+   "l1_size_bytes": 8192,
+   "cin_block": 2,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 8
+  },
+  {
+   "l1_size_bytes": 8192,
+   "cin_block": 2,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 16
+  },
+  {
+   "l1_size_bytes": 8192,
+   "cin_block": 2,
+   "l2_size_bytes": 524288,
+   "prefetch_policy": "next_burst",
+   "prefetch_distance": 4,
+   "l1_mshrs": 4
+  }
+ ],
+ "units": {
+  "arch": [
+   "loas",
+   "ptb",
+   "spinalflow"
+  ],
+  "cores": [
+   {
+    "n_cores": 4,
+    "schedule_cache": "CONFIRM_schedule_cache_for_4_cores"
+   },
+   {
+    "n_cores": 16
+   },
+   {
+    "n_cores": 64,
+    "schedule_cache": "CONFIRM_schedule_cache_for_64_cores"
+   }
+  ],
+  "layer": [
+   {
+    "trace_dir": "vgg16_T4_all",
+    "layer": "layer_01_features_3"
+   },
+   {
+    "trace_dir": "vgg16_T4_all",
+    "layer": "CONFIRM_vgg16_deep_Q3_layer_09_or_12"
+   },
+   {
+    "trace_dir": "resnet19_T4_all",
+    "layer": "layer_01_layer1_0_conv1"
+   },
+   {
+    "trace_dir": "resnet19_T4_all",
+    "layer": "CONFIRM_resnet19_deep_Q3_layer_16_or_19"
+   }
+  ],
+  "sample": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ]
+ }
+}

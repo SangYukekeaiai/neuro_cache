@@ -53,6 +53,22 @@ ulimit -c 0 2>/dev/null || true
 # code at all, so nothing in it can produce a wrong number and only its SHAPE
 # can be mutated -- which is exactly the argument A2a's section already makes,
 # and exactly why leaving it off the list would have been invisible.
+# D2c and D2d add include/wcache/stats.h, src/stats.cpp and include/wcache/hist.h,
+# by the rule this comment block states: a unit whose file is not on this line is
+# not mutation tested at all while the summary still reports a clean sweep.
+# Task 15 adds apps/wcache_run.cpp, by the same rule and with one difference
+# this file has to state rather than hide: `make test` does not BUILD apps/, so
+# no mutation in it can turn this script's gate red. Its cases below are all
+# `allow` for that reason, and the reason names tests/run_cli.sh, which is the
+# end-to-end script that does cover it and which this harness does not drive.
+# Listing the file anyway is what keeps the omission from being silent.
+# Tasks 17 and 18 add include/wcache/sweep.h, src/sweep.cpp, apps/app_support.h
+# and apps/wcache_sweep.cpp. The two library files ARE built by `make test`,
+# through tests/test_sweep.cpp, so their cases expect a kill. The two under
+# apps/ are not, for the reason stated just above, so theirs are `allow` and
+# name tests/sweep_cli.sh as their cover. apps/app_support.h is where Task 15's
+# `lines_per_burst` and `PaddingMeter` now live, shared by the two programs, so
+# the two cases that used to name apps/wcache_run.cpp for them name it instead.
 # Phase B adds all five of its files: include/wcache/port.h, event.h and mshr.h,
 # and src/port.cpp and src/mshr.cpp. This omission has now bitten twice (cache.h
 # at A4a, set_associative.* at A4b), which is why it is the FIRST thing done to
@@ -60,7 +76,7 @@ ulimit -c 0 2>/dev/null || true
 # naming: it is header-only AND was included by no translation unit at all until
 # tests/test_event.cpp existed, so before this round nothing in the tree either
 # compiled it or could mutate it.
-FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h include/wcache/set_associative.h include/wcache/policy.h include/wcache/stamp_policy.h include/wcache/port.h include/wcache/event.h include/wcache/mshr.h include/wcache/trace.h include/wcache/cache_level.h include/wcache/engine.h include/wcache/prefetcher.h src/block_pack.cpp src/set_associative.cpp src/stamp_policy.cpp src/port.cpp src/mshr.cpp src/cache_level.cpp src/engine.cpp src/engine_core.cpp src/prefetcher.cpp"
+FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h include/wcache/set_associative.h include/wcache/policy.h include/wcache/stamp_policy.h include/wcache/port.h include/wcache/event.h include/wcache/mshr.h include/wcache/trace.h include/wcache/cache_level.h include/wcache/engine.h include/wcache/prefetcher.h src/block_pack.cpp src/set_associative.cpp src/stamp_policy.cpp src/port.cpp src/mshr.cpp src/cache_level.cpp src/engine.cpp src/engine_core.cpp src/prefetcher.cpp include/wcache/config.h src/config.cpp include/wcache/stream_format.h include/wcache/byte_source.h include/wcache/stream_trace.h src/stream_trace.cpp include/wcache/stats.h src/stats.cpp include/wcache/hist.h apps/wcache_run.cpp include/wcache/sweep.h src/sweep.cpp apps/app_support.h apps/wcache_sweep.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
@@ -221,6 +237,19 @@ mutate_mshr() { mutate_in src/mshr.cpp "$@"; }
 # the plan write "C1" and "C2" for two of v3's own changes, the core model of
 # 4.5 and the prefetcher of 4.6.
 mutate_tr() { mutate_in include/wcache/trace.h "$@"; }
+mutate_st() { mutate_in src/stream_trace.cpp "$@"; }
+mutate_stats_h() { mutate_in include/wcache/stats.h "$@"; }
+mutate_stats() { mutate_in src/stats.cpp "$@"; }
+mutate_hist() { mutate_in include/wcache/hist.h "$@"; }
+mutate_app() { mutate_in apps/wcache_run.cpp "$@"; }
+mutate_appsup() { mutate_in apps/app_support.h "$@"; }
+mutate_sweep_h() { mutate_in include/wcache/sweep.h "$@"; }
+mutate_sweep() { mutate_in src/sweep.cpp "$@"; }
+mutate_sweep_app() { mutate_in apps/wcache_sweep.cpp "$@"; }
+# D1's own reader had no case at all until Task 18 needed one for the grid.
+# The gap is noted rather than filled here: this task owns parse_config_grid,
+# not parse_config.
+mutate_cfg() { mutate_in src/config.cpp "$@"; }
 mutate_cl_h() { mutate_in include/wcache/cache_level.h "$@"; }
 mutate_cl() { mutate_in src/cache_level.cpp "$@"; }
 mutate_eng_h() { mutate_in include/wcache/engine.h "$@"; }
@@ -1546,6 +1575,8 @@ mutate_ev kill 'B2 now() starts below zero' \
     's|    SimTime now_{0};|    SimTime now_{-1};|'
 mutate_ev kill 'B2 scheduled() reports the queue depth' \
     's|    std::int64_t scheduled() const { return next_seq_; }|    std::int64_t scheduled() const { return static_cast<std::int64_t>(q_.size()); }|'
+mutate_ev kill 'D4 an empty peek is an out_of_range' \
+    's|throw std::logic_error("EventQueue::peek_min: the queue is empty")|throw std::out_of_range("EventQueue::peek_min: the queue is empty")|'
 
 echo "== B3: MshrFile, 3.8's write-once stamp (src/mshr.cpp)"
 mutate_mshr kill 'B3 mark_refused overwrites an existing stamp' \
@@ -1619,9 +1650,9 @@ mutate_mshr kill 'B3 allocate does not check has_slot' \
 mutate_mshr kill 'B3 the primary is not a target' \
     '/    entry.targets.push_back(&primary);/d'
 mutate_mshr kill 'B3 an entry is always born demand' \
-    's|    Mshr entry{line, primary.core, primary.demand, {}, {}};|    Mshr entry{line, primary.core, true, {}, {}};|'
+    's|    Mshr entry{line, primary.core, primary.demand, !primary.demand, primary.issued_at, {}, {}};|    Mshr entry{line, primary.core, true, !primary.demand, primary.issued_at, {}, {}};|'
 mutate_mshr kill 'B3 an entry records the wrong core' \
-    's|    Mshr entry{line, primary.core, primary.demand, {}, {}};|    Mshr entry{line, CoreId{0}, primary.demand, {}, {}};|'
+    's|    Mshr entry{line, primary.core, primary.demand, !primary.demand, primary.issued_at, {}, {}};|    Mshr entry{line, CoreId{0}, primary.demand, !primary.demand, primary.issued_at, {}, {}};|'
 # A leaked reservation is a credit the file never hands back, so the grant loop
 # stops one waiter short for the rest of the run and the symptom is a stall
 # attributed to the MSHR bound.
@@ -1798,6 +1829,14 @@ mutate_mshr_h kill 'B3 Level widens' \
 echo "== C1: triage, branch by branch (src/cache_level.cpp)"
 mutate_cl kill 'C1 an array hit does not move recency' \
     's|        policy_->on_hit(slot);||'
+mutate_cl kill 'D3 an L1 array hit is charged to no bucket (V21)' \
+    's|        charge_path(r, level_ == Level::L1 ? StallCause::L1Port : StallCause::L2Port);|        if (level_ == Level::L2) charge_path(r, StallCause::L2Port);|'
+mutate_cl kill 'D3 an L1 array hit takes the L2 port bucket (V21)' \
+    's|        charge_path(r, level_ == Level::L1 ? StallCause::L1Port : StallCause::L2Port);|        charge_path(r, StallCause::L2Port);|'
+mutate_cl kill 'D3 an L2 array hit takes the L1 port bucket (V21)' \
+    's|        charge_path(r, level_ == Level::L1 ? StallCause::L1Port : StallCause::L2Port);|        charge_path(r, StallCause::L1Port);|'
+mutate_cl kill 'D3 an array hit overwrites the cause of an earlier refusal' \
+    's|    if (r.refusal == NoRefusal) r.cause = c;|    r.cause = c;|'
 mutate_cl kill 'C1 a prefetch array hit is not dropped' \
     's|        if (at_issue) return TriageOutcome::DroppedArrayHit;||'
 mutate_cl kill 'C1 a prefetch merges onto a matching entry' \
@@ -1893,6 +1932,24 @@ mutate_eng allow 'C2 the I6 guard at the L2 is removed' \
     's@    if (r.level != Level::L2 || r.mshr1 == nullptr) {@    if (false) {@' \
     'a guard over a state I6 makes unreachable; removing it changes no run'
 
+# Task 4's park point. The whole value of `run_to_barrier` is WHERE it stops:
+# one event later and the driver is handed control after `start_tile` has
+# already read the next tile, which is the read a shared trace window has to
+# happen before. The seeding is here too, since a run whose tile 0 never reaches
+# the queue ends immediately with every tile_origin still at zero.
+#
+# There is no case for "seeded on every call". That mutation makes `run` spin on
+# a barrier it re-queues and never dispatches, so it hangs the suite instead of
+# failing it, and a case that has to be killed by a timeout is not a result.
+mutate_eng kill 'D4 run_to_barrier parks after the barrier, not before' \
+    's|        if (queue_.peek_min().kind == EventKind::Barrier) return queue_.peek_min().payload.tile;|        if (queue_.peek_min().kind == EventKind::Barrier) { const std::int32_t bt = queue_.peek_min().payload.tile; const Event<EventPayload> be = queue_.pop_min(); dispatch(be); return bt; }|'
+mutate_eng kill 'D4 run_to_barrier never parks at all' \
+    's|        if (queue_.peek_min().kind == EventKind::Barrier) return queue_.peek_min().payload.tile;||'
+mutate_eng kill 'D4 tile 0 is never seeded' \
+    's|        if (trace_.n_tiles() > 0) start_tile(0, SimTime{0});||'
+mutate_eng kill 'D4 the D12 checks are skipped when the queue empties' \
+    's|    check_no_work_outstanding();||'
+
 echo "== C4: inclusion (src/engine.cpp)"
 mutate_eng kill 'C4 back-invalidation is not guarded by the knob' \
     's|res.evicted && params_.inclusion == Inclusion::Inclusive|res.evicted|'
@@ -1923,7 +1980,7 @@ mutate_engc kill 'C3 issued_at is not recorded' \
 mutate_engc kill 'C3 the core is not marked stalled (I16)' \
     's|^    cs.phase         = Phase::Stalled;||'
 mutate_engc kill 'C3 core_stall is not accumulated' \
-    's|    stats_.core_stall.at(idx(c)) += (now - want).get();||'
+    's|    stats_.core_stall.at(idx(c)) += stall;||'
 mutate_engc kill 'C3 served_time is not advanced' \
     's|^    cs.served_time = now;||'
 mutate_engc kill 'C3 the barrier is reached one burst late' \
@@ -1946,7 +2003,7 @@ mutate_engc kill 'C5 the demand reserve is not subtracted from the budget' \
 mutate_engc kill 'C5 prefetch lines in flight are not counted' \
     's|        ++in_fly;||'
 mutate_engc kill 'C5 a prefetch is issued as a demand request (I15)' \
-    's|        Request& r = acquire(core, line, k, false);|        Request\& r = acquire(core, line, k, true);|'
+    's|        Request& r = acquire(core, line, k, false, now);|        Request\& r = acquire(core, line, k, true, now);|'
 mutate_engc kill 'C5 the tile length is read from the next tile' \
     's|    return trace_.n_bursts(core, cs.tile);|    return trace_.n_bursts(core, cs.tile + 1);|'
 
@@ -1967,6 +2024,76 @@ mutate_pf kill 'C5 none is built as next_burst' \
     's|            return std::make_unique<NoPrefetcher>();|            return std::make_unique<NextBurstPrefetcher>(1, n_cores);|'
 mutate_pf kill 'C5 the fetch-ahead distance is ignored' \
     's|    const std::int32_t last    = k.get() + distance_;|    const std::int32_t last    = k.get() + 1;|'
+
+echo "== D2a: the stall breakdown and the Part 8 counters (src/engine_core.cpp)"
+mutate_engc kill 'D2a stall_total is not accumulated (V21)' \
+    's|    stats_.stall_total.at(idx(c)) += stall;||'
+mutate_engc kill 'D2a the channel bucket is never charged (V21)' \
+    's|        case StallCause::Channel: stats_.stall_channel.at(idx(c)) += stall; break;|        case StallCause::Channel: break;|'
+mutate_engc kill 'D2a the L2 slot bucket takes the L1 slot cause (V21)' \
+    's|        case StallCause::L1Slot:  stats_.stall_l1_slot.at(idx(c)) += stall; break;|        case StallCause::L1Slot:  stats_.stall_l2_slot.at(idx(c)) += stall; break;|'
+mutate_engc kill 'D3 the L1 port bucket is never charged (V21)' \
+    's|        case StallCause::L1Port:  stats_.stall_l1_port.at(idx(c)) += stall; break;|        case StallCause::L1Port:  break;|'
+mutate_engc kill 'D2a the burst is attributed to the FIRST line, not the last' \
+    's|    serve(r.core, now, r.cause);|    serve(r.core, now, StallCause::None);|'
+mutate_engc kill 'D2a barrier slack is not charged (V21)' \
+    's|        stats_.stall_barrier\[c\] += slack;||'
+mutate_engc kill 'D2a barrier slack is charged to the bucket only' \
+    's|        stats_.stall_total\[c\] += slack;||'
+mutate_engc kill 'D2a the coverage ceiling counts the first burst too' \
+    's|    if (k.get() > 0) ++stats_.pf_bursts_eligible;|    ++stats_.pf_bursts_eligible;|'
+mutate_engc kill 'D2a prefetches issued are not counted' \
+    's|        ++stats_.pf_issued;||'
+
+echo "== D2b: ruling R8, the line anchor (src/engine_core.cpp)"
+mutate_engc kill 'D2b the burst anchor is never lowered (R8)' \
+    's|    if (anchor < cs.burst_anchor) cs.burst_anchor = anchor;||'
+mutate_engc kill 'D2b the burst anchor takes the LAST line, not the earliest' \
+    's|    if (anchor < cs.burst_anchor) cs.burst_anchor = anchor;|    cs.burst_anchor = anchor;|'
+mutate_engc kill 'D2b the anchor is not reset at the burst issue' \
+    's|^    cs.burst_anchor  = now;||'
+mutate_engc kill 'D2b fetch_latency reverts to the demand issue (pre-R8)' \
+    's|    stats_.fetch_latency.at(idx(c)) += (now - cs.burst_anchor).get();|    stats_.fetch_latency.at(idx(c)) += (now - cs.issued_at).get();|'
+
+echo "== D2a/D2b: the counters and the anchor at their sites (src/engine.cpp)"
+mutate_eng kill 'D2a l1 hits are counted on every outcome' \
+    's|        if (result == TriageOutcome::Hit) ++stats_.l1_hits;|        ++stats_.l1_hits;|'
+mutate_eng kill 'D2a l2 hits are counted on every outcome' \
+    's|        if (result == TriageOutcome::Hit) ++stats_.l2_hits;|        ++stats_.l2_hits;|'
+mutate_eng kill 'D2a channel traffic is not counted' \
+    's|            ++stats_.dram_accesses;||'
+mutate_eng kill 'D2a events are not counted' \
+    's|    ++stats_.events;||'
+mutate_eng kill 'D2a the timely prefetch is not counted (4.6)' \
+    's|        ++stats_.pf_timely;||'
+mutate_eng kill 'D2a the late prefetch is not counted (4.6)' \
+    's|            ++stats_.pf_late;||'
+mutate_eng kill 'D2a a promoted prefetch entry is called timely instead of late' \
+    's|        if (was_promoted) {|        if (false) {|'
+mutate_eng kill 'D2a an evicted prefetched line is not charged as waste' \
+    's|    if (res.evicted) note_line_left_l1(e.core, res.evicted_line);||'
+mutate_eng kill 'D2a the pollution term is not charged' \
+    's|    if (pf_evicted_.at(idx(r.core)).erase(r.line) != 0) ++stats_.pf_pollution_evictions;||'
+mutate_eng allow 'D2a a surviving prefetch is not charged as waste' \
+    's|        stats_.pf_wasted += static_cast<std::int64_t>(resident.size());||' \
+    'no fixture leaves one: next_burst(d) never fetches a burst the core does not reach, so every prefetched line is demanded or evicted first. The branch is what makes the four-state sum total rather than conditional on that argument'
+mutate_eng kill 'D2b a demand hit on a prefetched line loses the anchor (R8)' \
+    's|        return first_request;|        return r.issued_at;|'
+mutate_eng kill 'D2b the fill anchor ignores who opened the entry (R8)' \
+    's|        core_line_done(\*t, now, pf_opened ? first_request : t->issued_at);|        core_line_done(*t, now, t->issued_at);|'
+mutate_eng allow 'D2a a downgraded hit is not counted (D4, V6)' \
+    's|    if (woken_onto_resident \&\& result != TriageOutcome::Hit) ++stats_.hits_downgraded_to_miss;||' \
+    'no fixture yet evicts a line between a line waiter waking and re-probing; V6 is the fixture that would'
+
+echo "== D2b: the anchor is written once, at allocate (src/mshr.cpp)"
+mutate_mshr kill 'D2b the entry does not record its first request (R8)' \
+    's|primary.issued_at, {}, {}};|SimTime{0}, {}, {}};|'
+mutate_mshr kill 'D2b every entry claims a prefetch opened it (R8)' \
+    's|primary.demand, !primary.demand, primary.issued_at|primary.demand, true, primary.issued_at|'
+mutate_mshr kill 'D2b a line waiter is not marked as woken onto its line (D4)' \
+    's|        w->line_resident_at_wake = true;||'
+mutate_mshr kill 'D2b the slot waiters are marked too (D4)' \
+    's|    collect_grants(out.wake);|    collect_grants(out.wake); for (Request* g_ : out.wake) g_->line_resident_at_wake = true;|'
 
 echo "== C5: the interface (include/wcache/prefetcher.h)"
 mutate_pf_h kill 'C5 issue_prefetch stops reporting the budget' \
@@ -2001,6 +2128,140 @@ mutate_mshr kill 'B3 line waiters are left marked as waiting' \
     's|    for (Request\* w : out.wake) w->on_wait_index = false;||'
 mutate_mshr kill 'B3 the demand reserve is applied to the wrong requests' \
     's|    return is_prefetch_at_issue(r) ? free > demand_reserve_ : free > 0;|    return is_prefetch_at_issue(r) ? free > 0 : free > demand_reserve_;|'
+
+echo "== D2c: the coverage denominator (src/engine_core.cpp)"
+mutate_engc kill 'D2c demand bursts are not counted, so coverage has no denominator' \
+    's|    ++stats_.demand_bursts;||'
+mutate_engc kill 'D2c the coverage ceiling counts every burst as prefetchable' \
+    's|    if (k.get() > 0) ++stats_.pf_bursts_eligible;|    ++stats_.pf_bursts_eligible;|'
+
+echo "== D2c: the results CSV schema (include/wcache/stats.h, src/stats.cpp)"
+mutate_stats kill 'D2c a column is dropped from the schema' \
+    's|        "max_wait_depth", "hits_downgraded_to_miss", "events", "events_per_cycle",|        "max_wait_depth", "hits_downgraded_to_miss", "events",|'
+mutate_stats kill 'D2c two columns are swapped in the schema' \
+    's|        "l1_hits", "l1_accesses", "l1_hit_rate",|        "l1_accesses", "l1_hits", "l1_hit_rate",|'
+mutate_stats kill 'D2c stretch_cycles adds instead of subtracting' \
+    's|    r.i64("stretch_cycles", total_cycles - tick_base_total);|    r.i64("stretch_cycles", total_cycles + tick_base_total);|'
+mutate_stats kill 'D2c dram_bytes forgets the line size' \
+    's|    r.i64("dram_bytes", es.dram_accesses \* cfg.line_size_bytes());|    r.i64("dram_bytes", es.dram_accesses);|'
+mutate_stats kill 'D2c an undefined ratio is emitted rather than left empty' \
+    's|        if (den == 0.0) {|        if (false) {|'
+mutate_stats kill 'D2c a cell that would break the CSV is accepted' \
+    's|!= std::string::npos) {|== std::string::npos) {|'
+mutate_stats kill 'D2c V21 is never checked as an equality' \
+    's|    if (l1_latency_ == 0) {|    if (false) {|'
+mutate_stats kill 'D2c a negative hidden_latency passes (R8)' \
+    's|    if (hidden_latency_ < 0) {|    if (false) {|'
+mutate_stats kill 'D2c the prefetch outcomes need not sum to pf_issued' \
+    's|    if (pf_accounted_ != pf_issued_) {|    if (false) {|'
+mutate_stats kill 'D2c the occupancy percentile reads unsorted samples' \
+    's|    std::sort(s.begin(), s.end());||'
+mutate_stats kill 'D2c the oracle arm stops reporting the trace makespan' \
+    's|    emit_headline(r, tick_base_total, tick_base_total);|    emit_headline(r, 0, tick_base_total);|'
+mutate_stats kill 'D2c pf_coverage_ceiling loses its numerator' \
+    's|static_cast<double>(es.pf_bursts_eligible)|static_cast<double>(0)|'
+mutate_stats allow 'D2c the emit-position guard is removed' \
+    's@        if (cells_.size() >= cols.size().*) {@        if (false) {@' \
+    'the guard has no observable effect while the emitter is correct: it exists to catch a FUTURE edit that appends a cell out of order, and no test can exhibit an edit that has not been made. Its removal is caught only by the schema cases above once such an edit exists'
+
+mutate_stats_h kill 'D2c check_invariants drops its const' \
+    's|    void check_invariants() const;|    void check_invariants();|'
+
+echo "== D2d: G14's distinct-address diagnostic (include/wcache/hist.h)"
+mutate_hist kill 'D2d the sidecar header line changes' \
+    's|arch,workload,layer,sample_idx,tile,core,distinct_addresses|arch,workload,layer,sample,tile,core,distinct|'
+mutate_hist kill 'D2d every row claims tile 0' \
+    's|        tiles_.push_back(trace.window_tile());|        tiles_.push_back(0);|'
+mutate_hist kill 'D2d every core reads core 0 of its tile' \
+    's|                               static_cast<std::size_t>(c)\]|                               0]|'
+mutate_hist kill 'D2d p50 reports a different quantile' \
+    's|    std::int32_t p50() const { return quantile(0.5); }|    std::int32_t p50() const { return quantile(0.95); }|'
+mutate_hist kill 'D2d max reports the minimum' \
+    's|        return \*std::max_element(counts_.begin(), counts_.end());|        return *std::min_element(counts_.begin(), counts_.end());|'
+
+echo "== D2d: distinct_addresses on the stream reader (src/stream_trace.cpp)"
+mutate_st kill 'D2d repeated addresses are counted twice' \
+    's|    return static_cast<std::int32_t>(std::unique(keys.begin(), keys.end()) - keys.begin());|    return static_cast<std::int32_t>(keys.size());|'
+mutate_st kill 'D2d the address key drops the run length' \
+    's|        keys.push_back({b.anchor.kh, b.anchor.kw, b.anchor.cin, b.anchor.cout, b.count});|        keys.push_back({b.anchor.kh, b.anchor.kw, b.anchor.cin, b.anchor.cout, 0});|'
+mutate_st kill 'D2d distinct_addresses answers with an empty window' \
+    's|    if (window_ < 0) {|    if (false) {|'
+
+echo "== Task 15: finish, the end of a run a driver parked (src/engine.cpp)"
+mutate_eng kill 'T15 finish is a no-op, so the last barrier is never dispatched' \
+    's|^    run();|    return;|'
+mutate_eng kill 'T15 finish takes one step instead of draining' \
+    's|^    run();|    (void)run_to_barrier();|'
+
+echo "== Task 15: wcache_run (apps/wcache_run.cpp)"
+APPS_NOT_IN_GATE='apps/ is not built by `make test`, which is the gate every case here
+             judges by, so this mutation cannot turn it red. Its cover is
+             tests/run_cli.sh, run separately'
+mutate_app allow 'T15 finish is never called, so the makespan is never written' \
+    's|^        engine.finish();||' \
+    "$APPS_NOT_IN_GATE"
+mutate_app allow 'T15 the header line is not csv_header' \
+    's|    if (opt.header) text = csv_header() + "\\n";|    if (opt.header) text = "run_id\\n";|' \
+    "$APPS_NOT_IN_GATE"
+mutate_appsup allow 'T15 lines_per_burst is the raw span, ignoring the layout' \
+    's|    return static_cast<std::int32_t>(lines.size());|    return hdr.burst_span;|' \
+    "$APPS_NOT_IN_GATE"
+mutate_appsup allow 'T15 padding_fraction reports a constant' \
+    's|        if (fetched == 0) return 0.0;|        if (fetched >= 0) return 0.5;|' \
+    "$APPS_NOT_IN_GATE"
+mutate_app allow 'T15 the histogram never observes the engine arm tiles' \
+    's|^            hist.observe(trace);||' \
+    "$APPS_NOT_IN_GATE"
+
+echo "== Task 17: step_tile, one tile of progress (src/engine.cpp)"
+mutate_eng kill 'T17 step_tile takes no step at all' \
+    's|^bool Engine::step_tile() { return run_to_barrier() >= 0; }|bool Engine::step_tile() { return false; }|'
+# The plan's own body for step_tile, kept as a case because it is the fixture
+# correction this task made: `run_to_barrier` already dispatches the barrier a
+# previous call parked on, so popping it here as well runs through TWO barriers
+# whenever one immediately follows another, and the engine ends a tile ahead of
+# the window it is sharing.
+mutate_eng kill 'T17 step_tile dispatches the parked barrier itself as well' \
+    's|^bool Engine::step_tile() { return run_to_barrier() >= 0; }|bool Engine::step_tile() { if (!queue_.empty() \&\& queue_.peek_min().kind == EventKind::Barrier) { const Event<EventPayload> ev = queue_.pop_min(); dispatch(ev); } return run_to_barrier() >= 0; }|'
+
+echo "== D3a: BroadcastSweep, lockstep over one stream (include/wcache/sweep.h, src/sweep.cpp)"
+mutate_sweep_h kill 'D3a size() reports one engine fewer' \
+    's|    std::size_t      size() const { return engines_.size(); }|    std::size_t      size() const { return engines_.size() - 1; }|'
+mutate_sweep kill 'D3a every point runs configuration 0' \
+    's|to_engine_params(configs_\[i\])|to_engine_params(configs_[0])|'
+mutate_sweep kill 'D3a an engine takes two tiles per window' \
+    's|                (void)engines_\[i\]->step_tile();|                (void)engines_[i]->step_tile(); (void)engines_[i]->step_tile();|'
+mutate_sweep kill 'D3a finish is never called, so the last barrier is never dispatched' \
+    's|            engines_\[i\]->finish();||'
+mutate_sweep kill 'D3a the tile observer is never called' \
+    's|        if (on_tile) on_tile(\*trace_);||'
+mutate_sweep kill 'D3a a mixed-layout grid is accepted' \
+    's|            c.weight_bytes != first.weight_bytes) {|            false) {|'
+mutate_sweep kill 'D3a max_engines is not enforced' \
+    's|    if (configs_.size() > static_cast<std::size_t>(max_engines)) {|    if (false) {|'
+mutate_sweep kill 'D3a a mapper built for another line size is accepted' \
+    's|    if (mapper.line_size_bytes() != first.line_size_bytes()) {|    if (false) {|'
+
+echo "== D3b: the sweep grid (src/config.cpp)"
+mutate_cfg kill 'D3b the LAST declared axis varies slowest' \
+    's|        for (std::size_t i = axes.size(); i-- > 0;) {|        for (std::size_t i = 0; i < axes.size(); ++i) {|'
+mutate_cfg kill 'D3b the cross product is one point wide' \
+    's|    for (const GridAxis& a : axes) points \*= a.values.size();|    for (const GridAxis\& a : axes) points *= 1;|'
+mutate_cfg kill 'D3b base is dropped, so every point is the default' \
+    's|        RunConfig   cfg = base;|        RunConfig   cfg;|'
+mutate_cfg kill 'D3b an array grid keeps only its last element' \
+    's|                grid.push_back(cfg);|                grid.assign(1, cfg);|'
+
+echo "== Task 18: wcache_sweep (apps/wcache_sweep.cpp)"
+mutate_sweep_app allow 'T18 every row reports the first point stats' \
+    's|sweep.engine(i).stats()|sweep.engine(0).stats()|' \
+    "$APPS_NOT_IN_GATE, tests/sweep_cli.sh"
+mutate_sweep_app allow 'T18 the header line is emitted before every row' \
+    's|    if (opt.header) text = csv_header() + "\\n";|    if (opt.header) text = "";|' \
+    "$APPS_NOT_IN_GATE, tests/sweep_cli.sh"
+mutate_sweep_app allow 'T18 the padding meter never sees a tile' \
+    's|        padding.observe_tile(window);||' \
+    "$APPS_NOT_IN_GATE, tests/sweep_cli.sh"
 
 echo
 echo "$((killed + survived + unexpected)) mutations: $killed killed, $survived survived as expected, $unexpected unexpected"

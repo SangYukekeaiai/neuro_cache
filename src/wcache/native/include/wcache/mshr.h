@@ -62,6 +62,42 @@ enum class Level : std::uint8_t { L1 = 0, L2 = 1 };
 // B89 made unrepresentable for `InsertResult::evicted`.
 enum class WaitReason : std::uint8_t { None = 0, Slot = 1, Line = 2 };
 
+// Part 8's stall attribution, `{L1 slot, L1 line, L1 port, L2 slot, L2 line,
+// L2 port, channel, barrier}`, carried on the request so the engine can charge
+// a burst's wait to the reason the last of its lines was held up.
+//
+// The rule, written here because it is where an implementation otherwise
+// invents its own: a REFUSAL always overwrites, so the cause is the reason the
+// request was LAST blocked; a forward, a merge or a hit sets it only while the
+// request has never been refused, so a request nothing ever refused reports the
+// deepest level it reached instead. `Barrier` is never set here: barrier slack
+// is charged per tile and not per request.
+//
+// `L1Port` is the shallowest of them and the exact mirror of `L2Port` one level
+// down: a demand that hit the L1 array without ever being refused still waited
+// for the L1 to answer, and that wait has two feeders, both fields of the same
+// port. `l1_ii` makes the port queue, so lines offered in one cycle are accepted
+// at `now`, `now + ii`, `now + 2*ii`, ...; `l1_latency` is what the array then
+// costs. Both are charged here, so the causes partition `stall_total` at EVERY
+// `l1_latency` rather than only at 0.
+//
+// `None` therefore never survives a triage, and so never reaches `serve`: every
+// branch of `CacheLevel::triage` either refuses the request, which writes a
+// cause, or charges its path, and a request reaches the core only through a
+// triage. It remains the initial value a fresh `Request` carries and nothing
+// else.
+enum class StallCause : std::uint8_t {
+    None    = 0,
+    L1Slot  = 1,
+    L1Line  = 2,
+    L1Port  = 3,
+    L2Slot  = 4,
+    L2Line  = 5,
+    L2Port  = 6,
+    Channel = 7,
+    Barrier = 8,
+};
+
 // One line request travelling the hierarchy (3.3).
 //
 // The first three fields have no defaults because the tagged scalars have no
@@ -88,6 +124,12 @@ struct Request {
     // rule is what keeps the waiting population backed one-for-one by demand
     // credits at any `prefetch_distance`, which is the whole of 4.1's argument.
     bool demand = true;
+
+    // When the burst this request belongs to was issued: the core's own issue
+    // for a demand, the prefetcher's for a prefetch. Copied into `Mshr` at
+    // allocate, which is how ruling R8's line anchor reaches the entry without
+    // this class ever reading a clock (P2).
+    SimTime issued_at{0};
 
     // The global refusal COUNTER's value at this request's FIRST refusal, not a
     // tick (3.8). Write-once, which is what makes starvation freedom provable
@@ -141,6 +183,19 @@ struct Request {
     // holds one file, a request can be refused at either of two, and the caller
     // is what sees both.
     bool on_wait_index = false;
+
+    // Part 8's stall attribution for this line. See `StallCause` for the rule.
+    StallCause cause = StallCause::None;
+
+    // Set when `retire` releases this request from a LINE-wait index, which is
+    // the one exit that guarantees the line is resident at the moment of the
+    // wake: the caller installs before it retires. If the re-probe that follows
+    // does not hit, the line was evicted between the wake and the re-triage,
+    // which is D4's "a decision made at block time is not valid at service
+    // time" and V6's `hits_downgraded_to_miss`. Read and cleared by the engine
+    // at the re-probe. A slot waiter carries no such guarantee and is not
+    // marked.
+    bool line_resident_at_wake = false;
 };
 
 // One outstanding line (3.3).
@@ -159,6 +214,19 @@ struct Mshr {
     // demand entry, the late-prefetch case where the fetch started early but
     // not early enough.
     bool demand;
+
+    // Whether a PREFETCH opened this entry. Unlike `demand` it never changes,
+    // which is what makes it usable after the promotion above has already
+    // erased the evidence: at retire it says whether this fetch started as a
+    // prefetch, so 4.6's `timely` / `late` split and R8's anchor both read it.
+    bool pf_opened;
+
+    // The instant the line was FIRST requested, which is the prefetch's issue
+    // time when a prefetch opened the entry and the demand's issue time
+    // otherwise. Set once, at allocate, and NOT updated when a demand promotes
+    // the entry (ruling R8): the promotion is exactly the case whose head start
+    // the metric exists to keep.
+    SimTime first_request;
 
     // The committed subentries, satisfied DIRECTLY by the fill with no
     // re-triage (3.7). The primary occupies the first slot, which is what makes

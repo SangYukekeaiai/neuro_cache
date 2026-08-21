@@ -25,12 +25,14 @@
 // case without a separate code path.
 
 #include <cstdint>
-#include <fstream>
 #include <map>
+#include <ostream>
 #include <vector>
 
+// std::ostream, not std::ofstream: `-` on an arch binary's command line
+// selects std::cout, which is what makes it a stream producer.
 template <typename AddressRow>
-inline void write_tick_grouped(std::ofstream& out_fh, const std::vector<AddressRow>& addresses) {
+inline void write_tick_grouped(std::ostream& out_fh, const std::vector<AddressRow>& addresses) {
     // std::map keeps ticks in ascending order for free. Bucketing
     // explicitly (not assuming addresses already arrive tick-sorted) means
     // this helper is correct regardless of discovery order, not just for

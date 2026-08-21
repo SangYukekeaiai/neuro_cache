@@ -36,6 +36,19 @@ void refuse_if_waiting(const char* where, const Request& r) {
     }
 }
 
+// Part 8's stall attribution, in one place so the seven buckets cannot drift
+// apart across the six branches below.
+//
+// A refusal always overwrites, so the cause is the reason the request was LAST
+// blocked. A forward, a merge or a hit speaks only for a request nothing has
+// refused yet, which is what `refusal == NoRefusal` says: it is written once, at
+// the first refusal, and never cleared. So an unrefused request ends up
+// attributed to the deepest level it reached, and a refused one to its own last
+// refusal, which is the rule Part 8 states.
+void charge_path(Request& r, StallCause c) {
+    if (r.refusal == NoRefusal) r.cause = c;
+}
+
 }  // namespace
 
 CacheLevel::CacheLevel(Level level,
@@ -115,6 +128,11 @@ TriageOutcome CacheLevel::triage(Request& r, std::vector<Request*>& granted) {
         // what makes this expressible at all.
         if (at_issue) return TriageOutcome::DroppedArrayHit;
         policy_->on_hit(slot);
+        // The hit still cost this level's port: its `ii` to be accepted and its
+        // latency to answer, both already paid by the reservation that scheduled
+        // this probe. At the L1 that was the one wait with no bucket, which is
+        // what made V21 an equality only at `l1_latency == 0`.
+        charge_path(r, level_ == Level::L1 ? StallCause::L1Port : StallCause::L2Port);
         if (mshrs_.release_reservation(r)) mshrs_.collect_grants(granted);
         return TriageOutcome::Hit;
     }
@@ -130,12 +148,18 @@ TriageOutcome CacheLevel::triage(Request& r, std::vector<Request*>& granted) {
         // computing a completion time (D3). `add_target` also performs 4.6's
         // promotion, so a demand request merging onto a prefetch entry makes the
         // entry a demand entry.
-        if (mshrs_.add_target(*e, r)) return TriageOutcome::Merged;
+        if (mshrs_.add_target(*e, r)) {
+            // Waiting on a fetch that is already below this level, so the cause
+            // is that fetch's own next step and not this level.
+            charge_path(r, level_ == Level::L1 ? StallCause::L2Port : StallCause::Channel);
+            return TriageOutcome::Merged;
+        }
         // D5: the target list is full, so this waits on THIS entry, not on any
         // free entry. Waking it on an unrelated retire is the livelock 3.7
         // names. `push_line_wait` stamps the first refusal on the way in (3.8).
         refuse_if_waiting("triage", r);
         mshrs_.push_line_wait(*e, r);
+        r.cause = level_ == Level::L1 ? StallCause::L1Line : StallCause::L2Line;
         return TriageOutcome::BlockedTargets;
     }
 
@@ -153,11 +177,13 @@ TriageOutcome CacheLevel::triage(Request& r, std::vector<Request*>& granted) {
         // "when will a slot free", so it does not compute one.
         refuse_if_waiting("triage", r);
         mshrs_.push_slot_wait(r);
+        r.cause = level_ == Level::L1 ? StallCause::L1Slot : StallCause::L2Slot;
         return TriageOutcome::BlockedPool;
     }
 
     // --- primary miss ------------------------------------------------------
     Mshr& e = mshrs_.allocate(r.line, r);
+    charge_path(r, level_ == Level::L1 ? StallCause::L2Port : StallCause::Channel);
     if (level_ == Level::L1) {
         // 3.5's re-entry rule, written where the request takes the entry: from
         // here on it re-enters at the L2, because a re-triage at the L1 would

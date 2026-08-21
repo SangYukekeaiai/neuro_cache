@@ -272,17 +272,20 @@ struct Coord {
 // [kh, kw, cin, cout_start, cout_end], which TraceReader (A3) decodes into
 // {anchor = {kh, kw, cin, cout_start}, axis = COUT,
 //  count = cout_end - cout_start, stride = 1}.
-// Format v2 carries burst_dim and burst_stride as header fields so a future
-// architecture can burst along CIN instead, so `axis` and `stride` are read
-// from the header and never assumed.
+// The axis and the stride arrive in the stream header: the WCTS format's
+// `burst_dim` and `burst_stride` (stream_format.h), emitted by the trace
+// generator, which knows both. That is ruling R1 of 2026-08-20, which closed
+// U27: the older format v2 header carried neither, and every one of the
+// corpus's 76,150,578 bursts is COUT with stride 1 (survey 2026-08-20), but a
+// reader may not supply from a default what the producer knows.
 //
 // This is plan D9's unit of issue: one trace event is a burst, not a line, and
 // under a layout narrower than the burst it expands to several lines.
 struct Burst {
     Coord        anchor;  // the run's first element
-    Axis         axis;    // which axis the run walks (header burst_dim)
+    Axis         axis;    // which axis the run walks; from the header (R1)
     std::int32_t count;   // number of elements in the run
-    std::int32_t stride;  // step along `axis` between elements (burst_stride)
+    std::int32_t stride;  // step along `axis` between elements; likewise (R1)
 };
 
 // Extents of the layer's weight tensor, from the trace's workload_dims.

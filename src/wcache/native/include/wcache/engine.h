@@ -35,6 +35,8 @@
 #include <cstdint>
 #include <deque>
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "wcache/cache_level.h"
@@ -85,6 +87,24 @@ struct CoreState {
     // When the current burst was issued, for `fetch_latency` (Part 8).
     SimTime issued_at{0};
 
+    // Ruling R8's line anchor for the burst in flight: the minimum, over the
+    // lines of THIS burst, of each line's `Mshr::first_request`. Reset to
+    // `issued_at` at every issue and lowered as each line resolves, so
+    // `served - burst_anchor` is R8's per-burst term.
+    //
+    // It is lowered only for a line a PREFETCH of this core brought in or that
+    // merged onto one; a line another request already had in flight leaves it
+    // at this burst's own issue. That is what makes `hidden_latency` identically
+    // zero at `prefetch_distance = 0` instead of crediting the policy with a
+    // head start no prefetcher gave it.
+    SimTime burst_anchor{0};
+
+    // When this core reached the tile barrier, so `on_barrier` can charge it
+    // `tile_origin[N+1] - arrival` (Part 8's `barrier_slack_cycles`). The
+    // subtraction cannot happen at the arrival, because `tile_origin[N+1]` is
+    // measured by the barrier event the last arrival schedules.
+    SimTime barrier_arrival{0};
+
     // `served(c, cursor - 1)`. 3.3 gives it a NONE at a tile start; here that
     // state is spelled `cursor == 0` instead, and the two are the same state
     // because the cursor is reset at every tile start and advanced at every
@@ -95,27 +115,61 @@ struct CoreState {
     SimTime served_time{0};
 };
 
-// The quantities Part 3's own pseudocode writes, and nothing else.
+// What one run reports (Part 8), which unit D2 turns into a CSV row.
 //
-// Part 8 asks for far more than this -- occupancy histograms, per-bank
-// utilisation, the timely/late/wasted/dropped prefetch split, the stall
-// breakdown by cause -- and all of it is D2's ("Statistics and the results
-// CSV"). What is here is the four counters the plan's pseudocode increments by
-// name (`stats.core_stall`, `stats.fetch_latency`, `stats.back_invalidations`,
-// `stats.pf_budget_exhausted`) plus the prefetch drop counts 4.6 asks to be
-// "counted by reason", because the reason is only distinguishable at the moment
-// of the drop and is gone afterwards.
+// The first group is the counters Part 3's own pseudocode increments by name.
+// The rest is Part 8's: the stall breakdown by cause, the four prefetch outcome
+// states, the memory counters and the model-health counters. Per-bank
+// utilisation is still absent, and so is the reduction of the occupancy samples
+// below into percentiles, which is D2c's.
 struct EngineStats {
     // Per core. `core_stall[c] = sum over k of served(c, k) - want(c, k)`, the
     // cycles the core waited past its OWN self-timed schedule, which is the
     // quantity that integrates to the tile stretch (4.5, Part 8, V21).
     std::vector<std::int64_t> core_stall;
 
-    // Per core. `fetch_latency[c] = sum over k of served(c, k) - issued_at(c, k)`,
-    // the memory system's latency for the same bursts. With prefetching off the
-    // two are equal by construction and reporting both is a free consistency
-    // check; with it on, their DIFFERENCE is the latency the policy hid.
+    // Per core, and LINE-ANCHORED (ruling R8, closing Q5):
+    //
+    //     fetch_latency[c] = sum over k of served(c, k) - t_first_request(k)
+    //
+    // where `t_first_request` is the PREFETCH's issue time when the line was
+    // brought in by a prefetch or merged onto one, and this burst's own demand
+    // issue otherwise. For a burst spanning several lines it is the earliest
+    // anchor among them, so each burst contributes exactly one term.
+    //
+    // The anchor never reaches back to an EARLIER burst's demand, and that is
+    // the half of the ruling the arithmetic rests on: a burst that merges onto a
+    // line another core already had in flight would otherwise report a head
+    // start at `prefetch_distance = 0`, where by definition nothing was hidden.
+    //
+    //     hidden_latency  = fetch_latency - core_stall,  guaranteed >= 0
+    //     hidden_fraction = hidden_latency / fetch_latency
+    //
+    // The guarantee is structural rather than observed: `burst_anchor` starts at
+    // the burst's own issue, which IS `want` under N14's recurrence, and only
+    // ever moves earlier. `serve` refuses a run where it does not hold.
+    //
+    // This supersedes the definition `served - issued_at`, under which the
+    // difference was identically zero at every distance (U19) and the prefetch
+    // study therefore had no metric (G7).
     std::vector<std::int64_t> fetch_latency;
+
+    // --- Part 8 "Time": the stall breakdown, per core.
+    //
+    // V21: the eight causes sum to `stall_total`, which is accumulated
+    // independently from `served - want` plus the barrier slack. The partition
+    // is exhaustive at every `l1_latency`: the two feeders that once had no
+    // bucket, the L1 port's `ii` occupancy and its access latency, are
+    // `stall_l1_port` (see `StallCause`).
+    std::vector<std::int64_t> stall_l1_slot;
+    std::vector<std::int64_t> stall_l1_line;
+    std::vector<std::int64_t> stall_l1_port;
+    std::vector<std::int64_t> stall_l2_slot;
+    std::vector<std::int64_t> stall_l2_line;
+    std::vector<std::int64_t> stall_l2_port;
+    std::vector<std::int64_t> stall_channel;
+    std::vector<std::int64_t> stall_barrier;
+    std::vector<std::int64_t> stall_total;
 
     // 4.4's instrument, and C4's exit criterion is that it is 0 under
     // `non_inclusive`.
@@ -136,6 +190,73 @@ struct EngineStats {
     // in the prefetcher because it is a cache credit and not policy state (3.3's
     // `PrefetchState` is memory-side).
     std::vector<std::int32_t> pf_outstanding;
+
+    // --- Part 8 "Prefetch": every prefetch issued ends in exactly one of four
+    // states, and the four sum to `pf_issued`:
+    //
+    //     pf_timely + pf_late + pf_wasted + (the five drop counts) == pf_issued
+    //
+    // A prefetched line still resident and still undemanded when the run ends is
+    // charged as WASTED, since the core never got there. Without that the sum is
+    // only an inequality.
+    std::int64_t pf_issued = 0;
+    std::int64_t pf_timely = 0;  // the demand access hit the prefetched line
+    std::int64_t pf_late   = 0;  // the demand merged onto it while outstanding
+    std::int64_t pf_wasted = 0;  // evicted, invalidated, or never demanded
+
+    // The fifth drop reason the CSV schema names. Structurally zero in this
+    // engine and reported anyway, because zero is the answer the schema needs: a
+    // prefetch meeting a matching entry is dropped before the target-list bound
+    // is ever consulted, so `DroppedEntry` subsumes it (4.6, cache_level.cpp).
+    std::int64_t pf_dropped_targets_full = 0;
+
+    // An L1 line evicted while it was a prefetched, undemanded line, and then
+    // demanded before the tile ended. 4.6's pollution term.
+    std::int64_t pf_pollution_evictions = 0;
+
+    // Bursts that are not first in their tile, which is the ceiling on coverage:
+    // the first burst of a tile can never be prefetched, because the next tile's
+    // activations do not exist until the barrier resolves (4.6). A property of
+    // the trace, so it is reported whether or not a prefetcher is on.
+    std::int64_t pf_bursts_eligible = 0;
+
+    // Every demand burst issued, which is the DENOMINATOR Part 8 gives both
+    // coverage terms: "coverage is timely plus late over all bursts, and its
+    // ceiling is the fraction of bursts that are not first-in-tile". Neither
+    // ratio is computable without it, and nothing else in this struct counts
+    // bursts: `l1_accesses` counts demand PROBES, which a refused request
+    // repeats.
+    std::int64_t demand_bursts = 0;
+
+    // --- Part 8's memory counters. Hits and accesses are DEMAND only, which is
+    // what makes the ratio a hit rate: a prefetch that finds its line resident
+    // is a drop rather than a hit, and counting it would move the denominator
+    // without moving the numerator. `dram_accesses` is every line the L2 sent to
+    // the channel, prefetched or not, because that is real traffic.
+    std::int64_t l1_hits = 0, l1_accesses = 0;
+    std::int64_t l2_hits = 0, l2_accesses = 0;
+    std::int64_t dram_accesses = 0;
+
+    // --- Part 8 "Model health".
+    //
+    // D4/V6: a request released from a LINE-wait index is woken onto a resident
+    // line, so its re-probe is a hit unless the line is evicted in between. This
+    // counts the times it was.
+    std::int64_t hits_downgraded_to_miss = 0;
+
+    // The high-water mark of the waiting population across both levels, against
+    // I11's bound.
+    std::int64_t max_wait_depth = 0;
+
+    // Events dispatched: the cost measure Part 8 asks to be measured rather than
+    // claimed.
+    std::int64_t events = 0;
+
+    // Occupancy samples, one at every allocate and every retire, per level. Kept
+    // as samples rather than reduced on the fly so the percentile reduction
+    // stays out of the hot path; D2c turns them into p50/p95/max.
+    std::vector<std::int32_t> l1_mshr_occupancy;
+    std::vector<std::int32_t> l2_mshr_occupancy;
 };
 
 // What an event is about.
@@ -223,6 +344,51 @@ public:
     // quietly still produces numbers.
     void run();
 
+    // The same loop, driven one tile at a time.
+    //
+    // Seeds the queue on the first call, then dispatches events until the next
+    // event in the queue is a Barrier, which it leaves UNDISPATCHED, or until
+    // the queue empties. Returns that pending barrier's tile, or -1 when the run
+    // is complete, in which case the D12 checks `run` makes have already run.
+    //
+    // The pause point is before the barrier rather than after it because
+    // `on_barrier` calls `start_tile`, which reads the NEXT tile's bursts, while
+    // `barrier_arrive` has already read this tile's tail. Parking here is
+    // therefore the one point at which tile N is fully read and tile N+1 is
+    // untouched, which is what a driver sharing one trace window across engines
+    // needs in order to advance that window.
+    //
+    // The next call dispatches the parked barrier and runs on, so `run` is
+    // exactly `while (run_to_barrier() >= 0) {}` and the dispatch order is the
+    // one `run` always had.
+    //
+    // Throws what `run` throws, at the same points.
+    std::int32_t run_to_barrier();
+
+    // Exactly one tile of progress, for a driver that shares ONE trace window
+    // across several engines: it dispatches the barrier a previous call parked
+    // on, runs to the next barrier and parks there. Returns false when the run
+    // is complete.
+    //
+    // It does not pop the parked barrier itself, because `run_to_barrier`
+    // already does that as its first act. Doing both would dispatch two
+    // barriers whenever one immediately follows another -- a tile in which
+    // every core has no bursts clears its barrier the moment it starts -- and
+    // the engine would then be a tile ahead of the window it is sharing.
+    bool step_tile();
+
+    // The other end of a `run_to_barrier` drive. Dispatches the pending
+    // barrier, if any, then drains the queue and runs the D12 checks. Calling
+    // it when nothing is pending is legal and is a no-op plus the checks. After
+    // it returns, `tile_origin(n_tiles)` is the layer makespan.
+    //
+    // A driver that moves a shared trace window has to advance the window
+    // BEFORE it runs the engine, so the last tile's barrier is left queued with
+    // no further advance to resume it. This is what dispatches it.
+    //
+    // Throws what `run` throws, at the same points.
+    void finish();
+
     // Part 5's measured quantity, replacing the derived `tick_base`. Sized
     // `n_tiles + 1`, so the last entry is the end of the run and
     // `tile_origin[N+1] - tile_origin[N]` is tile N's length, which is the form
@@ -244,6 +410,9 @@ public:
 private:
     // --- the loop and the six handlers (C2) ----------------------------------
     void dispatch(const Event<EventPayload>& e);
+
+    // D12's checks, run when the queue empties.
+    void check_no_work_outstanding();
     void on_issue(CoreId c, BurstIndex k, SimTime now);
     void on_l1_probe(Request& r, SimTime now);
     void on_l2_probe(Request& r, SimTime now);
@@ -266,10 +435,37 @@ private:
     void back_invalidate(LineId line);
 
     // --- the core state machine (C3) -----------------------------------------
-    void core_line_done(Request& r, SimTime now);
-    void serve(CoreId c, SimTime now);
+    //
+    // `anchor` is ruling R8's `t_first_request` for the line that just landed:
+    // the prefetch's issue time when a prefetch fetched it, and the request's
+    // own burst issue otherwise. The caller passes it because only the caller
+    // still holds the entry the line came out of.
+    void core_line_done(Request& r, SimTime now, SimTime anchor);
+    void serve(CoreId c, SimTime now, StallCause cause);
     void barrier_arrive(CoreId c, SimTime now);
     void start_tile(std::int32_t tile, SimTime now);
+
+    // --- Part 8's prefetch outcome accounting (4.6) --------------------------
+    //
+    // R8's anchor for a demand that found its line already resident, and 4.6's
+    // `timely` at the same moment: a hit on a prefetched, still undemanded line
+    // is the prefetch that made it. Returns the prefetch's issue time when it
+    // was one, and `r.issued_at` otherwise, so the caller has R8's anchor either
+    // way. Also charges 4.6's pollution term, which is a demand for a line an
+    // earlier prefetch had brought in and then lost.
+    SimTime demand_anchor_on_probe(Request& r, bool hit);
+
+    // Records a prefetched line that landed with no demand waiting on it, so a
+    // later hit can be called timely and a later eviction wasted.
+    void note_prefetch_resident(CoreId c, LineId line, SimTime first_request);
+
+    // An L1 line leaving the array, by eviction or by back-invalidation. Charges
+    // `pf_wasted` when it was a prefetched line no demand ever reached.
+    void note_line_left_l1(CoreId c, LineId line);
+
+    // Charges every prefetched line still resident and still undemanded at the
+    // end of the run as wasted, which is what makes 4.6's four states sum.
+    void close_out_prefetch_stats();
 
     // 4.5's `max(gap_k, core_accept_ii)`, the period from one service to the
     // next issue.
@@ -287,7 +483,7 @@ private:
     // at those three and nowhere else: an L1 array hit, a prefetch drop, and the
     // target loop of an L1 retire. Everything else -- merged, blocked at either
     // level, forwarded, a target of an L2 entry -- ends up in that same L1 retire.
-    Request& acquire(CoreId c, LineId line, BurstIndex k, bool demand);
+    Request& acquire(CoreId c, LineId line, BurstIndex k, bool demand, SimTime issued_at);
     void release(Request& r);
 
     const AddressMapper& mapper_;
@@ -311,12 +507,37 @@ private:
     std::vector<CoreState> cores_;
     std::vector<SimTime> tile_origin_;
 
+    // Whether tile 0 has been seeded. The seeding is `run`'s first two lines and
+    // has to happen once per run, not once per `run_to_barrier` call.
+    bool started_ = false;
+
     // Part 5's countdown, not a scan: "each tile holds `cores_remaining`; a core
     // clearing the tile decrements it and parks in `AtBarrier`; the decrement
     // reaching zero schedules `E_Barrier`."
     std::int32_t cores_remaining_ = 0;
 
     EngineStats stats_;
+
+    // Per core, the lines a prefetch brought into that core's L1 that no demand
+    // has reached yet, each against the prefetch's issue time (R8's anchor).
+    // A line leaves on the first demand hit (timely), on eviction or
+    // invalidation (wasted), or at the end of the run (wasted).
+    //
+    // Never iterated, for the reason `MshrFile::entries_` is never iterated: an
+    // unordered container's order is unspecified and nothing that reaches a
+    // victim choice may depend on it. Every access below is a lookup, an insert,
+    // an erase or a size.
+    std::vector<std::unordered_map<LineId, SimTime>> pf_resident_;
+
+    // Per core, the prefetched lines this tile has already lost from the L1. A
+    // demand for one of them is 4.6's pollution term. Cleared at every tile
+    // start, because "demanded soon after" is scoped to the tile.
+    std::vector<std::unordered_set<LineId>> pf_evicted_;
+
+    // The waiting population across both levels, for I11's high-water mark. A
+    // request joins on a refusal and leaves in a wake list, which are the only
+    // two ways in or out.
+    std::int64_t waiting_ = 0;
 
     std::deque<Request> arena_;
     std::vector<Request*> free_;
