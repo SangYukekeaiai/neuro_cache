@@ -1,0 +1,32 @@
+arch:
+  bitwidths:
+    BW_WEIGHT: 8
+    BW_PSUM:   16
+    BW_VMEM:   32
+    DRAM_LATENCY: 17
+
+  # 16-node variant of ptb_multinode.yaml. The ONLY change from that file is
+  # `instances`: 128 -> 16. Every other modelling choice is copied deliberately,
+  # in particular the ABSENCE of a NodeLevel local_buffer capacity.
+  #
+  # That absence is the point. configs/arch/multinode_sweep/ptb_inst16_*.yaml
+  # do impose one (weight 30720 per node), and under it spinalflow's deep layers
+  # are infeasible: its dataflow needs CIN full and T full in one node visit, and
+  # a CIN=512 layer's weight slice does not fit in 30 KB. Those two layers are
+  # missing from EVERY multinode_sweep cache as a result. Keeping the 128-node
+  # baseline's assumptions means the core count is the only variable that moved,
+  # which is what makes a 16-core result comparable to the 128-core one.
+  single_node: false
+  storage:
+    - name: NodeLevel
+      instances: 16
+      pe:
+        num_pes: 128
+    - name: NoCLevel
+      entries:
+        weight: 1048576
+        psum:   1048576
+        vmem:   1048576
+      instances: 1
+    - name: OffChip
+      instances: 1

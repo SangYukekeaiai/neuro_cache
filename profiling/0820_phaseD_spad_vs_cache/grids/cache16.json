@@ -1,0 +1,93 @@
+{
+ "comment": "16-core cache sweep, 3 archs x 4 layers x 5 samples, L1 pinned at 8 KB. L1 leaves the axis list by user ruling, so the swept cache axes are line size (cin_block 1/2/4 -> 16/32/64 B at cout_block 16, weight_bytes 1), shared L2 size, and prefetch distance: 3 x 3 x 4 = 36 configurations. A sweep cannot mix line sizes (one mapper per wcache_sweep), so each trace is 3 units of 12 configs. Units = 3 archs x 4 layers x 5 samples x 3 line sizes = 180; rows = 180 x 12 = 2160. 8 KB is the plan's nominal because it sits exactly on the quarter-storage line at every core count. Schedules come from outputs/schedules/inst16, solved against configs/arch/<arch>_inst16.yaml, which is the 128-node baseline with instances 16 and no NodeLevel local_buffer cap -- the multinode_sweep inst16 configs impose one and spinalflow's two deep layers are infeasible under it.",
+ "expected_configs": 36,
+ "arm": "cache",
+ "base": {
+  "cout_block": 16,
+  "weight_bytes": 1,
+  "l1_assoc": 8,
+  "l2_assoc": 16,
+  "policy": "lru",
+  "inclusion": "non_inclusive",
+  "l2_banks": 1,
+  "l2_ii": 1,
+  "core_accept_ii": 1,
+  "l1_latency": 0,
+  "l2_to_l1_latency": 0,
+  "l2_latency": 10,
+  "l2_miss_latency": 100,
+  "l1_mshrs": 16,
+  "l1_tgts_per_mshr": 20,
+  "l2_mshrs": 20,
+  "l2_tgts_per_mshr": 12,
+  "l1_size_bytes": 8192
+ },
+ "axes": {
+  "cin_block": [
+   1,
+   2,
+   4
+  ],
+  "l2_size_bytes": [
+   262144,
+   524288,
+   1048576
+  ],
+  "prefetch": [
+   {
+    "prefetch_policy": "none",
+    "prefetch_distance": 0
+   },
+   {
+    "prefetch_policy": "next_burst",
+    "prefetch_distance": 2
+   },
+   {
+    "prefetch_policy": "next_burst",
+    "prefetch_distance": 4
+   },
+   {
+    "prefetch_policy": "next_burst",
+    "prefetch_distance": 8
+   }
+  ]
+ },
+ "units": {
+  "arch": [
+   "loas",
+   "ptb",
+   "spinalflow"
+  ],
+  "cores": [
+   {
+    "n_cores": 16,
+    "schedule_cache": "outputs/schedules/inst16"
+   }
+  ],
+  "layer": [
+   {
+    "trace_dir": "vgg16_T4_all",
+    "layer": "layer_01_features_3"
+   },
+   {
+    "trace_dir": "vgg16_T4_all",
+    "layer": "layer_09_features_30"
+   },
+   {
+    "trace_dir": "resnet19_T4_all",
+    "layer": "layer_01_layer1_0_conv1"
+   },
+   {
+    "trace_dir": "resnet19_T4_all",
+    "layer": "layer_16_layer3_0_conv2"
+   }
+  ],
+  "sample": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ]
+ }
+}
