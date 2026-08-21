@@ -63,7 +63,7 @@ passed to the transaction builders:
 from __future__ import annotations
 
 from collections import deque
-from typing import Any, Deque, Dict, List, Optional
+from typing import Any, Deque, Dict, List, Optional, Tuple
 
 from parsers.layer import (
     SNNProb,
@@ -172,17 +172,43 @@ def combine(
     gen = TC_Generator(NoC(X, Y), dram_latency=bitwidths.dram_latency)
 
     # ── 2. Cycle-count model ─────────────────────────────────────────────
-    # single_node: per-tile call -- each dram_i gets its own NodeTileSpec
-    # (from iter_node_tiles) and its own model.format_input/compute_cycles
-    # call, so a real trace-driven model's cycle count can vary tile to
-    # tile. DenseStaticComputeModel ignores tile/trace entirely, so this
-    # path costs it nothing but a few redundant (identical) calls.
-    # Non-single_node: exactly today's original one-shot call, unchanged.
+    # single_node: per-(dram_i, noc_i) call -- every core of that step gets
+    # its own NodeTileSpec (from iter_node_tiles) and its own
+    # format_input/compute_cycles call, and the step is charged the MAX over
+    # them, so a real trace-driven model's cycle count varies step to step.
+    # DenseStaticComputeModel ignores tile/trace entirely, so this path costs
+    # it nothing but redundant (identical) calls.
+    # Non-single_node: exactly the original one-shot call, unchanged.
+    #
+    # Keyed by (dram_i, noc_i) and reduced with max(), which is three fixes
+    # to one expression and each was independently wrong (PROGRESS.md B176):
+    #
+    #   1. INDEX. This used to be `live_tiles[dram_i]` against a list that
+    #      iter_node_tiles nests dram -> noc -> core. On loas vgg16 layer_01
+    #      (8 dram x 4 noc x 128 cores) that list has 4096 entries and the
+    #      loop read entries 0..7, i.e. (dram_i=0, noc_i=0, core_id=0..7):
+    #      it never left DRAM step 0. Correct when written (2aff284), broken
+    #      when iter_node_tiles was widened for multinode (3545f97) without
+    #      this caller being updated.
+    #   2. GRANULARITY. The lookup used to sit at the top of the DRAM loop,
+    #      so one value was reused across every NoC step. The schedule has a
+    #      distinct tile per (dram_i, noc_i): DRAM step 5 of that layer is
+    #      147 / 163 / 149 / 170, and charging 147 four times under-counts
+    #      the layer by 3.4%. The fetch now sits in the NoC loop.
+    #   3. REDUCTION. compute_cycles() answers for ONE core, and step 3 of
+    #      this file's own loop structure is "mac_count (all PEs, parallel)",
+    #      which finishes when the slowest PE does. Measured on tile (0,0) of
+    #      that layer, per-core spans run 57 / 87 / 126 (min / median / max)
+    #      against a stored 127, so one core is 45-69% of the truth. This is
+    #      the same max() tracegen.py:282 applies when it writes mac_cycles
+    #      into the weight trace, which is what makes the two agree.
     model = compute_model or DenseStaticComputeModel(schedule, prob)
-    live_tiles: Optional[List[NodeTileSpec]] = (
-        list(iter_node_tiles(schedule, prob)) if single_node else None
-    )
-    if live_tiles is None:
+    tiles_by_step: Optional[Dict[Tuple[int, int], List[NodeTileSpec]]] = None
+    if single_node:
+        tiles_by_step = {}
+        for spec in iter_node_tiles(schedule, prob):
+            tiles_by_step.setdefault((spec.dram_i, spec.noc_i), []).append(spec)
+    if tiles_by_step is None:
         cycles = model.compute_cycles(model.format_input(trace, None), None)
         mac_cyc = cycles.mac_cycles
         lif_cyc = cycles.lif_cycles if cycles.lif_cycles is not None else 0
@@ -215,12 +241,6 @@ def combine(
 
         (is_first_K_dram, is_last_K_dram) = si.dram_k_position(dram_i)
         (is_first_T_dram, is_last_T_dram) = si.dram_t_position(dram_i)
-
-        if live_tiles is not None:
-            tile = live_tiles[dram_i]
-            cycles = model.compute_cycles(model.format_input(trace, tile), tile)
-            mac_cyc = cycles.mac_cycles
-            lif_cyc = cycles.lif_cycles if cycles.lif_cycles is not None else 0
 
         # ── 5a. DRAM → GB loads ───────────────────────────────────────────
         # Single-node mode: no Global Buffer exists, so this leg is skipped
@@ -286,6 +306,24 @@ def combine(
 
             (is_first_K, is_last_K) = si.k_position(dram_i, noc_i)
             (is_first_T, is_last_T) = si.t_position(dram_i, noc_i)
+
+            # This step's compute time: the slowest core of this (dram_i,
+            # noc_i) tile, matching "mac_count (all PEs, parallel)" above.
+            # KeyError rather than .get(): iter_node_tiles enumerates the
+            # full cross product, so a missing key means the schedule and
+            # the loop bounds disagree, which is a defect to surface and not
+            # a step to charge zero for.
+            if tiles_by_step is not None:
+                specs = tiles_by_step[(dram_i, noc_i)]
+                per_core = [
+                    model.compute_cycles(model.format_input(trace, spec), spec)
+                    for spec in specs
+                ]
+                mac_cyc = max(c.mac_cycles for c in per_core)
+                lif_cyc = max(
+                    (c.lif_cycles for c in per_core if c.lif_cycles is not None),
+                    default=0,
+                )
 
             # ── Step 1: Weight load  (GB → all nodes) ─────────────────────
             # Two deps:
