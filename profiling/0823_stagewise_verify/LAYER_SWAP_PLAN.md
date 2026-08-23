@@ -64,3 +64,41 @@ them are kept and to be labelled superseded / stress case, not deleted.
 `profiling/0823_stagewise_verify/LAYER_SWAP.md`: what was swapped, exact
 commands and host, per-sample densities of the new traces, verification
 results, and what remains for Stages 3-4 / campaign re-runs.
+
+## Ground truth gathered locally (read-only scout, 2026-08-23)
+
+- **`features_27` == `features_30` workload: confirmed.** Shapes are derived
+  at run time in `src/archmodels/trace.py:105-143` (`HO = Hin`, `COUT` = next
+  layer's CIN). `meta.json` gives both layers `[4, 5, 512, 4, 4]` with next
+  CIN 512, so the derived YAML is byte-identical to
+  `stage1_mip_solver/inputs/workloads/vgg16_T4_all__layer_09_features_30.yaml`.
+- **The Stage 1 schedule is keyed by layer name**, in the path
+  (`outputs/schedules/pe16/loas/vgg16_T4_all/<layer>.json`) and the body
+  (`layer_name`, `trace_dir`). Copy-and-rename would work, but a fresh solve is
+  deterministic (verified byte-identical on 0823) and takes minutes: prefer
+  re-solving. `resnet19 layer_09_layer2_0_conv2` is `[4, 5, 256, 8, 8]`, next
+  CIN 128, so CIN 256 / COUT 128 / HO 8 / WO 8, a genuinely new solve.
+- **Stage 1 entry point:** `stage1_mip_solver/run_stage1.py`, no CLI; edit
+  `LAYERS` at lines 44-48. Canonical arch
+  `inputs/arch/loas_inst16_node32kb_noc2MiB_pe16.yaml` (NoC weight 1966080 B,
+  node weight 30720 B, `entries` are bytes). Run as `conda run -n base`,
+  gurobipy 13.0.2, needs `GRB_LICENSE_FILE` and `PYTHONPATH=src`.
+- **Stage 2 invocation actually used** (`stage2_weight_trace/outputs/logs/*.log`):
+  `generate_weight_traces.py --arch loas --trace-root <stage2>/inputs/input_trace
+  --trace-dir vgg16_T4_n5 --layer <layer> --schedule-cache <stage2>/inputs/schedules
+  --workers 1 --out-dir <stage2>/outputs/weight_traces --combo-tag noc2MiB_node32kb
+  --sample-start 0 --sample-count 5`; pass B adds `--stream --sample-count 1
+  --dump-trace .../stream/<layer>_s00000.wcts`. Those logs used a bare
+  interpreter path; the redo must use `conda run -n`.
+- Per-sample input density is computed by `run_stage2.py:148-172` into
+  `outputs/stage2_report.json` (`combos/<trace_dir>/<layer>/input_trace[]`).
+- **The exact-integer NumPy reconstruction check from CONCLUSIONS.md was not
+  committed.** Only `run_stage2.py` and `wcts_excerpt.py` exist. To re-apply it
+  on the new layers it must be rewritten per `stage2_weight_trace/outputs/RESULTS.md:131-135`
+  and committed this time.
+- Nothing under `profiling/0820_phaseD_spad_vs_cache/grids/` names any layer;
+  the Phase D grids do not yet carry the layer picks. `stage3_nocsim/` and
+  `stage4_wcache/` directories do not exist.
+- Host `CECSUnaryLab`: no Slurm, no `/u` or `/work` paths, no `cosa_snn` env
+  (only `base`, `env_name`, `gurobi`). All Delta paths in logs are unresolvable
+  here.
