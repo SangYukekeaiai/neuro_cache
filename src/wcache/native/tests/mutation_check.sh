@@ -170,6 +170,14 @@ mutate_in() {
         return
     fi
 
+# apps/ judges against `make test-cli`, not `make test`. The Makefile's `test`
+# target deliberately does not build apps/, so every apps/ case used to be an
+# `allow` whose stated reason was "apps/ is not built by `make test`". That is a
+# reason a case can never fail, which makes it a case that measures nothing: the
+# two main()s carry the makespan, the CSV header and the padding meter, and all
+# of it was unfalsifiable. `test-cli` builds apps/ and runs run_cli.sh,
+# sweep_cli.sh and v1_pipe.sh over the checked-in fixtures, so those cases can
+# now be judged. Added 2026-08-20 with the eight cases flipped to `kill`.
     # Which suite can possibly see this mutation.
     #
     # compile_fail.sh compiles its cases with -fsyntax-only against include/ and
@@ -184,6 +192,7 @@ mutate_in() {
     # them the compile cases are the ONLY thing that catches them.
     local target=test
     case "$hdr" in
+        apps/*) target=test-cli ;;
         *.cpp) target=test-run ;;
     esac
 
@@ -2148,8 +2157,15 @@ mutate_stats kill 'D2c an undefined ratio is emitted rather than left empty' \
     's|        if (den == 0.0) {|        if (false) {|'
 mutate_stats kill 'D2c a cell that would break the CSV is accepted' \
     's|!= std::string::npos) {|== std::string::npos) {|'
+# Repointed 2026-08-20. The sed used to target `if (l1_latency_ == 0) {`, the
+# precondition V21's equality once sat behind. That precondition was removed on
+# purpose when `stall_l1_port` took the leftover cycles, and this case was not
+# repointed with it, so it matched nothing and covered nothing while the summary
+# still read clean. That is the B148-B150 failure mode, caught here only because
+# a sed matching nothing is an ERROR rather than a warning. The live guard is
+# `check_invariants`'s equality, `src/stats.cpp:369`.
 mutate_stats kill 'D2c V21 is never checked as an equality' \
-    's|    if (l1_latency_ == 0) {|    if (false) {|'
+    's|    if (stall_causes_ != stall_total_) {|    if (false) {|'
 mutate_stats kill 'D2c a negative hidden_latency passes (R8)' \
     's|    if (hidden_latency_ < 0) {|    if (false) {|'
 mutate_stats kill 'D2c the prefetch outcomes need not sum to pf_issued' \
@@ -2194,24 +2210,16 @@ mutate_eng kill 'T15 finish takes one step instead of draining' \
     's|^    run();|    (void)run_to_barrier();|'
 
 echo "== Task 15: wcache_run (apps/wcache_run.cpp)"
-APPS_NOT_IN_GATE='apps/ is not built by `make test`, which is the gate every case here
-             judges by, so this mutation cannot turn it red. Its cover is
-             tests/run_cli.sh, run separately'
-mutate_app allow 'T15 finish is never called, so the makespan is never written' \
-    's|^        engine.finish();||' \
-    "$APPS_NOT_IN_GATE"
-mutate_app allow 'T15 the header line is not csv_header' \
-    's|    if (opt.header) text = csv_header() + "\\n";|    if (opt.header) text = "run_id\\n";|' \
-    "$APPS_NOT_IN_GATE"
-mutate_appsup allow 'T15 lines_per_burst is the raw span, ignoring the layout' \
-    's|    return static_cast<std::int32_t>(lines.size());|    return hdr.burst_span;|' \
-    "$APPS_NOT_IN_GATE"
-mutate_appsup allow 'T15 padding_fraction reports a constant' \
-    's|        if (fetched == 0) return 0.0;|        if (fetched >= 0) return 0.5;|' \
-    "$APPS_NOT_IN_GATE"
-mutate_app allow 'T15 the histogram never observes the engine arm tiles' \
-    's|^            hist.observe(trace);||' \
-    "$APPS_NOT_IN_GATE"
+mutate_app kill 'T15 finish is never called, so the makespan is never written' \
+    's|^        engine.finish();||'
+mutate_app kill 'T15 the header line is not csv_header' \
+    's|    if (opt.header) text = csv_header() + "\\n";|    if (opt.header) text = "run_id\\n";|'
+mutate_appsup kill 'T15 lines_per_burst is the raw span, ignoring the layout' \
+    's|    return static_cast<std::int32_t>(lines.size());|    return hdr.burst_span;|'
+mutate_appsup kill 'T15 padding_fraction reports a constant' \
+    's|        if (fetched == 0) return 0.0;|        if (fetched >= 0) return 0.5;|'
+mutate_app kill 'T15 the histogram never observes the engine arm tiles' \
+    's|^            hist.observe(trace);||'
 
 echo "== Task 17: step_tile, one tile of progress (src/engine.cpp)"
 mutate_eng kill 'T17 step_tile takes no step at all' \
@@ -2253,15 +2261,12 @@ mutate_cfg kill 'D3b an array grid keeps only its last element' \
     's|                grid.push_back(cfg);|                grid.assign(1, cfg);|'
 
 echo "== Task 18: wcache_sweep (apps/wcache_sweep.cpp)"
-mutate_sweep_app allow 'T18 every row reports the first point stats' \
-    's|sweep.engine(i).stats()|sweep.engine(0).stats()|' \
-    "$APPS_NOT_IN_GATE, tests/sweep_cli.sh"
-mutate_sweep_app allow 'T18 the header line is emitted before every row' \
-    's|    if (opt.header) text = csv_header() + "\\n";|    if (opt.header) text = "";|' \
-    "$APPS_NOT_IN_GATE, tests/sweep_cli.sh"
-mutate_sweep_app allow 'T18 the padding meter never sees a tile' \
-    's|        padding.observe_tile(window);||' \
-    "$APPS_NOT_IN_GATE, tests/sweep_cli.sh"
+mutate_sweep_app kill 'T18 every row reports the first point stats' \
+    's|sweep.engine(i).stats()|sweep.engine(0).stats()|'
+mutate_sweep_app kill 'T18 the header line is emitted before every row' \
+    's|    if (opt.header) text = csv_header() + "\\n";|    if (opt.header) text = "";|'
+mutate_sweep_app kill 'T18 the padding meter never sees a tile' \
+    's|        padding.observe_tile(window);||'
 
 echo
 echo "$((killed + survived + unexpected)) mutations: $killed killed, $survived survived as expected, $unexpected unexpected"

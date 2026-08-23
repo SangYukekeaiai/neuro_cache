@@ -1,7 +1,9 @@
 # 2026-08-20 Phase D scratchpad vs cache campaign
 
 Slurm launcher for the staged sweep in
-`log/2026-08-20-phaseD-sweep-profiling-plan.md`. Nothing here has run yet.
+`log/2026-08-20-phaseD-sweep-profiling-plan.md`. **No campaign tier has run.**
+The only thing that has run is the local demo and smoke pass recorded at the
+bottom of this file.
 
 **This campaign runs on NCSA Delta only (user ruling R7, plan section 8.1).**
 CECSUnaryLab is for build, tests, fixture-slice demos and single-point sanity
@@ -147,16 +149,93 @@ PYTHONPATH=src python profiling/0820_phaseD_spad_vs_cache/run_sweep.py \
     --out profiling/0820_phaseD_spad_vs_cache/spad_vs_cache.csv
 ```
 
+## The per-unit command
+
+Every array task runs one pipeline pair through `run_sweep.py`, which owns the
+`.tmp`-then-`os.replace` unit cache. The pair it builds is
+
+```
+generate_weight_traces.py --stream --arch A --trace-dir D --layer L \
+    --sample-start S --sample-count 1 --workers 1 \
+  | wcache_sweep --config-grid <unit grid> --trace - \
+      --arm cache --tier TIER --git-commit HEAD --out results/TIER/<unit>.csv.tmp
+```
+
+`run_sweep.py` prefers `build/release/wcache_sweep` and falls back to
+`build/fixture/wcache_sweep`, so build the release binaries before submitting:
+
+```bash
+cd src/wcache/native && make MODE=release lib && make MODE=release apps
+```
+
 ## Expected wall time
 
 About 2.0 h on 16 CPUs for Stage 3, bracket 0.4 to 3.3 h, from a planning figure
 of 15 core-seconds per row (plan section 8.2). **That figure is an estimate.**
 Tier 0 exists to replace it with a measurement; nothing below Tier 0 should be
-submitted until it has.
+submitted until it has. The local demo below is far too small to bound it: it is
+a 2-tile fixture slice, not a layer.
+
+## What has run locally, 2026-08-20
+
+Under ruling R7 this machine runs demos and single-point sanity checks only.
+**No campaign tier ran here**, and the Slurm script above is for Delta. What ran:
+
+| Run | Grid | Rows | Wall | Result |
+|---|---|---|---|---|
+| demo | `grids/demo.json` | 8 (2 units x 4 configs) | 0.4 s | `tests/demo_smoke.sh` green |
+| demo, release build | `grids/demo.json` | 8 | 0.3 s | identical to the fixture build on all 89 comparable columns |
+| duplicate check | `grids/duplicate_check.json` | 4 | 0.2 s | `tests/duplicate_check.sh` green |
+| dump and replay | `grids/demo.json` | 4 x 2 | 0.3 s | `tests/replay_check.sh` green, 90 of 91 columns identical |
+
+```bash
+python3 run_sweep.py --run --grid grids/demo.json --tier demo --out demo_results.csv
+tests/demo_smoke.sh demo_results.csv
+python3 run_sweep.py --run --grid grids/duplicate_check.json --tier dupcheck --out dup.csv
+tests/duplicate_check.sh dup.csv
+```
+
+`-O2 -DNDEBUG` and `-O0 -g` produce the same numbers: comparing the two demo
+CSVs column by column, ignoring only `run_id` and `sim_wall_seconds`, leaves 89
+columns and no difference. No assert in this tree has a side effect.
+
+Two of the plan's section 2 known-answer checks did not survive contact with the
+model, and both are written up in `PROGRESS.md` as decisions rather than patched
+over here:
+
+- **`padding_fraction == 0` is not true of the column as defined** (B162). The
+  ratio the implementation plan's open question Q-G settled on measures the
+  share of each fetched line the trace never consumes, which on an SNN trace is
+  input sparsity: 0.203125 on a full real layer whose dimensions divide exactly
+  at every block size in the grid, because 13 of its 64 input channels never
+  spike in that sample. `tests/demo_smoke.sh` checks the invariant the meter
+  does promise, that one value belongs to one (trace, layout) whatever cache
+  surrounds it.
+- **A prefetch distance above the MSHR budget is not inert** (B164). The budget
+  bounds prefetches in flight; the distance bounds how far the prefetch cursor
+  leads the demand cursor, and a completed prefetch still counts toward the lead
+  while holding no MSHR. Measured here, `d = 16` differs from `d = 15` and is
+  slightly worse (623 versus 617 cycles); duplicates begin at 24, the number of
+  bursts one core issues in one tile. This matters for the grid: v3's question
+  13 expects 15 of its 30 points to be exact duplicates, and they are not.
+
+A third correction is in `tests/demo_smoke.sh` itself (B163): the task brief's
+prefetch-accounting check summed three outcome states, and `engine.h:195-197`
+states the identity with the five drop counts included. The full identity holds
+exactly on every row, 254 + 114 = 368 issued.
 
 ## Status
 
 `run_sweep.py` and `grids/` landed with Task 19 and implement the flag
 interface this Slurm script calls (`--run`, `--workers`, `--unit-index`,
 `--merge-only`, `--grid`, `--tier`, `--results-dir`, `--out`,
-`--dry-run-units`). No campaign tier has run.
+`--dry-run-units`). `tests/` holds the five checks that guard them:
+`test_resume.sh`, `test_slurm_shape.sh`, `demo_smoke.sh`,
+`duplicate_check.sh` and `replay_check.sh`. No campaign tier has run.
+
+Two review findings against the stream and grid readers are open and unfixed,
+recorded as U29 and U30 in `PROGRESS.md`: a `burst_dim` other than `COUT`
+decodes silently wrong rather than being refused, and `--max-engines` is checked
+after the grid it is meant to bound has already been expanded. Neither can be
+triggered by anything in this campaign's grids, which all burst along COUT and
+all stay far under the engine bound, so neither blocks a tier.

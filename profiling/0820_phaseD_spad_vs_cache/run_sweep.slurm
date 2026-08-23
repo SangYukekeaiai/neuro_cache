@@ -30,10 +30,24 @@ export PYTHONPATH=src
 TIER="${TIER:-tier0}"
 HERE=profiling/0820_phaseD_spad_vs_cache
 
+# The campaign plan's global constraint is that Python runs through conda, never
+# a bare `python`. The 0803 script predates that constraint and does use a bare
+# `python`; it is not the precedent to follow here. Checked rather than assumed,
+# because `conda run` failing to resolve would otherwise surface as a python that
+# cannot import the generator's dependencies, several minutes in.
+CONDA_ENV="${CONDA_ENV:-cosa_snn}"
+command -v conda >/dev/null || {
+    echo "conda is not on PATH in this batch shell; submit with --export=ALL from a" >&2
+    echo "shell where it is, or set CONDA_ENV and load the module first." >&2
+    exit 1
+}
+
 # run_sweep.py owns the pipeline pair, the .tmp-then-os.replace unit cache and
 # the resume decision. It runs, per unit:
 #   generate_weight_traces.py --stream ... | wcache_sweep --config-grid ... --trace -
-python "$HERE/run_sweep.py" --run \
+# --no-capture-output so the per-unit progress lines reach the Slurm log as they
+# happen rather than at exit.
+conda run -n "$CONDA_ENV" --no-capture-output python "$HERE/run_sweep.py" --run \
     --grid "$HERE/grids/${TIER}.json" \
     --tier "$TIER" \
     --unit-index "$SLURM_ARRAY_TASK_ID" \

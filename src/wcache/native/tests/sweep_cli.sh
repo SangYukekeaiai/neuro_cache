@@ -142,4 +142,42 @@ else
 fi
 grep -q -- --nonsense "$tmp/usage.txt"
 
+# 8. The padding meter actually runs, and its value survives the sweep.
+#
+# Added 2026-08-20 after deleting `padding.observe_tile(window);` survived the
+# whole gate. It survived for a reason worth keeping in the file: every grid
+# above uses `cin_block = 1`, where a line is exactly one burst wide and the
+# true padding_fraction is 0.000000, so a meter that never observes a tile
+# reports the same number a correct one does. The check needs a layout where
+# the answer is not also the failure value, and `cin_block = 4` is one: four
+# COUT-16 bursts share each 64-element line, and the fixture touches only some
+# of them.
+cat > "$tmp/pad_grid.json" <<'JSON'
+[{"cin_block": 4, "cout_block": 16, "weight_bytes": 1,
+  "l1_assoc": 8, "l2_size_bytes": 524288, "l2_assoc": 16,
+  "l1_latency": 0, "l2_latency": 10, "l2_miss_latency": 100,
+  "l1_size_bytes": 2048}]
+JSON
+"$sweep" --config-grid "$tmp/pad_grid.json" --trace "$tmp/fixture.wcts" \
+         --run-id fixed --tier smoke --header > "$tmp/pad_sweep.csv"
+# wcache_run takes ONE configuration object; wcache_sweep takes the array.
+sed -e 's/^\[//' -e 's/\]$//' "$tmp/pad_grid.json" > "$tmp/pad_point.json"
+"$run" --config "$tmp/pad_point.json" --trace "$tmp/fixture.wcts" \
+       --run-id fixed --tier smoke --header > "$tmp/pad_run.csv"
+
+"$py" - "$tmp/pad_sweep.csv" "$tmp/pad_run.csv" <<'PADPY'
+import csv, sys
+sweep = list(csv.DictReader(open(sys.argv[1])))
+run = list(csv.DictReader(open(sys.argv[2])))
+assert len(sweep) == len(run) == 1, (len(sweep), len(run))
+pad = float(sweep[0]["padding_fraction"])
+# Not merely nonzero: the exact value, so a meter that observes the wrong thing
+# is caught too. 64 lines touched at 64 elements each and 1872 distinct elements
+# give 0.54296875, which the CSV writes to six places as 0.542969.
+assert abs(pad - 0.542969) < 1e-6, pad
+assert sweep[0]["padding_fraction"] == run[0]["padding_fraction"], \
+    (sweep[0]["padding_fraction"], run[0]["padding_fraction"])
+print(f"padding meter: {pad} in the sweep and in the single run alike")
+PADPY
+
 echo "sweep_cli: OK"

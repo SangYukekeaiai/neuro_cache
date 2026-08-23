@@ -11,6 +11,11 @@ grep -q '^#SBATCH --array=' "$f"
 grep -q 'set -uo pipefail' "$f"
 grep -q 'unit-index "\$SLURM_ARRAY_TASK_ID"' "$f"
 grep -q 'run_sweep.py' "$f"
+# The campaign plan's global constraint: python runs through conda, never bare.
+grep -q 'conda run -n' "$f"
+if grep -qE '^[[:space:]]*(python|python3) ' "$f"; then
+    echo "the Slurm script must not call python directly; use conda run"; exit 1
+fi
 # One pipeline pair per array task: never a worker pool inside one pipeline.
 grep -q -- '--workers 1' "$f"
 # and it must NOT read or write an on-disk trace corpus
