@@ -1,0 +1,108 @@
+{
+ "stage": "2_weight_trace",
+ "arch": "loas",
+ "combo_tag": "noc2MiB_node32kb",
+ "schedules": {
+  "vgg16_T4_n5/layer_09_features_30": {
+   "path": "inputs/schedules/loas/vgg16_T4_n5/layer_09_features_30.json",
+   "from": "profiling/0823_stagewise_verify/stage1_mip_solver/outputs/schedules/pe16/loas/vgg16_T4_all/layer_09_features_30.json",
+   "trace_dir_rewritten_from": "vgg16_T4_all",
+   "dram_num_steps": 16,
+   "mode": "gb_oooo",
+   "noc_spatial": "COUTx16",
+   "noc_temporal": "WOx4 -> HOx2",
+   "dram_temporal": "COUTx8 -> HOx2",
+   "sha256_16": "a8f603d139f7b872"
+  },
+  "resnet19_T4_n5/layer_16_layer3_0_conv2": {
+   "path": "inputs/schedules/loas/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+   "from": "profiling/0823_stagewise_verify/stage1_mip_solver/outputs/schedules/pe16/loas/resnet19_T4_all/layer_16_layer3_0_conv2.json",
+   "trace_dir_rewritten_from": "resnet19_T4_all",
+   "dram_num_steps": 32,
+   "mode": "gb_oooo",
+   "noc_spatial": "COUTx16",
+   "noc_temporal": "HOx2",
+   "dram_temporal": "COUTx4 -> WOx2 -> HOx2 -> WOx2",
+   "sha256_16": "75f3cb30d21a6a50"
+  }
+ },
+ "input_traces": {
+  "vgg16_T4_n5/layer_09_features_30": {
+   "npy": "inputs/input_trace/vgg16_T4_n5/layer_09_features_30.npy",
+   "from": "input_trace/loas/vgg16_T4_n5/layer_09_features_30.npy",
+   "shape_T_B_Cin_Hin_Win": [
+    4,
+    5,
+    512,
+    4,
+    4
+   ],
+   "dtype": "uint8",
+   "bytes": 163840,
+   "sha256_16": "48843ded7ac57a71"
+  },
+  "resnet19_T4_n5/layer_16_layer3_0_conv2": {
+   "npy": "inputs/input_trace/resnet19_T4_n5/layer_16_layer3_0_conv2.npy",
+   "from": "input_trace/loas/resnet19_T4_n5/layer_16_layer3_0_conv2.npy",
+   "shape_T_B_Cin_Hin_Win": [
+    4,
+    5,
+    512,
+    4,
+    4
+   ],
+   "dtype": "uint8",
+   "bytes": 163840,
+   "sha256_16": "69fbf17dd2976f12"
+  }
+ },
+ "samples": {
+  "vgg16_T4_n5": {
+   "array_indices": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "cifar10_indices": [
+    2697,
+    3078,
+    5110,
+    6367,
+    8502
+   ],
+   "selected_by": "numpy.random.default_rng(seed).choice(n_samples, n, replace=False), sorted",
+   "seed": 0
+  },
+  "resnet19_T4_n5": {
+   "array_indices": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "cifar10_indices": [
+    2697,
+    3078,
+    5110,
+    6367,
+    8502
+   ],
+   "selected_by": "numpy.random.default_rng(seed).choice(n_samples, n, replace=False), sorted",
+   "seed": 0
+  }
+ },
+ "bridge": {
+  "binary": "src/archmodels/loas/loasgen",
+  "built": "2026-08-23 15:48",
+  "sha256_16": "532d1c9a540b9eee"
+ },
+ "generator": {
+  "script": "scripts/generate_weight_traces.py",
+  "sample_start": 0,
+  "sample_count": 5,
+  "workers": 1
+ }
+}

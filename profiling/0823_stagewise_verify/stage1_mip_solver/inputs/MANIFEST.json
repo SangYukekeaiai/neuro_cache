@@ -1,0 +1,175 @@
+{
+ "stage": "1_mip_solver",
+ "solver": "gurobipy, via mip_solver.solve",
+ "traffic_modes_enumerated": [
+  "base",
+  "psum_dram_otok",
+  "psum_gb_otok",
+  "vmem_dram_xxxt",
+  "vmem_gb_xxxt",
+  "dram_oooo",
+  "dram_ooot",
+  "dram_oook",
+  "both_dram_ootk",
+  "gb_oooo",
+  "gb_ooot",
+  "gb_oook",
+  "gb_ootk"
+ ],
+ "base_arch": {
+  "path": "configs/arch/multinode_sweep/loas_inst16_node32kb_noc4096kb.yaml",
+  "sha256_16": "fd50ffed84eba0bc"
+ },
+ "dataflow": {
+  "path": "configs/dataflow/loas.yaml",
+  "sha256_16": "a6a1f6b572d6d003"
+ },
+ "shape_source": {
+  "trace_root": "/work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas",
+  "files": [
+   "/work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas/resnet19_T4_all/meta.json",
+   "/work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas/vgg16_T4_all/meta.json"
+  ],
+  "note": "meta.json supplies CIN/HO/WO/T only; COUT is the next layer's CIN. No spike data is read in this stage."
+ },
+ "arch_variants_num_pes": {
+  "4": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc2MiB_pe4.yaml",
+   "num_pes": 4,
+   "sha256_16": "1e6129792ce3e26e"
+  },
+  "16": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc2MiB_pe16.yaml",
+   "num_pes": 16,
+   "sha256_16": "a41d07d0defa7787"
+  },
+  "64": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc2MiB_pe64.yaml",
+   "num_pes": 64,
+   "sha256_16": "fe42fc7955e33902"
+  },
+  "256": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc2MiB_pe256.yaml",
+   "num_pes": 256,
+   "sha256_16": "015badc0625300fa"
+  }
+ },
+ "arch_variants_noc_size": {
+  "4MiB": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc4MiB_pe16.yaml",
+   "noc_total_bytes": 4194304,
+   "entries": {
+    "weight": 3932160,
+    "psum": 131072,
+    "vmem": 131072
+   },
+   "sha256_16": "fd50ffed84eba0bc"
+  },
+  "2MiB": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc2MiB_pe16.yaml",
+   "noc_total_bytes": 2097152,
+   "entries": {
+    "weight": 1966080,
+    "psum": 65536,
+    "vmem": 65536
+   },
+   "sha256_16": "a41d07d0defa7787"
+  },
+  "1MiB": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc1MiB_pe16.yaml",
+   "noc_total_bytes": 1048576,
+   "entries": {
+    "weight": 983040,
+    "psum": 32768,
+    "vmem": 32768
+   },
+   "sha256_16": "341341b5da51e492"
+  },
+  "512KiB": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc512KiB_pe16.yaml",
+   "noc_total_bytes": 524288,
+   "entries": {
+    "weight": 491520,
+    "psum": 16384,
+    "vmem": 16384
+   },
+   "sha256_16": "d3709ee7b3a8bc6e"
+  },
+  "256KiB": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc256KiB_pe16.yaml",
+   "noc_total_bytes": 262144,
+   "entries": {
+    "weight": 245760,
+    "psum": 8192,
+    "vmem": 8192
+   },
+   "sha256_16": "bb14ae7efc20dcc2"
+  },
+  "128KiB": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc128KiB_pe16.yaml",
+   "noc_total_bytes": 131072,
+   "entries": {
+    "weight": 122880,
+    "psum": 4096,
+    "vmem": 4096
+   },
+   "sha256_16": "e79d6b913f9d3e5d"
+  },
+  "64KiB": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc64KiB_pe16.yaml",
+   "noc_total_bytes": 65536,
+   "entries": {
+    "weight": 61440,
+    "psum": 2048,
+    "vmem": 2048
+   },
+   "sha256_16": "e91aac0161e975b0"
+  },
+  "32KiB": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc32KiB_pe16.yaml",
+   "noc_total_bytes": 32768,
+   "entries": {
+    "weight": 30720,
+    "psum": 1024,
+    "vmem": 1024
+   },
+   "sha256_16": "2672d0726fabb32e"
+  },
+  "16KiB": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc16KiB_pe16.yaml",
+   "noc_total_bytes": 16384,
+   "entries": {
+    "weight": 15360,
+    "psum": 512,
+    "vmem": 512
+   },
+   "sha256_16": "1668641e401ad408"
+  },
+  "8KiB": {
+   "path": "inputs/arch/loas_inst16_node32kb_noc8KiB_pe16.yaml",
+   "noc_total_bytes": 8192,
+   "entries": {
+    "weight": 7680,
+    "psum": 256,
+    "vmem": 256
+   },
+   "sha256_16": "4e5b044e13b3baee"
+  }
+ },
+ "workloads": {
+  "vgg16_T4_all/layer_09_features_30": {
+   "path": "inputs/workloads/vgg16_T4_all__layer_09_features_30.yaml",
+   "next_cin_used_as_cout": 512,
+   "sha256_16": "4e3274e842a04f89"
+  },
+  "resnet19_T4_all/layer_16_layer3_0_conv2": {
+   "path": "inputs/workloads/resnet19_T4_all__layer_16_layer3_0_conv2.yaml",
+   "next_cin_used_as_cout": 256,
+   "sha256_16": "ceaa871145616db0"
+  }
+ },
+ "canonical": {
+  "num_pes": 16,
+  "noc_total_bytes": 2097152
+ }
+}

@@ -1,0 +1,125 @@
+{
+ "arch": "loas",
+ "trace_dir": "vgg16_T4_all",
+ "layer_name": "layer_09_features_30",
+ "workload": {
+  "problem": {
+   "KH": 3,
+   "KW": 3,
+   "CIN": 512,
+   "COUT": 512,
+   "HO": 4,
+   "WO": 4,
+   "T": 4,
+   "shape": "snn-layer"
+  }
+ },
+ "result": {
+  "status": "OPTIMAL",
+  "has_solution": true,
+  "objective": 160.29733387500622,
+  "strategy": {
+   "NodeLevel": {
+    "temporal_tile": {
+     "note": "unordered factors assigned to NodeLevel; no loop permutation is modeled here",
+     "factors": [
+      {
+       "dim": "KH",
+       "size": 3
+      },
+      {
+       "dim": "KW",
+       "size": 3
+      },
+      {
+       "dim": "CIN",
+       "size": 512
+      },
+      {
+       "dim": "T",
+       "size": 4
+      }
+     ]
+    },
+    "spatial_split": {
+     "note": "unordered factors assigned to NodeLevel; no loop permutation is modeled here",
+     "factors": [
+      {
+       "dim": "COUT",
+       "size": 4
+      }
+     ]
+    }
+   },
+   "NoCLevel": {
+    "temporal_permutation": {
+     "order": "WOx4",
+     "loops": [
+      {
+       "dim": "WO",
+       "size": 4
+      }
+     ]
+    },
+    "spatial_splitting": {
+     "order": "HOx2 -> COUTx8",
+     "loops": [
+      {
+       "dim": "HO",
+       "size": 2
+      },
+      {
+       "dim": "COUT",
+       "size": 8
+      }
+     ]
+    }
+   },
+   "DRAM": {
+    "temporal_permutation": {
+     "order": "COUTx16 -> HOx2",
+     "loops": [
+      {
+       "dim": "COUT",
+       "size": 16
+      },
+      {
+       "dim": "HO",
+       "size": 2
+      }
+     ]
+    }
+   }
+  },
+  "metrics": {
+   "util": {
+    "weight": 147456.0,
+    "psum": 2048.0,
+    "vmem": 1024.0
+   },
+   "spatial_cost": {
+    "weight": 8.0,
+    "psum": 16.0,
+    "vmem": 16.0
+   },
+   "temporal_traffic": {
+    "weight": 16.0,
+    "psum": 0.0,
+    "vmem": 0.0
+   },
+   "delay": 2359296,
+   "capacity": {
+    "weight": 245760,
+    "psum": 8192,
+    "vmem": 8192
+   }
+  },
+  "configs": {
+   "arch": "/u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage1_mip_solver/inputs/arch/loas_inst16_node32kb_noc256KiB_pe16.yaml",
+   "dataflow": "/u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage1_mip_solver/inputs/dataflow/loas.yaml",
+   "mapspace": null
+  }
+ },
+ "dram_num_steps": 32,
+ "mode": "gb_oooo"
+}

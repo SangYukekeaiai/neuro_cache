@@ -127,7 +127,7 @@ def solve_and_cache_schedule(
     out_path = cache_dir / arch_name / trace_dir_name / f"{layer_name}.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as fh:
-        json.dump(asdict(artifact), fh)
+        json.dump(asdict(artifact), fh, indent=1)
     return artifact
 
 

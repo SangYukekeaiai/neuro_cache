@@ -1,0 +1,347 @@
+{
+ "vgg16_T4_all": [
+  {
+   "idx": 1,
+   "layer": "layer_01_features_3",
+   "cin": 64,
+   "cout": 64,
+   "ho": 32,
+   "density": 0.17473526000976564,
+   "always_fire": 0.14071113586425782,
+   "never_fire": 0.7833975982666016,
+   "verdict": "OK"
+  },
+  {
+   "idx": 2,
+   "layer": "layer_02_features_7",
+   "cin": 64,
+   "cout": 128,
+   "ho": 16,
+   "density": 0.14925186157226564,
+   "always_fire": 0.0923687744140625,
+   "never_fire": 0.7841970825195312,
+   "verdict": "OK"
+  },
+  {
+   "idx": 3,
+   "layer": "layer_03_features_10",
+   "cin": 128,
+   "cout": 128,
+   "ho": 16,
+   "density": 0.22617561340332032,
+   "always_fire": 0.11009475708007813,
+   "never_fire": 0.6402214050292969,
+   "verdict": "OK"
+  },
+  {
+   "idx": 4,
+   "layer": "layer_04_features_14",
+   "cin": 128,
+   "cout": 256,
+   "ho": 8,
+   "density": 0.14850570678710937,
+   "always_fire": 0.0607122802734375,
+   "never_fire": 0.74309326171875,
+   "verdict": "OK"
+  },
+  {
+   "idx": 5,
+   "layer": "layer_05_features_17",
+   "cin": 256,
+   "cout": 256,
+   "ho": 8,
+   "density": 0.17178688049316407,
+   "always_fire": 0.05818023681640625,
+   "never_fire": 0.6841302490234376,
+   "verdict": "OK"
+  },
+  {
+   "idx": 6,
+   "layer": "layer_06_features_20",
+   "cin": 256,
+   "cout": 256,
+   "ho": 8,
+   "density": 0.17414337158203125,
+   "always_fire": 0.05084747314453125,
+   "never_fire": 0.6643145751953125,
+   "verdict": "OK"
+  },
+  {
+   "idx": 7,
+   "layer": "layer_07_features_24",
+   "cin": 256,
+   "cout": 512,
+   "ho": 4,
+   "density": 0.15321563720703124,
+   "always_fire": 0.041824951171875,
+   "never_fire": 0.6935791015625,
+   "verdict": "OK"
+  },
+  {
+   "idx": 8,
+   "layer": "layer_08_features_27",
+   "cin": 512,
+   "cout": 512,
+   "ho": 4,
+   "density": 0.1994732666015625,
+   "always_fire": 0.0780169677734375,
+   "never_fire": 0.631580810546875,
+   "verdict": "OK"
+  },
+  {
+   "idx": 9,
+   "layer": "layer_09_features_30",
+   "cin": 512,
+   "cout": 512,
+   "ho": 4,
+   "density": 0.5780970764160156,
+   "always_fire": 0.4151336669921875,
+   "never_fire": 0.2491845703125,
+   "verdict": "HIGH"
+  },
+  {
+   "idx": 10,
+   "layer": "layer_10_features_34",
+   "cin": 512,
+   "cout": 512,
+   "ho": 2,
+   "density": 0.2705108642578125,
+   "always_fire": 0.11447021484375,
+   "never_fire": 0.54973388671875,
+   "verdict": "ELEVATED"
+  },
+  {
+   "idx": 11,
+   "layer": "layer_11_features_37",
+   "cin": 512,
+   "cout": 512,
+   "ho": 2,
+   "density": 0.4269256591796875,
+   "always_fire": 0.2392333984375,
+   "never_fire": 0.37036865234375,
+   "verdict": "HIGH"
+  },
+  {
+   "idx": 12,
+   "layer": "layer_12_features_40",
+   "cin": 512,
+   "cout": 512,
+   "ho": 2,
+   "density": 0.5279913330078125,
+   "always_fire": 0.4226513671875,
+   "never_fire": 0.35120849609375,
+   "verdict": "HIGH"
+  }
+ ],
+ "resnet19_T4_all": [
+  {
+   "idx": 1,
+   "layer": "layer_01_layer1_0_conv1",
+   "cin": 64,
+   "cout": 128,
+   "ho": 32,
+   "density": 0.1431404495239258,
+   "always_fire": 0.11533271789550781,
+   "never_fire": 0.8221344757080078,
+   "verdict": "OK"
+  },
+  {
+   "idx": 2,
+   "layer": "layer_02_layer1_0_conv2",
+   "cin": 128,
+   "cout": 64,
+   "ho": 16,
+   "density": 0.1295783233642578,
+   "always_fire": 0.07527908325195312,
+   "never_fire": 0.8050686645507813,
+   "verdict": "OK"
+  },
+  {
+   "idx": 3,
+   "layer": "layer_03_layer1_0_shortcut_0",
+   "cin": 64,
+   "cout": 128,
+   "ho": 32,
+   "density": 0.1431404495239258,
+   "always_fire": 0.11533271789550781,
+   "never_fire": 0.8221344757080078,
+   "verdict": "OK"
+  },
+  {
+   "idx": 4,
+   "layer": "layer_04_layer1_1_conv1",
+   "cin": 128,
+   "cout": 128,
+   "ho": 16,
+   "density": 0.18385639190673828,
+   "always_fire": 0.09186233520507812,
+   "never_fire": 0.709393310546875,
+   "verdict": "OK"
+  },
+  {
+   "idx": 5,
+   "layer": "layer_05_layer1_1_conv2",
+   "cin": 128,
+   "cout": 128,
+   "ho": 16,
+   "density": 0.11717815399169922,
+   "always_fire": 0.0448876953125,
+   "never_fire": 0.7918766784667969,
+   "verdict": "OK"
+  },
+  {
+   "idx": 6,
+   "layer": "layer_06_layer1_2_conv1",
+   "cin": 128,
+   "cout": 128,
+   "ho": 16,
+   "density": 0.20538570404052733,
+   "always_fire": 0.08764129638671875,
+   "never_fire": 0.6516543579101562,
+   "verdict": "OK"
+  },
+  {
+   "idx": 7,
+   "layer": "layer_07_layer1_2_conv2",
+   "cin": 128,
+   "cout": 128,
+   "ho": 16,
+   "density": 0.19031696319580077,
+   "always_fire": 0.08959564208984375,
+   "never_fire": 0.6850282287597657,
+   "verdict": "OK"
+  },
+  {
+   "idx": 8,
+   "layer": "layer_08_layer2_0_conv1",
+   "cin": 128,
+   "cout": 256,
+   "ho": 16,
+   "density": 0.3039443588256836,
+   "always_fire": 0.1612591552734375,
+   "never_fire": 0.5335110473632813,
+   "verdict": "ELEVATED"
+  },
+  {
+   "idx": 9,
+   "layer": "layer_09_layer2_0_conv2",
+   "cin": 256,
+   "cout": 128,
+   "ho": 8,
+   "density": 0.18403648376464843,
+   "always_fire": 0.08279937744140625,
+   "never_fire": 0.6851104736328125,
+   "verdict": "OK"
+  },
+  {
+   "idx": 10,
+   "layer": "layer_10_layer2_0_shortcut_0",
+   "cin": 128,
+   "cout": 256,
+   "ho": 16,
+   "density": 0.3039443588256836,
+   "always_fire": 0.1612591552734375,
+   "never_fire": 0.5335110473632813,
+   "verdict": "ELEVATED"
+  },
+  {
+   "idx": 11,
+   "layer": "layer_11_layer2_1_conv1",
+   "cin": 256,
+   "cout": 256,
+   "ho": 8,
+   "density": 0.4971449279785156,
+   "always_fire": 0.358314208984375,
+   "never_fire": 0.36011016845703125,
+   "verdict": "HIGH"
+  },
+  {
+   "idx": 12,
+   "layer": "layer_12_layer2_1_conv2",
+   "cin": 256,
+   "cout": 256,
+   "ho": 8,
+   "density": 0.7130576324462891,
+   "always_fire": 0.590255126953125,
+   "never_fire": 0.1770892333984375,
+   "verdict": "SATURATED"
+  },
+  {
+   "idx": 13,
+   "layer": "layer_13_layer2_2_conv1",
+   "cin": 256,
+   "cout": 256,
+   "ho": 8,
+   "density": 0.8394118499755859,
+   "always_fire": 0.7638491821289063,
+   "never_fire": 0.0958807373046875,
+   "verdict": "SATURATED"
+  },
+  {
+   "idx": 14,
+   "layer": "layer_14_layer2_2_conv2",
+   "cin": 256,
+   "cout": 256,
+   "ho": 8,
+   "density": 0.9165678405761719,
+   "always_fire": 0.8580975341796875,
+   "never_fire": 0.03809539794921875,
+   "verdict": "SATURATED"
+  },
+  {
+   "idx": 15,
+   "layer": "layer_15_layer3_0_conv1",
+   "cin": 256,
+   "cout": 512,
+   "ho": 8,
+   "density": 0.8231474304199219,
+   "always_fire": 0.755811767578125,
+   "never_fire": 0.11726104736328125,
+   "verdict": "SATURATED"
+  },
+  {
+   "idx": 16,
+   "layer": "layer_16_layer3_0_conv2",
+   "cin": 512,
+   "cout": 256,
+   "ho": 4,
+   "density": 0.4239323425292969,
+   "always_fire": 0.2836181640625,
+   "never_fire": 0.42507080078125,
+   "verdict": "HIGH"
+  },
+  {
+   "idx": 17,
+   "layer": "layer_17_layer3_0_shortcut_0",
+   "cin": 256,
+   "cout": 512,
+   "ho": 8,
+   "density": 0.8231474304199219,
+   "always_fire": 0.755811767578125,
+   "never_fire": 0.11726104736328125,
+   "verdict": "SATURATED"
+  },
+  {
+   "idx": 18,
+   "layer": "layer_18_layer3_1_conv1",
+   "cin": 512,
+   "cout": 512,
+   "ho": 4,
+   "density": 0.34883453369140627,
+   "always_fire": 0.22216796875,
+   "never_fire": 0.5132940673828125,
+   "verdict": "ELEVATED"
+  },
+  {
+   "idx": 19,
+   "layer": "layer_19_layer3_1_conv2",
+   "cin": 512,
+   "cout": 512,
+   "ho": 4,
+   "density": 0.6614851379394531,
+   "always_fire": 0.5185748291015625,
+   "never_fire": 0.205045166015625,
+   "verdict": "SATURATED"
+  }
+ ]
+}

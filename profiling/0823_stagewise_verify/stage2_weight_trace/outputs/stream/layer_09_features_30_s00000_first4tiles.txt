@@ -1,0 +1,59 @@
+file           profiling/0823_stagewise_verify/stage2_weight_trace/outputs/stream/layer_09_features_30_s00000_first4tiles.wcts
+total bytes    4,424,848
+
+HEADER
+  magic/version    WCTRACE1 v1   header_bytes=228
+  identity         arch=loas workload=vgg16_T4_n5 layer=layer_09_features_30 sample=0
+  n_tiles          4
+  n_cores          16
+  weight_bytes     1
+  burst_dim        3 (COUT)   burst_stride=1   burst_span=4
+  addr fields      ['kh', 'kw', 'cin', 'run_start', 'run_end']
+  spatial_factors  {KH:1, KW:1, CIN:1, COUT:16, HO:1, WO:1, T:1}   product=16
+  dims             {KH:3, KW:3, CIN:512, COUT:512, HO:4, WO:4, T:4}
+
+TILE FRAMES (first 2 of 4; first 2 cores each; first 6 bursts each)
+  tile 0: cores=16 mac_cycles=1602 payload_bytes=717824
+    core 0: bursts=1602
+      tick=0     kh=1 kw=1 cin=0    cout=[0,4)  span=4
+      tick=1     kh=1 kw=1 cin=1    cout=[0,4)  span=4
+      tick=2     kh=1 kw=1 cin=2    cout=[0,4)  span=4
+      tick=3     kh=1 kw=1 cin=3    cout=[0,4)  span=4
+      tick=4     kh=1 kw=1 cin=4    cout=[0,4)  span=4
+      tick=5     kh=1 kw=1 cin=5    cout=[0,4)  span=4
+      ... 1596 more bursts
+    core 1: bursts=1602
+      tick=0     kh=1 kw=1 cin=0    cout=[32,36)  span=4
+      tick=1     kh=1 kw=1 cin=1    cout=[32,36)  span=4
+      tick=2     kh=1 kw=1 cin=2    cout=[32,36)  span=4
+      tick=3     kh=1 kw=1 cin=3    cout=[32,36)  span=4
+      tick=4     kh=1 kw=1 cin=4    cout=[32,36)  span=4
+      tick=5     kh=1 kw=1 cin=5    cout=[32,36)  span=4
+      ... 1596 more bursts
+    ... 14 more cores
+
+  tile 1: cores=16 mac_cycles=2370 payload_bytes=1061888
+    core 0: bursts=2370
+      tick=0     kh=0 kw=1 cin=1    cout=[0,4)  span=4
+      tick=1     kh=0 kw=1 cin=2    cout=[0,4)  span=4
+      tick=2     kh=0 kw=1 cin=3    cout=[0,4)  span=4
+      tick=3     kh=0 kw=1 cin=4    cout=[0,4)  span=4
+      tick=4     kh=0 kw=1 cin=5    cout=[0,4)  span=4
+      tick=5     kh=0 kw=1 cin=6    cout=[0,4)  span=4
+      ... 2364 more bursts
+    core 1: bursts=2370
+      tick=0     kh=0 kw=1 cin=1    cout=[32,36)  span=4
+      tick=1     kh=0 kw=1 cin=2    cout=[32,36)  span=4
+      tick=2     kh=0 kw=1 cin=3    cout=[32,36)  span=4
+      tick=3     kh=0 kw=1 cin=4    cout=[32,36)  span=4
+      tick=4     kh=0 kw=1 cin=5    cout=[32,36)  span=4
+      tick=5     kh=0 kw=1 cin=6    cout=[32,36)  span=4
+      ... 2364 more bursts
+    ... 14 more cores
+
+TRAILER
+  end_magic        -1 (expected -1)
+  total_bursts     158,000
+  recount walking  158,000   MATCH
+  bytes consumed   4,424,848 of 4,424,848   MATCH
+
