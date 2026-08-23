@@ -1,4 +1,4 @@
-file           profiling/0823_stagewise_verify/stage2_weight_trace/outputs/stream/layer_16_layer3_0_conv2_s00000_first4tiles.wcts
+file           layer_16_layer3_0_conv2_s00000_first4tiles.wcts
 total bytes    3,413,270
 
 HEADER
@@ -56,4 +56,3 @@ TRAILER
   total_bursts     121,872
   recount walking  121,872   MATCH
   bytes consumed   3,413,270 of 3,413,270   MATCH
-

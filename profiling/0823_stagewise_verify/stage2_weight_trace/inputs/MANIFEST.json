@@ -3,6 +3,28 @@
  "arch": "loas",
  "combo_tag": "noc2MiB_node32kb",
  "schedules": {
+  "vgg16_T4_n5/layer_08_features_27": {
+   "path": "inputs/schedules/loas/vgg16_T4_n5/layer_08_features_27.json",
+   "from": "profiling/0823_stagewise_verify/stage1_mip_solver/outputs/schedules/pe16/loas/vgg16_T4_all/layer_08_features_27.json",
+   "trace_dir_rewritten_from": "vgg16_T4_all",
+   "dram_num_steps": 16,
+   "mode": "gb_oooo",
+   "noc_spatial": "COUTx16",
+   "noc_temporal": "WOx4 -> HOx2",
+   "dram_temporal": "COUTx8 -> HOx2",
+   "sha256_16": "1062c3603f95e367"
+  },
+  "resnet19_T4_n5/layer_09_layer2_0_conv2": {
+   "path": "inputs/schedules/loas/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+   "from": "profiling/0823_stagewise_verify/stage1_mip_solver/outputs/schedules/pe16/loas/resnet19_T4_all/layer_09_layer2_0_conv2.json",
+   "trace_dir_rewritten_from": "resnet19_T4_all",
+   "dram_num_steps": 2,
+   "mode": "gb_oooo",
+   "noc_spatial": "COUTx16",
+   "noc_temporal": "WOx2 -> HOx4 -> WOx2 -> HOx2 -> WOx2",
+   "dram_temporal": "COUTx2",
+   "sha256_16": "f714c1d536af4f0f"
+  },
   "vgg16_T4_n5/layer_09_features_30": {
    "path": "inputs/schedules/loas/vgg16_T4_n5/layer_09_features_30.json",
    "from": "profiling/0823_stagewise_verify/stage1_mip_solver/outputs/schedules/pe16/loas/vgg16_T4_all/layer_09_features_30.json",
@@ -27,6 +49,34 @@
   }
  },
  "input_traces": {
+  "vgg16_T4_n5/layer_08_features_27": {
+   "npy": "inputs/input_trace/vgg16_T4_n5/layer_08_features_27.npy",
+   "from": "input_trace/loas/vgg16_T4_n5/layer_08_features_27.npy",
+   "shape_T_B_Cin_Hin_Win": [
+    4,
+    5,
+    512,
+    4,
+    4
+   ],
+   "dtype": "uint8",
+   "bytes": 163840,
+   "sha256_16": "2da56182e419e516"
+  },
+  "resnet19_T4_n5/layer_09_layer2_0_conv2": {
+   "npy": "inputs/input_trace/resnet19_T4_n5/layer_09_layer2_0_conv2.npy",
+   "from": "input_trace/loas/resnet19_T4_n5/layer_09_layer2_0_conv2.npy",
+   "shape_T_B_Cin_Hin_Win": [
+    4,
+    5,
+    256,
+    8,
+    8
+   ],
+   "dtype": "uint8",
+   "bytes": 327680,
+   "sha256_16": "5c201f62d3861cee"
+  },
   "vgg16_T4_n5/layer_09_features_30": {
    "npy": "inputs/input_trace/vgg16_T4_n5/layer_09_features_30.npy",
    "from": "input_trace/loas/vgg16_T4_n5/layer_09_features_30.npy",

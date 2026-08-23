@@ -1,5 +1,41 @@
 [
  {
+  "layer": "vgg16_T4_all/layer_08_features_27",
+  "num_pes": 4,
+  "vs_num_pes": 16,
+  "verdict": "IDENTICAL"
+ },
+ {
+  "layer": "vgg16_T4_all/layer_08_features_27",
+  "num_pes": 64,
+  "vs_num_pes": 16,
+  "verdict": "IDENTICAL"
+ },
+ {
+  "layer": "vgg16_T4_all/layer_08_features_27",
+  "num_pes": 256,
+  "vs_num_pes": 16,
+  "verdict": "IDENTICAL"
+ },
+ {
+  "layer": "resnet19_T4_all/layer_09_layer2_0_conv2",
+  "num_pes": 4,
+  "vs_num_pes": 16,
+  "verdict": "IDENTICAL"
+ },
+ {
+  "layer": "resnet19_T4_all/layer_09_layer2_0_conv2",
+  "num_pes": 64,
+  "vs_num_pes": 16,
+  "verdict": "IDENTICAL"
+ },
+ {
+  "layer": "resnet19_T4_all/layer_09_layer2_0_conv2",
+  "num_pes": 256,
+  "vs_num_pes": 16,
+  "verdict": "IDENTICAL"
+ },
+ {
   "layer": "vgg16_T4_all/layer_09_features_30",
   "num_pes": 4,
   "vs_num_pes": 16,

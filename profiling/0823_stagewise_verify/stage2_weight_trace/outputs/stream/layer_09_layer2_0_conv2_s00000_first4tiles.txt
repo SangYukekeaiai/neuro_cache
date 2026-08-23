@@ -1,0 +1,58 @@
+file           layer_09_layer2_0_conv2_s00000_first4tiles.wcts
+total bytes    742,294
+
+HEADER
+  magic/version    WCTRACE1 v1   header_bytes=234
+  identity         arch=loas workload=resnet19_T4_n5 layer=layer_09_layer2_0_conv2 sample=0
+  n_tiles          4
+  n_cores          16
+  weight_bytes     1
+  burst_dim        3 (COUT)   burst_stride=1   burst_span=4
+  addr fields      ['kh', 'kw', 'cin', 'run_start', 'run_end']
+  spatial_factors  {KH:1, KW:1, CIN:1, COUT:16, HO:1, WO:1, T:1}   product=16
+  dims             {KH:3, KW:3, CIN:256, COUT:128, HO:8, WO:8, T:4}
+
+TILE FRAMES (first 2 of 4; first 2 cores each; first 6 bursts each)
+  tile 0: cores=16 mac_cycles=243 payload_bytes=108992
+    core 0: bursts=243
+      tick=0     kh=1 kw=1 cin=2    cout=[0,4)  span=4
+      tick=1     kh=1 kw=1 cin=5    cout=[0,4)  span=4
+      tick=2     kh=1 kw=1 cin=7    cout=[0,4)  span=4
+      tick=3     kh=1 kw=1 cin=8    cout=[0,4)  span=4
+      tick=4     kh=1 kw=1 cin=29   cout=[0,4)  span=4
+      tick=5     kh=1 kw=1 cin=30   cout=[0,4)  span=4
+      ... 237 more bursts
+    core 1: bursts=243
+      tick=0     kh=1 kw=1 cin=2    cout=[8,12)  span=4
+      tick=1     kh=1 kw=1 cin=5    cout=[8,12)  span=4
+      tick=2     kh=1 kw=1 cin=7    cout=[8,12)  span=4
+      tick=3     kh=1 kw=1 cin=8    cout=[8,12)  span=4
+      tick=4     kh=1 kw=1 cin=29   cout=[8,12)  span=4
+      tick=5     kh=1 kw=1 cin=30   cout=[8,12)  span=4
+      ... 237 more bursts
+    ... 14 more cores
+
+  tile 1: cores=16 mac_cycles=380 payload_bytes=170368
+    core 0: bursts=380
+      tick=0     kh=1 kw=0 cin=2    cout=[0,4)  span=4
+      tick=1     kh=1 kw=0 cin=5    cout=[0,4)  span=4
+      tick=2     kh=1 kw=0 cin=7    cout=[0,4)  span=4
+      tick=3     kh=1 kw=0 cin=8    cout=[0,4)  span=4
+      tick=4     kh=1 kw=0 cin=29   cout=[0,4)  span=4
+      tick=5     kh=1 kw=0 cin=30   cout=[0,4)  span=4
+      ... 374 more bursts
+    core 1: bursts=380
+      tick=0     kh=1 kw=0 cin=2    cout=[8,12)  span=4
+      tick=1     kh=1 kw=0 cin=5    cout=[8,12)  span=4
+      tick=2     kh=1 kw=0 cin=7    cout=[8,12)  span=4
+      tick=3     kh=1 kw=0 cin=8    cout=[8,12)  span=4
+      tick=4     kh=1 kw=0 cin=29   cout=[8,12)  span=4
+      tick=5     kh=1 kw=0 cin=30   cout=[8,12)  span=4
+      ... 374 more bursts
+    ... 14 more cores
+
+TRAILER
+  end_magic        -1 (expected -1)
+  total_bursts     26,480
+  recount walking  26,480   MATCH
+  bytes consumed   742,294 of 742,294   MATCH

@@ -1,11 +1,349 @@
 [
  {
   "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "base",
+  "status": "OPTIMAL",
+  "feasible": true,
+  "solve_seconds": 0.2,
+  "objective": 188.9593338750062,
+  "delay": 2359296,
+  "mode_score": 73954406.4,
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     512
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "HOx2 -> WOx2",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx8 -> WOx2 -> HOx2"
+  }
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "psum_dram_otok",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.13
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "psum_gb_otok",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.13
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "vmem_dram_xxxt",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.1
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "vmem_gb_xxxt",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.11
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "dram_oooo",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.1
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "dram_ooot",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.1
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "dram_oook",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.12
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "both_dram_ootk",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.12
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "gb_oooo",
+  "status": "OPTIMAL",
+  "feasible": true,
+  "solve_seconds": 0.17,
+  "objective": 160.2873338750062,
+  "delay": 2359296,
+  "mode_score": 61371801.6,
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     512
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "WOx4 -> HOx2",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx8 -> HOx2"
+  },
+  "winner": true
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "gb_ooot",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.1
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "gb_oook",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.12
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "mode": "gb_ootk",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.13
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "base",
+  "status": "OPTIMAL",
+  "feasible": true,
+  "solve_seconds": 0.22,
+  "objective": 179.43586206940674,
+  "delay": 1179648,
+  "mode_score": 22821427.2,
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     256
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "HOx2",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx2 -> WOx8 -> HOx4"
+  }
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "psum_dram_otok",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.12
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "psum_gb_otok",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.12
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "vmem_dram_xxxt",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.1
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "vmem_gb_xxxt",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.1
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "dram_oooo",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.09
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "dram_ooot",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.09
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "dram_oook",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.11
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "both_dram_ootk",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.11
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "gb_oooo",
+  "status": "OPTIMAL",
+  "feasible": true,
+  "solve_seconds": 0.14,
+  "objective": 150.76386206940674,
+  "delay": 1179648,
+  "mode_score": 16534732.8,
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     256
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "WOx2 -> HOx4 -> WOx2 -> HOx2 -> WOx2",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx2"
+  },
+  "winner": true
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "gb_ooot",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.1
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "gb_oook",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.11
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "mode": "gb_ootk",
+  "status": "INFEASIBLE",
+  "feasible": false,
+  "solve_seconds": 0.12
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
   "layer": "layer_09_features_30",
   "mode": "base",
   "status": "OPTIMAL",
   "feasible": true,
-  "solve_seconds": 0.21,
+  "solve_seconds": 0.2,
   "objective": 188.9593338750062,
   "delay": 2359296,
   "mode_score": 73954406.4,
@@ -69,7 +407,7 @@
   "mode": "vmem_gb_xxxt",
   "status": "INFEASIBLE",
   "feasible": false,
-  "solve_seconds": 0.1
+  "solve_seconds": 0.11
  },
  {
   "trace_dir": "vgg16_T4_all",
@@ -93,7 +431,7 @@
   "mode": "dram_oook",
   "status": "INFEASIBLE",
   "feasible": false,
-  "solve_seconds": 0.11
+  "solve_seconds": 0.12
  },
  {
   "trace_dir": "vgg16_T4_all",
@@ -101,7 +439,7 @@
   "mode": "both_dram_ootk",
   "status": "INFEASIBLE",
   "feasible": false,
-  "solve_seconds": 0.13
+  "solve_seconds": 0.12
  },
  {
   "trace_dir": "vgg16_T4_all",
@@ -109,7 +447,7 @@
   "mode": "gb_oooo",
   "status": "OPTIMAL",
   "feasible": true,
-  "solve_seconds": 0.16,
+  "solve_seconds": 0.18,
   "objective": 160.2873338750062,
   "delay": 2359296,
   "mode_score": 61371801.6,
@@ -150,7 +488,7 @@
   "mode": "gb_ooot",
   "status": "INFEASIBLE",
   "feasible": false,
-  "solve_seconds": 0.1
+  "solve_seconds": 0.11
  },
  {
   "trace_dir": "vgg16_T4_all",
@@ -174,7 +512,7 @@
   "mode": "base",
   "status": "OPTIMAL",
   "feasible": true,
-  "solve_seconds": 0.18,
+  "solve_seconds": 0.16,
   "objective": 179.02786206940675,
   "delay": 1179648,
   "mode_score": 32273280.0,
@@ -214,7 +552,7 @@
   "mode": "psum_dram_otok",
   "status": "INFEASIBLE",
   "feasible": false,
-  "solve_seconds": 0.11
+  "solve_seconds": 0.12
  },
  {
   "trace_dir": "resnet19_T4_all",
@@ -278,7 +616,7 @@
   "mode": "gb_oooo",
   "status": "OPTIMAL",
   "feasible": true,
-  "solve_seconds": 0.16,
+  "solve_seconds": 0.14,
   "objective": 152.35586206940675,
   "delay": 1179648,
   "mode_score": 30700492.8,
@@ -319,7 +657,7 @@
   "mode": "gb_ooot",
   "status": "INFEASIBLE",
   "feasible": false,
-  "solve_seconds": 0.09
+  "solve_seconds": 0.1
  },
  {
   "trace_dir": "resnet19_T4_all",

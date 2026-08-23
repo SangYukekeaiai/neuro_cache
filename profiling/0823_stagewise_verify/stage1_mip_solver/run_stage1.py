@@ -41,7 +41,15 @@ import tracegen  # noqa: E402
 BASE_ARCH = ROOT / "configs/arch/multinode_sweep/loas_inst16_node32kb_noc4096kb.yaml"
 BASE_DATAFLOW = ROOT / "configs/dataflow/loas.yaml"
 TRACE_ROOT = pathlib.Path("/work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas")
+# Four layers, two density regimes. The 0823 run used only the two dense ones;
+# the 0823 survey (HANDOFF-ANSWER.md) placed them above the published band and
+# added a representative layer per workload. Both regimes stay in the sweep so
+# every whole-file output below remains a superset of the earlier record.
 LAYERS = [
+    # representative: densities 0.1995 and 0.184, inside the published band
+    ("vgg16_T4_all", "layer_08_features_27"),
+    ("resnet19_T4_all", "layer_09_layer2_0_conv2"),
+    # stress case: 0.578, and 0.424 which is LoAS Table II's own R-L19 figure
     ("vgg16_T4_all", "layer_09_features_30"),
     ("resnet19_T4_all", "layer_16_layer3_0_conv2"),
 ]

@@ -3,16 +3,30 @@ Set parameter WLSAccessID
 Set parameter WLSSecret
 Set parameter LicenseID to value 2828339
 Academic license 2828339 - for non-commercial use only - registered to ya___@ucf.edu
+  pe=4    layer_08_features_27        OPTIMAL  obj=160.287334 steps=16 mode=gb_oooo
+  pe=4    layer_09_layer2_0_conv2     OPTIMAL  obj=150.763862 steps=2 mode=gb_oooo
   pe=4    layer_09_features_30        OPTIMAL  obj=160.287334 steps=16 mode=gb_oooo
   pe=4    layer_16_layer3_0_conv2     OPTIMAL  obj=152.355862 steps=32 mode=gb_oooo
+  pe=16   layer_08_features_27        OPTIMAL  obj=160.287334 steps=16 mode=gb_oooo
+  pe=16   layer_09_layer2_0_conv2     OPTIMAL  obj=150.763862 steps=2 mode=gb_oooo
   pe=16   layer_09_features_30        OPTIMAL  obj=160.287334 steps=16 mode=gb_oooo
   pe=16   layer_16_layer3_0_conv2     OPTIMAL  obj=152.355862 steps=32 mode=gb_oooo
+  pe=64   layer_08_features_27        OPTIMAL  obj=160.287334 steps=16 mode=gb_oooo
+  pe=64   layer_09_layer2_0_conv2     OPTIMAL  obj=150.763862 steps=2 mode=gb_oooo
   pe=64   layer_09_features_30        OPTIMAL  obj=160.287334 steps=16 mode=gb_oooo
   pe=64   layer_16_layer3_0_conv2     OPTIMAL  obj=152.355862 steps=32 mode=gb_oooo
+  pe=256  layer_08_features_27        OPTIMAL  obj=160.287334 steps=16 mode=gb_oooo
+  pe=256  layer_09_layer2_0_conv2     OPTIMAL  obj=150.763862 steps=2 mode=gb_oooo
   pe=256  layer_09_features_30        OPTIMAL  obj=160.287334 steps=16 mode=gb_oooo
   pe=256  layer_16_layer3_0_conv2     OPTIMAL  obj=152.355862 steps=32 mode=gb_oooo
 
   invariance vs pe16:
+    pe=4    vgg16_T4_all/layer_08_features_27          IDENTICAL
+    pe=64   vgg16_T4_all/layer_08_features_27          IDENTICAL
+    pe=256  vgg16_T4_all/layer_08_features_27          IDENTICAL
+    pe=4    resnet19_T4_all/layer_09_layer2_0_conv2    IDENTICAL
+    pe=64   resnet19_T4_all/layer_09_layer2_0_conv2    IDENTICAL
+    pe=256  resnet19_T4_all/layer_09_layer2_0_conv2    IDENTICAL
     pe=4    vgg16_T4_all/layer_09_features_30          IDENTICAL
     pe=64   vgg16_T4_all/layer_09_features_30          IDENTICAL
     pe=256  vgg16_T4_all/layer_09_features_30          IDENTICAL
@@ -21,6 +35,36 @@ Academic license 2828339 - for non-commercial use only - registered to ya___@ucf
     pe=256  resnet19_T4_all/layer_16_layer3_0_conv2    IDENTICAL
 
 === B. all TrafficModes ===
+  layer_08_features_27       base             feasible     score=7.39544e+07
+  layer_08_features_27       psum_dram_otok   INFEASIBLE   score=nan
+  layer_08_features_27       psum_gb_otok     INFEASIBLE   score=nan
+  layer_08_features_27       vmem_dram_xxxt   INFEASIBLE   score=nan
+  layer_08_features_27       vmem_gb_xxxt     INFEASIBLE   score=nan
+  layer_08_features_27       dram_oooo        INFEASIBLE   score=nan
+  layer_08_features_27       dram_ooot        INFEASIBLE   score=nan
+  layer_08_features_27       dram_oook        INFEASIBLE   score=nan
+  layer_08_features_27       both_dram_ootk   INFEASIBLE   score=nan
+  layer_08_features_27       gb_oooo          feasible     score=6.13718e+07
+  layer_08_features_27       gb_ooot          INFEASIBLE   score=nan
+  layer_08_features_27       gb_oook          INFEASIBLE   score=nan
+  layer_08_features_27       gb_ootk          INFEASIBLE   score=nan
+  -> layer_08_features_27: 2/13 feasible, winner gb_oooo
+
+  layer_09_layer2_0_conv2    base             feasible     score=2.28214e+07
+  layer_09_layer2_0_conv2    psum_dram_otok   INFEASIBLE   score=nan
+  layer_09_layer2_0_conv2    psum_gb_otok     INFEASIBLE   score=nan
+  layer_09_layer2_0_conv2    vmem_dram_xxxt   INFEASIBLE   score=nan
+  layer_09_layer2_0_conv2    vmem_gb_xxxt     INFEASIBLE   score=nan
+  layer_09_layer2_0_conv2    dram_oooo        INFEASIBLE   score=nan
+  layer_09_layer2_0_conv2    dram_ooot        INFEASIBLE   score=nan
+  layer_09_layer2_0_conv2    dram_oook        INFEASIBLE   score=nan
+  layer_09_layer2_0_conv2    both_dram_ootk   INFEASIBLE   score=nan
+  layer_09_layer2_0_conv2    gb_oooo          feasible     score=1.65347e+07
+  layer_09_layer2_0_conv2    gb_ooot          INFEASIBLE   score=nan
+  layer_09_layer2_0_conv2    gb_oook          INFEASIBLE   score=nan
+  layer_09_layer2_0_conv2    gb_ootk          INFEASIBLE   score=nan
+  -> layer_09_layer2_0_conv2: 2/13 feasible, winner gb_oooo
+
   layer_09_features_30       base             feasible     score=7.39544e+07
   layer_09_features_30       psum_dram_otok   INFEASIBLE   score=nan
   layer_09_features_30       psum_gb_otok     INFEASIBLE   score=nan
@@ -52,6 +96,28 @@ Academic license 2828339 - for non-commercial use only - registered to ya___@ucf
   -> layer_16_layer3_0_conv2: 2/13 feasible, winner gb_oooo
 
 === C. NoCLevel global-buffer size ===
+  noc=  2MiB layer_08_features_27        obj=160.287334 steps=16 mode=gb_oooo   util_w=294912 same
+  noc=  4MiB layer_08_features_27        obj=160.287334 steps=16 mode=gb_oooo   util_w=294912 CHANGED
+  noc=  1MiB layer_08_features_27        obj=160.287334 steps=64 mode=gb_oooo   util_w=294912 CHANGED
+  noc=512KiB layer_08_features_27        obj=160.287334 steps=128 mode=gb_oooo   util_w=294912 CHANGED
+  noc=256KiB layer_08_features_27        obj=160.297334 steps=32 mode=gb_oooo   util_w=147456 CHANGED
+  noc=128KiB layer_08_features_27        obj=160.307334 steps=128 mode=gb_oooo   util_w=73728 CHANGED
+  noc= 64KiB layer_08_features_27        obj=160.317334 steps=64 mode=gb_oooo   util_w=36864 CHANGED
+  noc= 32KiB layer_08_features_27        obj=160.327334 steps=128 mode=gb_oooo   util_w=18432 CHANGED
+  noc= 16KiB layer_08_features_27        INFEASIBLE
+  noc=  8KiB layer_08_features_27        INFEASIBLE
+
+  noc=  2MiB layer_09_layer2_0_conv2     obj=150.763862 steps=2 mode=gb_oooo   util_w=147456 same
+  noc=  4MiB layer_09_layer2_0_conv2     obj=150.763862 steps=2 mode=gb_oooo   util_w=147456 same
+  noc=  1MiB layer_09_layer2_0_conv2     obj=150.763862 steps=64 mode=gb_oooo   util_w=147456 CHANGED
+  noc=512KiB layer_09_layer2_0_conv2     obj=150.763862 steps=64 mode=gb_oooo   util_w=147456 CHANGED
+  noc=256KiB layer_09_layer2_0_conv2     obj=150.763862 steps=128 mode=gb_oooo   util_w=147456 CHANGED
+  noc=128KiB layer_09_layer2_0_conv2     obj=150.773862 steps=64 mode=gb_oooo   util_w=73728 CHANGED
+  noc= 64KiB layer_09_layer2_0_conv2     obj=150.783862 steps=128 mode=gb_oooo   util_w=36864 CHANGED
+  noc= 32KiB layer_09_layer2_0_conv2     obj=150.793862 steps=64 mode=gb_oooo   util_w=18432 CHANGED
+  noc= 16KiB layer_09_layer2_0_conv2     obj=150.803862 steps=128 mode=gb_oooo   util_w=9216 CHANGED
+  noc=  8KiB layer_09_layer2_0_conv2     INFEASIBLE
+
   noc=  2MiB layer_09_features_30        obj=160.287334 steps=16 mode=gb_oooo   util_w=294912 same
   noc=  4MiB layer_09_features_30        obj=160.287334 steps=16 mode=gb_oooo   util_w=294912 CHANGED
   noc=  1MiB layer_09_features_30        obj=160.287334 steps=64 mode=gb_oooo   util_w=294912 CHANGED
@@ -73,5 +139,4 @@ Academic license 2828339 - for non-commercial use only - registered to ya___@ucf
   noc= 32KiB layer_16_layer3_0_conv2     obj=152.395862 steps=64 mode=gb_oooo   util_w=18432 CHANGED
   noc= 16KiB layer_16_layer3_0_conv2     INFEASIBLE
   noc=  8KiB layer_16_layer3_0_conv2     INFEASIBLE
-
 

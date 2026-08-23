@@ -1,4 +1,4 @@
-file           profiling/0823_stagewise_verify/stage2_weight_trace/outputs/stream/layer_09_features_30_s00000_first4tiles.wcts
+file           layer_09_features_30_s00000_first4tiles.wcts
 total bytes    4,424,848
 
 HEADER
@@ -56,4 +56,3 @@ TRAILER
   total_bursts     158,000
   recount walking  158,000   MATCH
   bytes consumed   4,424,848 of 4,424,848   MATCH
-

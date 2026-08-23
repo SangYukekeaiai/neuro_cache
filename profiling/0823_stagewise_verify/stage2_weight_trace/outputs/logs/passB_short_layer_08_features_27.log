@@ -1,0 +1,7 @@
+$ /u/yyu9/miniconda3/bin/python /u/yyu9/projects/neuro_cache/scripts/generate_weight_traces.py --arch loas --trace-root /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage2_weight_trace/inputs/input_trace --trace-dir vgg16_T4_n5 --layer layer_08_features_27 --schedule-cache /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage2_weight_trace/inputs/schedules --workers 1 --stream --sample-start 0 --sample-count 1 --dump-trace /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage2_weight_trace/outputs/stream/layer_08_features_27_s00000_first4tiles.wcts --dump-trace-tiles 4
+
+--- stdout ---
+<binary WCTS stream, discarded; see the .wcts dump>
+--- stderr ---
+Streaming loas/vgg16_T4_n5/layer_08_features_27 sample 0 (2048 tiles, 16 cores)
+Streamed 2597632 burst(s)

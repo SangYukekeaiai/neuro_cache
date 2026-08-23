@@ -2,13 +2,35 @@
  {
   "num_pes": 4,
   "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "status": "OPTIMAL",
+  "objective": 160.2873338750062,
+  "delay": 2359296,
+  "dram_num_steps": 16,
+  "mode": "gb_oooo",
+  "solve_seconds": 1.85
+ },
+ {
+  "num_pes": 4,
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "status": "OPTIMAL",
+  "objective": 150.76386206940674,
+  "delay": 1179648,
+  "dram_num_steps": 2,
+  "mode": "gb_oooo",
+  "solve_seconds": 1.47
+ },
+ {
+  "num_pes": 4,
+  "trace_dir": "vgg16_T4_all",
   "layer": "layer_09_features_30",
   "status": "OPTIMAL",
   "objective": 160.2873338750062,
   "delay": 2359296,
   "dram_num_steps": 16,
   "mode": "gb_oooo",
-  "solve_seconds": 1.84
+  "solve_seconds": 1.64
  },
  {
   "num_pes": 4,
@@ -19,7 +41,29 @@
   "delay": 1179648,
   "dram_num_steps": 32,
   "mode": "gb_oooo",
-  "solve_seconds": 1.46
+  "solve_seconds": 1.56
+ },
+ {
+  "num_pes": 16,
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "status": "OPTIMAL",
+  "objective": 160.2873338750062,
+  "delay": 2359296,
+  "dram_num_steps": 16,
+  "mode": "gb_oooo",
+  "solve_seconds": 1.63
+ },
+ {
+  "num_pes": 16,
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "status": "OPTIMAL",
+  "objective": 150.76386206940674,
+  "delay": 1179648,
+  "dram_num_steps": 2,
+  "mode": "gb_oooo",
+  "solve_seconds": 1.53
  },
  {
   "num_pes": 16,
@@ -30,7 +74,7 @@
   "delay": 2359296,
   "dram_num_steps": 16,
   "mode": "gb_oooo",
-  "solve_seconds": 1.62
+  "solve_seconds": 1.72
  },
  {
   "num_pes": 16,
@@ -46,13 +90,35 @@
  {
   "num_pes": 64,
   "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "status": "OPTIMAL",
+  "objective": 160.2873338750062,
+  "delay": 2359296,
+  "dram_num_steps": 16,
+  "mode": "gb_oooo",
+  "solve_seconds": 1.68
+ },
+ {
+  "num_pes": 64,
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "status": "OPTIMAL",
+  "objective": 150.76386206940674,
+  "delay": 1179648,
+  "dram_num_steps": 2,
+  "mode": "gb_oooo",
+  "solve_seconds": 1.5
+ },
+ {
+  "num_pes": 64,
+  "trace_dir": "vgg16_T4_all",
   "layer": "layer_09_features_30",
   "status": "OPTIMAL",
   "objective": 160.2873338750062,
   "delay": 2359296,
   "dram_num_steps": 16,
   "mode": "gb_oooo",
-  "solve_seconds": 1.64
+  "solve_seconds": 1.62
  },
  {
   "num_pes": 64,
@@ -63,7 +129,29 @@
   "delay": 1179648,
   "dram_num_steps": 32,
   "mode": "gb_oooo",
-  "solve_seconds": 1.52
+  "solve_seconds": 1.48
+ },
+ {
+  "num_pes": 256,
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "status": "OPTIMAL",
+  "objective": 160.2873338750062,
+  "delay": 2359296,
+  "dram_num_steps": 16,
+  "mode": "gb_oooo",
+  "solve_seconds": 1.71
+ },
+ {
+  "num_pes": 256,
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "status": "OPTIMAL",
+  "objective": 150.76386206940674,
+  "delay": 1179648,
+  "dram_num_steps": 2,
+  "mode": "gb_oooo",
+  "solve_seconds": 1.51
  },
  {
   "num_pes": 256,
@@ -74,7 +162,7 @@
   "delay": 2359296,
   "dram_num_steps": 16,
   "mode": "gb_oooo",
-  "solve_seconds": 1.65
+  "solve_seconds": 1.64
  },
  {
   "num_pes": 256,
@@ -85,6 +173,6 @@
   "delay": 1179648,
   "dram_num_steps": 32,
   "mode": "gb_oooo",
-  "solve_seconds": 1.49
+  "solve_seconds": 1.53
  }
 ]

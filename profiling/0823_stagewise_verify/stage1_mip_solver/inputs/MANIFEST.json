@@ -157,6 +157,16 @@
   }
  },
  "workloads": {
+  "vgg16_T4_all/layer_08_features_27": {
+   "path": "inputs/workloads/vgg16_T4_all__layer_08_features_27.yaml",
+   "next_cin_used_as_cout": 512,
+   "sha256_16": "4e3274e842a04f89"
+  },
+  "resnet19_T4_all/layer_09_layer2_0_conv2": {
+   "path": "inputs/workloads/resnet19_T4_all__layer_09_layer2_0_conv2.yaml",
+   "next_cin_used_as_cout": 128,
+   "sha256_16": "b90a79cb36d724b3"
+  },
   "vgg16_T4_all/layer_09_features_30": {
    "path": "inputs/workloads/vgg16_T4_all__layer_09_features_30.yaml",
    "next_cin_used_as_cout": 512,

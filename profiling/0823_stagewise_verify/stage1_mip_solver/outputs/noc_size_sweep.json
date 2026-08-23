@@ -1,6 +1,929 @@
 [
  {
   "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "noc_total_bytes": 2097152,
+  "noc_total": "2MiB",
+  "entries": {
+   "weight": 1966080,
+   "psum": 65536,
+   "vmem": 65536
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 160.2873338750062,
+  "delay": 2359296,
+  "dram_num_steps": 16,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 294912.0,
+   "psum": 4096.0,
+   "vmem": 2048.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     512
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "WOx4 -> HOx2",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx8 -> HOx2"
+  },
+  "same_as_2MiB": true
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "noc_total_bytes": 4194304,
+  "noc_total": "4MiB",
+  "entries": {
+   "weight": 3932160,
+   "psum": 131072,
+   "vmem": 131072
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 160.2873338750062,
+  "delay": 2359296,
+  "dram_num_steps": 16,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 294912.0,
+   "psum": 4096.0,
+   "vmem": 2048.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     512
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "HOx2 -> WOx4",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx8 -> HOx2"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "noc_total_bytes": 1048576,
+  "noc_total": "1MiB",
+  "entries": {
+   "weight": 983040,
+   "psum": 32768,
+   "vmem": 32768
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 160.2873338750062,
+  "delay": 2359296,
+  "dram_num_steps": 64,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 294912.0,
+   "psum": 1024.0,
+   "vmem": 512.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     512
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "WOx2",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx8 -> HOx2 -> WOx2 -> HOx2"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "noc_total_bytes": 524288,
+  "noc_total": "512KiB",
+  "entries": {
+   "weight": 491520,
+   "psum": 16384,
+   "vmem": 16384
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 160.2873338750062,
+  "delay": 2359296,
+  "dram_num_steps": 128,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 294912.0,
+   "psum": 512.0,
+   "vmem": 256.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     512
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "none",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx8 -> WOx2 -> HOx2 -> WOx2 -> HOx2"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "noc_total_bytes": 262144,
+  "noc_total": "256KiB",
+  "entries": {
+   "weight": 245760,
+   "psum": 8192,
+   "vmem": 8192
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 160.29733387500622,
+  "delay": 2359296,
+  "dram_num_steps": 32,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 147456.0,
+   "psum": 2048.0,
+   "vmem": 1024.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     512
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "WOx4",
+   "noc_spatial": "HOx2 -> COUTx8",
+   "dram_temporal": "COUTx16 -> HOx2"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "noc_total_bytes": 131072,
+  "noc_total": "128KiB",
+  "entries": {
+   "weight": 122880,
+   "psum": 4096,
+   "vmem": 4096
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 160.3073338750062,
+  "delay": 2359296,
+  "dram_num_steps": 128,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 73728.0,
+   "psum": 512.0,
+   "vmem": 256.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     512
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "none",
+   "noc_spatial": "WOx2 -> COUTx4 -> HOx2",
+   "dram_temporal": "COUTx32 -> HOx2 -> WOx2"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "noc_total_bytes": 65536,
+  "noc_total": "64KiB",
+  "entries": {
+   "weight": 61440,
+   "psum": 2048,
+   "vmem": 2048
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 160.3173338750062,
+  "delay": 2359296,
+  "dram_num_steps": 64,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 36864.0,
+   "psum": 1024.0,
+   "vmem": 512.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     512
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "WOx2",
+   "noc_spatial": "WOx2 -> HOx4 -> COUTx2",
+   "dram_temporal": "COUTx64"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "noc_total_bytes": 32768,
+  "noc_total": "32KiB",
+  "entries": {
+   "weight": 30720,
+   "psum": 1024,
+   "vmem": 1024
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 160.3273338750062,
+  "delay": 2359296,
+  "dram_num_steps": 128,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 18432.0,
+   "psum": 512.0,
+   "vmem": 256.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     512
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "none",
+   "noc_spatial": "WOx4 -> HOx4",
+   "dram_temporal": "COUTx128"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "noc_total_bytes": 16384,
+  "noc_total": "16KiB",
+  "entries": {
+   "weight": 15360,
+   "psum": 512,
+   "vmem": 512
+  },
+  "feasible": false,
+  "error": "solve_and_cache_schedule: infeasible for loas/vgg16_T4_all/layer_08_features_27 (every TrafficMode infeasible)"
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
+  "layer": "layer_08_features_27",
+  "noc_total_bytes": 8192,
+  "noc_total": "8KiB",
+  "entries": {
+   "weight": 7680,
+   "psum": 256,
+   "vmem": 256
+  },
+  "feasible": false,
+  "error": "solve_and_cache_schedule: infeasible for loas/vgg16_T4_all/layer_08_features_27 (every TrafficMode infeasible)"
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "noc_total_bytes": 2097152,
+  "noc_total": "2MiB",
+  "entries": {
+   "weight": 1966080,
+   "psum": 65536,
+   "vmem": 65536
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 150.76386206940674,
+  "delay": 1179648,
+  "dram_num_steps": 2,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 147456.0,
+   "psum": 32768.0,
+   "vmem": 16384.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     256
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "WOx2 -> HOx4 -> WOx2 -> HOx2 -> WOx2",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx2"
+  },
+  "same_as_2MiB": true
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "noc_total_bytes": 4194304,
+  "noc_total": "4MiB",
+  "entries": {
+   "weight": 3932160,
+   "psum": 131072,
+   "vmem": 131072
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 150.76386206940674,
+  "delay": 1179648,
+  "dram_num_steps": 2,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 147456.0,
+   "psum": 32768.0,
+   "vmem": 16384.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     256
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "WOx2 -> HOx4 -> WOx2 -> HOx2 -> WOx2",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx2"
+  },
+  "same_as_2MiB": true
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "noc_total_bytes": 1048576,
+  "noc_total": "1MiB",
+  "entries": {
+   "weight": 983040,
+   "psum": 32768,
+   "vmem": 32768
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 150.76386206940674,
+  "delay": 1179648,
+  "dram_num_steps": 64,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 147456.0,
+   "psum": 1024.0,
+   "vmem": 512.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     256
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "HOx2",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx2 -> WOx4 -> HOx2 -> WOx2 -> HOx2"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "noc_total_bytes": 524288,
+  "noc_total": "512KiB",
+  "entries": {
+   "weight": 491520,
+   "psum": 16384,
+   "vmem": 16384
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 150.76386206940674,
+  "delay": 1179648,
+  "dram_num_steps": 64,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 147456.0,
+   "psum": 1024.0,
+   "vmem": 512.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     256
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "HOx2",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx2 -> WOx4 -> HOx2 -> WOx2 -> HOx2"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "noc_total_bytes": 262144,
+  "noc_total": "256KiB",
+  "entries": {
+   "weight": 245760,
+   "psum": 8192,
+   "vmem": 8192
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 150.76386206940674,
+  "delay": 1179648,
+  "dram_num_steps": 128,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 147456.0,
+   "psum": 512.0,
+   "vmem": 256.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     256
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "none",
+   "noc_spatial": "COUTx16",
+   "dram_temporal": "COUTx2 -> WOx8 -> HOx8"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "noc_total_bytes": 131072,
+  "noc_total": "128KiB",
+  "entries": {
+   "weight": 122880,
+   "psum": 4096,
+   "vmem": 4096
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 150.77386206940676,
+  "delay": 1179648,
+  "dram_num_steps": 64,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 73728.0,
+   "psum": 1024.0,
+   "vmem": 512.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     256
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "WOx2",
+   "noc_spatial": "COUTx8 -> HOx2",
+   "dram_temporal": "COUTx4 -> HOx2 -> WOx4 -> HOx2"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "noc_total_bytes": 65536,
+  "noc_total": "64KiB",
+  "entries": {
+   "weight": 61440,
+   "psum": 2048,
+   "vmem": 2048
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 150.78386206940675,
+  "delay": 1179648,
+  "dram_num_steps": 128,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 36864.0,
+   "psum": 512.0,
+   "vmem": 256.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     256
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "none",
+   "noc_spatial": "HOx4 -> COUTx4",
+   "dram_temporal": "COUTx8 -> WOx8 -> HOx2"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "noc_total_bytes": 32768,
+  "noc_total": "32KiB",
+  "entries": {
+   "weight": 30720,
+   "psum": 1024,
+   "vmem": 1024
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 150.79386206940674,
+  "delay": 1179648,
+  "dram_num_steps": 64,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 18432.0,
+   "psum": 1024.0,
+   "vmem": 512.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     256
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "WOx2",
+   "noc_spatial": "WOx4 -> HOx2 -> COUTx2",
+   "dram_temporal": "COUTx16 -> HOx4"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "noc_total_bytes": 16384,
+  "noc_total": "16KiB",
+  "entries": {
+   "weight": 15360,
+   "psum": 512,
+   "vmem": 512
+  },
+  "feasible": true,
+  "status": "OPTIMAL",
+  "objective": 150.80386206940673,
+  "delay": 1179648,
+  "dram_num_steps": 128,
+  "mode": "gb_oooo",
+  "util": {
+   "weight": 9216.0,
+   "psum": 512.0,
+   "vmem": 256.0
+  },
+  "strategy": {
+   "node_temporal": [
+    [
+     "KH",
+     3
+    ],
+    [
+     "KW",
+     3
+    ],
+    [
+     "CIN",
+     256
+    ],
+    [
+     "T",
+     4
+    ]
+   ],
+   "node_spatial": [
+    [
+     "COUT",
+     4
+    ]
+   ],
+   "noc_temporal": "none",
+   "noc_spatial": "WOx8 -> HOx2",
+   "dram_temporal": "COUTx32 -> HOx4"
+  },
+  "same_as_2MiB": false
+ },
+ {
+  "trace_dir": "resnet19_T4_all",
+  "layer": "layer_09_layer2_0_conv2",
+  "noc_total_bytes": 8192,
+  "noc_total": "8KiB",
+  "entries": {
+   "weight": 7680,
+   "psum": 256,
+   "vmem": 256
+  },
+  "feasible": false,
+  "error": "solve_and_cache_schedule: infeasible for loas/resnet19_T4_all/layer_09_layer2_0_conv2 (every TrafficMode infeasible)"
+ },
+ {
+  "trace_dir": "vgg16_T4_all",
   "layer": "layer_09_features_30",
   "noc_total_bytes": 2097152,
   "noc_total": "2MiB",

@@ -38,7 +38,12 @@ SRC_TRACE_ROOT = ROOT / "input_trace/loas"
 BRIDGE = ROOT / "src/archmodels/loas/loasgen"
 
 # (stage-1 trace_dir, stage-2 trace_dir, layer)
+# Four layers, matching Stage 1's LAYERS. The first two are the representative
+# pair added after the 0823 survey; the last two are the dense pair the 0823
+# run used, kept as a stated low-sparsity stress case.
 COMBOS = [
+    ("vgg16_T4_all", "vgg16_T4_n5", "layer_08_features_27"),
+    ("resnet19_T4_all", "resnet19_T4_n5", "layer_09_layer2_0_conv2"),
     ("vgg16_T4_all", "vgg16_T4_n5", "layer_09_features_30"),
     ("resnet19_T4_all", "resnet19_T4_n5", "layer_16_layer3_0_conv2"),
 ]
