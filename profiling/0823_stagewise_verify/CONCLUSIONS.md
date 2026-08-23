@@ -75,13 +75,41 @@ which argues against a single systemic scale error and for specific layers
 saturating.
 
 **This is unresolved.** It needs an external reference for what spike density
-real SNNs on CIFAR-10 exhibit at depth. See `HANDOFF.md`.
+real SNNs on CIFAR-10 exhibit at depth, and in particular what the LoAS paper
+reports for the very checkpoints this capture used. See `HANDOFF.md`.
 
-### Provenance is gone
+### Provenance is recoverable until about 2026-09-10
 
 Captured 2026-07-17 in a sibling repo at `/u/yyu9/neuro_cache_trace/`, deleted
-between the 2026-08-11 and 2026-08-12 home snapshots. The capture script did not
-survive. Only the data can be inspected, not how it was produced.
+between the 2026-08-11 and 2026-08-12 home snapshots. The capture code **and the
+model checkpoints still exist** in the snapshot, verified present 2026-08-23:
+
+```
+/u/yyu9/.snapshot/snapshot-daily-_2026-08-11_17_00_00_UTC/neuro_cache_trace/
+  capture/input_grabber.py   capture/run_loas.py   model/LoAS/...
+```
+
+Reading them narrows the diagnosis considerably:
+
+- `run_loas.py` loads **LoAS's own released checkpoints**,
+  `model/LoAS/sample_ckpts/{resnet19,vgg16}_final_dict.pth.tar`, against LoAS's
+  own `archs/cifarsvhn/{resnet,vgg}` definitions. Nothing here was trained by
+  us. So "undertrained checkpoint" is a weak hypothesis: if these densities are
+  real, they are real in the LoAS authors' published models, which would be a
+  finding about LoAS rather than about this capture.
+- `InputGrabber` hooks `input[0]` of every `nn.Conv2d` except the first, and
+  casts with `.astype(np.uint8)`. Since every captured value is exactly 0 or 1,
+  no truncation occurred, so the hooked tensors really were binary.
+- **`run_loas.py` never passes `module_filter`**, although `InputGrabber`
+  documents it as the mechanism to "exclude Conv2d layers that receive
+  non-binary inputs (e.g. layers immediately after average pooling)". That is a
+  concrete gap. It is **not** established that it explains the high densities:
+  uint8 truncation of fractional post-pool values would push density down, not
+  up, and the elevated vgg16 layers are mid-block rather than post-pool. Worth
+  checking, not yet an answer.
+
+**Deadline: the snapshot expires around 2026-09-10.** Copy `capture/` and the
+relevant checkpoints out before then if this is to be investigated at all.
 
 ---
 

@@ -105,13 +105,39 @@ The escalation is not uniformly monotonic. vgg16 runs 0.20, 0.58, 0.27, and
 resnet19 recovers from 0.82 at layer 15 to 0.42 at layer 16. That argues against
 one systemic scale error and for specific layers saturating.
 
-## What cannot be inspected
+## What the capture code says
 
-The capture script is gone. These traces were produced 2026-07-17 in a sibling
-repo at `/u/yyu9/neuro_cache_trace/`, deleted between the 2026-08-11 and
-2026-08-12 daily home snapshots. Only the data survives, not the code or the
-model checkpoint that produced it. So the question has to be answered against
-the literature, not by re-reading the capture code.
+The capture code and checkpoints survive in a home snapshot, verified present
+2026-08-23 at
+`/u/yyu9/.snapshot/snapshot-daily-_2026-08-11_17_00_00_UTC/neuro_cache_trace/`.
+**That snapshot expires around 2026-09-10.**
+
+The single most important thing it establishes:
+
+> `capture/run_loas.py` loads **LoAS's own released checkpoints**
+> (`model/LoAS/sample_ckpts/{resnet19,vgg16}_final_dict.pth.tar`) against
+> LoAS's own `archs/cifarsvhn/{resnet,vgg}` model definitions, on the CIFAR-10
+> test set at T=4. Nothing was trained locally.
+
+So this is not a case of a badly trained model of ours. Either the LoAS authors'
+published checkpoints genuinely fire this densely, or the capture hooks the
+wrong tensor. That reframes question 4 below as the central one: **what sparsity
+does the LoAS paper itself report for these exact checkpoints?** If the paper
+claims high sparsity for resnet19 and the released checkpoint fires at 0.92 in
+its deep layers, something is wrong with the released artifact or with how it is
+being run.
+
+Two mechanical details, both checked:
+
+- `InputGrabber` hooks `input[0]` of every `nn.Conv2d` except the first, and
+  casts with `.astype(np.uint8)`. Every captured value is exactly 0 or 1, so no
+  truncation happened and the hooked tensors really were binary.
+- `run_loas.py` never passes `module_filter`, though `InputGrabber` documents it
+  as the way to "exclude Conv2d layers that receive non-binary inputs (e.g.
+  layers immediately after average pooling)". A real gap, but **not shown to
+  explain anything**: uint8 truncation of fractional post-pool values would push
+  density down rather than up, and the elevated vgg16 layers are mid-block, not
+  post-pool.
 
 ---
 
