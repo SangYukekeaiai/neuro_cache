@@ -36,6 +36,8 @@ import pathlib
 from typing import Dict, List
 
 from .noc import NoC
+import math
+
 from .transaction import TC, TCEncoder, UNICAST, MULTICAST, COUNT, PACKET_SIZE, FLITS_PER_PACKET
 
 
@@ -47,11 +49,14 @@ class TC_Generator:
 
     Args:
         noc:          A fully initialised NoC object (topology + port IDs).
-        dram_latency: Per-packet DRAM access latency multiplier applied to
-                      dram_cost. Default 17 (CoSA parity).
+        dram_latency: Cycles the DRAM port is occupied per 256-bit packet.
+                      May be fractional (0.25 is 64 GB/s at 500 MHz); the
+                      product is ceiled once per transaction, so the rate
+                      stays exact and the rounding error is at most one
+                      cycle rather than the 4x an integer factor would cost.
     """
 
-    def __init__(self, noc: NoC, dram_latency: int = 17) -> None:
+    def __init__(self, noc: NoC, dram_latency: float = 0.25) -> None:
         self.noc          = noc
         self.dram_latency = dram_latency
         self.tc_id = 0
@@ -119,7 +124,7 @@ class TC_Generator:
             self.unicast_hops[var_name] += hops + num_packets * FLITS_PER_PACKET
 
         if src == self.noc.dram_port or dest == self.noc.dram_port:
-            self.dram_cost[var_name] += num_packets * self.dram_latency
+            self.dram_cost[var_name] += math.ceil(num_packets * self.dram_latency)
 
         return self._append(tc, label)
 

@@ -55,8 +55,9 @@ def load_weight(
     """Generate GB → node weight transactions for one NoC temporal step.
 
     Skipped when weight_changes is False: the weight tile is identical to the
-    previous step (only weight-invariant dims HO/WO/T advanced in the NoC
-    temporal loop), so there is no need to re-send it.
+    previous step of the integrated loop (only weight-invariant dims HO/WO/T
+    advanced, at either the NoC or the DRAM level), so there is no need to
+    re-send it.
 
     Args:
         gen:            TC_Generator (accumulates TCs and hop counters).
@@ -64,8 +65,9 @@ def load_weight(
         data_size:      Decoded data sizes in elements, keyed by var name.
         bw_weight:      Bits per weight element (from SNNBitwidths.bw_weight).
         weight_changes: True if any weight-indexed dim (KH/KW/CIN/COUT) has a
-                        different index at this step vs the previous step.
-                        Supplied by StepInfo.weight_changes(noc_i).
+                        different index at this step vs the previous step of
+                        the integrated loop.
+                        Supplied by StepInfo.weight_changes(dram_i, noc_i).
         deps:           TC ids that must complete before these sends can start.
         label_prefix:   Step identifier string, e.g. ``"weight_0_2"``
                         (dram_i=0, noc_i=2).  The ``__send_<pes>`` suffix is

@@ -71,7 +71,7 @@ from parsers.layer import (
 )
 from parsers.arch import SNNArch
 from parsers.bitwidths import SNNBitwidths
-from archmodels import ArchComputeModel
+from archmodels import ArchComputeModel, ComputeCycles
 from archmodels.dense import DenseStaticComputeModel
 from archmodels import NodeTileSpec
 from nocsim.schedule.tiles import iter_node_tiles
@@ -126,6 +126,7 @@ def combine(
     arch:      Optional[SNNArch] = None,
     compute_model: Optional[ArchComputeModel] = None,
     trace:     Optional[Any] = None,
+    cycles_by_step: Optional[Dict[Tuple[int, int], ComputeCycles]] = None,
 ) -> TC_Generator:
     """Generate all TCs for one simulation run and return the TC_Generator.
 
@@ -155,6 +156,14 @@ def combine(
                    it) or when arch.single_node is not set (only
                    single_node schedules get a per-dram_i live model
                    call -- see below).
+        cycles_by_step: Optional {(dram_i, noc_i): ComputeCycles} read from
+                   a saved weight trace (tracegen.load_step_cycles). When
+                   given it is the cycle source and both compute_model and
+                   trace are ignored, for either arch -- see below. Ruling
+                   U31: read the number the trace already stores rather
+                   than recomputing it live. Must cover the full
+                   dram_num_steps x noc_num_steps cross product; a missing
+                   key raises KeyError.
 
     Returns:
         TC_Generator with all TCs appended and unicast/multicast hop counters
@@ -202,13 +211,25 @@ def combine(
     #      against a stored 127, so one core is 45-69% of the truth. This is
     #      the same max() tracegen.py:282 applies when it writes mac_cycles
     #      into the weight trace, which is what makes the two agree.
+    # cycles_by_step (ruling U31, log/2026-08-24-nocsim-per-tile-cycles-plan.md):
+    # a table read from the weight trace this schedule was reconstructed
+    # against. It short-circuits ahead of both other branches and for EITHER
+    # arch, because it needs neither a model nor the tile list: the stored
+    # value is already the max over that tile's cores (tracegen's
+    # assemble_layer_traces applies it before writing), which is exactly the
+    # reduction the per-tile branch below computes. Skipping iter_node_tiles
+    # here is not just an optimization -- with 16 or 128 cores per step it
+    # would be n_cores identical dict lookups reduced by max() to the value
+    # already in hand.
     model = compute_model or DenseStaticComputeModel(schedule, prob)
     tiles_by_step: Optional[Dict[Tuple[int, int], List[NodeTileSpec]]] = None
-    if single_node:
+    if cycles_by_step is not None:
+        pass
+    elif single_node:
         tiles_by_step = {}
         for spec in iter_node_tiles(schedule, prob):
             tiles_by_step.setdefault((spec.dram_i, spec.noc_i), []).append(spec)
-    if tiles_by_step is None:
+    else:
         cycles = model.compute_cycles(model.format_input(trace, None), None)
         mac_cyc = cycles.mac_cycles
         lif_cyc = cycles.lif_cycles if cycles.lif_cycles is not None else 0
@@ -313,7 +334,11 @@ def combine(
             # full cross product, so a missing key means the schedule and
             # the loop bounds disagree, which is a defect to surface and not
             # a step to charge zero for.
-            if tiles_by_step is not None:
+            if cycles_by_step is not None:
+                c = cycles_by_step[(dram_i, noc_i)]
+                mac_cyc = c.mac_cycles
+                lif_cyc = c.lif_cycles if c.lif_cycles is not None else 0
+            elif tiles_by_step is not None:
                 specs = tiles_by_step[(dram_i, noc_i)]
                 per_core = [
                     model.compute_cycles(model.format_input(trace, spec), spec)
@@ -350,7 +375,7 @@ def combine(
 
             w_tcs = load_weight(
                 gen, bs, ds, bww,
-                weight_changes=si.weight_changes(noc_i),
+                weight_changes=si.weight_changes(dram_i, noc_i),
                 deps=w_deps,
                 label_prefix=f"weight_{nlbl}",
                 src_port=(gen.noc.dram_port if single_node else None),

@@ -1,0 +1,361 @@
+<title>Kernel-Indexed Cache Sweep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root{
+  --ground:#F1F4F4; --surface:#FFFFFF; --raise:#E8EEEE;
+  --ink:#12181A; --muted:#56656A; --rule:#D3DCDB; --rule-2:#B9C6C5;
+  --accent:#145E78; --pos:#1F6B4C; --neg:#8E3229; --warn:#8A5A12;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1516; --surface:#171E1F; --raise:#1E2728;
+    --ink:#E3EAE9; --muted:#8FA0A3; --rule:#27312F; --rule-2:#38443F;
+    --accent:#63B4CE; --pos:#66BC93; --neg:#DE7A70; --warn:#CFA057;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1516; --surface:#171E1F; --raise:#1E2728;
+  --ink:#E3EAE9; --muted:#8FA0A3; --rule:#27312F; --rule-2:#38443F;
+  --accent:#63B4CE; --pos:#66BC93; --neg:#DE7A70; --warn:#CFA057;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Serif",Georgia,serif; font-size:16.5px; line-height:1.62;
+  margin:0; padding:0 24px 96px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px; margin:0 auto}
+.col{max-width:68ch}
+h1,h2,h3,.eyebrow,th,.sub,.tag{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif}
+code,kbd,.mono,td,.bitfield,.ratio,.num{font-family:"IBM Plex Mono",ui-monospace,monospace}
+
+header{padding:64px 0 40px; border-bottom:2px solid var(--ink)}
+h1{font-size:clamp(2.1rem,5vw,3.4rem); font-weight:600; line-height:1.02; letter-spacing:-.015em;
+   margin:0 0 18px; text-wrap:balance}
+.standfirst{font-size:1.14rem; color:var(--muted); margin:0; max-width:62ch}
+.meta{display:flex; flex-wrap:wrap; gap:8px 26px; margin-top:30px;
+  font-family:"IBM Plex Mono",monospace; font-size:.76rem; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.07em}
+.meta b{color:var(--ink); font-weight:500}
+
+section{padding:56px 0 0}
+.eyebrow{display:block; font-size:.72rem; font-weight:600; text-transform:uppercase;
+  letter-spacing:.15em; color:var(--accent); margin:0 0 10px}
+h2{font-size:1.72rem; font-weight:600; letter-spacing:-.01em; margin:0 0 6px; text-wrap:balance}
+h3{font-size:1.06rem; font-weight:600; margin:34px 0 8px; letter-spacing:.005em}
+p{margin:0 0 15px}
+p+p{margin-top:-3px}
+a{color:var(--accent)}
+
+.verdict{
+  margin:34px 0 0; padding:22px 26px; background:var(--surface);
+  border:1px solid var(--rule); border-left:3px solid var(--accent);
+}
+.verdict p{margin:0 0 10px; font-size:1.05rem}
+.verdict p:last-child{margin:0}
+
+.scroll{overflow-x:auto; margin:22px 0 4px; border:1px solid var(--rule); background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.845rem}
+th{
+  text-align:left; font-weight:600; font-size:.7rem; text-transform:uppercase;
+  letter-spacing:.09em; color:var(--muted); padding:11px 14px;
+  border-bottom:1px solid var(--rule-2); white-space:nowrap; background:var(--raise);
+}
+td{padding:9px 14px; border-bottom:1px solid var(--rule); vertical-align:baseline;
+   font-variant-numeric:tabular-nums; white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+th.n,td.n{text-align:right}
+td b{font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:.95rem}
+.sub{display:block; font-size:.68rem; color:var(--muted); font-weight:400; letter-spacing:.01em}
+caption{caption-side:bottom; text-align:left; padding:10px 14px; font-size:.78rem;
+  color:var(--muted); font-family:"IBM Plex Serif",serif}
+
+.ratio{display:flex; align-items:center; gap:9px; justify-content:flex-end}
+.rv{min-width:3.6em; text-align:right; font-weight:500}
+.rv.pos{color:var(--pos)} .rv.neg{color:var(--neg)}
+.rb{display:block; width:74px; height:5px; background:var(--rule); position:relative}
+.rb i{position:absolute; inset:0 auto 0 0; display:block}
+.rb i.pos{background:var(--pos)} .rb i.neg{background:var(--neg)}
+.hi{color:var(--pos); font-weight:500}
+.lo{color:var(--muted)}
+td .pos{color:var(--pos); font-weight:500}
+td .neg{color:var(--neg); font-weight:500}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important; transition:none!important}}
+
+.bitfield{margin:26px 0 6px; border:1px solid var(--rule); background:var(--surface); padding:20px 22px}
+.bf-row{display:grid; gap:3px; margin-bottom:5px}
+.bf-cell{padding:7px 8px; font-size:.72rem; text-align:center; letter-spacing:.04em;
+  border:1px solid var(--rule-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.bf-poslo{background:var(--accent); color:var(--surface); border-color:var(--accent)}
+.bf-cin{background:var(--raise)}
+.bf-cout{background:transparent}
+.bf-poshi{background:transparent; border-style:dashed}
+.bf-brace{display:grid; gap:3px; font-size:.68rem; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.1em; margin-top:2px}
+.bf-brace span{text-align:center; padding-top:5px; border-top:1px solid var(--rule-2)}
+.bf-note{font-size:.8rem; color:var(--muted); margin:16px 0 0; font-family:"IBM Plex Serif",serif}
+
+pre{background:var(--surface); border:1px solid var(--rule); padding:16px 18px; overflow-x:auto;
+  font-size:.8rem; line-height:1.6; margin:20px 0}
+code{font-size:.87em; background:var(--raise); padding:1px 5px; border:1px solid var(--rule)}
+pre code{background:none; border:none; padding:0; font-size:1em}
+
+.keys{display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:1px;
+  background:var(--rule); border:1px solid var(--rule); margin:24px 0 4px}
+.key{background:var(--surface); padding:16px 18px}
+.key .k{font-family:"IBM Plex Mono",monospace; font-size:1.5rem; font-weight:500;
+  display:block; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.key .l{font-family:"IBM Plex Sans Condensed",sans-serif; font-size:.7rem; text-transform:uppercase;
+  letter-spacing:.1em; color:var(--muted); display:block; margin-top:5px}
+.key.up .k{color:var(--pos)} .key.down .k{color:var(--neg)}
+
+ul{padding-left:1.1em; margin:0 0 15px}
+li{margin-bottom:7px}
+footer{margin-top:70px; padding-top:26px; border-top:1px solid var(--rule-2);
+  font-size:.8rem; color:var(--muted)}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Kernel-Indexed Cache Sweep</h1>
+  <p class="standfirst">A new weight layout puts the kernel position at the bottom of the L1 set
+  index. Forty-eight cache configurations, four layers, five samples, measured against stage 3.</p>
+  <div class="meta">
+    <span>960 engine-runs</span>
+    <span><b>khkw_split</b> layout</span>
+    <span>V8 &middot; V9 &middot; R9 &middot; R16</span>
+    <span>commit <b>26ef6f0</b></span>
+    <span>2026-08-28</span>
+  </div>
+</header>
+
+<section>
+  <span class="eyebrow">The answer</span>
+  <h2>What the sweep found</h2>
+  <div class="col">
+  <div class="verdict">
+    <p><b>The layout works.</b> L1 hit rates run from 87.8% to 99.7% across
+    all 960 runs, against 76.9&ndash;91.8% for <code>block_pack</code> at the
+    same point, and the best configuration lands between 1.10&times; and
+    1.82&times; the cycles a perfect memory system would take.</p>
+    <p><b>It does not beat stage 3.</b> Against the NoC baseline the best configuration comes in at
+    0.71&times; to 1.07&times;, ahead on 1 layer of four. An
+    earlier version of this page reported speedups up to 5.8&times;; those came from a defect in
+    <code>nocsim</code> that re-sent the weight tile on every DRAM step, inflating the baseline by
+    2&times; on the vgg16 layers and 8&times; on R16. The defect is fixed and stage 3 re-run.</p>
+    <p><b>Bigger lines win outright</b> across the whole 16&ndash;64 B range, on every layer, with or
+    without prefetching.</p>
+    <p><b>Prefetching costs cycles</b> at 32 and 64 bytes, by up to 90%. It pays
+    only at 16-byte lines, and never enough to catch a 64-byte line with prefetching off.</p>
+    <p><b>L2 banking changes nothing</b> &mdash; at most 2.1% on a single point, and
+    in the wrong direction. The L2 port is never the constraint here.</p>
+  </div>
+  </div>
+
+  <div class="keys">
+    <div class="key up"><span class="k">1.10&times;</span><span class="l">best run over the compute floor</span></div>
+    <div class="key up"><span class="k">99.71%</span><span class="l">best L1 hit rate (R9)</span></div>
+    <div class="key down"><span class="k">+90%</span><span class="l">worst prefetch penalty</span></div>
+    <div class="key"><span class="k">0.01%</span><span class="l">mean effect of L2 banking</span></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">The layout</span>
+  <h2>Where each digit sits</h2>
+  <div class="col">
+  <p>The kernel position is <code>pos = kh &times; KW + kw</code>, nine values for a 3&times;3 kernel.
+  It is split at <code>min(8, KH&times;KW)</code> and the four digits nest, outermost first, as
+  <code>[pos_hi][cout_blk][cin_blk][pos_lo]</code>.</p>
+  <p>Nine values do not fit in three bits, and that is the deliberate trade: position 8 aliases onto
+  position 0's set and is told apart by a tag bit. A value reached one time in nine does not earn a
+  fourth index bit.</p>
+  </div>
+  <div class="bitfield"><div class="bf-row" style="grid-template-columns:1fr 7fr 5fr 3fr"><div class="bf-cell bf-poshi">pos_hi &middot; 1b</div><div class="bf-cell bf-cout">cout_blk &middot; 7b</div><div class="bf-cell bf-cin">cin_blk &middot; 5b</div><div class="bf-cell bf-poslo">pos_lo &middot; 3b</div></div><div class="bf-brace" style="grid-template-columns:11fr 5fr"><span>tag &middot; 11 bits</span><span>L1 set index &middot; 5 bits</span></div><p class="bf-note">V8 at 64-byte lines: 3&times;3 kernel, 32 CIN blocks of 16, 128 COUT blocks of 4, a 16 KB 8-way L1 of 32 sets. The index is <code>pos_lo</code> whole plus the low 2 bits of <code>cin_blk</code>. A core owns a fixed slice of COUT, and <code>cout_blk</code> is 8 bits above the index, so a pinned digit cannot narrow the sets a core reaches.</p></div>
+  <div class="col">
+  <p>The mapper is <code>KhkwSplitMapper</code>, a sibling of <code>BlockPackMapper</code> and
+  <code>SplitCinMapper</code> rather than a flag on either. It takes no split-width argument:
+  the radix comes from the kernel, so <code>cin_lo_blocks</code> stays at its sentinel and there is
+  no config field that can disagree with the layer.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Headline</span>
+  <h2>Best configuration per layer</h2>
+  <div class="col">
+  <p>Mean over five samples, against two baselines. <b>Stage 3</b> is what the NoC simulator took to
+  deliver the same layer. <b>Floor</b> is <code>compute_per_node</code>, the cycles a core would
+  spend with every weight already in hand.</p>
+  <p>The floor is the baseline to trust. It is derived from <code>count_cycles</code>, which equals
+  this engine's <code>l1_accesses</code> exactly on all 20 layer-sample pairs, so both simulators
+  provably walk the same work; and an oracle run of this engine, with a cache large enough and fast
+  enough to never miss, reproduces it to the cycle on every layer. The stage 3 column depends on a
+  NoC model that has already been wrong once.</p>
+  </div>
+  <div class="scroll"><table class=""><thead><tr><th>Layer</th><th>Configuration</th><th class="n">Cycles</th><th class="n">Stage 3</th><th class="n">vs stage 3</th><th class="n">Over floor</th><th class="n">L1 hit</th><th class="n">L2 hit</th></tr></thead><tbody><tr><td><b>V8</b><span class="sub">layer_08_features_27</span></td><td>64 B / 1 bank / pf 0</td><td class="n">282,854</td><td class="n">302,253</td><td class="n"><div class="ratio"><span class="rv pos">1.07&times;</span><span class="rb"><i class="pos" style="width:17.8%"></i></span></div></td><td class="n">1.82&times;</td><td class="n">96.86%</td><td class="n">0.00%</td></tr><tr><td><b>V9</b><span class="sub">layer_09_features_30</span></td><td>64 B / 1 bank / pf 0</td><td class="n">437,410</td><td class="n">310,191</td><td class="n"><div class="ratio"><span class="rv neg">0.71&times;</span><span class="rb"><i class="neg" style="width:11.8%"></i></span></div></td><td class="n">1.41&times;</td><td class="n">98.43%</td><td class="n">0.00%</td></tr><tr><td><b>R9</b><span class="sub">layer_09_layer2_0_conv2</span></td><td>64 B / 1 bank / pf 0</td><td class="n">84,762</td><td class="n">77,142</td><td class="n"><div class="ratio"><span class="rv neg">0.91&times;</span><span class="rb"><i class="neg" style="width:15.2%"></i></span></div></td><td class="n">1.10&times;</td><td class="n">99.62%</td><td class="n">0.00%</td></tr><tr><td><b>R16</b><span class="sub">layer_16_layer3_0_conv2</span></td><td>64 B / 1 bank / pf 0</td><td class="n">188,838</td><td class="n">151,485</td><td class="n"><div class="ratio"><span class="rv neg">0.80&times;</span><span class="rb"><i class="neg" style="width:13.4%"></i></span></div></td><td class="n">1.51&times;</td><td class="n">98.05%</td><td class="n">0.00%</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Full grid</span>
+  <h2>Every configuration, every layer</h2>
+  <div class="col">
+  <p>All 48 points at one L2 bank; the other three bank counts are within 0.2% and are shown
+  separately below. <b>Floor</b> is the ratio to stage 3's <code>compute_per_node</code>, the cycles a
+  core would spend with every weight already in hand &mdash; the number no memory system can go
+  under.</p>
+  </div>
+  <div class="scroll"><table class=""><thead><tr><th>Layer</th><th>Line</th><th class="n">Prefetch</th><th class="n">Cycles</th><th class="n">vs stage 3</th><th class="n">Floor</th><th class="n">L1 hit</th><th class="n">L2 hit</th><th class="n">DRAM MiB</th></tr></thead><tbody><tr><td><b>V8</b></td><td>16 B</td><td class="n">0</td><td class="n">607,947</td><td class="n"><div class="ratio"><span class="rv neg">0.50&times;</span><span class="rb"><i class="neg" style="width:8.3%"></i></span></div></td><td class="n">3.92&times;</td><td class="n">88.33%</td><td class="n">5.72%</td><td class="n">4.16</td></tr><tr><td></td><td>16 B</td><td class="n">1</td><td class="n">628,022</td><td class="n"><div class="ratio"><span class="rv neg">0.48&times;</span><span class="rb"><i class="neg" style="width:8.0%"></i></span></div></td><td class="n">4.05&times;</td><td class="n">89.26%</td><td class="n">2.22%</td><td class="n">4.16</td></tr><tr><td></td><td>16 B</td><td class="n">2</td><td class="n">563,347</td><td class="n"><div class="ratio"><span class="rv neg">0.54&times;</span><span class="rb"><i class="neg" style="width:8.9%"></i></span></div></td><td class="n">3.63&times;</td><td class="n">89.86%</td><td class="n">2.22%</td><td class="n">4.16</td></tr><tr><td></td><td>16 B</td><td class="n">4</td><td class="n">541,184</td><td class="n"><div class="ratio"><span class="rv neg">0.56&times;</span><span class="rb"><i class="neg" style="width:9.3%"></i></span></div></td><td class="n">3.49&times;</td><td class="n">90.10%</td><td class="n">2.22%</td><td class="n">4.16</td></tr><tr><td></td><td>32 B</td><td class="n">0</td><td class="n">406,182</td><td class="n"><div class="ratio"><span class="rv neg">0.74&times;</span><span class="rb"><i class="neg" style="width:12.4%"></i></span></div></td><td class="n">2.62&times;</td><td class="n">93.77%</td><td class="n">0.93%</td><td class="n">4.66</td></tr><tr><td></td><td>32 B</td><td class="n">1</td><td class="n">523,256</td><td class="n"><div class="ratio"><span class="rv neg">0.58&times;</span><span class="rb"><i class="neg" style="width:9.6%"></i></span></div></td><td class="n">3.37&times;</td><td class="n">94.04%</td><td class="n">0.00%</td><td class="n">4.66</td></tr><tr><td></td><td>32 B</td><td class="n">2</td><td class="n">473,557</td><td class="n"><div class="ratio"><span class="rv neg">0.64&times;</span><span class="rb"><i class="neg" style="width:10.6%"></i></span></div></td><td class="n">3.05&times;</td><td class="n">94.43%</td><td class="n">0.00%</td><td class="n">4.66</td></tr><tr><td></td><td>32 B</td><td class="n">4</td><td class="n">420,013</td><td class="n"><div class="ratio"><span class="rv neg">0.72&times;</span><span class="rb"><i class="neg" style="width:12.0%"></i></span></div></td><td class="n">2.71&times;</td><td class="n">94.55%</td><td class="n">0.00%</td><td class="n">4.66</td></tr><tr><td></td><td>64 B</td><td class="n">0</td><td class="n">282,854</td><td class="n"><div class="ratio"><span class="rv pos">1.07&times;</span><span class="rb"><i class="pos" style="width:17.8%"></i></span></div></td><td class="n">1.82&times;</td><td class="n">96.86%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td></td><td>64 B</td><td class="n">1</td><td class="n">427,936</td><td class="n"><div class="ratio"><span class="rv neg">0.71&times;</span><span class="rb"><i class="neg" style="width:11.8%"></i></span></div></td><td class="n">2.76&times;</td><td class="n">96.86%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td></td><td>64 B</td><td class="n">2</td><td class="n">416,470</td><td class="n"><div class="ratio"><span class="rv neg">0.73&times;</span><span class="rb"><i class="neg" style="width:12.1%"></i></span></div></td><td class="n">2.69&times;</td><td class="n">96.89%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td></td><td>64 B</td><td class="n">4</td><td class="n">386,944</td><td class="n"><div class="ratio"><span class="rv neg">0.78&times;</span><span class="rb"><i class="neg" style="width:13.0%"></i></span></div></td><td class="n">2.50&times;</td><td class="n">97.00%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td><b>V9</b></td><td>16 B</td><td class="n">0</td><td class="n">816,334</td><td class="n"><div class="ratio"><span class="rv neg">0.38&times;</span><span class="rb"><i class="neg" style="width:6.3%"></i></span></div></td><td class="n">2.64&times;</td><td class="n">93.72%</td><td class="n">0.12%</td><td class="n">4.74</td></tr><tr><td></td><td>16 B</td><td class="n">1</td><td class="n">1,075,306</td><td class="n"><div class="ratio"><span class="rv neg">0.29&times;</span><span class="rb"><i class="neg" style="width:4.8%"></i></span></div></td><td class="n">3.47&times;</td><td class="n">93.82%</td><td class="n">0.00%</td><td class="n">4.74</td></tr><tr><td></td><td>16 B</td><td class="n">2</td><td class="n">973,267</td><td class="n"><div class="ratio"><span class="rv neg">0.32&times;</span><span class="rb"><i class="neg" style="width:5.3%"></i></span></div></td><td class="n">3.14&times;</td><td class="n">94.14%</td><td class="n">0.00%</td><td class="n">4.74</td></tr><tr><td></td><td>16 B</td><td class="n">4</td><td class="n">820,413</td><td class="n"><div class="ratio"><span class="rv neg">0.38&times;</span><span class="rb"><i class="neg" style="width:6.3%"></i></span></div></td><td class="n">2.65&times;</td><td class="n">94.29%</td><td class="n">0.00%</td><td class="n">4.74</td></tr><tr><td></td><td>32 B</td><td class="n">0</td><td class="n">563,874</td><td class="n"><div class="ratio"><span class="rv neg">0.55&times;</span><span class="rb"><i class="neg" style="width:9.2%"></i></span></div></td><td class="n">1.82&times;</td><td class="n">96.86%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td></td><td>32 B</td><td class="n">1</td><td class="n">853,987</td><td class="n"><div class="ratio"><span class="rv neg">0.36&times;</span><span class="rb"><i class="neg" style="width:6.1%"></i></span></div></td><td class="n">2.76&times;</td><td class="n">96.86%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td></td><td>32 B</td><td class="n">2</td><td class="n">834,222</td><td class="n"><div class="ratio"><span class="rv neg">0.37&times;</span><span class="rb"><i class="neg" style="width:6.2%"></i></span></div></td><td class="n">2.69&times;</td><td class="n">96.86%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td></td><td>32 B</td><td class="n">4</td><td class="n">784,595</td><td class="n"><div class="ratio"><span class="rv neg">0.40&times;</span><span class="rb"><i class="neg" style="width:6.6%"></i></span></div></td><td class="n">2.53&times;</td><td class="n">96.92%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td></td><td>64 B</td><td class="n">0</td><td class="n">437,410</td><td class="n"><div class="ratio"><span class="rv neg">0.71&times;</span><span class="rb"><i class="neg" style="width:11.8%"></i></span></div></td><td class="n">1.41&times;</td><td class="n">98.43%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td></td><td>64 B</td><td class="n">1</td><td class="n">737,251</td><td class="n"><div class="ratio"><span class="rv neg">0.42&times;</span><span class="rb"><i class="neg" style="width:7.0%"></i></span></div></td><td class="n">2.38&times;</td><td class="n">98.43%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td></td><td>64 B</td><td class="n">2</td><td class="n">727,595</td><td class="n"><div class="ratio"><span class="rv neg">0.43&times;</span><span class="rb"><i class="neg" style="width:7.1%"></i></span></div></td><td class="n">2.35&times;</td><td class="n">98.43%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td></td><td>64 B</td><td class="n">4</td><td class="n">708,283</td><td class="n"><div class="ratio"><span class="rv neg">0.44&times;</span><span class="rb"><i class="neg" style="width:7.3%"></i></span></div></td><td class="n">2.29&times;</td><td class="n">98.43%</td><td class="n">0.00%</td><td class="n">4.75</td></tr><tr><td><b>R9</b></td><td>16 B</td><td class="n">0</td><td class="n">107,652</td><td class="n"><div class="ratio"><span class="rv neg">0.72&times;</span><span class="rb"><i class="neg" style="width:11.9%"></i></span></div></td><td class="n">1.40&times;</td><td class="n">98.49%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td></td><td>16 B</td><td class="n">1</td><td class="n">175,759</td><td class="n"><div class="ratio"><span class="rv neg">0.44&times;</span><span class="rb"><i class="neg" style="width:7.3%"></i></span></div></td><td class="n">2.28&times;</td><td class="n">98.69%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td></td><td>16 B</td><td class="n">2</td><td class="n">173,096</td><td class="n"><div class="ratio"><span class="rv neg">0.45&times;</span><span class="rb"><i class="neg" style="width:7.4%"></i></span></div></td><td class="n">2.24&times;</td><td class="n">98.61%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td></td><td>16 B</td><td class="n">4</td><td class="n">170,873</td><td class="n"><div class="ratio"><span class="rv neg">0.45&times;</span><span class="rb"><i class="neg" style="width:7.5%"></i></span></div></td><td class="n">2.21&times;</td><td class="n">98.61%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td></td><td>32 B</td><td class="n">0</td><td class="n">92,394</td><td class="n"><div class="ratio"><span class="rv neg">0.83&times;</span><span class="rb"><i class="neg" style="width:13.9%"></i></span></div></td><td class="n">1.20&times;</td><td class="n">99.24%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td></td><td>32 B</td><td class="n">1</td><td class="n">165,730</td><td class="n"><div class="ratio"><span class="rv neg">0.47&times;</span><span class="rb"><i class="neg" style="width:7.8%"></i></span></div></td><td class="n">2.15&times;</td><td class="n">99.33%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td></td><td>32 B</td><td class="n">2</td><td class="n">163,449</td><td class="n"><div class="ratio"><span class="rv neg">0.47&times;</span><span class="rb"><i class="neg" style="width:7.9%"></i></span></div></td><td class="n">2.12&times;</td><td class="n">99.34%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td></td><td>32 B</td><td class="n">4</td><td class="n">161,910</td><td class="n"><div class="ratio"><span class="rv neg">0.48&times;</span><span class="rb"><i class="neg" style="width:7.9%"></i></span></div></td><td class="n">2.10&times;</td><td class="n">99.32%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td></td><td>64 B</td><td class="n">0</td><td class="n">84,762</td><td class="n"><div class="ratio"><span class="rv neg">0.91&times;</span><span class="rb"><i class="neg" style="width:15.2%"></i></span></div></td><td class="n">1.10&times;</td><td class="n">99.62%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td></td><td>64 B</td><td class="n">1</td><td class="n">160,873</td><td class="n"><div class="ratio"><span class="rv neg">0.48&times;</span><span class="rb"><i class="neg" style="width:8.0%"></i></span></div></td><td class="n">2.09&times;</td><td class="n">99.63%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td></td><td>64 B</td><td class="n">2</td><td class="n">159,632</td><td class="n"><div class="ratio"><span class="rv neg">0.48&times;</span><span class="rb"><i class="neg" style="width:8.1%"></i></span></div></td><td class="n">2.07&times;</td><td class="n">99.66%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td></td><td>64 B</td><td class="n">4</td><td class="n">157,792</td><td class="n"><div class="ratio"><span class="rv neg">0.49&times;</span><span class="rb"><i class="neg" style="width:8.1%"></i></span></div></td><td class="n">2.05&times;</td><td class="n">99.65%</td><td class="n">0.00%</td><td class="n">0.28</td></tr><tr><td><b>R16</b></td><td>16 B</td><td class="n">0</td><td class="n">374,619</td><td class="n"><div class="ratio"><span class="rv neg">0.40&times;</span><span class="rb"><i class="neg" style="width:6.7%"></i></span></div></td><td class="n">3.00&times;</td><td class="n">92.31%</td><td class="n">1.03%</td><td class="n">2.32</td></tr><tr><td></td><td>16 B</td><td class="n">1</td><td class="n">453,913</td><td class="n"><div class="ratio"><span class="rv neg">0.33&times;</span><span class="rb"><i class="neg" style="width:5.6%"></i></span></div></td><td class="n">3.63&times;</td><td class="n">92.64%</td><td class="n">2.22%</td><td class="n">2.32</td></tr><tr><td></td><td>16 B</td><td class="n">2</td><td class="n">398,890</td><td class="n"><div class="ratio"><span class="rv neg">0.38&times;</span><span class="rb"><i class="neg" style="width:6.3%"></i></span></div></td><td class="n">3.19&times;</td><td class="n">93.11%</td><td class="n">2.22%</td><td class="n">2.32</td></tr><tr><td></td><td>16 B</td><td class="n">4</td><td class="n">359,310</td><td class="n"><div class="ratio"><span class="rv neg">0.42&times;</span><span class="rb"><i class="neg" style="width:7.0%"></i></span></div></td><td class="n">2.88&times;</td><td class="n">93.25%</td><td class="n">2.22%</td><td class="n">2.32</td></tr><tr><td></td><td>32 B</td><td class="n">0</td><td class="n">252,009</td><td class="n"><div class="ratio"><span class="rv neg">0.60&times;</span><span class="rb"><i class="neg" style="width:10.0%"></i></span></div></td><td class="n">2.02&times;</td><td class="n">96.11%</td><td class="n">0.03%</td><td class="n">2.37</td></tr><tr><td></td><td>32 B</td><td class="n">1</td><td class="n">366,458</td><td class="n"><div class="ratio"><span class="rv neg">0.41&times;</span><span class="rb"><i class="neg" style="width:6.9%"></i></span></div></td><td class="n">2.93&times;</td><td class="n">96.13%</td><td class="n">0.00%</td><td class="n">2.37</td></tr><tr><td></td><td>32 B</td><td class="n">2</td><td class="n">352,958</td><td class="n"><div class="ratio"><span class="rv neg">0.43&times;</span><span class="rb"><i class="neg" style="width:7.2%"></i></span></div></td><td class="n">2.82&times;</td><td class="n">96.20%</td><td class="n">0.00%</td><td class="n">2.37</td></tr><tr><td></td><td>32 B</td><td class="n">4</td><td class="n">317,081</td><td class="n"><div class="ratio"><span class="rv neg">0.48&times;</span><span class="rb"><i class="neg" style="width:8.0%"></i></span></div></td><td class="n">2.54&times;</td><td class="n">96.42%</td><td class="n">0.00%</td><td class="n">2.37</td></tr><tr><td></td><td>64 B</td><td class="n">0</td><td class="n">188,838</td><td class="n"><div class="ratio"><span class="rv neg">0.80&times;</span><span class="rb"><i class="neg" style="width:13.4%"></i></span></div></td><td class="n">1.51&times;</td><td class="n">98.05%</td><td class="n">0.00%</td><td class="n">2.38</td></tr><tr><td></td><td>64 B</td><td class="n">1</td><td class="n">308,891</td><td class="n"><div class="ratio"><span class="rv neg">0.49&times;</span><span class="rb"><i class="neg" style="width:8.2%"></i></span></div></td><td class="n">2.47&times;</td><td class="n">98.05%</td><td class="n">0.00%</td><td class="n">2.38</td></tr><tr><td></td><td>64 B</td><td class="n">2</td><td class="n">304,063</td><td class="n"><div class="ratio"><span class="rv neg">0.50&times;</span><span class="rb"><i class="neg" style="width:8.3%"></i></span></div></td><td class="n">2.43&times;</td><td class="n">98.05%</td><td class="n">0.00%</td><td class="n">2.38</td></tr><tr><td></td><td>64 B</td><td class="n">4</td><td class="n">294,194</td><td class="n"><div class="ratio"><span class="rv neg">0.51&times;</span><span class="rb"><i class="neg" style="width:8.6%"></i></span></div></td><td class="n">2.35&times;</td><td class="n">98.05%</td><td class="n">0.00%</td><td class="n">2.38</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Axis 1</span>
+  <h2>Line size: bigger is better, everywhere</h2>
+  <div class="col">
+  <p>At no prefetch and one bank. Every step from 16 to 64 bytes cuts cycles and raises the L1 hit
+  rate, on all four layers. Nothing in this range trades off against anything.</p>
+  <p>The reason is spatial: <code>cin_block</code> is <code>line_bytes / 4</code>, so a 64-byte line
+  packs 16 CIN of one COUT quad. A burst walks COUT, and consecutive tiles walk CIN, so the wider
+  line is consumed rather than carried. Padding stays flat across the three sizes &mdash; 14.98% on
+  V8 at both 32 and 64 bytes &mdash; which says the extra bytes are used, not wasted.</p>
+  </div>
+  <div class="scroll"><table class=""><thead><tr><th>Layer</th><th class="n">16 B cycles</th><th class="n">16 B L1</th><th class="n">32 B cycles</th><th class="n">32 B L1</th><th class="n">64 B cycles</th><th class="n">64 B L1</th></tr></thead><tbody><tr><td><b>V8</b></td><td class="n">607,947</td><td class="n">88.33%</td><td class="n">406,182</td><td class="n">93.77%</td><td class="n">282,854</td><td class="n">96.86%</td></tr><tr><td><b>V9</b></td><td class="n">816,334</td><td class="n">93.72%</td><td class="n">563,874</td><td class="n">96.86%</td><td class="n">437,410</td><td class="n">98.43%</td></tr><tr><td><b>R9</b></td><td class="n">107,652</td><td class="n">98.49%</td><td class="n">92,394</td><td class="n">99.24%</td><td class="n">84,762</td><td class="n">99.62%</td></tr><tr><td><b>R16</b></td><td class="n">374,619</td><td class="n">92.31%</td><td class="n">252,009</td><td class="n">96.11%</td><td class="n">188,838</td><td class="n">98.05%</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Axis 2</span>
+  <h2>Prefetching pays only where the L1 is weakest</h2>
+  <div class="col">
+  <p>Cycles relative to prefetching off, at each layer and line size. The pattern is consistent: the
+  penalty grows with the line size, because the line size is what fixed the L1 in the first place.
+  At 16 bytes the prefetcher earns its keep on 2 of the four layers &mdash;
+  V8 by 11%, R16 by 4%. At 64 bytes it costs between 37% and 90%.</p>
+  <p>It never rescues a small line. V8's best prefetched 16-byte run is 541,184 cycles
+  against 282,854 for a 64-byte line with prefetching off.</p>
+  </div>
+  <div class="scroll"><table class=""><thead><tr><th>Layer</th><th>Line</th><th class="n">No prefetch</th><th class="n">Distance 1</th><th class="n">Distance 2</th><th class="n">Distance 4</th></tr></thead><tbody><tr><td><b>V8</b></td><td>16 B</td><td class="n">607,947</td><td class="n"><span class="neg">1.033&times;</span></td><td class="n"><span class="pos">0.927&times;</span></td><td class="n"><span class="pos">0.890&times;</span></td></tr><tr><td></td><td>32 B</td><td class="n">406,182</td><td class="n"><span class="neg">1.288&times;</span></td><td class="n"><span class="neg">1.166&times;</span></td><td class="n"><span class="neg">1.034&times;</span></td></tr><tr><td></td><td>64 B</td><td class="n">282,854</td><td class="n"><span class="neg">1.513&times;</span></td><td class="n"><span class="neg">1.472&times;</span></td><td class="n"><span class="neg">1.368&times;</span></td></tr><tr><td><b>V9</b></td><td>16 B</td><td class="n">816,334</td><td class="n"><span class="neg">1.317&times;</span></td><td class="n"><span class="neg">1.192&times;</span></td><td class="n"><span class="neg">1.005&times;</span></td></tr><tr><td></td><td>32 B</td><td class="n">563,874</td><td class="n"><span class="neg">1.515&times;</span></td><td class="n"><span class="neg">1.479&times;</span></td><td class="n"><span class="neg">1.391&times;</span></td></tr><tr><td></td><td>64 B</td><td class="n">437,410</td><td class="n"><span class="neg">1.685&times;</span></td><td class="n"><span class="neg">1.663&times;</span></td><td class="n"><span class="neg">1.619&times;</span></td></tr><tr><td><b>R9</b></td><td>16 B</td><td class="n">107,652</td><td class="n"><span class="neg">1.633&times;</span></td><td class="n"><span class="neg">1.608&times;</span></td><td class="n"><span class="neg">1.587&times;</span></td></tr><tr><td></td><td>32 B</td><td class="n">92,394</td><td class="n"><span class="neg">1.794&times;</span></td><td class="n"><span class="neg">1.769&times;</span></td><td class="n"><span class="neg">1.752&times;</span></td></tr><tr><td></td><td>64 B</td><td class="n">84,762</td><td class="n"><span class="neg">1.898&times;</span></td><td class="n"><span class="neg">1.883&times;</span></td><td class="n"><span class="neg">1.862&times;</span></td></tr><tr><td><b>R16</b></td><td>16 B</td><td class="n">374,619</td><td class="n"><span class="neg">1.212&times;</span></td><td class="n"><span class="neg">1.065&times;</span></td><td class="n"><span class="pos">0.959&times;</span></td></tr><tr><td></td><td>32 B</td><td class="n">252,009</td><td class="n"><span class="neg">1.454&times;</span></td><td class="n"><span class="neg">1.401&times;</span></td><td class="n"><span class="neg">1.258&times;</span></td></tr><tr><td></td><td>64 B</td><td class="n">188,838</td><td class="n"><span class="neg">1.636&times;</span></td><td class="n"><span class="neg">1.610&times;</span></td><td class="n"><span class="neg">1.558&times;</span></td></tr></tbody></table></div>
+
+  <div class="col">
+  <h3>Why it costs anything at all</h3>
+  <p>The <code>next_burst</code> prefetcher issues one request per line of the next burst. With the
+  L1 already at 97.0%, <b>94% of those requests find the line
+  resident and drop</b> &mdash; but the L1 port slot is spent before the array is probed, by design:
+  at <code>l1_ii</code> 1 every prefetch takes a cycle the demand stream could have used.</p>
+  <p>So it roughly doubles L1 port traffic to buy a few thousand timely fills out of 2.6 million
+  issued. On V8 at 64 bytes, <code>stall_l1_port</code> goes from 0 to 2.44 million
+  core-cycles. Raising the distance recovers part of it by spreading the requests out, never all of
+  it.</p>
+  <p>A prefetcher that helped at 64 bytes would have to check residency before spending the port.
+  That is a different policy, not a different distance.</p>
+  </div>
+  <div class="scroll"><table class=""><thead><tr><th>Distance</th><th class="n">Issued</th><th class="n">Dropped, already resident</th><th class="n">Drop rate</th><th class="n">Timely</th><th class="n">L1 port stall</th></tr></thead><tbody><tr><td>0</td><td class="n">0</td><td class="n">0</td><td class="n">&mdash;</td><td class="n">0</td><td class="n">0</td></tr><tr><td>1</td><td class="n">2,665,344</td><td class="n">2,461,008</td><td class="n">92.3%</td><td class="n">3,757</td><td class="n">2,455,514</td></tr><tr><td>2</td><td class="n">2,665,344</td><td class="n">2,390,307</td><td class="n">89.7%</td><td class="n">8,063</td><td class="n">2,464,400</td></tr><tr><td>4</td><td class="n">2,665,344</td><td class="n">2,303,594</td><td class="n">86.4%</td><td class="n">10,448</td><td class="n">2,468,578</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Axis 3</span>
+  <h2>L2 banking is inert</h2>
+  <div class="col">
+  <p>Cycles relative to one bank, meaned over four layers and five samples. Nothing moves. The largest
+  single-point effect anywhere in the 720 comparisons is +2.1%, and the
+  sign is wrong: more banks, marginally more cycles.</p>
+  <p>The cause is traffic, not wiring. Banking splits the L2's ports so that concurrent probes to
+  different sets need not queue, and at the sweep's best point the L2's port-contention stall is
+  exactly zero &mdash; there is no queue to split. The L2 sees 77,824 demand probes where
+  the L1 sees 2,597,632, one for every 33.</p>
+  <p>Banking is a knob for a workload whose L2 is hot. Under this layout the L1 keeps the L2 cold, so
+  the two facts are the same fact.</p>
+  </div>
+  <div class="scroll"><table class=""><thead><tr><th>Line</th><th class="n">Prefetch</th><th class="n">2 banks</th><th class="n">4 banks</th><th class="n">8 banks</th></tr></thead><tbody><tr><td>16 B</td><td class="n">0</td><td class="n">1.0000</td><td class="n">1.0000</td><td class="n">1.0000</td></tr><tr><td>16 B</td><td class="n">1</td><td class="n">1.0000</td><td class="n">1.0000</td><td class="n">1.0000</td></tr><tr><td>16 B</td><td class="n">2</td><td class="n">1.0000</td><td class="n">1.0000</td><td class="n">1.0000</td></tr><tr><td>16 B</td><td class="n">4</td><td class="n">1.0011</td><td class="n">1.0016</td><td class="n">1.0016</td></tr><tr><td>32 B</td><td class="n">0</td><td class="n">1.0000</td><td class="n">1.0000</td><td class="n">1.0000</td></tr><tr><td>32 B</td><td class="n">1</td><td class="n">1.0000</td><td class="n">1.0000</td><td class="n">1.0000</td></tr><tr><td>32 B</td><td class="n">2</td><td class="n">1.0000</td><td class="n">1.0000</td><td class="n">1.0000</td></tr><tr><td>32 B</td><td class="n">4</td><td class="n">1.0001</td><td class="n">1.0001</td><td class="n">1.0001</td></tr><tr><td>64 B</td><td class="n">0</td><td class="n">1.0000</td><td class="n">1.0000</td><td class="n">1.0000</td></tr><tr><td>64 B</td><td class="n">1</td><td class="n">1.0000</td><td class="n">1.0000</td><td class="n">1.0000</td></tr><tr><td>64 B</td><td class="n">2</td><td class="n">1.0000</td><td class="n">1.0000</td><td class="n">1.0000</td></tr><tr><td>64 B</td><td class="n">4</td><td class="n">1.0000</td><td class="n">1.0000</td><td class="n">1.0000</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Hit rates</span>
+  <h2>The L1 absorbs almost everything; the L2 falls off a cliff</h2>
+  <div class="col">
+  <p>The L1 numbers are in the tables above. The L2 number needs its own explanation, because it
+  reads 0.00% at nearly every point of the sweep and a flat zero is not a result a reader can act
+  on.</p>
+  <p>Walking <code>l2_size_bytes</code> from the sweep's 512 KB to 16 MB at the best point shows it is
+  a pure capacity cliff, and shows exactly where the edge is: the L2 hit rate jumps from 0 to
+  52.63% the moment the cache can hold the layer's whole weight set &mdash;
+  4 MB for V8 and V9, 2 MB for R16. Not before, not gradually.</p>
+  <p>That is LRU meeting a cyclic sweep. The layer is walked start to end, over and over; at any size
+  under the working set, every line is evicted before it is used again. Above it, every line is
+  fetched exactly once and the 2.11 accesses per line collapse to 1.</p>
+  <p><b>R9 is the exception and it is the good kind.</b> Its 0.28 MiB already fits in 512 KB, so its
+  0.00% means every line reaches the L2 once and never comes back &mdash; the L1 is holding it. A
+  16 MB L2 changes nothing for R9.</p>
+  <p>The practical reading: for V8, V9 and R16 the swept 512 KB L2 is on the wrong side of the edge
+  and is buying nothing. Crossing it is worth 15% of V8's remaining cycles and
+  13% of R16's.</p>
+  </div>
+  <div class="scroll"><table class=""><thead><tr><th>Layer</th><th class="n">Weight set</th><th class="n">512KB</th><th class="n">1MB</th><th class="n">2MB</th><th class="n">4MB</th><th class="n">8MB</th><th class="n">16MB</th></tr></thead><tbody><tr><td><b>V8</b></td><td class="n">2.25 MiB</td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="hi">52.6%</span></td><td class="n"><span class="hi">52.6%</span></td><td class="n"><span class="hi">52.6%</span></td></tr><tr><td><b>V9</b></td><td class="n">2.25 MiB</td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="hi">52.6%</span></td><td class="n"><span class="hi">52.6%</span></td><td class="n"><span class="hi">52.6%</span></td></tr><tr><td><b>R9</b></td><td class="n">0.28 MiB</td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="lo">0.0%</span></td></tr><tr><td><b>R16</b></td><td class="n">1.12 MiB</td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="lo">0.0%</span></td><td class="n"><span class="hi">52.6%</span></td><td class="n"><span class="hi">52.6%</span></td><td class="n"><span class="hi">52.6%</span></td><td class="n"><span class="hi">52.6%</span></td></tr></tbody></table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Control</span>
+  <h2>Is it the layout, or just having a cache?</h2>
+  <div class="col">
+  <p>The same point &mdash; 64-byte lines, one bank, no prefetch &mdash; run under all three layouts
+  in the tree, on all four layers and all five samples. Without this the speedups above could not be
+  attributed.</p>
+  <p><code>khkw_split</code> wins on every layer, on cycles, on L1 hit rate, and on DRAM traffic. The
+  margin over <code>block_pack</code> runs from 2.2&times; to 3.0&times;,
+  and over <code>split_cin</code> from 1.5&times; to 3.3&times;. R9 is the
+  sharpest case: <code>split_cin</code> is <i>worse</i> than <code>block_pack</code> there, while
+  <code>khkw_split</code> is 3.0&times; better than <code>block_pack</code> and
+  3.3&times; better than <code>split_cin</code>.</p>
+  </div>
+  <div class="scroll"><table class=""><thead><tr><th>Layer</th><th>Layout</th><th class="n">Cycles</th><th class="n">L1 hit</th><th class="n">DRAM lines</th><th class="n">vs stage 3</th></tr></thead><tbody><tr><td><b>V8</b></td><td><code>block_pack</code></td><td class="n">822,590</td><td class="n">83.46%</td><td class="n">409,600</td><td class="n"><div class="ratio"><span class="rv neg">0.37&times;</span><span class="rb"><i class="neg" style="width:6.1%"></i></span></div></td></tr><tr><td></td><td><code>split_cin</code></td><td class="n">509,278</td><td class="n">91.23%</td><td class="n">217,088</td><td class="n"><div class="ratio"><span class="rv neg">0.59&times;</span><span class="rb"><i class="neg" style="width:9.9%"></i></span></div></td></tr><tr><td></td><td><code>khkw_split</code></td><td class="n">282,854</td><td class="n">96.86%</td><td class="n">77,824</td><td class="n"><div class="ratio"><span class="rv pos">1.07&times;</span><span class="rb"><i class="pos" style="width:17.8%"></i></span></div></td></tr><tr><td><b>V9</b></td><td><code>block_pack</code></td><td class="n">977,146</td><td class="n">91.73%</td><td class="n">409,600</td><td class="n"><div class="ratio"><span class="rv neg">0.32&times;</span><span class="rb"><i class="neg" style="width:5.3%"></i></span></div></td></tr><tr><td></td><td><code>split_cin</code></td><td class="n">663,834</td><td class="n">95.62%</td><td class="n">217,088</td><td class="n"><div class="ratio"><span class="rv neg">0.47&times;</span><span class="rb"><i class="neg" style="width:7.8%"></i></span></div></td></tr><tr><td></td><td><code>khkw_split</code></td><td class="n">437,410</td><td class="n">98.43%</td><td class="n">77,824</td><td class="n"><div class="ratio"><span class="rv neg">0.71&times;</span><span class="rb"><i class="neg" style="width:11.8%"></i></span></div></td></tr><tr><td><b>R9</b></td><td><code>block_pack</code></td><td class="n">252,912</td><td class="n">79.76%</td><td class="n">4,608</td><td class="n"><div class="ratio"><span class="rv neg">0.31&times;</span><span class="rb"><i class="neg" style="width:5.1%"></i></span></div></td></tr><tr><td></td><td><code>split_cin</code></td><td class="n">282,961</td><td class="n">87.86%</td><td class="n">109,747</td><td class="n"><div class="ratio"><span class="rv neg">0.27&times;</span><span class="rb"><i class="neg" style="width:4.5%"></i></span></div></td></tr><tr><td></td><td><code>khkw_split</code></td><td class="n">84,762</td><td class="n">99.62%</td><td class="n">4,608</td><td class="n"><div class="ratio"><span class="rv neg">0.91&times;</span><span class="rb"><i class="neg" style="width:15.2%"></i></span></div></td></tr><tr><td><b>R16</b></td><td><code>block_pack</code></td><td class="n">451,694</td><td class="n">89.75%</td><td class="n">198,656</td><td class="n"><div class="ratio"><span class="rv neg">0.34&times;</span><span class="rb"><i class="neg" style="width:5.6%"></i></span></div></td></tr><tr><td></td><td><code>split_cin</code></td><td class="n">302,050</td><td class="n">94.57%</td><td class="n">108,544</td><td class="n"><div class="ratio"><span class="rv neg">0.50&times;</span><span class="rb"><i class="neg" style="width:8.4%"></i></span></div></td></tr><tr><td></td><td><code>khkw_split</code></td><td class="n">188,838</td><td class="n">98.05%</td><td class="n">38,912</td><td class="n"><div class="ratio"><span class="rv neg">0.80&times;</span><span class="rb"><i class="neg" style="width:13.4%"></i></span></div></td></tr></tbody></table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Provenance</span>
+  <h2>What ran, and how to run it again</h2>
+  <div class="col">
+  <p>Held fixed across the sweep, read back off a result row rather than retyped:
+  16 KB 8-way L1,
+  512 KB 16-way L2 with 32 MSHRs,
+  <code>cout_block</code> 4, 1-byte weights,
+  <code>l1_latency</code> 0, <code>l2_latency</code> <b>2</b>,
+  <code>l2_miss_latency</code> 24,
+  LRU, non-inclusive, 16 cores.</p>
+  <p>Swept: line size {16, 32, 64} B (as <code>cin_block</code> = <code>line_bytes / 4</code>),
+  <code>l2_banks</code> {1, 2, 4, 8}, <code>prefetch_distance</code> {0, 1, 2, 4}. Distance 0
+  carries <code>prefetch_policy: none</code>, since <code>validate()</code> refuses
+  <code>next_burst</code> at distance 0 rather than silently running as none.</p>
+  <p>Line size is not an axis inside one sweep invocation: <code>BroadcastSweep</code> gives one
+  mapper to the whole grid, so the 48 points run as three grids of 16, each over its own pass of the
+  stream. That is 60 invocations rather than 960 process launches.</p>
+  </div>
+<pre><code># the mapper and its checks
+src/wcache/native/include/wcache/khkw_split.h
+src/wcache/native/src/khkw_split.cpp
+src/wcache/native/tests/test_khkw_split.cpp        10,361 checks
+
+# the drivers, in profiling/0823_stagewise_verify/stage4_wcache/
+run_khkw_sweep.py        48 configs x 4 layers x 5 samples   86 s
+run_layout_control.py    3 layouts x 4 layers x 5 samples      5 s
+run_l2_capacity_probe.py 6 L2 sizes x 4 layers x 5 samples    10 s
+analyze_khkw_sweep.py    -> outputs/khkw_vs_stage3.csv
+
+# on Delta
+srun -A bebv-delta-gpu -p gpuA100x4-interactive --gpus=1 -n1 -c 16 \
+     -t 00:45:00 --mem=32g python3 run_khkw_sweep.py 16</code></pre>
+  <div class="col">
+  <p>The full test suite is 58,490 checks over 20 binaries, plus 316 compile-refusal cases and the
+  end-to-end CLI gate, all green.</p>
+  </div>
+</section>
+
+<footer>
+  Stage 4 of the 2026-08-23 stagewise verification. Row-level data in
+  <code>stage4_wcache/outputs/</code>: <code>khkw_sweep.csv</code> (960 rows),
+  <code>khkw_vs_stage3.csv</code> (192), <code>khkw_layout_control.csv</code> (60),
+  <code>khkw_l2_capacity.csv</code> (120).
+</footer>
+</div>

@@ -8,7 +8,7 @@ BIN  := loasgen
 
 all: $(BIN)
 
-$(BIN): $(SRCS) LoASGen.h
+$(BIN): $(SRCS) LoASGen.h ../tick_output.h
 	$(CXX) $(CXXFLAGS) -o $(BIN) $(SRCS)
 
 clean:

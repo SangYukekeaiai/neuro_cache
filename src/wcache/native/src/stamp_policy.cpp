@@ -1,5 +1,6 @@
 #include "wcache/stamp_policy.h"
 
+#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -105,10 +106,72 @@ void LruPolicy::on_hit(SlotId slot) { stamp(slot); }
 // cast-to-void to stay warning-clean.
 void FifoPolicy::on_hit(SlotId) {}
 
+// --- Belady's MIN ------------------------------------------------------------
+//
+// The sign flip. Everything below mirrors StampPolicy with `<` replaced by `>`
+// and the counter replaced by what the engine supplies.
+
+namespace {
+constexpr std::int64_t kNever = INT64_MAX;
+}
+
+BeladyPolicy::BeladyPolicy(std::int32_t num_slots) {
+    if (num_slots <= 0) {
+        throw std::invalid_argument("BeladyPolicy: num_slots must be positive, got " +
+                                    std::to_string(num_slots));
+    }
+    next_use_.assign(static_cast<std::size_t>(num_slots), kNever);
+}
+
+std::size_t BeladyPolicy::index_or_reject(const char* verb, SlotId slot) const {
+    const std::int64_t i = slot.get();
+    if (i < 0 || i >= static_cast<std::int64_t>(next_use_.size())) {
+        throw std::out_of_range("BeladyPolicy::" + std::string(verb) + ": slot " +
+                                std::to_string(i) + " is outside the " +
+                                std::to_string(next_use_.size()) + " this policy has");
+    }
+    return static_cast<std::size_t>(i);
+}
+
+// Both empty on purpose. MIN consults the future and nothing else, and the
+// engine has already supplied it through note_next_use by the time either of
+// these runs. The bound check is still made, so a bad slot id is refused here
+// exactly as it would be by a policy that stored something.
+void BeladyPolicy::on_hit(SlotId slot) { index_or_reject("on_hit", slot); }
+void BeladyPolicy::on_fill(SlotId slot) { index_or_reject("on_fill", slot); }
+
+void BeladyPolicy::on_invalidate(SlotId slot) {
+    next_use_[index_or_reject("on_invalidate", slot)] = kNever;
+}
+
+void BeladyPolicy::note_next_use(SlotId slot, std::int64_t next_use) {
+    next_use_[index_or_reject("note_next_use", slot)] = next_use;
+}
+
+SlotId BeladyPolicy::pick_victim(const std::vector<Candidate>& candidates) {
+    if (candidates.empty()) {
+        throw std::invalid_argument("BeladyPolicy::pick_victim: no candidates");
+    }
+    SlotId       victim{candidates.front().slot};
+    std::int64_t best = next_use_[index_or_reject("pick_victim", victim)];
+    for (const Candidate& c : candidates) {
+        const std::int64_t v = next_use_[index_or_reject("pick_victim", c.slot)];
+        // Strictly greater keeps the FIRST maximum seen, and the tie-break below
+        // then makes that independent of order. Both halves are needed: several
+        // slots holding lines never referenced again all carry kNever.
+        if (v > best || (v == best && c.slot.get() < victim.get())) {
+            best   = v;
+            victim = c.slot;
+        }
+    }
+    return victim;
+}
+
 std::unique_ptr<ReplacementPolicy> make_policy(PolicyKind kind, std::int32_t num_slots) {
     switch (kind) {
-        case PolicyKind::LRU:  return std::make_unique<LruPolicy>(num_slots);
-        case PolicyKind::FIFO: return std::make_unique<FifoPolicy>(num_slots);
+        case PolicyKind::LRU:    return std::make_unique<LruPolicy>(num_slots);
+        case PolicyKind::FIFO:   return std::make_unique<FifoPolicy>(num_slots);
+        case PolicyKind::BELADY: return std::make_unique<BeladyPolicy>(num_slots);
         case PolicyKind::RANDOM:
             reject("make_policy",
                    "policy 'random' is a placeholder and is not implemented; use 'lru' or 'fifo'");

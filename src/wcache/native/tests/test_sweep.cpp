@@ -350,6 +350,60 @@ void test_a_mixed_layout_grid_is_rejected() {
     }
 }
 
+void test_a_grid_that_changes_the_mapper_class_is_rejected() {
+    check::group("W4: `layout` and `cin_lo_blocks` join the layout guard");
+    const std::vector<unsigned char> bytes = build_three_tile_stream();
+
+    // 1. The mapper CLASS changes. cin_block, cout_block and weight_bytes all
+    //    agree, so the three fields the old guard checked would have passed it.
+    {
+        MemByteSource      src(bytes);
+        StreamingTileTrace trace(src);
+        BlockPackMapper    mapper(shape_of(trace.header()), 1, 16, 1);
+        const std::vector<RunConfig> cfgs = parse_and_validate(
+            mapper, trace.header(),
+            {R"({"cin_block": 1, "cout_block": 16, "layout": "block_pack"})",
+             R"({"cin_block": 1, "cout_block": 16, "layout": "split_cin"})"});
+        CHECK_THROWS(std::invalid_argument, BroadcastSweep(trace, mapper, cfgs, 256));
+    }
+
+    // 2. Both points are split_cin and every declared field agrees. What
+    //    differs is l1_size_bytes, which validate turns into two different
+    //    cin_lo_blocks, which is two different mappers. An L1-size sweep is a
+    //    layout sweep under this layout, and that is the point of the check.
+    {
+        MemByteSource      src(bytes);
+        StreamingTileTrace trace(src);
+        BlockPackMapper    mapper(shape_of(trace.header()), 1, 16, 1);
+        const std::vector<RunConfig> cfgs = parse_and_validate(
+            mapper, trace.header(),
+            {R"({"cin_block": 1, "cout_block": 16, "layout": "split_cin",
+                 "l1_size_bytes": 8192})",
+             R"({"cin_block": 1, "cout_block": 16, "layout": "split_cin",
+                 "l1_size_bytes": 16384})"});
+        CHECK_EQ(cfgs[0].cin_lo_blocks, std::int64_t{64});
+        CHECK_EQ(cfgs[1].cin_lo_blocks, std::int64_t{128});
+        CHECK_THROWS(std::invalid_argument, BroadcastSweep(trace, mapper, cfgs, 256));
+    }
+
+    // 3. The SAME sweep under block_pack is legal, because the field stays -1
+    //    at both points and the mapper does not move. Non-vacuous: without this
+    //    the guard above could be refusing every L1-size sweep.
+    {
+        MemByteSource      src(bytes);
+        StreamingTileTrace trace(src);
+        BlockPackMapper    mapper(shape_of(trace.header()), 1, 16, 1);
+        const std::vector<RunConfig> cfgs = parse_and_validate(
+            mapper, trace.header(),
+            {R"({"cin_block": 1, "cout_block": 16, "l1_size_bytes": 8192})",
+             R"({"cin_block": 1, "cout_block": 16, "l1_size_bytes": 16384})"});
+        CHECK_EQ(cfgs[0].cin_lo_blocks, std::int64_t{-1});
+        CHECK_EQ(cfgs[1].cin_lo_blocks, std::int64_t{-1});
+        BroadcastSweep sweep(trace, mapper, cfgs, 256);   // must NOT throw
+        CHECK_EQ(check::ssize(cfgs), std::int64_t{2});
+    }
+}
+
 void test_a_layout_the_mapper_does_not_serve_is_rejected() {
     check::group("Task 17: the injected mapper must be the grid's layout");
     const std::vector<unsigned char> bytes = build_three_tile_stream();
@@ -412,6 +466,7 @@ int main() {
     test_the_three_configs_are_not_the_same_machine();
     test_step_tile_advances_exactly_one_tile();
     test_a_mixed_layout_grid_is_rejected();
+    test_a_grid_that_changes_the_mapper_class_is_rejected();
     test_a_layout_the_mapper_does_not_serve_is_rejected();
     test_max_engines_is_enforced_at_construction();
     test_the_window_never_holds_more_than_one_tile();

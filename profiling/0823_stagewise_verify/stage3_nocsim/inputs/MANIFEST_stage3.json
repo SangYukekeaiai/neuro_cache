@@ -1,0 +1,162 @@
+{
+ "stage": "3_nocsim",
+ "arm": "M (16 nodes)",
+ "arch": {
+  "path": "inputs/arch/loas_inst16_node32kb_noc2MiB_pe16.yaml",
+  "sha256_16": "21ebf42d3302ec9b",
+  "dram_latency": 0.25,
+  "note": "0.25 cycles of DRAM port occupancy per 256-bit packet = 64 GB/s at 500 MHz"
+ },
+ "eventsim": {
+  "binary": "src/nocsim/eventsim/eventsim",
+  "sha256_16": "28e3dad50ad0ad71"
+ },
+ "schedules": {
+  "V8": {
+   "path": "stage2_weight_trace/inputs/schedules/loas/vgg16_T4_n5/layer_08_features_27.json",
+   "dram_num_steps": 16,
+   "mode": "gb_oooo",
+   "problem": {
+    "KH": 3,
+    "KW": 3,
+    "CIN": 512,
+    "COUT": 512,
+    "HO": 4,
+    "WO": 4,
+    "T": 4,
+    "shape": "snn-layer"
+   },
+   "sha256_16": "1062c3603f95e367"
+  },
+  "R9": {
+   "path": "stage2_weight_trace/inputs/schedules/loas/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+   "dram_num_steps": 2,
+   "mode": "gb_oooo",
+   "problem": {
+    "KH": 3,
+    "KW": 3,
+    "CIN": 256,
+    "COUT": 128,
+    "HO": 8,
+    "WO": 8,
+    "T": 4,
+    "shape": "snn-layer"
+   },
+   "sha256_16": "f714c1d536af4f0f"
+  },
+  "V9": {
+   "path": "stage2_weight_trace/inputs/schedules/loas/vgg16_T4_n5/layer_09_features_30.json",
+   "dram_num_steps": 16,
+   "mode": "gb_oooo",
+   "problem": {
+    "KH": 3,
+    "KW": 3,
+    "CIN": 512,
+    "COUT": 512,
+    "HO": 4,
+    "WO": 4,
+    "T": 4,
+    "shape": "snn-layer"
+   },
+   "sha256_16": "a8f603d139f7b872"
+  },
+  "R16": {
+   "path": "stage2_weight_trace/inputs/schedules/loas/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+   "dram_num_steps": 32,
+   "mode": "gb_oooo",
+   "problem": {
+    "KH": 3,
+    "KW": 3,
+    "CIN": 512,
+    "COUT": 256,
+    "HO": 4,
+    "WO": 4,
+    "T": 4,
+    "shape": "snn-layer"
+   },
+   "sha256_16": "75f3cb30d21a6a50"
+  }
+ },
+ "weight_traces": {
+  "V8/s0": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/vgg16_T4_n5/layer_08_features_27/sample_00000.json.gz",
+   "sha256_16": "8bfe44e5187b8e74"
+  },
+  "V8/s1": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/vgg16_T4_n5/layer_08_features_27/sample_00001.json.gz",
+   "sha256_16": "08def1f624cf4715"
+  },
+  "V8/s2": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/vgg16_T4_n5/layer_08_features_27/sample_00002.json.gz",
+   "sha256_16": "014cafc2c485ad15"
+  },
+  "V8/s3": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/vgg16_T4_n5/layer_08_features_27/sample_00003.json.gz",
+   "sha256_16": "4f3070fd6ab606bc"
+  },
+  "V8/s4": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/vgg16_T4_n5/layer_08_features_27/sample_00004.json.gz",
+   "sha256_16": "fda289f78c4735b6"
+  },
+  "R9/s0": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_09_layer2_0_conv2/sample_00000.json.gz",
+   "sha256_16": "2b857ef6e9fd1ec3"
+  },
+  "R9/s1": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_09_layer2_0_conv2/sample_00001.json.gz",
+   "sha256_16": "b758268ad94134db"
+  },
+  "R9/s2": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_09_layer2_0_conv2/sample_00002.json.gz",
+   "sha256_16": "599bc97b59f28cc2"
+  },
+  "R9/s3": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_09_layer2_0_conv2/sample_00003.json.gz",
+   "sha256_16": "cbb1482e7710b00a"
+  },
+  "R9/s4": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_09_layer2_0_conv2/sample_00004.json.gz",
+   "sha256_16": "ba2d849970c77f71"
+  },
+  "V9/s0": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/vgg16_T4_n5/layer_09_features_30/sample_00000.json.gz",
+   "sha256_16": "68761646a61ab461"
+  },
+  "V9/s1": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/vgg16_T4_n5/layer_09_features_30/sample_00001.json.gz",
+   "sha256_16": "2df0ab922ccab2ca"
+  },
+  "V9/s2": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/vgg16_T4_n5/layer_09_features_30/sample_00002.json.gz",
+   "sha256_16": "4ff15714942c0e10"
+  },
+  "V9/s3": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/vgg16_T4_n5/layer_09_features_30/sample_00003.json.gz",
+   "sha256_16": "8955f203e8080030"
+  },
+  "V9/s4": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/vgg16_T4_n5/layer_09_features_30/sample_00004.json.gz",
+   "sha256_16": "6dc77809a52ce431"
+  },
+  "R16/s0": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_16_layer3_0_conv2/sample_00000.json.gz",
+   "sha256_16": "1ba5547864947da3"
+  },
+  "R16/s1": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_16_layer3_0_conv2/sample_00001.json.gz",
+   "sha256_16": "d14d7609b232baac"
+  },
+  "R16/s2": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_16_layer3_0_conv2/sample_00002.json.gz",
+   "sha256_16": "d17f0b73e935dbf8"
+  },
+  "R16/s3": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_16_layer3_0_conv2/sample_00003.json.gz",
+   "sha256_16": "9fd74ec3334c2f13"
+  },
+  "R16/s4": {
+   "path": "stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_16_layer3_0_conv2/sample_00004.json.gz",
+   "sha256_16": "8edefd8a12541e48"
+  }
+ }
+}

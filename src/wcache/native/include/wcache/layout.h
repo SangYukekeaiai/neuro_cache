@@ -17,6 +17,32 @@
 
 namespace wcache {
 
+// Which memory layout a run uses.
+//
+// A config knob and not a compile-time choice, for the reason PolicyKind is
+// one: the study COMPARES layouts, and the comparison only means anything if
+// the two runs differ in this field and nothing else. A build flag would make
+// the two halves of the comparison two different binaries.
+//
+// The vocabulary lives beside AddressMapper rather than in config.h because
+// the module that owns the thing owns the name of the thing. A mapper added
+// later needs an enumerator here, a spelling in config.cpp, and a branch at
+// the two construction sites; nothing else in the tree learns the list.
+//
+//     BlockPack  BlockPackMapper, nesting [KH][KW][cin_blk][cout_blk]
+//     SplitCin   SplitCinMapper,  nesting [KH][KW][cin_hi][cout_blk][cin_lo]
+//     KhkwSplit  KhkwSplitMapper, nesting [pos_hi][cout_blk][cin_blk][pos_lo],
+//                where pos = kh * KW + kw split at min(8, KH*KW)
+//
+// Both mappers answer the same interface below, so the engine still never
+// learns which one it has. What changes is which line a coordinate lands on,
+// and therefore which set the line lands in.
+enum class LayoutKind : std::uint8_t {
+    BlockPack = 0,
+    SplitCin  = 1,
+    KhkwSplit = 2,
+};
+
 // Where a line sits in a set-associative array: which set holds it, and the
 // value that tells it apart from the other lines mapping to that same set.
 //

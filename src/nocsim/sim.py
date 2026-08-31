@@ -46,7 +46,7 @@ from parsers.layer import (
 )
 from parsers.arch import SNNArch
 from parsers.bitwidths import SNNBitwidths
-from archmodels import ArchComputeModel
+from archmodels import ArchComputeModel, ComputeCycles
 
 from .schedule.decode import decode, schedule_from_strategy
 from .schedule.buf_spatial import BufSpatial
@@ -59,6 +59,23 @@ from .core.noc import NoC
 # Programmatic API  (used by the MIP solver pipeline)
 # ---------------------------------------------------------------------------
 
+def _solver_result(data: Dict) -> Dict:
+    """Return the solver result block of a loaded schedule JSON.
+
+    A raw ``mip_solver solve`` document IS the result: top-level ``status``,
+    ``has_solution``, ``objective``, ``strategy``, ``metrics``, ``configs``
+    and no ``result`` key. A ``tracegen.ScheduleArtifact`` wraps that same
+    document under ``"result"`` and adds ``arch``/``trace_dir``/
+    ``layer_name``/``workload``/``dram_num_steps``/``mode`` beside it.
+
+    Accepting both here widens what loads and narrows nothing: on a raw
+    document ``.get("result", data)`` returns the document itself, which is
+    exactly the pre-B179 behavior. The alternative -- migrating one of the
+    two producers -- would invalidate every cached artifact already on disk.
+    """
+    return data.get("result", data)
+
+
 def run(
     x:         Dict,
     prob:      SNNProb,
@@ -68,6 +85,7 @@ def run(
     arch:      Optional[SNNArch] = None,
     compute_model: Optional[ArchComputeModel] = None,
     trace:     Optional[np.ndarray] = None,
+    cycles_by_step: Optional[Dict[Tuple[int, int], ComputeCycles]] = None,
 ) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int]]:
     """Generate the TC list for one solved MIP result and write it to CSV.
 
@@ -91,6 +109,13 @@ def run(
         trace:     Optional real spike trace, passed straight through to
                    combine(). None (default) behaves exactly as before this
                    parameter existed.
+        cycles_by_step: Optional ``{(dram_i, noc_i): ComputeCycles}`` table
+                   read from the weight trace this schedule was solved for
+                   (``tracegen.load_step_cycles(...).by_step``), passed
+                   straight through to combine(). When given it is the cycle
+                   source for every step and both compute_model and trace are
+                   ignored (ruling U31). None (default) behaves exactly as
+                   before this parameter existed.
 
     Returns:
         ``(unicast_hops, multicast_hops, dram_cost)`` — each a dict keyed by
@@ -102,7 +127,9 @@ def run(
     schedule = decode(x, prob)
     bs       = BufSpatial(schedule, prob)
     si       = StepInfo(schedule, prob)
-    gen      = combine(schedule, bs, si, prob, bitwidths, arch=arch, compute_model=compute_model, trace=trace)
+    gen      = combine(schedule, bs, si, prob, bitwidths, arch=arch,
+                       compute_model=compute_model, trace=trace,
+                       cycles_by_step=cycles_by_step)
     gen.to_file(out_file)
     return (gen.unicast_hops, gen.multicast_hops, gen.dram_cost)
 
@@ -115,20 +142,28 @@ def run_from_json(
     arch:          Optional[SNNArch] = None,
     compute_model: Optional[ArchComputeModel] = None,
     trace:         Optional[np.ndarray] = None,
+    cycles_by_step: Optional[Dict[Tuple[int, int], ComputeCycles]] = None,
 ) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int]]:
     """Generate the TC list from a solver JSON output file and write it to CSV.
 
     This variant requires no Gurobi installation at replay time; the schedule
     is reconstructed from the ``strategy`` block in the JSON.
 
+    Two JSON shapes load: a raw ``mip_solver solve`` document, whose top
+    level *is* the solver result, and a ``tracegen.ScheduleArtifact``, which
+    nests that same result under ``"result"`` alongside its own identity
+    fields (PROGRESS.md B179).
+
     Args:
-        schedule_path: Path to the solver JSON file (output of ``mip_solver solve``).
+        schedule_path: Path to the solver JSON output (``mip_solver solve``)
+                       or to a persisted ScheduleArtifact.
         prob:          Parsed SNN layer.
         bitwidths:     Per-variable bit widths.
         out_file:      Destination CSV path.
         arch:          Parsed arch config -- see ``run()``.
         compute_model: Optional per-architecture cycle model -- see ``run()``.
         trace:         Optional real spike trace -- see ``run()``.
+        cycles_by_step: Optional per-step cycle table -- see ``run()``.
 
     Returns:
         ``(unicast_hops, multicast_hops, dram_cost)`` — see ``run()``.
@@ -137,15 +172,18 @@ def run_from_json(
         ValueError: If the JSON does not contain a feasible solution.
     """
     with open(schedule_path) as fh:
-        result = json.load(fh)
+        data = json.load(fh)
 
+    result = _solver_result(data)
     if not result.get("has_solution"):
         raise ValueError(f"No feasible solution found in {schedule_path}")
 
     schedule = schedule_from_strategy(result["strategy"], prob)
     bs       = BufSpatial(schedule, prob)
     si       = StepInfo(schedule, prob)
-    gen      = combine(schedule, bs, si, prob, bitwidths, arch=arch, compute_model=compute_model, trace=trace)
+    gen      = combine(schedule, bs, si, prob, bitwidths, arch=arch,
+                       compute_model=compute_model, trace=trace,
+                       cycles_by_step=cycles_by_step)
     gen.to_file(out_file)
     return (gen.unicast_hops, gen.multicast_hops, gen.dram_cost)
 
@@ -162,7 +200,7 @@ def run_eventsim(
     X:            int,
     Y:            int,
     dram_port:    int,
-    dram_latency: int,
+    dram_latency: float,
     binary:       Optional[pathlib.Path] = None,
 ) -> Dict[str, int]:
     """Invoke the compiled eventsim backend and return its JSON summary.
@@ -250,6 +288,16 @@ def _build_parser() -> argparse.ArgumentParser:
         help=f"output CSV path (default: {_DEFAULT_OUT})",
     )
     parser.add_argument(
+        "--weight-trace",
+        metavar="JSON_GZ",
+        help=(
+            "path to ONE saved weight-trace sample (sample_NNNNN.json.gz). "
+            "Charges every schedule step the per-tile mac_cycles stored in "
+            "that file instead of a static formula. One file is one sample, "
+            "so there is no --sample flag"
+        ),
+    )
+    parser.add_argument(
         "--simulate",
         action="store_true",
         help=(
@@ -278,12 +326,26 @@ def main(argv=None) -> int:
 
     schedule_path = pathlib.Path(args.schedule)
 
+    cycles_by_step = None
+    if args.weight_trace:
+        # Imported here, not at module scope: tracegen is the trace-writing
+        # layer and itself imports nocsim.schedule, so only the CLI -- the
+        # one caller that starts from a file path rather than an in-memory
+        # table -- takes the dependency.
+        from tracegen import load_step_cycles
+        try:
+            cycles_by_step = load_step_cycles(pathlib.Path(args.weight_trace)).by_step
+        except (FileNotFoundError, KeyError, ValueError) as exc:
+            print(f"error loading weight trace: {exc}", file=sys.stderr)
+            return 2
+
     try:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         unicast_hops, multicast_hops, dram_cost = run_from_json(
-            schedule_path, prob, bitwidths, out_path, arch=arch
+            schedule_path, prob, bitwidths, out_path, arch=arch,
+            cycles_by_step=cycles_by_step,
         )
-    except (FileNotFoundError, ValueError) as exc:
+    except (FileNotFoundError, ValueError, KeyError) as exc:
         print(f"simulation failed: {exc}", file=sys.stderr)
         return 2
 
@@ -299,6 +361,11 @@ def main(argv=None) -> int:
             f"dram_cost={dram_cost[var]:<8}"
         )
     print(f"output        : {out_path}")
+    if cycles_by_step is not None:
+        print(
+            f"cycle source  : {len(cycles_by_step)} per-step entries from "
+            f"{args.weight_trace}"
+        )
 
     if args.simulate:
         # eventsim needs the mesh dimensions and DRAM port id, neither of
@@ -306,8 +373,8 @@ def main(argv=None) -> int:
         # formula, not a re-run of combine()) rather than changing its
         # already-established return shape.
         with open(schedule_path) as fh:
-            result = json.load(fh)
-        schedule = schedule_from_strategy(result["strategy"], prob)
+            data = json.load(fh)
+        schedule = schedule_from_strategy(_solver_result(data)["strategy"], prob)
         sf = schedule.spatial_factors
         X  = sf[DIM_T] * sf[DIM_WO] * sf[DIM_HO]
         Y  = sf[DIM_CIN] * sf[DIM_KW] * sf[DIM_KH] * sf[DIM_COUT]

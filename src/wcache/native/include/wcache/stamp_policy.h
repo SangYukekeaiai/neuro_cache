@@ -112,6 +112,57 @@ public:
     void on_hit(SlotId slot) override;
 };
 
+// Belady's MIN, the optimal offline replacement policy.
+//
+// NOT a shippable policy and not offered as one: it needs the future, so it
+// exists to bound what any real policy could achieve at a given geometry. Plan
+// log/2026-08-31-belady-l2-plan.md section 1 states the question it is built to
+// answer, which is whether the L2's 0.00% at 16-way is a replacement failure or
+// a set that is genuinely over-subscribed.
+//
+// It is a StampPolicy with the sign flipped. `note_next_use` writes the stamp
+// instead of a counter, and `pick_victim` takes the MAXIMUM: the line whose next
+// reference is furthest away is the one MIN evicts. A line never referenced
+// again carries INT64_MAX and therefore leaves first, which is what MIN
+// prescribes and is also where most of its advantage over LRU comes from.
+//
+// It does not inherit StampPolicy, because it needs the opposite comparison and
+// the base class's `stamp()` counter would be dead weight. What it does share is
+// the flat-vector-indexed-by-SlotId shape and the order-independence contract.
+class BeladyPolicy final : public ReplacementPolicy {
+public:
+    // Throws std::invalid_argument for a non-positive count, as StampPolicy
+    // does and for the same reason.
+    explicit BeladyPolicy(std::int32_t num_slots);
+
+    // Both are no-ops, and neither is a stub. A hit and a fill tell this policy
+    // nothing it can use: what matters is the next use, and the engine supplies
+    // that through `note_next_use` immediately before either call. Recording the
+    // event as well would be recording the past, which MIN does not consult.
+    void on_hit(SlotId slot) override;
+    void on_fill(SlotId slot) override;
+
+    void on_invalidate(SlotId slot) override;
+    void note_next_use(SlotId slot, std::int64_t next_use) override;
+
+    // The LARGEST next-use among `candidates`, ties broken by the smallest slot
+    // id. The tie-break is required, not defensive: two slots holding lines that
+    // are never referenced again both carry INT64_MAX, and without it the answer
+    // would be whichever the vector happened to hold first, which is the
+    // dependency on candidate order policy.h forbids.
+    //
+    // Throws as StampPolicy::pick_victim does, for the same two reasons.
+    SlotId pick_victim(const std::vector<Candidate>& candidates) override;
+
+private:
+    std::size_t index_or_reject(const char* verb, SlotId slot) const;
+
+    // One next-use time per slot. A slot that has never been told one carries
+    // INT64_MAX, so an untouched slot is evicted before any line with a known
+    // future, which is correct: an empty way is always the better victim.
+    std::vector<std::int64_t> next_use_;
+};
+
 // The config vocabulary, per plan 2.2's `l1_policy` and `l2_policy` fields.
 //
 // `random` is an enumerator with no class behind it, which is the plan's
@@ -120,7 +171,9 @@ public:
 // enum would make `policy = random` an unknown name rather than a known and
 // unbuilt one, and the run would then report a typo where it should report a
 // missing feature (V29).
-enum class PolicyKind : std::uint8_t { LRU = 0, FIFO = 1, RANDOM = 2 };
+// BELADY is offline and needs an oracle attached, which config validation
+// enforces: naming it without one is refused rather than run as LRU.
+enum class PolicyKind : std::uint8_t { LRU = 0, FIFO = 1, RANDOM = 2, BELADY = 3 };
 
 // The policy `kind` names, sized for an array of `num_slots` slots.
 //

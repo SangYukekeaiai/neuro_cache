@@ -18,7 +18,7 @@ struct Args {
     std::string csv_path;
     int X = -1, Y = -1;
     int dram_port = -1;
-    long long dram_latency = -1;
+    double dram_latency = -1.0;
 };
 
 Args parse_args(int argc, char** argv) {
@@ -43,14 +43,14 @@ Args parse_args(int argc, char** argv) {
         if (flag == "--X") a.X = std::stoi(next());
         else if (flag == "--Y") a.Y = std::stoi(next());
         else if (flag == "--dram-port") a.dram_port = std::stoi(next());
-        else if (flag == "--dram-latency") a.dram_latency = std::stoll(next());
+        else if (flag == "--dram-latency") a.dram_latency = std::stod(next());
         else {
             std::cerr << "eventsim: unknown flag " << flag << "\n";
             std::exit(2);
         }
     }
 
-    if (a.X <= 0 || a.Y <= 0 || a.dram_port < 0 || a.dram_latency < 0) {
+    if (a.X <= 0 || a.Y <= 0 || a.dram_port < 0 || a.dram_latency < 0.0) {
         std::cerr << "eventsim: --X, --Y, --dram-port, --dram-latency are all required\n";
         std::exit(2);
     }

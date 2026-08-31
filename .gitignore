@@ -118,3 +118,15 @@ profiling/0820_phaseD_spad_vs_cache/dup.csv
 profiling/0823_stagewise_verify/stage2_weight_trace/outputs/weight_traces/
 profiling/0823_stagewise_verify/stage2_weight_trace/outputs/stream/*.wcts
 profiling/0823_stagewise_verify/stage2_weight_trace/inputs/input_trace/
+
+# Stage 4 weight-trace streams: 1.5 GB of binary, regenerable byte-exactly
+# from Stage 2 inputs by scripts/generate_weight_traces.py (verified 2026-08-25).
+profiling/0823_stagewise_verify/stage4_wcache/inputs/streams/*.wcts
+
+# wcache debugging instruments: the cache-state log and the line trace, plus
+# the aligned text views to_txt.py renders from them. All are regenerable by
+# `wcache_run --cache-state` / `--line-trace`, and a whole layer runs to
+# hundreds of megabytes. The README, to_txt.py and the .json config beside them
+# are the reviewable record; the outputs are not.
+debug/wcache_instruments/*.csv
+debug/wcache_instruments/*.txt

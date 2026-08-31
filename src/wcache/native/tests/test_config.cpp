@@ -53,6 +53,8 @@ void test_an_empty_object_gives_the_documented_defaults() {
     CHECK_TRUE(c.inclusion == Inclusion::NonInclusive);
     CHECK_TRUE(c.prefetch_policy == PrefetchKind::None);
     CHECK_EQ(c.l1_demand_reserve, -1);   // the "resolve me from the burst span" sentinel
+    CHECK_TRUE(c.layout == LayoutKind::BlockPack);
+    CHECK_EQ(c.cin_lo_blocks, std::int64_t{-1});   // "no split", and under block_pack it stays
 }
 
 void test_every_default_is_overridden_when_the_key_is_present() {
@@ -68,7 +70,8 @@ void test_every_default_is_overridden_when_the_key_is_present() {
             "l2_to_l1_latency": 3, "l2_miss_latency": 200,
             "l2_banks": 4, "l2_ii": 6, "dram_ii": 8, "core_accept_ii": 2,
             "policy": "fifo", "inclusion": "inclusive",
-            "prefetch_policy": "next_burst", "prefetch_distance": 4})");
+            "prefetch_policy": "next_burst", "prefetch_distance": 4,
+            "layout": "split_cin", "cin_lo_blocks": 64})");
     CHECK_EQ(c.cin_block, 2);
     CHECK_EQ(c.cout_block, 32);
     CHECK_EQ(c.weight_bytes, 2);
@@ -94,6 +97,8 @@ void test_every_default_is_overridden_when_the_key_is_present() {
     CHECK_TRUE(c.inclusion == Inclusion::Inclusive);
     CHECK_TRUE(c.prefetch_policy == PrefetchKind::NextBurst);
     CHECK_EQ(c.prefetch_distance, 4);
+    CHECK_TRUE(c.layout == LayoutKind::SplitCin);
+    CHECK_EQ(c.cin_lo_blocks, std::int64_t{64});
 }
 
 void test_line_size_and_geometry_are_derived_not_declared() {
@@ -127,7 +132,16 @@ void test_every_enum_spelling_round_trips() {
     CHECK_TRUE(parse_config(R"({"prefetch_policy": "next_burst",
                                 "prefetch_distance": 4})").prefetch_policy
                == PrefetchKind::NextBurst);
+    CHECK_TRUE(parse_config(R"({"layout": "block_pack"})").layout
+               == LayoutKind::BlockPack);
+    CHECK_TRUE(parse_config(R"({"layout": "split_cin"})").layout
+               == LayoutKind::SplitCin);
     CHECK_THROWS(std::invalid_argument, parse_config(R"({"policy": "clock"})"));
+    CHECK_THROWS(std::invalid_argument, parse_config(R"({"layout": "split_cout"})"));
+    // A layout is a quoted spelling, never an integer: an enumerator's numeric
+    // value is an implementation detail and a config that names it would keep
+    // loading, meaning something else, the day the list is reordered.
+    CHECK_THROWS(std::invalid_argument, parse_config(R"({"layout": 1})"));
     CHECK_THROWS(std::invalid_argument, parse_config(R"({"prefetch_policy": "stride"})"));
 }
 
@@ -367,6 +381,96 @@ void test_a_declared_demand_reserve_of_zero_survives_validation() {
     CHECK_EQ(c.l1_demand_reserve, 0);
 }
 
+// --- Task W3: the layout knob and its split width ---------------------------
+
+void test_cin_lo_blocks_defaults_to_the_l1_set_count() {
+    check::group("W3: under split_cin the -1 sentinel resolves to l1_num_sets()");
+    RunConfig c = parse_config(R"({"layout": "split_cin"})");
+    std::vector<Warning> w;
+    validate(c, 4, w);
+    // The shipped geometry: 16-byte lines, 8 KB, 8-way -> 512 lines, 64 sets.
+    CHECK_EQ(c.l1_num_sets(), std::int64_t{64});
+    CHECK_EQ(c.cin_lo_blocks, std::int64_t{64});
+    CHECK_EQ(check::ssize(w), std::int64_t{0});
+}
+
+void test_cin_lo_blocks_follows_the_geometry_it_is_derived_from() {
+    check::group("W3: the resolved width tracks l1_size_bytes, not a constant");
+    RunConfig c = parse_config(R"({"layout": "split_cin", "l1_size_bytes": 16384})");
+    std::vector<Warning> w;
+    validate(c, 4, w);
+    CHECK_EQ(c.cin_lo_blocks, std::int64_t{128});
+}
+
+void test_cin_lo_blocks_stays_the_sentinel_under_block_pack() {
+    check::group("W3: block_pack reports -1, because it has no split to report");
+    RunConfig c = parse_config("{}");
+    std::vector<Warning> w;
+    validate(c, 4, w);
+    CHECK_TRUE(c.layout == LayoutKind::BlockPack);
+    CHECK_EQ(c.cin_lo_blocks, std::int64_t{-1});
+}
+
+void test_a_declared_cin_lo_blocks_under_block_pack_is_rejected() {
+    check::group("W3: a split width under the layout with no split is rejected");
+    RunConfig c = parse_config(R"({"layout": "block_pack", "cin_lo_blocks": 64})");
+    std::vector<Warning> w;
+    CHECK_THROWS(std::invalid_argument, validate(c, 4, w));
+}
+
+void test_a_cin_lo_blocks_below_one_is_rejected() {
+    check::group("W3: a split width of 0 is a division by zero in the mapper");
+    RunConfig c = parse_config(R"({"layout": "split_cin", "cin_lo_blocks": 0})");
+    std::vector<Warning> w;
+    CHECK_THROWS(std::invalid_argument, validate(c, 4, w));
+    RunConfig d = parse_config(R"({"layout": "split_cin", "cin_lo_blocks": -2})");
+    std::vector<Warning> v;
+    CHECK_THROWS(std::invalid_argument, validate(d, 4, v));
+}
+
+void test_a_declared_cin_lo_blocks_survives_validation() {
+    check::group("W3: a declared width is kept, not overwritten by the default");
+    RunConfig c = parse_config(R"({"layout": "split_cin", "cin_lo_blocks": 16})");
+    std::vector<Warning> w;
+    validate(c, 4, w);
+    CHECK_EQ(c.cin_lo_blocks, std::int64_t{16});
+}
+
+void test_the_cin_lo_versus_sets_warning_fires() {
+    check::group("W3: W_CIN_LO_VS_SETS when the width is not the L1 set count");
+    RunConfig c = parse_config(R"({"layout": "split_cin", "cin_lo_blocks": 16})");
+    std::vector<Warning> w;
+    validate(c, 4, w);                       // must NOT throw: it is legal, just worse
+    CHECK_EQ(c.l1_num_sets(), std::int64_t{64});
+    CHECK_TRUE(has_warning(w, "W_CIN_LO_VS_SETS"));
+    // And it stays quiet at the value the layout exists for.
+    RunConfig d = parse_config(R"({"layout": "split_cin", "cin_lo_blocks": 64})");
+    std::vector<Warning> v;
+    validate(d, 4, v);
+    CHECK_TRUE(!has_warning(v, "W_CIN_LO_VS_SETS"));
+}
+
+void test_the_layout_is_a_grid_axis() {
+    check::group("W3: a sweep can vary the layout, which is the point of the knob");
+    const std::vector<RunConfig> g = parse_config_grid(
+        R"({"base": {"l1_size_bytes": 16384},
+            "axes": {"layout": ["block_pack", "split_cin"]}})");
+    CHECK_EQ(check::ssize(g), std::int64_t{2});
+    CHECK_TRUE(g[0].layout == LayoutKind::BlockPack);
+    CHECK_TRUE(g[1].layout == LayoutKind::SplitCin);
+    // Both points carry the same sentinel out of the parser, and validate is
+    // what makes them differ: -1 stays -1 on the first and becomes 128 on the
+    // second. That is why one base can serve both halves of the comparison.
+    CHECK_EQ(g[0].cin_lo_blocks, std::int64_t{-1});
+    CHECK_EQ(g[1].cin_lo_blocks, std::int64_t{-1});
+    RunConfig a = g[0], b = g[1];
+    std::vector<Warning> w;
+    validate(a, 4, w);
+    validate(b, 4, w);
+    CHECK_EQ(a.cin_lo_blocks, std::int64_t{-1});
+    CHECK_EQ(b.cin_lo_blocks, std::int64_t{128});
+}
+
 void test_to_engine_params_requires_validation_first() {
     check::group("Task 10: to_engine_params on an unvalidated config throws");
     const RunConfig c = parse_config("{}");
@@ -558,6 +662,16 @@ int main() {
 
     test_demand_reserve_defaults_to_lines_per_burst();
     test_a_declared_demand_reserve_of_zero_survives_validation();
+
+    test_cin_lo_blocks_defaults_to_the_l1_set_count();
+    test_cin_lo_blocks_follows_the_geometry_it_is_derived_from();
+    test_cin_lo_blocks_stays_the_sentinel_under_block_pack();
+    test_a_declared_cin_lo_blocks_under_block_pack_is_rejected();
+    test_a_cin_lo_blocks_below_one_is_rejected();
+    test_a_declared_cin_lo_blocks_survives_validation();
+    test_the_cin_lo_versus_sets_warning_fires();
+    test_the_layout_is_a_grid_axis();
+
     test_to_engine_params_requires_validation_first();
     test_to_engine_params_carries_every_knob();
 

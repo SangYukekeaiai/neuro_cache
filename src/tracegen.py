@@ -36,7 +36,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import yaml
 
-from archmodels import ARCH_NATIVE_BRIDGES, NodeTileSpec
+from archmodels import ARCH_NATIVE_BRIDGES, ComputeCycles, NodeTileSpec
 from archmodels.trace import build_workload_from_trace
 from nocsim.schedule.decode import schedule_from_strategy
 from nocsim.schedule.tiles import iter_node_tiles
@@ -353,6 +353,131 @@ def save_weight_trace(trace: LayerWeightTrace, path: pathlib.Path) -> None:
     except BaseException:
         os.unlink(tmp_name)
         raise
+
+
+@dataclass(frozen=True)
+class StepCycles:
+    """One sample's per-(dram_i, noc_i) cycle counts, read back out of a
+    saved weight trace, plus the identity fields needed to prove they
+    belong to a given schedule.
+
+    This is the narrow read-side counterpart of save_weight_trace, for the
+    one consumer that wants the cycle counts and none of the addresses:
+    nocsim charges each schedule step its own MAC time, and per ruling U31
+    (src/wcache/PROGRESS.md) it READS that number here rather than
+    recomputing it from a live archmodel. The full read-back
+    (load_weight_trace, addresses included) lives in
+    dump/python_reference/tracegen_reconstruct.py and is not what this is.
+
+    by_step's values are already the max over that tile's cores -- the
+    reduction assemble_layer_traces applies before writing (see its
+    `mac_cycles = max(...)`), and the same one combine.py's "mac_count
+    (all PEs, parallel)" step calls for. Nothing recomputes it here, and
+    nothing could: the per-core values are not in the file.
+    """
+
+    by_step: Dict[Tuple[int, int], ComputeCycles]
+    arch: str
+    trace_dir: str
+    layer_name: str
+    sample_idx: int
+    workload_dims: Dict[str, Any]
+    dram_num_steps: int
+    noc_num_steps: int
+
+    def check_against(self, artifact: ScheduleArtifact, schedule) -> None:
+        """Raise unless this trace was reconstructed from this schedule.
+
+        Six fields, reported together rather than one at a time, so a
+        mismatched pair names everything that disagrees in one message.
+        Without this a wrong-but-well-formed pairing (right arch, right
+        step counts, wrong layer) produces a plausible tc.csv with
+        silently wrong cycle counts, which is the same failure shape as
+        PROGRESS.md B173 and B179.
+
+        `schedule` is a decoded Schedule (from schedule_from_strategy);
+        it supplies the step counts, which the artifact only carries for
+        the DRAM half.
+        """
+        bad: List[str] = []
+        if self.arch != artifact.arch:
+            bad.append(f"arch: trace={self.arch} schedule={artifact.arch}")
+        if self.layer_name != artifact.layer_name:
+            bad.append(
+                f"layer_name: trace={self.layer_name} schedule={artifact.layer_name}"
+            )
+        if self.trace_dir != artifact.trace_dir:
+            bad.append(
+                f"trace_dir: trace={self.trace_dir} schedule={artifact.trace_dir}"
+            )
+        # The artifact nests the dims one level deeper than the trace does:
+        # artifact.workload is {"problem": {...}} (what SNNProb parses),
+        # while workload_dims IS that inner dict. Comparing the outer dicts
+        # would fail on every correctly-matched pair.
+        artifact_dims = artifact.workload.get("problem", artifact.workload)
+        if self.workload_dims != artifact_dims:
+            bad.append(f"workload dims: trace={self.workload_dims} schedule={artifact_dims}")
+        if self.dram_num_steps != schedule.dram_num_steps:
+            bad.append(
+                f"dram_num_steps: trace={self.dram_num_steps} "
+                f"schedule={schedule.dram_num_steps}"
+            )
+        if self.noc_num_steps != schedule.noc_num_steps:
+            bad.append(
+                f"noc_num_steps: trace={self.noc_num_steps} "
+                f"schedule={schedule.noc_num_steps}"
+            )
+        if bad:
+            raise ValueError(
+                "weight trace does not match schedule:\n  " + "\n  ".join(bad)
+            )
+
+
+def load_step_cycles(path: pathlib.Path) -> StepCycles:
+    """Read the per-tile cycle counts out of one sample_NNNNN.json.gz,
+    ignoring the weight addresses entirely.
+
+    Accepts a plain .json as well as .json.gz, so a hand-written fixture
+    needs no compression step.
+
+    Raises ValueError on a duplicate (dram_i, noc_i), or on a tile count
+    that disagrees with the file's own dram_num_steps * noc_num_steps.
+    Both mean the producer and this reader disagree about the format,
+    which is worth failing on at load time rather than surfacing later as
+    a KeyError from deep inside combine()'s NoC loop.
+    """
+    path = pathlib.Path(path)
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rt") as fh:
+        doc = json.load(fh)
+
+    by_step: Dict[Tuple[int, int], ComputeCycles] = {}
+    for tile in doc["tiles"]:
+        key = (tile["dram_i"], tile["noc_i"])
+        if key in by_step:
+            raise ValueError(f"{path}: duplicate tile (dram_i, noc_i)={key}")
+        by_step[key] = ComputeCycles(
+            mac_cycles=tile["mac_cycles"], lif_cycles=tile["lif_cycles"]
+        )
+
+    expected = doc["dram_num_steps"] * doc["noc_num_steps"]
+    if len(by_step) != expected:
+        raise ValueError(
+            f"{path}: {len(by_step)} tiles for a "
+            f"{doc['dram_num_steps']}x{doc['noc_num_steps']} schedule "
+            f"(expected {expected})"
+        )
+
+    return StepCycles(
+        by_step=by_step,
+        arch=doc["arch"],
+        trace_dir=doc["trace_dir"],
+        layer_name=doc["layer_name"],
+        sample_idx=doc["sample_idx"],
+        workload_dims=doc["workload_dims"],
+        dram_num_steps=doc["dram_num_steps"],
+        noc_num_steps=doc["noc_num_steps"],
+    )
 
 
 # ----------------------------------------------------------------------

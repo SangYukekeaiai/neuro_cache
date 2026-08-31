@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_BW_WEIGHT: int = 8
 _DEFAULT_BW_PSUM:   int = 32
 _DEFAULT_BW_VMEM:   int = 32
-_DEFAULT_DRAM_LATENCY: int = 17
+_DEFAULT_DRAM_LATENCY: float = 0.25
 
 
 def parse_snn_bitwidths(arch_path: pathlib.Path) -> "SNNBitwidths":
@@ -59,8 +59,25 @@ class SNNBitwidths:
         bw_weight (int): Bits per weight element.   Default 8.
         bw_psum   (int): Bits per partial-sum element. Default 32.
         bw_vmem   (int): Bits per membrane-potential element. Default 16.
-        dram_latency (int): Per-packet DRAM access latency multiplier used by
-            the NoC simulator's dram_cost metric. Default 17 (CoSA parity).
+        dram_latency (float): Cycles the DRAM port is OCCUPIED per 256-bit
+            (32-byte) packet, used by the NoC simulator.
+
+            Set it from a clock and a bandwidth:  32 B x f / BW.
+            Invert it to read one back:           BW = 32 B x f / dram_latency.
+
+            Default 0.25: 64 GB/s at 500 MHz. Fractional values are the
+            normal case, since any port moving more than one packet per
+            cycle lands below 1. The value is NOT rounded -- rounding 0.25
+            to an int would be a 4x error in the modelled bandwidth. The
+            PRODUCT size * dram_latency is ceiled instead, once per
+            transaction, so the rate stays exact and the error is at most
+            one cycle per transaction.
+
+            This is an occupancy, not an access latency. A real controller
+            overlaps outstanding requests, so access latency belongs at the
+            ramp, not on every packet. The old default of 17 was a CoSA
+            analytic-metric coefficient, never a cycle count: it implied
+            1.88 GB/s at 1 GHz and made every layer DRAM-bound.
         path (pathlib.Path): Resolved path to the source arch YAML.
     """
 
@@ -92,7 +109,11 @@ class SNNBitwidths:
         self.bw_weight: int = int(bw_block.get("BW_WEIGHT", _DEFAULT_BW_WEIGHT))
         self.bw_psum:   int = int(bw_block.get("BW_PSUM",   _DEFAULT_BW_PSUM))
         self.bw_vmem:   int = int(bw_block.get("BW_VMEM",   _DEFAULT_BW_VMEM))
-        self.dram_latency: int = int(bw_block.get("DRAM_LATENCY", _DEFAULT_DRAM_LATENCY))
+        # Fractional on purpose: at any clock where the port moves more than
+        # one packet per cycle this is below 1, and rounding it to an int
+        # would be a 4x error at 0.25. The product is what gets rounded,
+        # once per transaction, in EventSim.h and generator.py.
+        self.dram_latency: float = float(bw_block.get("DRAM_LATENCY", _DEFAULT_DRAM_LATENCY))
 
         for name, val in [
             ("BW_WEIGHT", self.bw_weight),
@@ -103,11 +124,11 @@ class SNNBitwidths:
             if val <= 0:
                 raise ValueError(
                     f"SNNBitwidths: {name}={val} in {self.path} "
-                    f"must be a positive integer"
+                    f"must be positive"
                 )
 
         logger.debug(
-            "SNNBitwidths: BW_WEIGHT=%d  BW_PSUM=%d  BW_VMEM=%d  DRAM_LATENCY=%d",
+            "SNNBitwidths: BW_WEIGHT=%d  BW_PSUM=%d  BW_VMEM=%d  DRAM_LATENCY=%g",
             self.bw_weight, self.bw_psum, self.bw_vmem, self.dram_latency,
         )
 

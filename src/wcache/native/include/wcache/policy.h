@@ -18,6 +18,7 @@
 // and Random unchanged.
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include "wcache/cache.h"
@@ -61,6 +62,23 @@ public:
     // 4.4). The caller makes this call, exactly as it makes on_hit after a
     // probe; the array does not name a policy.
     virtual void on_invalidate(SlotId slot) = 0;
+
+    // OPTIONAL. When the line now in `slot` is next referenced, as a position in
+    // the level's own reference stream, or INT64_MAX for a line never referenced
+    // again. Called by the engine immediately before `on_fill` or `on_hit`, and
+    // only where a next-use oracle is attached.
+    //
+    // A TIME, not a line and not an address, so 2.2's rule stands unchanged: the
+    // policy is still told nothing about sets, ways, associativity or line
+    // addresses. That is what lets Belady's MIN live behind this interface at
+    // all. LRU keeps the time of a slot's LAST use and evicts the minimum;
+    // Belady keeps the time of its NEXT use and evicts the maximum. Same shape,
+    // opposite sign, and the only difference is that LRU derives its stamp from
+    // a counter it owns while Belady's has to be supplied from outside.
+    //
+    // A default no-op rather than a pure virtual, so every policy that does not
+    // want the future is unchanged and no existing call site moves.
+    virtual void note_next_use(SlotId /*slot*/, std::int64_t /*next_use*/) {}
 
     // Which of `candidates` to evict, as a slot drawn from that set.
     //

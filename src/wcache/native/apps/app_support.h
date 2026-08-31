@@ -20,12 +20,17 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <random>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
+#include "wcache/block_pack.h"
+#include "wcache/config.h"
+#include "wcache/khkw_split.h"
 #include "wcache/layout.h"
+#include "wcache/split_cin.h"
 #include "wcache/stream_format.h"
 #include "wcache/stream_trace.h"
 #include "wcache/types.h"
@@ -43,6 +48,23 @@ struct UsageError : std::runtime_error {
 inline std::string value_of(int argc, char** argv, int& i) {
     if (i + 1 >= argc) throw UsageError(std::string(argv[i]) + " needs a value");
     return argv[++i];
+}
+
+// A CLI integer, refused rather than silently taken as 0. `std::stoll` stops at
+// the first character it cannot use, so `--line-trace-core x` would otherwise be
+// core 0 and the trace would look filtered to a core the user never named.
+inline std::int64_t int_value_of(int argc, char** argv, int& i) {
+    const std::string flag = argv[i];
+    const std::string text = value_of(argc, argv, i);
+    std::size_t used = 0;
+    long long v = 0;
+    try {
+        v = std::stoll(text, &used);
+    } catch (const std::exception&) {
+        throw UsageError(flag + " needs an integer, got \"" + text + "\"");
+    }
+    if (used != text.size()) throw UsageError(flag + " needs an integer, got \"" + text + "\"");
+    return static_cast<std::int64_t>(v);
 }
 
 // Checked rather than passed through, because an unknown arm produces a row
@@ -69,12 +91,71 @@ inline std::string uuid4() {
     return s;
 }
 
+// The one place `cfg.layout` becomes a mapper.
+//
+// Both drivers call it, so the branch over LayoutKind is written once. Adding a
+// third layout is an enumerator in layout.h, a spelling in config.cpp, and a
+// case here; no driver learns the list.
+//
+// It also appends the layout warning that needs the LAYER, and the two are one
+// function on purpose. validate() is handed a config and a burst span and never
+// a shape, so it cannot ask how many CIN blocks the layer has; this function
+// must ask, because it is building the mapper that answers. A separate
+// `warn_layout_vs_layer` would be a second call a driver could forget, and the
+// thing it would forget to say is that the run is measuring a degenerate
+// layout.
+//
+// PRECONDITION: validate() has run. Under `split_cin` it is what turns
+// cin_lo_blocks from the -1 sentinel into a width, and SplitCinMapper refuses a
+// non-positive n_cin_lo, so calling this too early throws rather than building
+// a mapper out of a sentinel.
+inline std::unique_ptr<AddressMapper> make_mapper(const RunConfig& cfg,
+                                                  const WeightShape& shape,
+                                                  std::vector<Warning>& warnings) {
+    if (cfg.layout == LayoutKind::BlockPack) {
+        return std::unique_ptr<AddressMapper>(
+            new BlockPackMapper(shape, cfg.cin_block, cfg.cout_block, cfg.weight_bytes));
+    }
+    if (cfg.layout == LayoutKind::KhkwSplit) {
+        // No width to warn about: khkw_split takes no split argument, so there
+        // is no config field that can disagree with the layer.
+        return std::unique_ptr<AddressMapper>(
+            new KhkwSplitMapper(shape, cfg.cin_block, cfg.cout_block, cfg.weight_bytes));
+    }
+
+    std::unique_ptr<SplitCinMapper> m(new SplitCinMapper(
+        shape, cfg.cin_block, cfg.cout_block, cfg.weight_bytes, cfg.cin_lo_blocks));
+
+    // The split width above the layer's block count: cin_lo never reaches its
+    // radix, so the top of the L1 set index is unreachable and the cache runs
+    // smaller than its geometry says. A quality problem and not a configuration
+    // error, which is why split_cin.h keeps it out of the constructor: the
+    // flatten stays correct, it just places worse.
+    if (m->n_cin_lo() > m->n_cin_blocks()) {
+        warnings.push_back(
+            {"W_CIN_LO_UNREACHABLE",
+             "cin_lo_blocks = " + std::to_string(m->n_cin_lo()) + " is above the layer's " +
+                 std::to_string(m->n_cin_blocks()) +
+                 " CIN blocks, so the top of the L1 set index is unreachable and the run "
+                 "uses " + std::to_string(m->n_cin_blocks()) + " of its sets"});
+    }
+    return std::unique_ptr<AddressMapper>(m.release());
+}
+
 // D1's `l1_demand_reserve` default, which validate() needs before any burst has
 // been decoded. Asked of the MAPPER rather than computed as
 // `burst_span / cout_block`: the division is only right when the burst walks
 // COUT, and a trace that bursts along CIN or KH would silently get a reserve
 // sized for the wrong axis. Ruling Q-D put `burst_span` in the header, so the
 // widest burst the layer can hold is expandable here, at the origin.
+//
+// The mapper handed in need not be the one the run will use, and both drivers
+// pass a BlockPackMapper here even when cfg.layout says split_cin. A burst
+// covers a fixed set of BLOCK coordinates, and every mapper is injective on
+// those, so the COUNT is the same under any nesting; only the ids differ. The
+// alternative is a chicken and egg, since validate() is what resolves the
+// width the real mapper is built from. test_split_cin pins the equality this
+// rests on over the corpus burst and a sweep of others.
 inline std::int32_t lines_per_burst(const AddressMapper& mapper,
                                     const stream::StreamHeader& hdr) {
     const Burst widest{Coord{0, 0, 0, 0}, hdr.burst_dim, hdr.burst_span, hdr.burst_stride};

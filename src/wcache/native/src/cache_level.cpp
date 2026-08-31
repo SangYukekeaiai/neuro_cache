@@ -119,6 +119,26 @@ TriageOutcome CacheLevel::triage(Request& r, std::vector<Request*>& granted) {
     // for why dropping at the L2 is not an option the plan leaves open.
     const bool at_issue = is_prefetch_at_issue(r);
 
+    // Belady's occurrence, consumed BEFORE the array is probed and therefore on
+    // every demand reference, whether it goes on to hit or to miss.
+    //
+    // Advancing it inside the hit branch instead was a real bug, caught by check
+    // B1: at 16-way the L2 hit rate is 0.00%, so the counter never moved, every
+    // fill looked up occurrence 0 for the rest of the run, and Belady came out
+    // WORSE than LRU, which is impossible for an optimal policy. It hid at fully
+    // associative, where the cache is large enough that the eviction choice
+    // barely matters. The guard is `r.demand` and the site is before the probe,
+    // which is exactly what engine.cpp's `l2_accesses` counts, so the counter
+    // and the access log advance together by construction.
+    if (next_use_ != nullptr && r.demand) {
+        std::int64_t& occ = occurrence_[r.line.get()];
+        // Held for the fill that may follow this probe. The fill happens later,
+        // so it cannot recompute the occurrence: other cores' probes for the
+        // same line may have advanced it in between.
+        pending_next_use_[r.line.get()] = next_use_->next_use(r.line, occ);
+        ++occ;
+    }
+
     // --- the array ---------------------------------------------------------
     const SlotId slot = array_->probe(r.line);
     if (slot != NoSlot) {
@@ -127,6 +147,9 @@ TriageOutcome CacheLevel::triage(Request& r, std::vector<Request*>& granted) {
         // I15, decision B11). `probe` being const and not an access (2.2) is
         // what makes this expressible at all.
         if (at_issue) return TriageOutcome::DroppedArrayHit;
+        if (next_use_ != nullptr && r.demand) {
+            policy_->note_next_use(slot, pending_next_use_[r.line.get()]);
+        }
         policy_->on_hit(slot);
         // The hit still cost this level's port: its `ii` to be accepted and its
         // latency to answer, both already paid by the reservation that scheduled
@@ -218,6 +241,13 @@ InsertResult CacheLevel::install(LineId line) {
     }
 
     const InsertResult res = array_->insert(line, slot);
+    // The probe that missed already consumed this line's occurrence and left the
+    // answer behind, so the fill reads it rather than recomputing.
+    if (next_use_ != nullptr) {
+        const auto it = pending_next_use_.find(line.get());
+        policy_->note_next_use(
+            slot, it == pending_next_use_.end() ? NextUseOracle::kNever : it->second);
+    }
     policy_->on_fill(slot);
 
     // 3.4 line 619 calls `policy.on_evict(slot)` here, after `on_fill(slot)` and

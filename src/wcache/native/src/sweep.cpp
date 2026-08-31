@@ -7,6 +7,19 @@
 namespace wcache {
 namespace {
 
+// The spelling for a refusal message. A local switch and not a ternary: a
+// two-way ternary over a three-valued enum reports the wrong layout the day a
+// fourth one lands, and this message exists to tell a sweeper which grid point
+// disagreed.
+const char* layout_text(LayoutKind l) {
+    switch (l) {
+        case LayoutKind::BlockPack: return "block_pack";
+        case LayoutKind::SplitCin:  return "split_cin";
+        case LayoutKind::KhkwSplit: return "khkw_split";
+    }
+    return "unknown";
+}
+
 // Names the grid point a throw came from without losing the type the caller
 // distinguishes on. Called from a `catch (...)`, so the bare `throw;` inside
 // re-raises the live exception and the clauses below re-wrap it; anything they
@@ -49,14 +62,30 @@ BroadcastSweep::BroadcastSweep(StreamingTileTrace& trace, const AddressMapper& m
     const RunConfig& first = configs_[0];
     for (std::size_t i = 1; i < configs_.size(); ++i) {
         const RunConfig& c = configs_[i];
+        // Everything the mapper is built from, which is now five fields and not
+        // three: `layout` picks the class and `cin_lo_blocks` is a constructor
+        // argument to one of them. A point that disagreed on either would be
+        // scored against a mapper built for a different point, and the row
+        // would name the layout it did not run.
+        //
+        // `cin_lo_blocks` is compared AFTER validate has resolved it, so this
+        // also refuses a split_cin grid that varies l1_size_bytes: the width
+        // follows the set count, so the layout would change mid-stream. The
+        // same grid under block_pack is fine, where the field stays -1 at every
+        // point.
         if (c.cin_block != first.cin_block || c.cout_block != first.cout_block ||
-            c.weight_bytes != first.weight_bytes) {
+            c.weight_bytes != first.weight_bytes || c.layout != first.layout ||
+            c.cin_lo_blocks != first.cin_lo_blocks) {
+            const auto shape_of_point = [](const RunConfig& p) {
+                return "cin_block " + std::to_string(p.cin_block) + ", cout_block " +
+                       std::to_string(p.cout_block) + ", weight_bytes " +
+                       std::to_string(p.weight_bytes) + ", layout " +
+                       layout_text(p.layout) +
+                       ", cin_lo_blocks " + std::to_string(p.cin_lo_blocks);
+            };
             throw std::invalid_argument(
-                "sweep: configuration " + std::to_string(i) + " has layout (" +
-                std::to_string(c.cin_block) + ", " + std::to_string(c.cout_block) + ", " +
-                std::to_string(c.weight_bytes) + ") but configuration 0 has (" +
-                std::to_string(first.cin_block) + ", " + std::to_string(first.cout_block) + ", " +
-                std::to_string(first.weight_bytes) +
+                "sweep: configuration " + std::to_string(i) + " has (" + shape_of_point(c) +
+                ") but configuration 0 has (" + shape_of_point(first) +
                 "): one mapper serves the whole grid, so a layout sweep is one sweep per "
                 "layout, each over its own pass of the stream");
         }

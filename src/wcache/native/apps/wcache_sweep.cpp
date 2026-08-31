@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -122,13 +123,14 @@ void run(Options& opt) {
     StreamingTileTrace trace(src);
     const stream::StreamHeader& hdr = trace.header();
 
-    // One mapper for the whole grid, built from the FIRST point's layout.
-    // BroadcastSweep then refuses any point that disagrees with it, because a
-    // layout change would change what a line is mid-stream.
     const WeightShape shape = shape_of(hdr);
-    BlockPackMapper   mapper(shape, grid[0].cin_block, grid[0].cout_block,
-                             grid[0].weight_bytes);
-    const std::int32_t reserve_default = lines_per_burst(mapper, hdr);
+
+    // The burst-span probe, and not the run's mapper: validate() is what
+    // resolves cin_lo_blocks, and the real mapper cannot be built until it has.
+    // The count is the same either way (see lines_per_burst).
+    const BlockPackMapper probe(shape, grid[0].cin_block, grid[0].cout_block,
+                                grid[0].weight_bytes);
+    const std::int32_t reserve_default = lines_per_burst(probe, hdr);
 
     for (std::size_t i = 0; i < grid.size(); ++i) {
         std::vector<Warning> warnings;
@@ -137,6 +139,18 @@ void run(Options& opt) {
             std::cerr << "wcache_sweep: configuration " << i << " warning [" << w.code
                       << "] " << w.message << "\n";
         }
+    }
+
+    // One mapper for the whole grid, built from the FIRST point's layout.
+    // BroadcastSweep then refuses any point that disagrees with it, because a
+    // layout change would change what a line is mid-stream. Built after the
+    // loop above, so grid[0].cin_lo_blocks is the width validate resolved and
+    // not the -1 sentinel.
+    std::vector<Warning> layout_warnings;
+    const std::unique_ptr<AddressMapper> owned = make_mapper(grid[0], shape, layout_warnings);
+    const AddressMapper& mapper = *owned;
+    for (const Warning& w : layout_warnings) {
+        std::cerr << "wcache_sweep: warning [" << w.code << "] " << w.message << "\n";
     }
 
     if (opt.id.run_id.empty()) opt.id.run_id = uuid4();

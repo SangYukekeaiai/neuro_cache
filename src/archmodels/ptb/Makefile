@@ -8,7 +8,7 @@ BIN  := ptbgen
 
 all: $(BIN)
 
-$(BIN): $(SRCS) PTBGen.h
+$(BIN): $(SRCS) PTBGen.h ../tick_output.h
 	$(CXX) $(CXXFLAGS) -o $(BIN) $(SRCS)
 
 clean:

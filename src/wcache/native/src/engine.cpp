@@ -143,6 +143,10 @@ std::int32_t Engine::run_to_barrier() {
 
     close_out_prefetch_stats();
     check_no_work_outstanding();
+    // Every episode still resident when the clock stops, so the table accounts
+    // for every fill. `tile_origin_.back()` is the makespan, which is the last
+    // instant the run had.
+    if (line_trace_ != nullptr) line_trace_->flush(tile_origin_.back());
     return -1;
 }
 
@@ -263,7 +267,12 @@ void Engine::on_l1_probe(Request& r, SimTime now) {
     if (r.demand) {
         ++stats_.l1_accesses;
         if (result == TriageOutcome::Hit) ++stats_.l1_hits;
+        // Plan 0831 U2, inside the SAME guard as the counter above so the log's
+        // record count and `l1_accesses` cannot diverge (V1).
+        if (access_log_ != nullptr) access_log_->observe(Level::L1, r.core, r.line);
     }
+
+    if (result == TriageOutcome::Hit) note_hit(Level::L1, r.core, r.line, r.demand);
 
     if (is_dropped(result)) {
         // A prefetch, refused at issue and therefore DROPPED rather than queued
@@ -347,7 +356,11 @@ void Engine::on_l2_probe(Request& r, SimTime now) {
     if (r.demand) {
         ++stats_.l2_accesses;
         if (result == TriageOutcome::Hit) ++stats_.l2_hits;
+        // Plan 0831 U2, as at the L1 above.
+        if (access_log_ != nullptr) access_log_->observe(Level::L2, r.core, r.line);
     }
+
+    if (result == TriageOutcome::Hit) note_hit(Level::L2, r.core, r.line, r.demand);
 
     switch (result) {
         case TriageOutcome::Hit:
@@ -405,7 +418,21 @@ void Engine::on_l2_fill(Mshr& e, SimTime now) {
     // Install, then retire, in 3.1's order: "install in L2 (victim, evict,
     // back-invalidate if inclusive), retire the entry, wake its waiters."
     const InsertResult res = l2_.install(line);
-    if (res.evicted && params_.inclusion == Inclusion::Inclusive) back_invalidate(res.evicted_line);
+    if (res.evicted && params_.inclusion == Inclusion::Inclusive) {
+        back_invalidate(res.evicted_line, now);
+    }
+
+    if (instrumented()) {
+        // The way is probed for the line just installed, and the victim left
+        // from that same way: `install` puts the new line where the old one
+        // was. Emitted evict-then-fill, in that order, because that is the
+        // order the slot actually changed.
+        const std::int32_t way = way_of(Level::L2, CoreId{0}, line);
+        if (res.evicted) {
+            note_leave(Level::L2, CoreId{0}, res.evicted_line, way, now, "evict");
+        }
+        note_fill(Level::L2, CoreId{0}, line, way, now, e.first_request, e.pf_opened);
+    }
 
     l2_.mshrs().retire(e, retire_);
     stats_.l2_mshr_occupancy.push_back(l2_.mshrs().live());
@@ -458,6 +485,12 @@ void Engine::on_l1_fill(Mshr& e, SimTime now) {
     for (Request* t : e.targets) {
         t->mshr1 = nullptr;
         t->level = Level::L1;
+    }
+
+    if (instrumented()) {
+        const std::int32_t way = way_of(Level::L1, e.core, line);
+        if (res.evicted) note_leave(Level::L1, e.core, res.evicted_line, way, now, "evict");
+        note_fill(Level::L1, e.core, line, way, now, first_request, pf_opened);
     }
 
     lvl.mshrs().retire(e, retire_);
@@ -535,7 +568,61 @@ void Engine::close_out_prefetch_stats() {
 
 // --- inclusion (C4, 4.4, N8) -------------------------------------------------
 
-void Engine::back_invalidate(LineId line) {
+// --- feeding the two instruments ---------------------------------------------
+
+std::int32_t Engine::current_tile() const {
+    return cores_.empty() ? -1 : cores_[0].tile;
+}
+
+std::int32_t Engine::way_of(Level level, CoreId core, LineId line) const {
+    const CacheLevel& lvl = level == Level::L1 ? l1_.at(idx(core)) : l2_;
+    const SlotId slot = lvl.array().probe(line);
+    if (slot == NoSlot) return -1;
+    // Slots of one set are the `assoc` consecutive ids starting at
+    // `set_index * assoc` (set_associative.h), so the way is the offset within
+    // that run. `assoc` is derived rather than stored: the abstract CacheArray
+    // reports slots and the level reports sets, and widening that interface for
+    // a debugging aid would be the wrong trade.
+    const std::int64_t sets = lvl.num_sets();
+    if (sets <= 0) return -1;
+    const std::int64_t assoc = lvl.array().num_slots() / sets;
+    return assoc <= 0 ? -1 : static_cast<std::int32_t>(slot.get() % assoc);
+}
+
+void Engine::note_fill(Level level, CoreId core, LineId line, std::int32_t way, SimTime now,
+                       SimTime first_request, bool pf_opened) {
+    const std::int64_t sets = level == Level::L1 ? l1_.at(idx(core)).num_sets() : l2_.num_sets();
+    const Placement p = mapper_.locate(line, sets);
+    const std::int32_t c = level == Level::L1 ? core.get() : -1;
+    if (cache_state_ != nullptr) {
+        cache_state_->record("fill", now, current_tile(), level, c, line, p.set_index, p.tag, way);
+    }
+    if (line_trace_ != nullptr) {
+        line_trace_->on_fill(now, current_tile(), level, c, line, p.set_index, p.tag,
+                             first_request, pf_opened);
+    }
+}
+
+void Engine::note_leave(Level level, CoreId core, LineId line, std::int32_t way, SimTime now,
+                        const char* why) {
+    const std::int64_t sets = level == Level::L1 ? l1_.at(idx(core)).num_sets() : l2_.num_sets();
+    const Placement p = mapper_.locate(line, sets);
+    const std::int32_t c = level == Level::L1 ? core.get() : -1;
+    if (cache_state_ != nullptr) {
+        cache_state_->record(why, now, current_tile(), level, c, line, p.set_index, p.tag, way);
+    }
+    if (line_trace_ != nullptr) line_trace_->on_leave(now, level, c, line, why);
+}
+
+void Engine::note_hit(Level level, CoreId core, LineId line, bool demand) {
+    // The line trace only. A hit changes what a line has DONE and not what the
+    // array HOLDS, so it is not a state transition and does not belong in the
+    // state log.
+    if (line_trace_ == nullptr) return;
+    line_trace_->on_hit(level, level == Level::L1 ? core.get() : -1, line, demand);
+}
+
+void Engine::back_invalidate(LineId line, SimTime now) {
     // The scan covers ALL cores because the L2 is shared, so a core's fill can
     // evict a line another core's L1 still holds. Sharedness is why the scan is
     // wide; it is not why you must invalidate at all, which is the correction v2
@@ -553,7 +640,17 @@ void Engine::back_invalidate(LineId line) {
             // to "never", so the freed slot becomes the preferred victim again
             // rather than sitting live in the recency order (decision B96).
             l1_[c].policy().on_invalidate(s);
-            note_line_left_l1(CoreId{static_cast<std::int32_t>(c)}, line);
+            const CoreId cid{static_cast<std::int32_t>(c)};
+            if (instrumented()) {
+                // The slot is in hand here, so the way comes off it directly
+                // rather than from a probe of a line that is no longer there.
+                const std::int64_t sets = l1_[c].num_sets();
+                const std::int64_t assoc = sets > 0 ? l1_[c].array().num_slots() / sets : 0;
+                note_leave(Level::L1, cid, line,
+                           assoc > 0 ? static_cast<std::int32_t>(s.get() % assoc) : -1, now,
+                           "invalidate");
+            }
+            note_line_left_l1(cid, line);
             ++stats_.back_invalidations;
         }
     }

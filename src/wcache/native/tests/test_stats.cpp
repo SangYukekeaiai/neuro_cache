@@ -109,8 +109,11 @@ void test_the_column_list_is_pinned() {
     // 90 until `stall_l1_port` was added, which is the column V21's partition
     // was missing. The plan's ordered list is the normative artifact and now
     // has 91 entries; the 91 the plan's PROSE used to say was an unrelated
-    // arithmetic error against a 90-entry list.
-    CHECK_EQ(check::ssize(cols), std::int64_t{91});
+    // arithmetic error against a 90-entry list. 93 since `layout` and
+    // `cin_lo_blocks` joined it: a run that swaps the address mapper must say
+    // which one it swapped to, or two rows differing only in the layout are
+    // indistinguishable in the CSV.
+    CHECK_EQ(check::ssize(cols), std::int64_t{93});
     CHECK_TRUE(cols.front() == "run_id");
     CHECK_TRUE(cols.back() == "distinct_addr_per_core_tile_max");
     bool has_total = false, has_pad = false, has_hidden = false, has_sets = false;

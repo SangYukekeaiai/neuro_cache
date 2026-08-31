@@ -3,7 +3,7 @@ arch:
     BW_WEIGHT: 8
     BW_PSUM:   16
     BW_VMEM:   32
-    DRAM_LATENCY: 17
+    DRAM_LATENCY: 0.25
 
   # single_node: LoAS's TPPE array (Fig. 7) is fed directly from its
   # global cache / bitmask buffers -- no inter-node NoC, so no physical

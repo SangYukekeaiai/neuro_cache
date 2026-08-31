@@ -8,7 +8,7 @@ BIN  := gustavgen
 
 all: $(BIN)
 
-$(BIN): $(SRCS) GustavGen.h
+$(BIN): $(SRCS) GustavGen.h ../tick_output.h
 	$(CXX) $(CXXFLAGS) -o $(BIN) $(SRCS)
 
 clean:

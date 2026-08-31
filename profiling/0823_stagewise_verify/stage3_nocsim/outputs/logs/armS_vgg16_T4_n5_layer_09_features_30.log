@@ -1,0 +1,7 @@
+$ /u/yyu9/miniconda3/bin/python /u/yyu9/projects/neuro_cache/scripts/generate_weight_traces.py --arch loas --trace-root /u/yyu9/projects/neuro_cache/input_trace/loas --trace-dir vgg16_T4_n5 --layer layer_09_features_30 --schedule-cache /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage3_nocsim/inputs/schedules_single_node --out-dir /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage3_nocsim/outputs/weight_traces_single_node --combo-tag single_node --sample-start 0 --sample-count 5 --workers 1
+
+--- stdout ---
+Reconstructing 5 sample(s) of loas/single_node/vgg16_T4_n5/layer_09_features_30 (2048 tiles/sample) with 1 worker(s)
+Wrote 5 sample(s) to /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage3_nocsim/outputs/weight_traces_single_node/loas/single_node/vgg16_T4_n5/layer_09_features_30
+
+--- stderr ---

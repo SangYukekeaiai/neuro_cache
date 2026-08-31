@@ -1,0 +1,117 @@
+{
+ "stage": "3_nocsim / arm S inputs",
+ "arm": "S (single_node)",
+ "arch_yaml": {
+  "path": "configs/arch/loas.yaml",
+  "sha256_16": "54b554fdba3fe7c7"
+ },
+ "dataflow_yaml": {
+  "path": "configs/dataflow/loas.yaml",
+  "sha256_16": "a6a1f6b572d6d003"
+ },
+ "input_trace_root": "/u/yyu9/projects/neuro_cache/input_trace/loas",
+ "samples": {
+  "start": 0,
+  "count": 5
+ },
+ "schedules": {
+  "vgg16_T4_n5/layer_08_features_27": {
+   "path": "inputs/schedules_single_node/loas/vgg16_T4_n5/layer_08_features_27.json",
+   "problem": {
+    "KH": 3,
+    "KW": 3,
+    "CIN": 512,
+    "COUT": 512,
+    "HO": 4,
+    "WO": 4,
+    "T": 4,
+    "shape": "snn-layer"
+   },
+   "dram_num_steps": 2048,
+   "mode": "gb_oooo",
+   "objective": 192.68720609769247,
+   "solve_seconds": 1.65,
+   "sha256_16": "0b8f5ee89bb2f551"
+  },
+  "resnet19_T4_n5/layer_09_layer2_0_conv2": {
+   "path": "inputs/schedules_single_node/loas/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+   "problem": {
+    "KH": 3,
+    "KW": 3,
+    "CIN": 256,
+    "COUT": 128,
+    "HO": 8,
+    "WO": 8,
+    "T": 4,
+    "shape": "snn-layer"
+   },
+   "dram_num_steps": 2048,
+   "mode": "gb_oooo",
+   "objective": 182.963734292093,
+   "solve_seconds": 1.48,
+   "sha256_16": "85ee343d5f539137"
+  },
+  "vgg16_T4_n5/layer_09_features_30": {
+   "path": "inputs/schedules_single_node/loas/vgg16_T4_n5/layer_09_features_30.json",
+   "problem": {
+    "KH": 3,
+    "KW": 3,
+    "CIN": 512,
+    "COUT": 512,
+    "HO": 4,
+    "WO": 4,
+    "T": 4,
+    "shape": "snn-layer"
+   },
+   "dram_num_steps": 2048,
+   "mode": "gb_oooo",
+   "objective": 192.68720609769247,
+   "solve_seconds": 1.69,
+   "sha256_16": "d05d819d22c330bd"
+  },
+  "resnet19_T4_n5/layer_16_layer3_0_conv2": {
+   "path": "inputs/schedules_single_node/loas/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+   "problem": {
+    "KH": 3,
+    "KW": 3,
+    "CIN": 512,
+    "COUT": 256,
+    "HO": 4,
+    "WO": 4,
+    "T": 4,
+    "shape": "snn-layer"
+   },
+   "dram_num_steps": 1024,
+   "mode": "gb_oooo",
+   "objective": 184.755734292093,
+   "solve_seconds": 1.53,
+   "sha256_16": "64ef3282dcdcca10"
+  }
+ },
+ "weight_traces": {
+  "vgg16_T4_n5/layer_08_features_27": {
+   "dir": "outputs/weight_traces_single_node/loas/single_node/vgg16_T4_n5/layer_08_features_27",
+   "samples": 5,
+   "bytes_total": 66238924,
+   "seconds": 343.1
+  },
+  "resnet19_T4_n5/layer_09_layer2_0_conv2": {
+   "dir": "outputs/weight_traces_single_node/loas/single_node/resnet19_T4_n5/layer_09_layer2_0_conv2",
+   "samples": 5,
+   "bytes_total": 32195065,
+   "seconds": 167.3
+  },
+  "vgg16_T4_n5/layer_09_features_30": {
+   "dir": "outputs/weight_traces_single_node/loas/single_node/vgg16_T4_n5/layer_09_features_30",
+   "samples": 5,
+   "bytes_total": 133888842,
+   "seconds": 690.0
+  },
+  "resnet19_T4_n5/layer_16_layer3_0_conv2": {
+   "dir": "outputs/weight_traces_single_node/loas/single_node/resnet19_T4_n5/layer_16_layer3_0_conv2",
+   "samples": 5,
+   "bytes_total": 53844001,
+   "seconds": 269.2
+  }
+ }
+}

@@ -1,0 +1,17 @@
+$ /u/yyu9/miniconda3/bin/python3 -m nocsim.sim --schedule /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage2_weight_trace/inputs/schedules/loas/resnet19_T4_n5/layer_09_layer2_0_conv2.json --layer /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage3_nocsim/inputs/layers/R9.yaml --arch /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage3_nocsim/inputs/arch/loas_inst16_node32kb_noc2MiB_pe16.yaml --weight-trace /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_09_layer2_0_conv2/sample_00003.json.gz --out /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage3_nocsim/outputs/tc/R9_s00003.csv --simulate
+
+--- stdout ---
+transactions  : 4130
+weight  unicast_hops=37136    multicast_hops=0        dram_cost=2304    
+  psum  unicast_hops=0        multicast_hops=0        dram_cost=0       
+  vmem  unicast_hops=0        multicast_hops=0        dram_cost=0       
+output        : /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage3_nocsim/outputs/tc/R9_s00003.csv
+cycle source  : 128 per-step entries from /u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage2_weight_trace/outputs/weight_traces/loas/noc2MiB_node32kb/resnet19_T4_n5/layer_09_layer2_0_conv2/sample_00003.json.gz
+
+total_cycles  : 78954
+unicast_cycles: 37136
+multicast_cycles: 0
+count_cycles  : 1263264
+dram_cycles   : 2304
+
+--- stderr ---

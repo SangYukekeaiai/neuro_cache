@@ -1,0 +1,799 @@
+<title>Conflict, Not Capacity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+:root{
+  --ground:#EEF0F5; --surface:#FFFFFF; --raise:#E3E7F0; --sunk:#DDE2EC;
+  --ink:#131722; --muted:#5B6476; --rule:#D2D8E4; --rule-2:#B4BDCE;
+  --accent:#37449E;            /* indigo: the method */
+  --conflict:#A0511C;          /* burnt copper: the failure mode */
+  --good:#1C6547;              /* the resolved state */
+  --shadow:rgba(19,23,34,.07);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1117; --surface:#171B24; --raise:#1F2531; --sunk:#12161E;
+    --ink:#E5E9F2; --muted:#8E98AB; --rule:#252C3A; --rule-2:#374052;
+    --accent:#93A2F2; --conflict:#E0955F; --good:#64BE96;
+    --shadow:rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1117; --surface:#171B24; --raise:#1F2531; --sunk:#12161E;
+  --ink:#E5E9F2; --muted:#8E98AB; --rule:#252C3A; --rule-2:#374052;
+  --accent:#93A2F2; --conflict:#E0955F; --good:#64BE96;
+  --shadow:rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Source Serif 4",Georgia,serif; font-size:17px; line-height:1.6;
+  margin:0; padding:0 22px 90px; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1120px;margin:0 auto}
+.col{max-width:67ch}
+h1,h2,h3,.eyebrow,th,.lbl,.kx{font-family:Archivo,"Helvetica Neue",system-ui,sans-serif}
+code,.mono,td,.num{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* ---- masthead ---- */
+header{padding:58px 0 30px;border-bottom:1px solid var(--rule-2)}
+.kicker{font-family:Archivo,sans-serif;font-size:.7rem;font-weight:600;letter-spacing:.17em;
+  text-transform:uppercase;color:var(--conflict);margin:0 0 16px}
+h1{font-size:clamp(2.3rem,6vw,4rem);font-weight:700;line-height:.98;letter-spacing:-.03em;
+  margin:0 0 20px;text-wrap:balance}
+.stand{font-size:1.16rem;color:var(--muted);margin:0;max-width:60ch}
+.meta{display:flex;flex-wrap:wrap;gap:6px 24px;margin-top:28px;
+  font-family:"JetBrains Mono",monospace;font-size:.71rem;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em}
+.meta b{color:var(--ink);font-weight:500}
+
+section{padding:52px 0 0}
+.eyebrow{display:block;font-size:.7rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.15em;color:var(--accent);margin:0 0 9px}
+h2{font-size:1.65rem;font-weight:600;letter-spacing:-.015em;margin:0 0 8px;text-wrap:balance}
+h3{font-size:1.02rem;font-weight:600;margin:30px 0 7px}
+p{margin:0 0 14px}
+a{color:var(--accent)}
+strong{font-weight:600}
+
+/* ---- verdict ---- */
+.verdict{margin:32px 0 0;display:grid;gap:1px;background:var(--rule);
+  border:1px solid var(--rule);grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
+.vc{background:var(--surface);padding:20px 22px}
+.vc .lbl{display:block;font-size:.67rem;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+.vc p{margin:0;font-size:.97rem}
+.vc.hit .lbl{color:var(--conflict)}
+.vc.ok .lbl{color:var(--good)}
+
+/* ---- key numbers ---- */
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);margin:26px 0 4px}
+.key{background:var(--surface);padding:17px 19px}
+.key .kx{font-size:1.75rem;font-weight:700;display:block;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;line-height:1.05}
+.key .lbl{font-family:Archivo,sans-serif;font-size:.67rem;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--muted);display:block;margin-top:7px;line-height:1.35}
+.key.bad .kx{color:var(--conflict)} .key.good .kx{color:var(--good)}
+.key.acc .kx{color:var(--accent)}
+
+/* generated histograms, outputs/spectra.svg */
+.chart{margin:24px 0 6px;background:var(--surface);border:1px solid var(--rule);
+  padding:26px 20px 14px;overflow-x:auto}
+.chart svg{display:block;width:100%;min-width:900px;height:auto}
+.chart text{font-family:"JetBrains Mono",monospace;font-size:8.5px;fill:var(--muted)}
+.chart text.ph{font-family:Archivo,sans-serif;font-size:12px;font-weight:600;fill:var(--ink);
+  letter-spacing:.01em}
+.chart text.pt{font-family:Archivo,sans-serif;font-size:10px;font-weight:600;fill:var(--ink)}
+.chart text.pd{font-family:"JetBrains Mono",monospace;font-size:8.5px;fill:var(--muted);
+  font-weight:400}
+.chart text.bl{font-family:"JetBrains Mono",monospace;font-size:8.5px;fill:var(--ink);
+  font-weight:500}
+.chart text.cold-t{fill:var(--muted)}
+.chart .gl{stroke:var(--rule);stroke-width:1;stroke-dasharray:2 3}
+.chart .fr,.chart .tk{stroke:var(--rule-2);stroke-width:1}
+.chart .div{stroke:var(--rule-2);stroke-width:1;stroke-dasharray:1 3}
+.chart .bar{fill:var(--accent)}
+.chart .bar:hover{fill:var(--conflict)}
+.chart .cold{fill:var(--rule-2)}
+.chart .caprule{stroke:var(--conflict);stroke-width:1.4;stroke-dasharray:4 3}
+.chart text.capt{fill:var(--conflict);font-weight:500;font-size:8.5px}
+
+/* config block */
+.cfg{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);
+  grid-template-columns:repeat(auto-fit,minmax(232px,1fr));margin:26px 0 4px}
+.cfg div{background:var(--surface);padding:15px 18px}
+.cfg dt{font-family:Archivo,sans-serif;font-size:.66rem;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.cfg dd{margin:0;font-family:"JetBrains Mono",monospace;font-size:.79rem;line-height:1.75}
+.cfg dd b{color:var(--ink);font-weight:500}
+.cfg dd span{color:var(--muted)}
+
+/* ---- tables ---- */
+.scroll{overflow-x:auto;margin:22px 0 4px;border:1px solid var(--rule);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.83rem}
+th{text-align:left;font-weight:600;font-size:.68rem;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--muted);padding:11px 14px;border-bottom:1px solid var(--rule-2);
+  white-space:nowrap;background:var(--raise)}
+td{padding:9px 14px;border-bottom:1px solid var(--rule);vertical-align:baseline;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+th.n,td.n{text-align:right}
+td.lay{font-family:Archivo,sans-serif;font-weight:600;font-size:.92rem}
+.cap{caption-side:bottom;text-align:left;padding:11px 2px;font-size:.8rem;color:var(--muted);
+  max-width:78ch}
+.zero{color:var(--conflict);font-weight:500}
+.full{color:var(--good);font-weight:500}
+.dim{color:var(--muted)}
+.match{color:var(--good);font-weight:500;font-family:Archivo,sans-serif;font-size:.75rem;
+  letter-spacing:.05em}
+
+pre{background:var(--sunk);border:1px solid var(--rule);padding:15px 17px;overflow-x:auto;
+  font-size:.79rem;line-height:1.55;margin:18px 0}
+code{font-size:.87em;background:var(--raise);padding:1px 5px;border:1px solid var(--rule);
+  border-radius:2px}
+pre code{background:none;border:none;padding:0;font-size:1em}
+
+ul{padding-left:1.15em;margin:0 0 14px} li{margin-bottom:7px}
+.note{border-left:3px solid var(--rule-2);padding:2px 0 2px 18px;margin:22px 0;
+  color:var(--muted);font-size:.95rem}
+footer{margin-top:66px;padding-top:24px;border-top:1px solid var(--rule-2);
+  font-size:.8rem;color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="kicker">Correction &middot; supersedes the L2 reading in Kernel-Indexed Cache Sweep</p>
+  <h1>Conflict, Not Capacity</h1>
+  <p class="stand">The L2 in the best config hits 0.00%. Reuse-distance measurement says its
+  working set fits in 256 KB. Both are true, and what separates them is the set index.</p>
+  <div class="meta">
+    <span><b>54.7M</b> references measured</span>
+    <span><b>4</b> layers &times; <b>5</b> samples</span>
+    <span><b>khkw_split</b> 64 B / 512 KB L2 / pf 0</span>
+    <span>V1 V2 V3 V4 <b>pass</b></span>
+    <span>2026-08-31</span>
+  </div>
+</header>
+
+
+<section id="config">
+  <span class="eyebrow">The execution config</span>
+  <h2>What every number on this page was measured at</h2>
+  <div class="col">
+    <p>One point, held fixed throughout except where a table names the parameter it varies. The
+    driver asserts it is byte-identical to
+    <code>outputs/_khkw_grid/khkw_64b.json[0]</code> before running, so it cannot drift from the
+    sweep that chose it.</p>
+  </div>
+  <dl class="cfg">
+    <div><dt>Layout</dt><dd>
+      <b>khkw_split</b><br>
+      cin_block <b>16</b> &times; cout_block <b>4</b> &times; <b>1</b> B<br>
+      <span>= line size</span> <b>64 B</b>
+    </dd></div>
+    <div><dt>L1, private per core</dt><dd>
+      <b>16 KB</b>, <b>8</b>-way<br>
+      <span>=</span> <b>256</b> <span>lines,</span> <b>32</b> <span>sets</span><br>
+      <span>&times; 16 cores</span>
+    </dd></div>
+    <div><dt>L2, shared</dt><dd>
+      <b>512 KB</b>, <b>16</b>-way, <b>1</b> bank<br>
+      <span>=</span> <b>8192</b> <span>lines,</span> <b>512</b> <span>sets</span><br>
+      <span>mshrs</span> <b>32</b>
+    </dd></div>
+    <div><dt>Latency, cycles</dt><dd>
+      <span>l1</span> <b>0</b><br>
+      <span>l2</span> <b>2</b><br>
+      <span>l2_miss (DRAM)</span> <b>24</b>
+    </dd></div>
+    <div><dt>Prefetch</dt><dd>
+      <b>none</b>, distance <b>0</b><br>
+      <span>policy lru, non_inclusive</span>
+    </dd></div>
+    <div><dt>Corpus</dt><dd>
+      <b>4</b> <span>layers &times;</span> <b>5</b> <span>samples</span><br>
+      <b>54.7M</b> <span>L1 references</span><br>
+      <b>996K</b> <span>L2 references</span>
+    </dd></div>
+  </dl>
+  <p class="cap">Set counts are what the conflict result turns on: the L1 spreads a reuse window
+  across 32 sets and wins; the L2 has 512 and loses.</p>
+</section>
+
+<section>
+  <span class="eyebrow">The answer</span>
+  <h2>What the distances found</h2>
+  <div class="col">
+    <p>Friday's sweep measured an L2 hit rate of 0.00% at every point and read it as a capacity
+    cliff: the layer's weight set is 2.25 MiB, the L2 is 512 KB, so under a cyclic sweep every
+    line is evicted before its reuse. The prescription was a 4 MB L2.</p>
+    <p>Measuring the actual reuse distances says the sweep is not cyclic at the L2 at all. The
+    largest distance anywhere in the corpus is <strong>3,071 lines</strong>. The 512 KB L2 already
+    holds 8,192. The capacity was never the problem.</p>
+  </div>
+
+  <div class="verdict">
+    <div class="vc hit">
+      <span class="lbl">The L2 is losing to conflict</span>
+      <p>At a fixed 512 KB, widening from 16-way to 64-way takes the hit rate from 0.00% to its
+      full 52.63% ceiling and cuts 12.7&ndash;14.5% off total cycles. Same capacity, same layout,
+      same everything else.</p>
+    </div>
+    <div class="vc ok">
+      <span class="lbl">512 KB now equals the 4 MB prescription</span>
+      <p>512 KB at 64-way and 4 MB at 16-way reach the identical hit rate and the identical cycle
+      count. The eight-fold capacity increase buys nothing that associativity does not.</p>
+    </div>
+    <div class="vc">
+      <span class="lbl">The L1 runs the other way</span>
+      <p>Its 8-way array <em>beats</em> a fully-associative LRU cache of the same size, by up to
+      5.36 points. The kernel-indexed layout is doing precisely what it was built to do, one level
+      down from where it was checked.</p>
+    </div>
+  </div>
+
+  <div class="keys">
+    <div class="key bad"><span class="kx">3,071</span><span class="lbl">largest L2 reuse distance, in lines</span></div>
+    <div class="key bad"><span class="kx">8,192</span><span class="lbl">lines the 512 KB L2 already held</span></div>
+    <div class="key good"><span class="kx">14.5%</span><span class="lbl">cycles recovered on V8 by ways alone</span></div>
+    <div class="key acc"><span class="kx">0.005%</span><span class="lbl">worst prediction-to-measurement gap</span></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">The measurement</span>
+  <h2>These histograms are line spectra</h2>
+  <div class="col">
+    <p>The most surprising thing in the data is not any single number, it is the shape. A general
+    workload spreads reuse distances across a broad continuum. These layers do not. Across all four
+    layers and both levels the whole corpus lands on between <strong>2 and 17</strong> distinct
+    distances: V8's entire L1 stream sits on four values and its L2 stream on two, while R9's L1 is
+    the richest in the set at seventeen. Everything else is cold.</p>
+    <p>That is what a rigidly tiled dataflow looks like from inside the cache: the address stream is
+    a small set of strides walked over and over, so reuse happens at a handful of exact offsets and
+    nowhere in between.</p>
+  </div>
+
+  <div class="chart">
+<svg viewBox="-2 -22 880 742" role="img" aria-label="Reuse-distance histograms for four layers, L1 and L2, on log axes.">
+<text class="ph" x="0" y="-8">V8 · vgg16 features_27</text>
+<g transform="translate(0,0)">
+<text class="pt" x="0" y="12">V8 — L1 <tspan class="pd">2,597,632 refs</tspan></text>
+<line class="gl" x1="62" y1="20.0" x2="382" y2="20.0"/>
+<text class="ax" x="56" y="23.0" text-anchor="end">100%</text>
+<line class="gl" x1="62" y1="39.5" x2="382" y2="39.5"/>
+<text class="ax" x="56" y="42.5" text-anchor="end">10%</text>
+<line class="gl" x1="62" y1="59.1" x2="382" y2="59.1"/>
+<text class="ax" x="56" y="62.1" text-anchor="end">1%</text>
+<line class="gl" x1="62" y1="78.6" x2="382" y2="78.6"/>
+<text class="ax" x="56" y="81.6" text-anchor="end">0.1%</text>
+<line class="gl" x1="62" y1="98.1" x2="382" y2="98.1"/>
+<text class="ax" x="56" y="101.1" text-anchor="end">0.01%</text>
+<line class="tk" x1="62.0" y1="104" x2="62.0" y2="108"/>
+<text class="ax" x="62.0" y="119" text-anchor="middle">0</text>
+<line class="tk" x1="84.4" y1="104" x2="84.4" y2="108"/>
+<text class="ax" x="84.4" y="119" text-anchor="middle">1</text>
+<line class="tk" x1="139.5" y1="104" x2="139.5" y2="108"/>
+<text class="ax" x="139.5" y="119" text-anchor="middle">10</text>
+<line class="tk" x1="211.2" y1="104" x2="211.2" y2="108"/>
+<text class="ax" x="211.2" y="119" text-anchor="middle">100</text>
+<line class="tk" x1="285.3" y1="104" x2="285.3" y2="108"/>
+<text class="ax" x="285.3" y="119" text-anchor="middle">1000</text>
+<line class="tk" x1="359.7" y1="104" x2="359.7" y2="108"/>
+<text class="ax" x="359.7" y="119" text-anchor="middle">10000</text>
+<line class="fr" x1="62" y1="104" x2="382" y2="104"/>
+<line class="caprule" x1="241.3" y1="18" x2="241.3" y2="104"/>
+<text class="capt" x="245.3" y="26" text-anchor="start">L1 = 256 lines</text>
+<rect class="bar" x="59.8" y="21.5" width="4.4" height="82.5"><title>distance 0: 2,188,032 references, 84.23%</title></rect>
+<rect class="bar" x="223.8" y="54.4" width="4.4" height="49.6"><title>distance 159: 45,056 references, 1.73%</title></rect>
+<rect class="bar" x="229.7" y="44.3" width="4.4" height="59.7"><title>distance 191: 147,456 references, 5.68%</title></rect>
+<rect class="bar" x="242.8" y="42.6" width="4.4" height="61.4"><title>distance 287: 180,224 references, 6.94%</title></rect>
+<text class="bl" x="66.0" y="18.5" text-anchor="start">d=0 · 84.2%</text>
+<text class="bl" x="249.0" y="39.6" text-anchor="start">d=287 · 6.9%</text>
+<line class="div" x1="10" y1="20" x2="10" y2="104"/>
+<rect class="cold" x="16" y="56.1" width="9" height="47.9"><title>cold: 36,864 first references, 1.42%</title></rect>
+<text class="bl cold-t" x="20.5" y="53.1" text-anchor="middle">1.4%</text>
+<text class="ax" x="20" y="119" text-anchor="middle">cold</text>
+<text class="ax" x="222" y="135" text-anchor="middle">reuse distance, in distinct lines</text>
+</g>
+<g transform="translate(0,168)">
+<text class="pt" x="0" y="12">V8 — L2 <tspan class="pd">77,824 refs</tspan></text>
+<line class="gl" x1="62" y1="20.0" x2="382" y2="20.0"/>
+<text class="ax" x="56" y="23.0" text-anchor="end">100%</text>
+<line class="gl" x1="62" y1="39.5" x2="382" y2="39.5"/>
+<text class="ax" x="56" y="42.5" text-anchor="end">10%</text>
+<line class="gl" x1="62" y1="59.1" x2="382" y2="59.1"/>
+<text class="ax" x="56" y="62.1" text-anchor="end">1%</text>
+<line class="gl" x1="62" y1="78.6" x2="382" y2="78.6"/>
+<text class="ax" x="56" y="81.6" text-anchor="end">0.1%</text>
+<line class="gl" x1="62" y1="98.1" x2="382" y2="98.1"/>
+<text class="ax" x="56" y="101.1" text-anchor="end">0.01%</text>
+<line class="tk" x1="62.0" y1="104" x2="62.0" y2="108"/>
+<text class="ax" x="62.0" y="119" text-anchor="middle">0</text>
+<line class="tk" x1="84.4" y1="104" x2="84.4" y2="108"/>
+<text class="ax" x="84.4" y="119" text-anchor="middle">1</text>
+<line class="tk" x1="139.5" y1="104" x2="139.5" y2="108"/>
+<text class="ax" x="139.5" y="119" text-anchor="middle">10</text>
+<line class="tk" x1="211.2" y1="104" x2="211.2" y2="108"/>
+<text class="ax" x="211.2" y="119" text-anchor="middle">100</text>
+<line class="tk" x1="285.3" y1="104" x2="285.3" y2="108"/>
+<text class="ax" x="285.3" y="119" text-anchor="middle">1000</text>
+<line class="tk" x1="359.7" y1="104" x2="359.7" y2="108"/>
+<text class="ax" x="359.7" y="119" text-anchor="middle">10000</text>
+<line class="fr" x1="62" y1="104" x2="382" y2="104"/>
+<line class="caprule" x1="353.2" y1="18" x2="353.2" y2="104"/>
+<text class="capt" x="349.2" y="26" text-anchor="end">L2 = 8192 lines</text>
+<rect class="bar" x="283.8" y="26.3" width="4.4" height="77.7"><title>distance 1023: 36,864 references, 47.37%</title></rect>
+<rect class="bar" x="319.3" y="45.0" width="4.4" height="59.0"><title>distance 3071: 4,096 references, 5.26%</title></rect>
+<text class="bl" x="290.0" y="23.3" text-anchor="start">d=1023 · 47.4%</text>
+<text class="bl" x="317.5" y="42.0" text-anchor="end">d=3071 · 5.3%</text>
+<line class="div" x1="10" y1="20" x2="10" y2="104"/>
+<rect class="cold" x="16" y="26.3" width="9" height="77.7"><title>cold: 36,864 first references, 47.37%</title></rect>
+<text class="bl cold-t" x="20.5" y="23.3" text-anchor="middle">47.4%</text>
+<text class="ax" x="20" y="119" text-anchor="middle">cold</text>
+<text class="ax" x="222" y="135" text-anchor="middle">reuse distance, in distinct lines</text>
+</g>
+<text class="ph" x="446" y="-8">V9 · vgg16 features_30</text>
+<g transform="translate(446,0)">
+<text class="pt" x="0" y="12">V9 — L1 <tspan class="pd">4,995,072 refs</tspan></text>
+<line class="gl" x1="62" y1="20.0" x2="382" y2="20.0"/>
+<text class="ax" x="56" y="23.0" text-anchor="end">100%</text>
+<line class="gl" x1="62" y1="39.5" x2="382" y2="39.5"/>
+<text class="ax" x="56" y="42.5" text-anchor="end">10%</text>
+<line class="gl" x1="62" y1="59.1" x2="382" y2="59.1"/>
+<text class="ax" x="56" y="62.1" text-anchor="end">1%</text>
+<line class="gl" x1="62" y1="78.6" x2="382" y2="78.6"/>
+<text class="ax" x="56" y="81.6" text-anchor="end">0.1%</text>
+<line class="gl" x1="62" y1="98.1" x2="382" y2="98.1"/>
+<text class="ax" x="56" y="101.1" text-anchor="end">0.01%</text>
+<line class="tk" x1="62.0" y1="104" x2="62.0" y2="108"/>
+<text class="ax" x="62.0" y="119" text-anchor="middle">0</text>
+<line class="tk" x1="84.4" y1="104" x2="84.4" y2="108"/>
+<text class="ax" x="84.4" y="119" text-anchor="middle">1</text>
+<line class="tk" x1="139.5" y1="104" x2="139.5" y2="108"/>
+<text class="ax" x="139.5" y="119" text-anchor="middle">10</text>
+<line class="tk" x1="211.2" y1="104" x2="211.2" y2="108"/>
+<text class="ax" x="211.2" y="119" text-anchor="middle">100</text>
+<line class="tk" x1="285.3" y1="104" x2="285.3" y2="108"/>
+<text class="ax" x="285.3" y="119" text-anchor="middle">1000</text>
+<line class="tk" x1="359.7" y1="104" x2="359.7" y2="108"/>
+<text class="ax" x="359.7" y="119" text-anchor="middle">10000</text>
+<line class="fr" x1="62" y1="104" x2="382" y2="104"/>
+<line class="caprule" x1="241.3" y1="18" x2="241.3" y2="104"/>
+<text class="capt" x="245.3" y="26" text-anchor="start">L1 = 256 lines</text>
+<rect class="bar" x="59.8" y="20.7" width="4.4" height="83.3"><title>distance 0: 4,585,472 references, 91.80%</title></rect>
+<rect class="bar" x="223.8" y="59.9" width="4.4" height="44.1"><title>distance 159: 45,056 references, 0.90%</title></rect>
+<rect class="bar" x="229.7" y="49.9" width="4.4" height="54.1"><title>distance 191: 147,456 references, 2.95%</title></rect>
+<rect class="bar" x="242.8" y="48.2" width="4.4" height="55.8"><title>distance 287: 180,224 references, 3.61%</title></rect>
+<text class="bl" x="66.0" y="17.7" text-anchor="start">d=0 · 91.8%</text>
+<text class="bl" x="249.0" y="45.2" text-anchor="start">d=287 · 3.6%</text>
+<line class="div" x1="10" y1="20" x2="10" y2="104"/>
+<rect class="cold" x="16" y="61.6" width="9" height="42.4"><title>cold: 36,864 first references, 0.74%</title></rect>
+<text class="bl cold-t" x="20.5" y="58.6" text-anchor="middle">0.7%</text>
+<text class="ax" x="20" y="119" text-anchor="middle">cold</text>
+<text class="ax" x="222" y="135" text-anchor="middle">reuse distance, in distinct lines</text>
+</g>
+<g transform="translate(446,168)">
+<text class="pt" x="0" y="12">V9 — L2 <tspan class="pd">77,824 refs</tspan></text>
+<line class="gl" x1="62" y1="20.0" x2="382" y2="20.0"/>
+<text class="ax" x="56" y="23.0" text-anchor="end">100%</text>
+<line class="gl" x1="62" y1="39.5" x2="382" y2="39.5"/>
+<text class="ax" x="56" y="42.5" text-anchor="end">10%</text>
+<line class="gl" x1="62" y1="59.1" x2="382" y2="59.1"/>
+<text class="ax" x="56" y="62.1" text-anchor="end">1%</text>
+<line class="gl" x1="62" y1="78.6" x2="382" y2="78.6"/>
+<text class="ax" x="56" y="81.6" text-anchor="end">0.1%</text>
+<line class="gl" x1="62" y1="98.1" x2="382" y2="98.1"/>
+<text class="ax" x="56" y="101.1" text-anchor="end">0.01%</text>
+<line class="tk" x1="62.0" y1="104" x2="62.0" y2="108"/>
+<text class="ax" x="62.0" y="119" text-anchor="middle">0</text>
+<line class="tk" x1="84.4" y1="104" x2="84.4" y2="108"/>
+<text class="ax" x="84.4" y="119" text-anchor="middle">1</text>
+<line class="tk" x1="139.5" y1="104" x2="139.5" y2="108"/>
+<text class="ax" x="139.5" y="119" text-anchor="middle">10</text>
+<line class="tk" x1="211.2" y1="104" x2="211.2" y2="108"/>
+<text class="ax" x="211.2" y="119" text-anchor="middle">100</text>
+<line class="tk" x1="285.3" y1="104" x2="285.3" y2="108"/>
+<text class="ax" x="285.3" y="119" text-anchor="middle">1000</text>
+<line class="tk" x1="359.7" y1="104" x2="359.7" y2="108"/>
+<text class="ax" x="359.7" y="119" text-anchor="middle">10000</text>
+<line class="fr" x1="62" y1="104" x2="382" y2="104"/>
+<line class="caprule" x1="353.2" y1="18" x2="353.2" y2="104"/>
+<text class="capt" x="349.2" y="26" text-anchor="end">L2 = 8192 lines</text>
+<rect class="bar" x="283.8" y="26.3" width="4.4" height="77.7"><title>distance 1023: 36,864 references, 47.37%</title></rect>
+<rect class="bar" x="319.3" y="45.0" width="4.4" height="59.0"><title>distance 3071: 4,096 references, 5.26%</title></rect>
+<text class="bl" x="290.0" y="23.3" text-anchor="start">d=1023 · 47.4%</text>
+<text class="bl" x="317.5" y="42.0" text-anchor="end">d=3071 · 5.3%</text>
+<line class="div" x1="10" y1="20" x2="10" y2="104"/>
+<rect class="cold" x="16" y="26.3" width="9" height="77.7"><title>cold: 36,864 first references, 47.37%</title></rect>
+<text class="bl cold-t" x="20.5" y="23.3" text-anchor="middle">47.4%</text>
+<text class="ax" x="20" y="119" text-anchor="middle">cold</text>
+<text class="ax" x="222" y="135" text-anchor="middle">reuse distance, in distinct lines</text>
+</g>
+<text class="ph" x="0" y="354">R9 · resnet19 layer2_0_conv2</text>
+<g transform="translate(0,362)">
+<text class="pt" x="0" y="12">R9 — L1 <tspan class="pd">1,382,144 refs</tspan></text>
+<line class="gl" x1="62" y1="20.0" x2="382" y2="20.0"/>
+<text class="ax" x="56" y="23.0" text-anchor="end">100%</text>
+<line class="gl" x1="62" y1="39.5" x2="382" y2="39.5"/>
+<text class="ax" x="56" y="42.5" text-anchor="end">10%</text>
+<line class="gl" x1="62" y1="59.1" x2="382" y2="59.1"/>
+<text class="ax" x="56" y="62.1" text-anchor="end">1%</text>
+<line class="gl" x1="62" y1="78.6" x2="382" y2="78.6"/>
+<text class="ax" x="56" y="81.6" text-anchor="end">0.1%</text>
+<line class="gl" x1="62" y1="98.1" x2="382" y2="98.1"/>
+<text class="ax" x="56" y="101.1" text-anchor="end">0.01%</text>
+<line class="tk" x1="62.0" y1="104" x2="62.0" y2="108"/>
+<text class="ax" x="62.0" y="119" text-anchor="middle">0</text>
+<line class="tk" x1="84.4" y1="104" x2="84.4" y2="108"/>
+<text class="ax" x="84.4" y="119" text-anchor="middle">1</text>
+<line class="tk" x1="139.5" y1="104" x2="139.5" y2="108"/>
+<text class="ax" x="139.5" y="119" text-anchor="middle">10</text>
+<line class="tk" x1="211.2" y1="104" x2="211.2" y2="108"/>
+<text class="ax" x="211.2" y="119" text-anchor="middle">100</text>
+<line class="tk" x1="285.3" y1="104" x2="285.3" y2="108"/>
+<text class="ax" x="285.3" y="119" text-anchor="middle">1000</text>
+<line class="tk" x1="359.7" y1="104" x2="359.7" y2="108"/>
+<text class="ax" x="359.7" y="119" text-anchor="middle">10000</text>
+<line class="fr" x1="62" y1="104" x2="382" y2="104"/>
+<line class="caprule" x1="241.3" y1="18" x2="241.3" y2="104"/>
+<text class="capt" x="245.3" y="26" text-anchor="start">L1 = 256 lines</text>
+<rect class="bar" x="59.8" y="21.7" width="4.4" height="82.3"><title>distance 0: 1,135,104 references, 82.13%</title></rect>
+<rect class="bar" x="184.9" y="77.7" width="4.4" height="26.3"><title>distance 47: 1,536 references, 0.11%</title></rect>
+<rect class="bar" x="200.6" y="87.6" width="4.4" height="16.4"><title>distance 77: 480 references, 0.03%</title></rect>
+<rect class="bar" x="201.0" y="77.9" width="4.4" height="26.1"><title>distance 78: 1,504 references, 0.11%</title></rect>
+<rect class="bar" x="201.4" y="75.3" width="4.4" height="28.7"><title>distance 79: 2,048 references, 0.15%</title></rect>
+<rect class="bar" x="206.6" y="80.6" width="4.4" height="23.4"><title>distance 93: 1,088 references, 0.08%</title></rect>
+<rect class="bar" x="207.0" y="58.1" width="4.4" height="45.9"><title>distance 94: 15,520 references, 1.12%</title></rect>
+<rect class="bar" x="207.3" y="54.4" width="4.4" height="49.6"><title>distance 95: 24,064 references, 1.74%</title></rect>
+<rect class="bar" x="211.7" y="74.8" width="4.4" height="29.2"><title>distance 109: 2,176 references, 0.16%</title></rect>
+<rect class="bar" x="212.0" y="62.9" width="4.4" height="41.1"><title>distance 110: 8,800 references, 0.64%</title></rect>
+<rect class="bar" x="212.3" y="58.2" width="4.4" height="45.8"><title>distance 111: 15,360 references, 1.11%</title></rect>
+<rect class="bar" x="216.1" y="81.7" width="4.4" height="22.3"><title>distance 125: 960 references, 0.07%</title></rect>
+<rect class="bar" x="216.4" y="64.8" width="4.4" height="39.2"><title>distance 126: 7,072 references, 0.51%</title></rect>
+<rect class="bar" x="216.6" y="57.6" width="4.4" height="46.4"><title>distance 127: 16,352 references, 1.18%</title></rect>
+<rect class="bar" x="220.0" y="81.7" width="4.4" height="22.3"><title>distance 141: 960 references, 0.07%</title></rect>
+<rect class="bar" x="220.2" y="52.2" width="4.4" height="51.8"><title>distance 142: 31,168 references, 2.26%</title></rect>
+<rect class="bar" x="220.4" y="41.2" width="4.4" height="62.8"><title>distance 143: 113,344 references, 8.20%</title></rect>
+<text class="bl" x="66.0" y="18.7" text-anchor="start">d=0 · 82.1%</text>
+<text class="bl" x="226.6" y="38.2" text-anchor="start">d=143 · 8.2%</text>
+<line class="div" x1="10" y1="20" x2="10" y2="104"/>
+<rect class="cold" x="16" y="68.4" width="9" height="35.6"><title>cold: 4,608 first references, 0.33%</title></rect>
+<text class="bl cold-t" x="20.5" y="65.4" text-anchor="middle">0.3%</text>
+<text class="ax" x="20" y="119" text-anchor="middle">cold</text>
+<text class="ax" x="222" y="135" text-anchor="middle">reuse distance, in distinct lines</text>
+</g>
+<g transform="translate(0,530)">
+<text class="pt" x="0" y="12">R9 — L2 <tspan class="pd">4,608 refs</tspan></text>
+<line class="gl" x1="62" y1="20.0" x2="382" y2="20.0"/>
+<text class="ax" x="56" y="23.0" text-anchor="end">100%</text>
+<line class="gl" x1="62" y1="39.5" x2="382" y2="39.5"/>
+<text class="ax" x="56" y="42.5" text-anchor="end">10%</text>
+<line class="gl" x1="62" y1="59.1" x2="382" y2="59.1"/>
+<text class="ax" x="56" y="62.1" text-anchor="end">1%</text>
+<line class="gl" x1="62" y1="78.6" x2="382" y2="78.6"/>
+<text class="ax" x="56" y="81.6" text-anchor="end">0.1%</text>
+<line class="gl" x1="62" y1="98.1" x2="382" y2="98.1"/>
+<text class="ax" x="56" y="101.1" text-anchor="end">0.01%</text>
+<line class="tk" x1="62.0" y1="104" x2="62.0" y2="108"/>
+<text class="ax" x="62.0" y="119" text-anchor="middle">0</text>
+<line class="tk" x1="84.4" y1="104" x2="84.4" y2="108"/>
+<text class="ax" x="84.4" y="119" text-anchor="middle">1</text>
+<line class="tk" x1="139.5" y1="104" x2="139.5" y2="108"/>
+<text class="ax" x="139.5" y="119" text-anchor="middle">10</text>
+<line class="tk" x1="211.2" y1="104" x2="211.2" y2="108"/>
+<text class="ax" x="211.2" y="119" text-anchor="middle">100</text>
+<line class="tk" x1="285.3" y1="104" x2="285.3" y2="108"/>
+<text class="ax" x="285.3" y="119" text-anchor="middle">1000</text>
+<line class="tk" x1="359.7" y1="104" x2="359.7" y2="108"/>
+<text class="ax" x="359.7" y="119" text-anchor="middle">10000</text>
+<line class="fr" x1="62" y1="104" x2="382" y2="104"/>
+<line class="caprule" x1="353.2" y1="18" x2="353.2" y2="104"/>
+<text class="capt" x="349.2" y="26" text-anchor="end">L2 = 8192 lines</text>
+<line class="div" x1="10" y1="20" x2="10" y2="104"/>
+<rect class="cold" x="16" y="20.0" width="9" height="84.0"><title>cold: 4,608 first references, 100.00%</title></rect>
+<text class="bl cold-t" x="20.5" y="17.0" text-anchor="middle">100.0%</text>
+<text class="ax" x="20" y="119" text-anchor="middle">cold</text>
+<text class="ax" x="222" y="135" text-anchor="middle">reuse distance, in distinct lines</text>
+</g>
+<text class="ph" x="446" y="354">R16 · resnet19 layer3_0_conv2</text>
+<g transform="translate(446,362)">
+<text class="pt" x="0" y="12">R16 — L1 <tspan class="pd">1,969,728 refs</tspan></text>
+<line class="gl" x1="62" y1="20.0" x2="382" y2="20.0"/>
+<text class="ax" x="56" y="23.0" text-anchor="end">100%</text>
+<line class="gl" x1="62" y1="39.5" x2="382" y2="39.5"/>
+<text class="ax" x="56" y="42.5" text-anchor="end">10%</text>
+<line class="gl" x1="62" y1="59.1" x2="382" y2="59.1"/>
+<text class="ax" x="56" y="62.1" text-anchor="end">1%</text>
+<line class="gl" x1="62" y1="78.6" x2="382" y2="78.6"/>
+<text class="ax" x="56" y="81.6" text-anchor="end">0.1%</text>
+<line class="gl" x1="62" y1="98.1" x2="382" y2="98.1"/>
+<text class="ax" x="56" y="101.1" text-anchor="end">0.01%</text>
+<line class="tk" x1="62.0" y1="104" x2="62.0" y2="108"/>
+<text class="ax" x="62.0" y="119" text-anchor="middle">0</text>
+<line class="tk" x1="84.4" y1="104" x2="84.4" y2="108"/>
+<text class="ax" x="84.4" y="119" text-anchor="middle">1</text>
+<line class="tk" x1="139.5" y1="104" x2="139.5" y2="108"/>
+<text class="ax" x="139.5" y="119" text-anchor="middle">10</text>
+<line class="tk" x1="211.2" y1="104" x2="211.2" y2="108"/>
+<text class="ax" x="211.2" y="119" text-anchor="middle">100</text>
+<line class="tk" x1="285.3" y1="104" x2="285.3" y2="108"/>
+<text class="ax" x="285.3" y="119" text-anchor="middle">1000</text>
+<line class="tk" x1="359.7" y1="104" x2="359.7" y2="108"/>
+<text class="ax" x="359.7" y="119" text-anchor="middle">10000</text>
+<line class="fr" x1="62" y1="104" x2="382" y2="104"/>
+<line class="caprule" x1="241.3" y1="18" x2="241.3" y2="104"/>
+<text class="capt" x="245.3" y="26" text-anchor="start">L1 = 256 lines</text>
+<rect class="bar" x="59.8" y="20.9" width="4.4" height="83.1"><title>distance 0: 1,764,928 references, 89.60%</title></rect>
+<rect class="bar" x="207.3" y="69.0" width="4.4" height="35.0"><title>distance 95: 6,144 references, 0.31%</title></rect>
+<rect class="bar" x="223.8" y="60.6" width="4.4" height="43.4"><title>distance 159: 16,384 references, 0.83%</title></rect>
+<rect class="bar" x="229.7" y="50.0" width="4.4" height="54.0"><title>distance 191: 57,344 references, 2.91%</title></rect>
+<rect class="bar" x="234.7" y="66.5" width="4.4" height="37.5"><title>distance 223: 8,192 references, 0.42%</title></rect>
+<rect class="bar" x="239.0" y="66.5" width="4.4" height="37.5"><title>distance 255: 8,192 references, 0.42%</title></rect>
+<rect class="bar" x="242.8" y="46.2" width="4.4" height="57.8"><title>distance 287: 90,112 references, 4.57%</title></rect>
+<text class="bl" x="66.0" y="17.9" text-anchor="start">d=0 · 89.6%</text>
+<text class="bl" x="249.0" y="43.2" text-anchor="start">d=287 · 4.6%</text>
+<line class="div" x1="10" y1="20" x2="10" y2="104"/>
+<rect class="cold" x="16" y="59.6" width="9" height="44.4"><title>cold: 18,432 first references, 0.94%</title></rect>
+<text class="bl cold-t" x="20.5" y="56.6" text-anchor="middle">0.9%</text>
+<text class="ax" x="20" y="119" text-anchor="middle">cold</text>
+<text class="ax" x="222" y="135" text-anchor="middle">reuse distance, in distinct lines</text>
+</g>
+<g transform="translate(446,530)">
+<text class="pt" x="0" y="12">R16 — L2 <tspan class="pd">38,912 refs</tspan></text>
+<line class="gl" x1="62" y1="20.0" x2="382" y2="20.0"/>
+<text class="ax" x="56" y="23.0" text-anchor="end">100%</text>
+<line class="gl" x1="62" y1="39.5" x2="382" y2="39.5"/>
+<text class="ax" x="56" y="42.5" text-anchor="end">10%</text>
+<line class="gl" x1="62" y1="59.1" x2="382" y2="59.1"/>
+<text class="ax" x="56" y="62.1" text-anchor="end">1%</text>
+<line class="gl" x1="62" y1="78.6" x2="382" y2="78.6"/>
+<text class="ax" x="56" y="81.6" text-anchor="end">0.1%</text>
+<line class="gl" x1="62" y1="98.1" x2="382" y2="98.1"/>
+<text class="ax" x="56" y="101.1" text-anchor="end">0.01%</text>
+<line class="tk" x1="62.0" y1="104" x2="62.0" y2="108"/>
+<text class="ax" x="62.0" y="119" text-anchor="middle">0</text>
+<line class="tk" x1="84.4" y1="104" x2="84.4" y2="108"/>
+<text class="ax" x="84.4" y="119" text-anchor="middle">1</text>
+<line class="tk" x1="139.5" y1="104" x2="139.5" y2="108"/>
+<text class="ax" x="139.5" y="119" text-anchor="middle">10</text>
+<line class="tk" x1="211.2" y1="104" x2="211.2" y2="108"/>
+<text class="ax" x="211.2" y="119" text-anchor="middle">100</text>
+<line class="tk" x1="285.3" y1="104" x2="285.3" y2="108"/>
+<text class="ax" x="285.3" y="119" text-anchor="middle">1000</text>
+<line class="tk" x1="359.7" y1="104" x2="359.7" y2="108"/>
+<text class="ax" x="359.7" y="119" text-anchor="middle">10000</text>
+<line class="fr" x1="62" y1="104" x2="382" y2="104"/>
+<line class="caprule" x1="353.2" y1="18" x2="353.2" y2="104"/>
+<text class="capt" x="349.2" y="26" text-anchor="end">L2 = 8192 lines</text>
+<rect class="bar" x="283.8" y="26.3" width="4.4" height="77.7"><title>distance 1023: 18,432 references, 47.37%</title></rect>
+<rect class="bar" x="319.3" y="45.0" width="4.4" height="59.0"><title>distance 3071: 2,048 references, 5.26%</title></rect>
+<text class="bl" x="290.0" y="23.3" text-anchor="start">d=1023 · 47.4%</text>
+<text class="bl" x="317.5" y="42.0" text-anchor="end">d=3071 · 5.3%</text>
+<line class="div" x1="10" y1="20" x2="10" y2="104"/>
+<rect class="cold" x="16" y="26.3" width="9" height="77.7"><title>cold: 18,432 first references, 47.37%</title></rect>
+<text class="bl cold-t" x="20.5" y="23.3" text-anchor="middle">47.4%</text>
+<text class="ax" x="20" y="119" text-anchor="middle">cold</text>
+<text class="ax" x="222" y="135" text-anchor="middle">reuse distance, in distinct lines</text>
+</g>
+</svg>
+  </div>
+  <p class="cap">Every bar is drawn from <code>outputs/reuse_hist.csv</code>, sample 0, L1 summed
+  over its sixteen private stacks. <strong>Both axes are logarithmic</strong>, and both are forced
+  by the data: the buckets span 0 to 3,071, and one bucket holds 84% while another holds 0.03%.
+  <em>Cold</em> sits outside the frame because a first reference has no distance, so putting it
+  anywhere on the axis would assert something false. The dashed copper line is the capacity that
+  level actually had. Hover any bar for its exact count.</p>
+
+  <div class="col">
+    <p>Read the two rows of each pair as two different streams, because they are. The L1 sees every
+    demand reference and its mass sits at <code>d=0</code>: a burst re-touching the line it just
+    touched, 84% of V8's traffic. The L2 sees only what the L1 missed, so <code>d=0</code> never
+    reaches it at all, and its two buckets sit at 1,023 and 3,071.</p>
+    <p>Note where the copper line falls in each row. At the L1 it sits <em>inside</em> the
+    distribution, with the 191 and 287 buckets straddling it, which is a cache doing real work
+    against a real constraint. At the L2 it sits far to the <em>right</em> of every bar the layer
+    produces. Nothing in that stream is asking for more capacity than the cache already has.</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th>Layer</th><th>Level</th><th class="n">References</th><th class="n">Cold</th>
+        <th class="n">Distinct distances</th><th class="n">Largest distance</th><th class="n">Ceiling</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="lay" rowspan="2">V8</td><td>L1</td><td class="n">2,597,632</td><td class="n">1.42%</td><td class="n">4</td><td class="n">287</td><td class="n">98.58%</td></tr>
+        <tr><td>L2</td><td class="n">77,824</td><td class="n">47.37%</td><td class="n">2</td><td class="n">3,071</td><td class="n">52.63%</td></tr>
+        <tr><td class="lay" rowspan="2">V9</td><td>L1</td><td class="n">4,995,072</td><td class="n">0.74%</td><td class="n">4</td><td class="n">287</td><td class="n">99.26%</td></tr>
+        <tr><td>L2</td><td class="n">77,824</td><td class="n">47.37%</td><td class="n">2</td><td class="n">3,071</td><td class="n">52.63%</td></tr>
+        <tr><td class="lay" rowspan="2">R9</td><td>L1</td><td class="n">1,382,144</td><td class="n">0.33%</td><td class="n">17</td><td class="n">143</td><td class="n">99.67%</td></tr>
+        <tr><td>L2</td><td class="n">4,608</td><td class="n">100.00%</td><td class="n dim">0</td><td class="n dim">none</td><td class="n dim">0.00%</td></tr>
+        <tr><td class="lay" rowspan="2">R16</td><td>L1</td><td class="n">1,969,728</td><td class="n">0.94%</td><td class="n">7</td><td class="n">287</td><td class="n">99.06%</td></tr>
+        <tr><td>L2</td><td class="n">38,912</td><td class="n">47.37%</td><td class="n">2</td><td class="n">3,071</td><td class="n">52.63%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">Sample 0 of each layer; the other four samples agree to the bucket. <em>Ceiling</em>
+  is one minus the cold fraction, the highest hit rate any cache of any size can reach on this
+  stream. R9's weight set already fits in the L1, so every line reaches the L2 exactly once and
+  its L2 has no reuse to capture at all.</p>
+</section>
+
+<section>
+  <span class="eyebrow">V2 and V3</span>
+  <h2>The prediction is checked before it is used</h2>
+  <div class="col">
+    <p>Stack distance predicts a <em>fully-associative</em> LRU cache and nothing else, so it is
+    validated against fully-associative runs of the engine rather than against the swept geometry.
+    That is the only comparison that can confirm the arithmetic.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th>Layer</th><th class="n">L1 predicted</th><th class="n">L1 measured, 256 ways</th>
+        <th class="n">L2 predicted</th><th class="n">L2 measured, fully assoc.</th><th></th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="lay">V8</td><td class="n">91.64%</td><td class="n">91.64%</td><td class="n">52.63%</td><td class="n">52.63%</td><td class="match">match</td></tr>
+        <tr><td class="lay">V9</td><td class="n">95.65%</td><td class="n">95.65%</td><td class="n">52.63%</td><td class="n">52.63%</td><td class="match">match</td></tr>
+        <tr><td class="lay">R9</td><td class="n">99.67%</td><td class="n">99.67%</td><td class="n">0.00%</td><td class="n">0.00%</td><td class="match">match</td></tr>
+        <tr><td class="lay">R16</td><td class="n">94.49%</td><td class="n">94.49%</td><td class="n">52.63%</td><td class="n">52.63%</td><td class="match">match</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">L1 at 16 KB, L2 checked at 256 KB, 512 KB, 1 MB and 4 MB, every point agreeing to
+  better than 0.005%. Two further checks ran per unit: <strong>V1</strong>, the histogram's own
+  total equals the results row's <code>l1_accesses</code> and <code>l2_accesses</code> exactly, on
+  all 24 runs; and <strong>V4</strong>, the L1 histogram is byte-identical at 16 KB and 256 KB,
+  confirming that a core's reference sequence cannot depend on its cache.</p>
+</section>
+
+<section>
+  <span class="eyebrow">The finding</span>
+  <h2>Hold the capacity, vary the ways</h2>
+  <div class="col">
+    <p>If the 0.00% were capacity, associativity at fixed size would change nothing. It changes
+    everything.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th>Layer</th>
+        <th class="n">512 KB, 16-way<br><span class="dim">the swept point</span></th>
+        <th class="n">512 KB, 64-way<br><span class="dim">same capacity</span></th>
+        <th class="n">4 MB, 16-way<br><span class="dim">Friday's prescription</span></th>
+        <th class="n">Cycles, 16-way</th><th class="n">Cycles, 64-way</th><th class="n">Gain</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="lay">V8</td><td class="n zero">0.00%</td><td class="n full">52.63%</td><td class="n full">52.63%</td><td class="n">290,136</td><td class="n">248,144</td><td class="n full">14.5%</td></tr>
+        <tr><td class="lay">V9</td><td class="n zero">0.00%</td><td class="n full">52.63%</td><td class="n full">52.63%</td><td class="n">439,976</td><td class="n">383,888</td><td class="n full">12.7%</td></tr>
+        <tr><td class="lay">R9</td><td class="n dim">0.00%</td><td class="n dim">0.00%</td><td class="n dim">0.00%</td><td class="n">93,992</td><td class="n">93,992</td><td class="n dim">0.0%</td></tr>
+        <tr><td class="lay">R16</td><td class="n zero">0.00%</td><td class="n full">52.63%</td><td class="n full">52.63%</td><td class="n">187,000</td><td class="n">161,912</td><td class="n full">13.4%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">Sample 0, every other parameter held at the best config. R9 is the control and
+  behaves correctly: it has no L2 reuse to recover, so no geometry helps it. The transition is
+  abrupt, at 32 ways: 16-way gives 0.00%, and 64, 256, 1024 and 8,192 ways all give exactly
+  52.63%.</p>
+
+  <h3>Adding sets does not substitute for adding ways</h3>
+  <div class="col">
+    <p>Friday's own capacity sweep is the evidence. Going 512 KB to 1 MB to 2 MB at 16-way doubles
+    the set count twice and leaves V8 at 0.00% throughout. Going 512 KB 16-way to 512 KB 64-way
+    <em>quarters</em> the set count and fixes it completely.</p>
+    <p>So the lines inside a reuse window are landing in too few distinct sets, and widening the
+    index does not separate them, because the bits the index gains are not the bits that vary
+    within a window. That is a statement about where <code>khkw_split</code> puts each digit, and
+    it is worth saying plainly that the layout was tuned against the L1's five index bits. The L2
+    at 512 KB has nine, and the four it adds were never checked.</p>
+  </div>
+  <div class="note">
+    The mechanism above is the hypothesis the data most obviously supports, not a measured result.
+    Confirming it means counting the distinct L2 sets touched inside one reuse window, which the
+    access log already contains and no run has yet asked it for.
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">The counter-result</span>
+  <h2>At the L1, the layout is already winning</h2>
+  <div class="col">
+    <p>Stack distance gives an upper bound for fully-associative LRU. It is not a bound on a
+    set-associative cache, which partitions the stream and can retain what a global LRU would
+    evict. That usually costs a fraction of a point. Here it earns several.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th>Layer</th><th class="n">8-way, 16 KB<br><span class="dim">the swept point</span></th>
+        <th class="n">Fully associative, 16 KB</th><th class="n">Set-associative advantage</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="lay">V8</td><td class="n">97.00%</td><td class="n">91.64%</td><td class="n full">+5.36</td></tr>
+        <tr><td class="lay">V9</td><td class="n">98.44%</td><td class="n">95.65%</td><td class="n full">+2.79</td></tr>
+        <tr><td class="lay">R9</td><td class="n">99.67%</td><td class="n">99.67%</td><td class="n dim">0.00</td></tr>
+        <tr><td class="lay">R16</td><td class="n">98.02%</td><td class="n">94.49%</td><td class="n full">+3.54</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">Points of hit rate. R9's stream fits its L1 outright, so there is no eviction
+  decision to make and the two geometries coincide, which is the control this table needs.</p>
+  <div class="col">
+    <p>The two results are one result. The kernel-indexed layout spreads a reuse window across the
+    L1's sets so well that per-set LRU outperforms global LRU. The same index, extended to the L2's
+    larger set count, concentrates a reuse window instead. The layout is not wrong; it is correct
+    at one level and unexamined at the other.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">What to change</span>
+  <h2>The cheap fix and the real one</h2>
+  <div class="col">
+    <ul>
+      <li><strong>Raise the L2 to 64-way and keep 512 KB.</strong> Recovers the full 12.7&ndash;14.5%
+      at one eighth the capacity Friday's reading called for. A 64-way 512 KB L2 is not free in
+      area or access energy, but it is far cheaper than 4 MB.</li>
+      <li><strong>Re-cut the L2 set index.</strong> If a different assignment of
+      <code>khkw_split</code>'s digits spreads a reuse window across the L2's 512 sets, 16-way
+      keeps the win and costs nothing. This is the result worth having, and the access log already
+      holds the data to test it.</li>
+      <li><strong>Re-open the prefetch question.</strong> Friday found prefetching a 37&ndash;90%
+      penalty at 64-byte lines, measured against an L2 that was returning 0.00%. With the L2
+      actually hitting, the arithmetic behind that verdict changes and it deserves a re-run.</li>
+    </ul>
+    <p>What does not change: 64-byte lines still win outright, L2 banking is still inert, and
+    prefetch distance 0 is still the best of the four prefetch settings that were swept.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Method</span>
+  <h2>How the distances were obtained</h2>
+  <div class="col">
+    <p>Reuse distance here is LRU <em>stack distance</em> in distinct lines: for a reference to line
+    X, the count of distinct lines touched since the previous reference to X. A reference hits in a
+    fully-associative LRU cache of N lines exactly when its distance is below N, so one pass yields
+    the hit rate at every capacity. A first reference is cold and gets its own bucket.</p>
+    <p>The engine writes the demand reference stream as a fixed-width binary log, emitted at the
+    same two sites that increment <code>l1_accesses</code> and <code>l2_accesses</code>, which is
+    what makes V1 an identity rather than a coincidence. A standalone tool then walks it with a
+    Fenwick tree over the timestamp axis, about 19 slot touches per reference against roughly 2,300
+    for a backward scan.</p>
+    <p>Seventeen independent stacks per run: one per private L1, one for the shared L2. All 24 runs
+    complete in 12 seconds.</p>
+  </div>
+<pre><code>for each reference to line X at time t:
+    if X unseen:   record COLD
+    else:          d = prefix(t-1) - prefix(p);  remove marker at p
+    place marker at t;  last[X] = t</code></pre>
+  <div class="col">
+    <p>The naive backward scan is kept as the test oracle and never as a production path: 850
+    checks agree between the two, across the worked example, 2,000 random sequences, every length
+    around a power of two, and a synthetic cyclic sweep.</p>
+  </div>
+</section>
+
+<footer>
+  <p><strong>Config.</strong> <code>khkw_split</code>, 64 B lines (cin_block 16 &times; cout_block 4
+  &times; 1 B), L1 16 KB 8-way, L2 512 KB 16-way, 1 bank, latencies 0 / 2 / 24, prefetch none.
+  Verified identical to <code>outputs/_khkw_grid/khkw_64b.json[0]</code> at startup. Layers V8
+  (vgg16 features_27), V9 (vgg16 features_30), R9 (resnet19 layer2_0_conv2), R16 (resnet19
+  layer3_0_conv2), five samples each.</p>
+  <p><strong>Reproduce.</strong> <code>profiling/0831_reuse_distance/</code>:
+  <code>run_reuse_hist.py</code> then <code>analyze_reuse.py</code>. Plan and verification list at
+  <code>log/2026-08-31-reuse-distance-plan.md</code>. Supersedes the L2 capacity reading in the
+  2026-08-28 <em>Kernel-Indexed Cache Sweep</em>; that page's line-size, banking and prefetch
+  findings stand.</p>
+</footer>
+
+</div>

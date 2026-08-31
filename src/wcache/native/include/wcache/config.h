@@ -18,6 +18,7 @@
 
 #include "wcache/cache_level.h"
 #include "wcache/engine.h"
+#include "wcache/layout.h"
 #include "wcache/prefetcher.h"
 #include "wcache/stamp_policy.h"
 
@@ -28,13 +29,34 @@ struct RunConfig {
     std::int32_t cin_block    = 1;
     std::int32_t cout_block   = 16;
     std::int32_t weight_bytes = 1;
+    LayoutKind   layout       = LayoutKind::BlockPack;
+
+    // Under `split_cin`, the radix of the innermost CIN digit, which is what
+    // the L1 set index becomes. -1 means "the default, l1_num_sets()", and
+    // validate() resolves it, for l1_demand_reserve's reason: the value is a
+    // number the layout alone does not carry.
+    //
+    // It resolves ONLY under split_cin. Under block_pack the sentinel is the
+    // only value the field accepts, so a block_pack row reports -1 and says in
+    // its own cell that no split happened. Resolving it under both would put a
+    // width in the CSV that the run never used, and two rows measuring
+    // different things would then look configured the same way.
+    std::int64_t cin_lo_blocks = -1;
 
     // --- geometry
     std::int64_t l1_size_bytes = 8 * 1024;
     std::int32_t l1_assoc      = 8;
     std::int64_t l2_size_bytes = 512 * 1024;
     std::int32_t l2_assoc      = 16;
-    PolicyKind   policy        = PolicyKind::LRU;   // one knob, both levels
+    PolicyKind   policy        = PolicyKind::LRU;
+
+    // The L2's policy, when it differs from `policy`. Defaults to a sentinel
+    // meaning "same as `policy`", so every existing config is unchanged and no
+    // committed result moves. Split from `policy` for Belady, which is an
+    // offline bound worth measuring at one level while the other stays real
+    // (plan 0831-belady section 4).
+    PolicyKind l2_policy   = PolicyKind::RANDOM;  // RANDOM = "unset, follow `policy`"
+    bool       l2_policy_set = false;   // one knob, both levels
     Inclusion    inclusion     = Inclusion::NonInclusive;
 
     // --- concurrency

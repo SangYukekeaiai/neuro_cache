@@ -40,8 +40,11 @@
 #include <vector>
 
 #include "wcache/cache_level.h"
+#include "wcache/access_log.h"
+#include "wcache/cache_state_log.h"
 #include "wcache/event.h"
 #include "wcache/layout.h"
+#include "wcache/line_trace.h"
 #include "wcache/mshr.h"
 #include "wcache/prefetcher.h"
 #include "wcache/trace.h"
@@ -403,6 +406,29 @@ public:
     CacheLevel& l2() { return l2_; }
     const Prefetcher& prefetcher() const { return *prefetcher_; }
 
+    // --- the two debugging instruments ---------------------------------------
+    //
+    // Both are optional, both are off by default, and they are SEPARATE on
+    // purpose: `CacheStateLog` records what is in the arrays and when that
+    // changed, `LineTrace` records what happened to a line between entering a
+    // cache and leaving it. Either may be attached without the other.
+    //
+    // Neither changes what the engine computes. Every site below is guarded on
+    // the pointer, reads state that already exists, and writes no engine field,
+    // so a run with either instrument attached produces the same CSV row as one
+    // without. That is the property that makes them usable as evidence about a
+    // run rather than about themselves.
+    //
+    // The pointee must outlive the engine; neither is owned.
+    void set_cache_state_log(CacheStateLog* log) { cache_state_ = log; }
+    void set_line_trace(LineTrace* trace) { line_trace_ = trace; }
+
+    // The third instrument (plan 0831 U2). It is fed from the two sites that
+    // count `l1_accesses` and `l2_accesses` rather than from the three array
+    // transitions the other two share, because a reference and an array change
+    // are different events: a hit changes nothing and is still a reference.
+    void set_access_log(AccessLog* log) { access_log_ = log; }
+
     // --- PrefetchIssuer (C5) -------------------------------------------------
     std::int32_t n_bursts_in_tile(CoreId core) const override;
     bool issue_prefetch(CoreId core, BurstIndex k, SimTime now) override;
@@ -432,7 +458,7 @@ private:
     // 4.4's back-invalidation, under `inclusion == inclusive` only. The scan
     // covers all cores because the L2 is shared, which is why sharedness is the
     // reason the scan is wide and not the reason invalidation is needed at all.
-    void back_invalidate(LineId line);
+    void back_invalidate(LineId line, SimTime now);
 
     // --- the core state machine (C3) -----------------------------------------
     //
@@ -470,6 +496,31 @@ private:
     // 4.5's `max(gap_k, core_accept_ii)`, the period from one service to the
     // next issue.
     SimTime step_after(CoreId c, std::int32_t tile, BurstIndex k) const;
+
+    // --- feeding the two instruments (see set_cache_state_log above) ---------
+    //
+    // Three verbs, because the array has exactly three transitions, and BOTH
+    // instruments are fed from them. Fed from one place rather than two so the
+    // state log and the episode table can never disagree about what the array
+    // did; written to two FILES so that neither has to be read through the
+    // other.
+    bool instrumented() const { return cache_state_ != nullptr || line_trace_ != nullptr; }
+
+    // The way `line` occupies at `level`, by probing the array for it. Costs one
+    // probe and one division, so it is called only under `instrumented()`.
+    // Returns -1 when the line is not resident, which no caller should see.
+    std::int32_t way_of(Level level, CoreId core, LineId line) const;
+
+    // The tile every core is on. One number rather than a per-core field
+    // because `start_tile` moves all of them together, so the L2 -- which
+    // belongs to no core -- still has an unambiguous tile to be stamped with.
+    std::int32_t current_tile() const;
+
+    void note_fill(Level level, CoreId core, LineId line, std::int32_t way, SimTime now,
+                   SimTime first_request, bool pf_opened);
+    void note_leave(Level level, CoreId core, LineId line, std::int32_t way, SimTime now,
+                    const char* why);
+    void note_hit(Level level, CoreId core, LineId line, bool demand);
 
     // --- request lifetime ----------------------------------------------------
     //
@@ -550,6 +601,12 @@ private:
     std::vector<LineId> pf_lines_;
     std::vector<Request*> granted_;
     RetireResult retire_;
+
+    // Null unless a driver attached one. Never owned, and never read by
+    // anything that decides what the engine does.
+    CacheStateLog* cache_state_ = nullptr;
+    AccessLog*     access_log_  = nullptr;
+    LineTrace*     line_trace_  = nullptr;
 };
 
 // The one place a trace SPACING becomes a simulated duration.

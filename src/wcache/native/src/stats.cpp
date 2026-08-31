@@ -18,8 +18,18 @@ const char* name_of(PolicyKind k) {
         case PolicyKind::LRU:    return "lru";
         case PolicyKind::FIFO:   return "fifo";
         case PolicyKind::RANDOM: return "random";
+        case PolicyKind::BELADY: return "belady";
     }
     throw std::logic_error("RunStats: unknown PolicyKind");
+}
+
+const char* name_of(LayoutKind l) {
+    switch (l) {
+        case LayoutKind::BlockPack: return "block_pack";
+        case LayoutKind::SplitCin:  return "split_cin";
+        case LayoutKind::KhkwSplit: return "khkw_split";
+    }
+    throw std::logic_error("RunStats: unknown LayoutKind");
 }
 
 const char* name_of(Inclusion i) {
@@ -154,6 +164,10 @@ void emit_config(Row& r, const RunConfig& cfg) {
     r.i64("cin_block", cfg.cin_block);
     r.i64("cout_block", cfg.cout_block);
     r.i64("weight_bytes", cfg.weight_bytes);
+    r.str("layout", name_of(cfg.layout));
+    // -1 under block_pack, which has no split. The cell says so itself rather
+    // than repeating l1_num_sets and implying a width the run did not use.
+    r.i64("cin_lo_blocks", cfg.cin_lo_blocks);
     r.i64("l1_mshrs", cfg.l1_mshrs);
     r.i64("l1_tgts_per_mshr", cfg.l1_tgts_per_mshr);
     r.i64("l2_mshrs", cfg.l2_mshrs);
@@ -191,6 +205,7 @@ const std::vector<std::string>& csv_columns() {
         "l1_size_bytes", "l1_assoc", "l1_num_lines", "l1_num_sets",
         "l2_size_bytes", "l2_assoc", "l2_num_lines", "l2_num_sets",
         "line_size_bytes", "cin_block", "cout_block", "weight_bytes",
+        "layout", "cin_lo_blocks",
         "l1_mshrs", "l1_tgts_per_mshr", "l2_mshrs", "l2_tgts_per_mshr", "l1_demand_reserve",
         "prefetch_policy", "prefetch_distance",
         "l1_latency", "l1_ii", "l2_latency", "l2_to_l1_latency", "l2_miss_latency",

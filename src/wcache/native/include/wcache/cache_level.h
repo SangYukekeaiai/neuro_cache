@@ -38,6 +38,9 @@
 #include "wcache/cache.h"
 #include "wcache/layout.h"
 #include "wcache/mshr.h"
+#include <unordered_map>
+
+#include "wcache/next_use.h"
 #include "wcache/policy.h"
 #include "wcache/port.h"
 #include "wcache/stamp_policy.h"
@@ -205,6 +208,20 @@ public:
     CacheArray& array() { return *array_; }
     const CacheArray& array() const { return *array_; }
     ReplacementPolicy& policy() { return *policy_; }
+
+    // --- Belady's oracle (plan 0831-belady, unit W3) --------------------------
+    //
+    // Optional and off by default. When attached, this level counts its DEMAND
+    // references per line and tells the policy, at every hit and every fill,
+    // when the line in that slot is next referenced. `BeladyPolicy` is the only
+    // policy that acts on it; for every other one the call is a no-op, so
+    // attaching an oracle to an LRU level changes nothing (check B4).
+    //
+    // The occurrence counter lives HERE and not in the engine because this is
+    // the object that sees both the probe and the fill, and splitting the count
+    // from its two consumers is what would let them disagree.
+    void attach_next_use(NextUseOracle* oracle) { next_use_ = oracle; }
+    const NextUseOracle* next_use_oracle() const { return next_use_; }
     MshrFile& mshrs() { return mshrs_; }
     const MshrFile& mshrs() const { return mshrs_; }
     Port& port(std::int32_t bank) { return ports_.at(static_cast<std::size_t>(bank)); }
@@ -216,6 +233,17 @@ private:
     const AddressMapper& mapper_;
     std::unique_ptr<CacheArray> array_;
     std::unique_ptr<ReplacementPolicy> policy_;
+
+    // Belady's oracle and the per-line demand occurrence count it is keyed by.
+    // Both are inert unless `attach_next_use` was called.
+    NextUseOracle*                                 next_use_ = nullptr;
+    std::unordered_map<std::int64_t, std::int64_t> occurrence_;
+
+    // The next-use the most recent demand probe of each line computed, held for
+    // the fill that may follow it. The fill cannot recompute it: it happens
+    // later, and other cores' probes for the same line may have advanced the
+    // occurrence in between.
+    std::unordered_map<std::int64_t, std::int64_t> pending_next_use_;
 
     // One per bank. A vector rather than a single Port so that the L1 and the L2
     // are the same class: the L1 is the `banks = 1` case, exactly as a

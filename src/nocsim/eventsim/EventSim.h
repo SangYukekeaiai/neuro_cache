@@ -8,9 +8,13 @@
 //     cost, per Plan 1's static metric) -- closer branches are not
 //     separately tracked.
 //   - DRAM-touching transactions (src or dest == dram_port): duration is
-//     size * dram_latency, with NO link/hop term -- DRAM traffic does not
-//     use NoC mesh links (see transactions/dram.py), matching Plan 1's
-//     dram_cost formula exactly.
+//     ceil(size * dram_latency), with NO link/hop term -- DRAM traffic does
+//     not use NoC mesh links (see transactions/dram.py), matching Plan 1's
+//     dram_cost formula exactly. dram_latency is cycles of port occupancy
+//     per 256-bit packet and is fractional whenever the port moves more
+//     than one packet per cycle (0.25 = 64 GB/s at 500 MHz); the ceiling is
+//     applied to the product, once per transaction, so the modelled
+//     bandwidth stays exact.
 //   - Each actor_id (port) runs at most one transaction at a time.
 //   - A transaction dispatches once its dependencies have all finished
 //     (event-driven) AND its actor + every link on its route are free
@@ -19,6 +23,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <queue>
 #include <stdexcept>
@@ -48,7 +53,7 @@ inline bool touches_dram(const Transaction& tc, int dram_port) {
 }
 
 inline SimResult simulate(const std::vector<Transaction>& tcs, const NoC& noc,
-                           int dram_port, long long dram_latency) {
+                           int dram_port, double dram_latency) {
     const int n = static_cast<int>(tcs.size());
 
     std::unordered_map<int, int> id_to_idx;
@@ -61,6 +66,9 @@ inline SimResult simulate(const std::vector<Transaction>& tcs, const NoC& noc,
 
     std::vector<int> remaining_deps(n, 0);
     std::vector<std::vector<int>> dependents(n);
+    // Predecessor indices, so a transaction's earliest legal start reads
+    // straight out of finish_time without a hash lookup per dispatch.
+    std::vector<std::vector<int>> dep_idxs(n);
     for (int i = 0; i < n; ++i) {
         remaining_deps[i] = static_cast<int>(tcs[i].deps.size());
         for (int dep_tc_id : tcs[i].deps) {
@@ -70,11 +78,20 @@ inline SimResult simulate(const std::vector<Transaction>& tcs, const NoC& noc,
                                           " depends on unknown tc_id " + std::to_string(dep_tc_id));
             }
             dependents[it->second].push_back(i);
+            dep_idxs[i].push_back(it->second);
         }
     }
 
     std::map<int, long long> actor_free_time;
     std::map<Link, long long> link_free_time;
+
+    // finish_time[i] is written when i is placed. A successor may not start
+    // before every predecessor has finished, which is the tc.csv contract:
+    // "each transaction can only be launched after all transactions
+    // specified in the dep list finish". Without this, dependency edges
+    // control dispatch order but not time, and every actor's timeline packs
+    // gaplessly from 0.
+    std::vector<long long> finish_time(n, 0);
 
     auto get_actor_free = [&](int actor) -> long long {
         auto it = actor_free_time.find(actor);
@@ -110,15 +127,22 @@ inline SimResult simulate(const std::vector<Transaction>& tcs, const NoC& noc,
             std::vector<Link> route;
             bool is_dram = (tc.op != 2) && touches_dram(tc, dram_port);
 
+            // Earliest time this transaction's inputs exist.
+            long long dep_ready = 0;
+            for (int d : dep_idxs[i]) {
+                dep_ready = std::max(dep_ready, finish_time[d]);
+            }
+
             if (tc.op == 2) {
                 // COUNT: only the actor matters, no links.
-                start    = get_actor_free(tc.actor_id);
+                start    = std::max(get_actor_free(tc.actor_id), dep_ready);
                 duration = tc.size;
             } else if (is_dram) {
                 // DRAM-touching unicast/multicast: no hop term, matches
                 // Plan 1's dram_cost formula exactly.
-                start    = get_actor_free(tc.actor_id);
-                duration = tc.size * dram_latency;
+                start    = std::max(get_actor_free(tc.actor_id), dep_ready);
+                duration = static_cast<long long>(
+                    std::ceil(static_cast<double>(tc.size) * dram_latency));
             } else {
                 int dest;
                 if (tc.op == 0) {
@@ -141,13 +165,14 @@ inline SimResult simulate(const std::vector<Transaction>& tcs, const NoC& noc,
                 }
                 route = noc.hops_single(tc.actor_id, dest);
 
-                start = get_actor_free(tc.actor_id);
+                start = std::max(get_actor_free(tc.actor_id), dep_ready);
                 for (const auto& l : route) start = std::max(start, get_link_free(l));
 
                 duration = static_cast<long long>(route.size()) + tc.size * FLITS_PER_PACKET;
             }
 
             long long finish = start + duration;
+            finish_time[i] = finish;
             actor_free_time[tc.actor_id] = finish;
             for (const auto& l : route) link_free_time[l] = finish;
 
@@ -163,8 +188,8 @@ inline SimResult simulate(const std::vector<Transaction>& tcs, const NoC& noc,
         }
 
         if (!completions.empty()) {
-            auto [finish_time, i] = completions.top();
-            (void)finish_time;
+            auto [done_at, i] = completions.top();
+            (void)done_at;
             completions.pop();
             for (int dep_idx : dependents[i]) {
                 if (--remaining_deps[dep_idx] == 0) {

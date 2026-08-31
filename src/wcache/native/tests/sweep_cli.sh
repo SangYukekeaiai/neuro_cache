@@ -39,16 +39,18 @@ JSON
          --run-id fixed --tier smoke --hist "$tmp/hist.csv" \
          --progress > "$tmp/sweep.csv" 2> "$tmp/progress.txt" || { cat "$tmp/progress.txt"; exit 1; }
 
-# 1. A header and one row per grid point, every row the pinned 91 columns.
+# 1. A header and one row per grid point, every row the pinned 93 columns.
 #
 # 91 and not 90: `stall_l1_port` was added, which is the bucket V21's partition
 # was missing. The 91 the plan's prose used to assert was an unrelated
-# arithmetic error against a 90-entry list; the list itself has 91 entries now.
+# arithmetic error against a 90-entry list. 93 since `layout` and
+# `cin_lo_blocks` joined it: a run that swaps the address mapper must say
+# which one it swapped to.
 "$py" - "$tmp/sweep.csv" <<'PY'
 import csv, sys
 rows = list(csv.reader(open(sys.argv[1])))
 assert len(rows) == 5, len(rows)
-assert all(len(r) == 91 for r in rows), [len(r) for r in rows]
+assert all(len(r) == 93 for r in rows), [len(r) for r in rows]
 head = rows[0]
 data = [dict(zip(head, r)) for r in rows[1:]]
 assert [(r["l1_size_bytes"], r["prefetch_distance"]) for r in data] == \
@@ -88,7 +90,7 @@ test "$(wc -l < "$tmp/hist.csv")" -eq 17
 # `run_id` is pinned on both sides and `sim_wall_seconds` is excluded BY NAME,
 # because those two cannot be equal across two runs by construction: one
 # defaults to a fresh UUIDv4 and the other is wall clock. Every other one of
-# the 91 columns must match exactly.
+# the 93 columns must match exactly.
 cat > "$tmp/point.json" <<'JSON'
 {"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
  "l1_assoc": 8, "l2_size_bytes": 524288, "l2_assoc": 16,

@@ -8,7 +8,7 @@ BIN  := prosperitygen
 
 all: $(BIN)
 
-$(BIN): $(SRCS) ProsperityGen.h
+$(BIN): $(SRCS) ProsperityGen.h ../tick_output.h
 	$(CXX) $(CXXFLAGS) -o $(BIN) $(SRCS)
 
 clean:

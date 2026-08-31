@@ -32,7 +32,7 @@ test "$(wc -l < "$tmp/a.csv")" -eq 2
 # `sim_wall_seconds` is wall-clock, so two runs of one binary over one stream
 # differ in those two cells by design. Pinning --run-id removes the first, and
 # the comparison below excludes `sim_wall_seconds` BY NAME and asserts that
-# every other one of the 91 columns matches, which is what §10.6's replay
+# every other one of the 93 columns matches, which is what §10.6's replay
 # contract actually claims.
 "$bin" --config "$tmp/cfg.json" --trace - --run-id fixed --header < "$tmp/fixture.wcts" > "$tmp/b.csv"
 "$py" - "$tmp/a.csv" "$tmp/b.csv" <<'PY'
@@ -45,16 +45,18 @@ assert [c for c, _, _ in differ] in ([], ["sim_wall_seconds"]), differ
 print(f"path vs stdin: {len(a[0]) - len(differ)} of {len(a[0])} columns identical")
 PY
 
-# 3. The row's arity matches the header's, and both are the pinned 91.
+# 3. The row's arity matches the header's, and both are the pinned 93.
 #
 # 91 and not 90: `stall_l1_port` was added, which is the bucket V21's partition
 # was missing. The 91 the plan's prose used to assert was an unrelated
-# arithmetic error against a 90-entry list; the list itself has 91 entries now.
+# arithmetic error against a 90-entry list. 93 since `layout` and
+# `cin_lo_blocks` joined it: a run that swaps the address mapper must say
+# which one it swapped to.
 "$py" - "$tmp/a.csv" <<'PY'
 import csv, sys
 rows = list(csv.reader(open(sys.argv[1])))
 assert len(rows) == 2, rows
-assert len(rows[0]) == len(rows[1]) == 91, (len(rows[0]), len(rows[1]))
+assert len(rows[0]) == len(rows[1]) == 93, (len(rows[0]), len(rows[1]))
 row = dict(zip(rows[0], rows[1]))
 assert int(row["total_cycles"]) > 0
 assert int(row["l1_accesses"]) > 0
@@ -97,5 +99,53 @@ grep -q -- --nonsense "$tmp/usage.txt"
 "$bin" --config "$tmp/cfg.json" --trace "$tmp/fixture.wcts" --run-id fixed \
        --hist "$tmp/hist.csv" > /dev/null
 test "$(wc -l < "$tmp/hist.csv")" -eq 17   # 1 header + 2 tiles * 8 cores
+
+# 8. W4's equivalence gate: the layout knob reaches the mapper, and what it
+#    changes is placement and nothing else.
+#
+# ptb_resnet19 rather than the loas slice this script otherwise uses, because
+# loas re-references almost nothing (1 hit in 384) and a layout that changes
+# where lines go cannot show on a trace with no reuse. The L1 is squeezed to
+# 16 lines over 8 sets so conflicts, and therefore placement, decide the run.
+#
+# The two halves of the gate pull in opposite directions on purpose:
+#   dram_bytes IDENTICAL  -- the same lines are fetched, so the layout is a
+#                            relabelling and not a different working set
+#   l1_hits    DIFFERENT  -- the labels land in different sets, which is the
+#                            only thing this change was supposed to do
+#
+# The dram_bytes half holds HERE and is not a general law, which W5 found the
+# hard way. The relabelling preserves the SET of lines, so DRAM traffic is
+# invariant only while the L2 never has to evict. This fixture's whole layer is
+# 2,304 lines against a 524,288-byte 16-way L2, so it fits many times over and
+# the equality is exact. On a layer whose working set exceeds the L2, the two
+# layouts hand the L2 different reuse distances, it evicts different lines, and
+# dram_bytes moves: measured on V8 at 4.32 MB under block_pack against 6.40 MB
+# under split_cin. Sizing this L2 down until the layer stopped fitting would
+# turn this check red without anything being wrong, so it stays large.
+"$py" "$root/src/wcache/examples/to_stream.py" \
+    "$root/src/wcache/examples/ptb_resnet19_layer01_v2.json" > "$tmp/reuse.wcts"
+for layout in block_pack split_cin; do
+    cat > "$tmp/lay.json" <<JSON
+{"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
+ "l1_size_bytes": 256, "l1_assoc": 2, "l2_size_bytes": 524288, "l2_assoc": 16,
+ "layout": "$layout"}
+JSON
+    "$bin" --config "$tmp/lay.json" --trace "$tmp/reuse.wcts" --run-id fixed --header \
+        > "$tmp/$layout.csv"
+done
+"$py" - "$tmp/block_pack.csv" "$tmp/split_cin.csv" <<'GATE'
+import csv, sys
+a, b = [dict(zip(*list(csv.reader(open(f))))) for f in sys.argv[1:]]
+assert a["layout"] == "block_pack" and b["layout"] == "split_cin", (a["layout"], b["layout"])
+assert a["cin_lo_blocks"] == "-1", a["cin_lo_blocks"]
+assert b["cin_lo_blocks"] == b["l1_num_sets"], (b["cin_lo_blocks"], b["l1_num_sets"])
+assert a["dram_bytes"] == b["dram_bytes"], (a["dram_bytes"], b["dram_bytes"])
+assert a["dram_accesses"] == b["dram_accesses"], (a["dram_accesses"], b["dram_accesses"])
+assert a["l1_accesses"] == b["l1_accesses"], (a["l1_accesses"], b["l1_accesses"])
+assert a["l1_hits"] != b["l1_hits"], "the layout knob did not reach the mapper"
+print(f"layout gate: dram_bytes {a['dram_bytes']} both, "
+      f"l1_hits {a['l1_hits']} -> {b['l1_hits']}")
+GATE
 
 echo "run_cli: OK"

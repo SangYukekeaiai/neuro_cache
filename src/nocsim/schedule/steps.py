@@ -69,6 +69,12 @@ class StepInfo:
         self._noc_totals:  Dict[int, int] = _compute_totals(self._noc)
         self._dram_totals: Dict[int, int] = _compute_totals(self._dram)
 
+        # How many NoC steps one DRAM step contains. weight_changes needs it to
+        # name the step before (dram_i, 0), which is (dram_i - 1, this - 1).
+        self._noc_num_steps: int = 1
+        for loop in self._noc:
+            self._noc_num_steps *= loop.factor
+
         # ------------------------------------------------------------------
         # Traffic-free flags — structural properties of the loop ordering,
         # computed once and reused for every (dram_i, noc_i) iteration.
@@ -124,24 +130,52 @@ class StepInfo:
         """
         return _level_position(dram_i, self._dram, self._dram_totals, _T_DIM)
 
-    def weight_changes(self, noc_i: int) -> bool:
-        """True if weight must be reloaded at this NoC temporal step.
+    def weight_changes(self, dram_i: int, noc_i: int) -> bool:
+        """True if weight must be reloaded at this (DRAM, NoC) temporal step.
 
         Weight-indexed dims {KH, KW, CIN, COUT} determine weight content.
         Weight-invariant dims {HO, WO, T} do not — advancing only those dims
-        within the NoC temporal loop reuses the same weight tile.
+        reuses the weight tile already on the node.
 
-        Step 0 always returns True: no prior load exists yet.
-        All other steps return True only if at least one weight-indexed dim
-        has a different combined index compared to step noc_i - 1.
+        The predecessor is the step before this one in the INTEGRATED loop
+        (NoC inner, DRAM outer), so at noc_i == 0 it is the last NoC step of
+        dram_i - 1 rather than "nothing". Taking dram_i is what makes that
+        expressible, and it is the whole of this method's history: the earlier
+        signature took noc_i alone and returned True unconditionally at
+        noc_i == 0, which is once per DRAM step. Any schedule whose DRAM loop
+        carries a weight-invariant dim therefore re-sent the whole weight tile
+        on every one of that dim's iterations. The over-send was the product of
+        the DRAM loop's HO/WO/T factors: 2x on the campaign's vgg16 layers and
+        8x on resnet19 layer_16, against 1x on layers whose DRAM loop happens
+        to be weight-indexed throughout, which is why it read as a per-layer
+        anomaly rather than as a bug.
+
+        Step (0, 0) always returns True: no prior load exists yet.
         """
-        if noc_i == 0:
+        if dram_i == 0 and noc_i == 0:
             return True
+
+        if noc_i > 0:
+            prev_dram, prev_noc = dram_i, noc_i - 1
+        else:
+            prev_dram, prev_noc = dram_i - 1, self._noc_num_steps - 1
+
         for dim in _WEIGHT_DIMS:
-            if _decode_dim(noc_i,     self._noc, dim) != \
-               _decode_dim(noc_i - 1, self._noc, dim):
+            if self._integrated_idx(dram_i, noc_i, dim) != \
+               self._integrated_idx(prev_dram, prev_noc, dim):
                 return True
         return False
+
+    def _integrated_idx(self, dram_i: int, noc_i: int, dim: int) -> int:
+        """`dim`'s index across both loop levels, NoC inner and DRAM outer.
+
+        The same flattening `_combined_position` uses, factored out because two
+        callers now need the index itself and not only whether it is first or
+        last.
+        """
+        noc_total = self._noc_totals.get(dim, 1)
+        return (_decode_dim(noc_i, self._noc, dim) +
+                noc_total * _decode_dim(dram_i, self._dram, dim))
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -166,9 +200,7 @@ class StepInfo:
                 # dim not in any temporal loop → trivially first and last
                 continue
 
-            noc_idx  = _decode_dim(noc_i,  self._noc,  dim)
-            dram_idx = _decode_dim(dram_i, self._dram, dim)
-            idx      = noc_idx + noc_total * dram_idx
+            idx = self._integrated_idx(dram_i, noc_i, dim)
 
             if idx != 0:
                 is_first = False

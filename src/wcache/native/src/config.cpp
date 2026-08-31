@@ -148,6 +148,7 @@ const I32Field kI32Fields[] = {
 };
 
 const I64Field kI64Fields[] = {
+    {"cin_lo_blocks", &RunConfig::cin_lo_blocks},
     {"l1_size_bytes", &RunConfig::l1_size_bytes},
     {"l2_size_bytes", &RunConfig::l2_size_bytes},
     {"l1_latency", &RunConfig::l1_latency},
@@ -202,16 +203,38 @@ void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t 
         }
     }
 
-    if (key == "policy") {
+    if (key == "layout") {
+        const std::string& t = enum_text(key, v, pos);
+        if (t == "block_pack") {
+            cfg.layout = LayoutKind::BlockPack;
+        } else if (t == "split_cin") {
+            cfg.layout = LayoutKind::SplitCin;
+        } else if (t == "khkw_split") {
+            cfg.layout = LayoutKind::KhkwSplit;
+        } else {
+            fail("unknown layout \"" + t + "\"", pos);
+        }
+        return;
+    }
+    if (key == "policy" || key == "l2_policy") {
+        // One parser for both keys, so the two can never accept different
+        // vocabularies. `l2_policy` also records that it was set, which is what
+        // distinguishes "explicitly lru" from "unset, follow `policy`".
+        const bool is_l2 = (key == "l2_policy");
+        auto assign = [&cfg, is_l2](PolicyKind k) {
+            if (is_l2) { cfg.l2_policy = k; cfg.l2_policy_set = true; }
+            else       { cfg.policy = k; }
+        };
         const std::string& t = enum_text(key, v, pos);
         if (t == "lru") {
-            cfg.policy = PolicyKind::LRU;
+            assign(PolicyKind::LRU);
         } else if (t == "fifo") {
-            cfg.policy = PolicyKind::FIFO;
+            assign(PolicyKind::FIFO);
         } else if (t == "random") {
-            cfg.policy = PolicyKind::RANDOM;
+            assign(PolicyKind::RANDOM);
         } else {
-            fail("unknown policy \"" + t + "\"", pos);
+            if (t == "belady") assign(PolicyKind::BELADY);
+            else fail("unknown policy \"" + t + "\"", pos);
         }
         return;
     }
@@ -486,6 +509,39 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
     check_level_geometry("l1", cfg.l1_size_bytes, cfg.l1_assoc, line, cfg.l1_num_lines());
     check_level_geometry("l2", cfg.l2_size_bytes, cfg.l2_assoc, line, cfg.l2_num_lines());
 
+    // The split width, resolved here and only under the layout that has a
+    // split. l1_num_sets() is safe to call now and not earlier: it divides by
+    // the line size and the associativity, which check_level_geometry has just
+    // proved divide evenly.
+    if (cfg.layout != LayoutKind::SplitCin) {
+        // block_pack does not split the CIN block index at all, and khkw_split
+        // splits the KERNEL POSITION at a width it derives from the kernel
+        // itself, so under both of them the field names a width the run does
+        // not use. Refused rather than carried into the row, where a reader
+        // would take it for a measurement.
+        if (cfg.cin_lo_blocks != -1) {
+            reject("cin_lo_blocks = " + std::to_string(cfg.cin_lo_blocks) +
+                   " has no meaning under layout = " +
+                   (cfg.layout == LayoutKind::BlockPack ? "block_pack" : "khkw_split") +
+                   ", which does not split the CIN block index; it is refused rather than "
+                   "carried into the row as a width the run did not use");
+        }
+    } else {
+        if (cfg.cin_lo_blocks == -1) cfg.cin_lo_blocks = cfg.l1_num_sets();
+        if (cfg.cin_lo_blocks < 1) {
+            reject("cin_lo_blocks = " + std::to_string(cfg.cin_lo_blocks) +
+                   " must be -1 for the default or at least 1");
+        }
+    }
+
+    if (!cfg.l2_policy_set) cfg.l2_policy = cfg.policy;
+    if (cfg.policy == PolicyKind::BELADY) {
+        reject("policy = belady would put an offline oracle on BOTH levels; Belady is "
+               "measured at the L2 only, so name it as l2_policy");
+    }
+    if (cfg.l2_policy == PolicyKind::RANDOM) {
+        reject("l2_policy = random is a placeholder and is not implemented");
+    }
     if (cfg.policy == PolicyKind::RANDOM) {
         reject("policy = random is a placeholder and is not implemented");
     }
@@ -528,6 +584,13 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
              "the L1 has only " + std::to_string(cfg.l1_num_sets()) +
                  " sets, so a power-of-two address stride aliases most of them onto one");
     }
+    if (cfg.layout == LayoutKind::SplitCin && cfg.cin_lo_blocks != cfg.l1_num_sets()) {
+        warn(warnings, "W_CIN_LO_VS_SETS",
+             "cin_lo_blocks = " + std::to_string(cfg.cin_lo_blocks) + " is not the " +
+                 std::to_string(cfg.l1_num_sets()) +
+                 " L1 sets, so the L1 set index is no longer the CIN digit alone and the "
+                 "layout gives up the placement it exists for");
+    }
     if (cfg.l1_mshrs - cfg.l1_demand_reserve < lines_per_burst) {
         warn(warnings, "W_PREFETCH_BUDGET",
              "the prefetch budget of " +
@@ -563,7 +626,7 @@ EngineParams to_engine_params(const RunConfig& cfg) {
 
     p.l2.cache_size_bytes = cfg.l2_size_bytes;
     p.l2.associativity    = cfg.l2_assoc;
-    p.l2.policy           = cfg.policy;
+    p.l2.policy           = cfg.l2_policy;
     p.l2.latency          = SimTime{cfg.l2_latency};
     p.l2.ii               = SimTime{cfg.l2_ii};
     p.l2.banks            = cfg.l2_banks;
