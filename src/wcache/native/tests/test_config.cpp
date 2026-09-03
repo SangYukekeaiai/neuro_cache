@@ -176,17 +176,29 @@ void test_malformed_json_is_refused() {
 // --- Task 10: rejections, one case each -----------------------------------
 
 void test_l2_demand_reserve_is_rejected_by_name() {
-    check::group("Task 10: l2_demand_reserve is REJECTED at load (ruling Q8, G11)");
-    // Not merely unknown: it must be rejected with its own message, so a sweeper
-    // who tries it learns the knob is dead rather than that they mistyped.
-    std::string what;
-    try {
-        parse_config(R"({"l2_demand_reserve": 4})");
-    } catch (const std::invalid_argument& e) {
-        what = e.what();
-    }
-    CHECK_TRUE(what.find("l2_demand_reserve") != std::string::npos);
-    CHECK_TRUE(what.find("removed knob") != std::string::npos);
+    check::group("l2_demand_reserve is LIVE again (plan 0831-l2-cin-neighbour)");
+    // It was deleted as inert, and phaseC-EXPLAIN.md:1044 gives the reason:
+    // every request the L2 saw held an L1 entry, so `is_prefetch_at_issue` was
+    // false there and the reserve was never consulted. An L2-originated
+    // prefetch is the first request that reaches the L2 without one, so it is
+    // exactly the population the reserve was written for and the stated reason
+    // for the deletion is now false. It loads, and it reaches the level.
+    RunConfig cfg = parse_config(R"({"l2_demand_reserve": 4, "l2_mshrs": 20})");
+    CHECK_EQ(cfg.l2_demand_reserve, 4);
+    std::vector<Warning> warns;
+    validate(cfg, 8, warns);
+    CHECK_EQ(to_engine_params(cfg).l2.demand_reserve, 4);
+
+    // Unset, it resolves from lines_per_burst exactly as l1_demand_reserve does.
+    RunConfig def = parse_config(R"({"l2_mshrs": 20})");
+    CHECK_EQ(def.l2_demand_reserve, -1);
+    validate(def, 8, warns);
+    CHECK_EQ(def.l2_demand_reserve, 8);
+
+    // And it is refused at or above the file it reserves from, on the same rule
+    // the L1 uses: it would make prefetching unreachable while claiming to be on.
+    RunConfig bad = parse_config(R"({"l2_demand_reserve": 20, "l2_mshrs": 20})");
+    CHECK_THROWS(std::invalid_argument, validate(bad, 8, warns));
 }
 
 void test_fewer_than_one_set_is_rejected_at_l1() {
@@ -503,7 +515,8 @@ void test_to_engine_params_carries_every_knob() {
     CHECK_EQ(p.l2.associativity, 16);
     CHECK_EQ(p.l2.mshrs, 20);
     CHECK_EQ(p.l2.tgts_per_mshr, 12);
-    CHECK_EQ(p.l2.demand_reserve, 0);   // L2 reserve is DEAD: always 0 (G11)
+    // The reserve is live again and resolves from lines_per_burst when unset.
+    CHECK_EQ(p.l2.demand_reserve, c.l2_demand_reserve);
     CHECK_EQ(p.l2.latency, SimTime{10});
     CHECK_EQ(p.l2.ii, SimTime{1});
     CHECK_EQ(p.l2.banks, 1);
@@ -611,9 +624,8 @@ void test_a_bad_grid_is_refused_the_way_a_bad_config_is() {
     CHECK_THROWS(std::invalid_argument, parse_config_grid(R"({"base": {"l1_sixe": 1}})"));
     CHECK_THROWS(std::invalid_argument, parse_config_grid(R"({"axes": {"l1_sixe": [1]}})"));
     CHECK_THROWS(std::invalid_argument, parse_config_grid(R"([{"l1_sixe": 1}])"));
-    // The removed knob keeps its own message wherever it appears.
-    CHECK_THROWS(std::invalid_argument,
-                 parse_config_grid(R"({"axes": {"l2_demand_reserve": [4]}})"));
+    // l2_demand_reserve is a sweep dimension again, so it must NOT throw here.
+    CHECK_TRUE(parse_config_grid(R"({"axes": {"l2_demand_reserve": [4, 6]}})").size() == 2);
     // A key that is neither base nor axes.
     CHECK_THROWS(std::invalid_argument, parse_config_grid(R"({"l1_size_bytes": 2048})"));
     // A duplicate axis, a duplicate top-level key, and a nested axis value.

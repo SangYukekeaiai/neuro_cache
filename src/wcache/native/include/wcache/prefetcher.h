@@ -25,6 +25,7 @@
 #include <memory>
 #include <vector>
 
+#include "wcache/layout.h"
 #include "wcache/types.h"
 
 namespace wcache {
@@ -155,5 +156,83 @@ private:
 std::unique_ptr<Prefetcher> make_prefetcher(PrefetchKind kind,
                                             std::int32_t distance,
                                             std::int32_t n_cores);
+
+// --- the L2 side (plan 0831-l2-cin-neighbour) --------------------------------
+//
+// A SIBLING of Prefetcher above and not a subclass, for the reason block_pack.h
+// gives for KhkwSplitMapper being a sibling of BlockPackMapper: the two agree on
+// almost nothing. That one lives at the L1, is driven by (CoreId, BurstIndex)
+// out of E_Issue, and asks how many bursts a tile has. This one is driven by a
+// LINE ADDRESS at a different level and has no notion of a core or a burst. A
+// class deriving from the other in order to disagree with all of it would hide
+// its differences behind the other's correctness.
+//
+// It suggests and never issues. Reserving the port, allocating the entry and
+// charging the channel are the engine's, which is what keeps N16's budget in
+// one place and keeps this class free of every resource it spends.
+enum class L2PrefetchKind : std::uint8_t { None = 0, Neighbour = 1 };
+
+class L2Prefetcher {
+public:
+    virtual ~L2Prefetcher() = default;
+
+    // Appends the lines this policy would fetch given a reference to `line`.
+    // APPENDS rather than assigns, so the caller owns one scratch buffer.
+    //
+    // `mapper` is passed rather than held because the arithmetic is the
+    // layout's (layout.h's `neighbour`): a policy that held a mapper of a known
+    // type would be a policy that had learned its layout.
+    virtual void suggest(const AddressMapper& mapper, LineId line,
+                         std::vector<LineId>& out) const = 0;
+
+protected:
+    L2Prefetcher()                               = default;
+    L2Prefetcher(const L2Prefetcher&)            = default;
+    L2Prefetcher(L2Prefetcher&&)                 = default;
+    L2Prefetcher& operator=(const L2Prefetcher&) = default;
+    L2Prefetcher& operator=(L2Prefetcher&&)      = default;
+};
+
+// Suggests nothing. A real class rather than a null pointer the engine tests
+// for, for NoPrefetcher's reason: the engine keeps one code path, and "none
+// reproduces the previous run byte for byte" becomes a property of a call that
+// does nothing rather than of a branch that is not taken.
+class NoL2Prefetcher final : public L2Prefetcher {
+public:
+    void suggest(const AddressMapper& mapper, LineId line,
+                 std::vector<LineId>& out) const override;
+};
+
+// The adjacent blocks along one axis: `line` stepped by -distance..-1 and
+// 1..distance, each dropped when it leaves the layer.
+//
+// `axis` is a parameter and not a second class because the three candidates the
+// 0831 measurements scored (CIN, the kernel position, COUT) differ only in
+// which argument reaches `neighbour`. Building three classes to pass three enum
+// values would be three copies of one loop.
+class NeighbourL2Prefetcher final : public L2Prefetcher {
+public:
+    // Throws std::invalid_argument for a distance below 1: distance 0 means
+    // "suggest nothing", which is what NoL2Prefetcher is for, and letting it
+    // through here would give two spellings of one behaviour.
+    NeighbourL2Prefetcher(Axis axis, std::int32_t distance, bool up, bool down);
+
+    void suggest(const AddressMapper& mapper, LineId line,
+                 std::vector<LineId>& out) const override;
+
+    Axis         axis()     const { return axis_; }
+    std::int32_t distance() const { return distance_; }
+    bool         up()       const { return up_; }
+    bool         down()     const { return down_; }
+
+private:
+    Axis         axis_;
+    std::int32_t distance_;
+    bool         up_;
+    bool         down_;
+};
+
+std::unique_ptr<L2Prefetcher> make_l2_prefetcher(L2PrefetchKind kind, Axis axis,
+                                                 std::int32_t distance, bool up, bool down);
 
 }  // namespace wcache

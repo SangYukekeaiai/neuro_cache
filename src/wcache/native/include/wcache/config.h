@@ -81,6 +81,22 @@ struct RunConfig {
     std::int64_t core_accept_ii   = 1;
 
     // --- prefetch
+    // --- the L2 policy (plan 0831-l2-cin-neighbour) -------------------------
+    //
+    // `l2_demand_reserve` returns here after being deleted as inert. The reason
+    // it was inert is recorded in phaseC-EXPLAIN.md:1044: every request the L2
+    // saw held an L1 entry, so `is_prefetch_at_issue` was false there and the
+    // reserve was never consulted. An L2-originated prefetch is the first
+    // request in the design that reaches the L2 without one, so it is exactly
+    // the population the reserve was written for, and the stated reason for the
+    // deletion is now false.
+    L2PrefetchKind l2_prefetch_policy   = L2PrefetchKind::None;
+    Axis           l2_prefetch_axis     = Axis::CIN;
+    std::int32_t   l2_prefetch_distance = 1;
+    bool           l2_prefetch_up       = true;
+    bool           l2_prefetch_down     = true;
+    std::int32_t   l2_demand_reserve    = -1;   // resolved from lines_per_burst
+
     PrefetchKind prefetch_policy   = PrefetchKind::None;
     std::int32_t prefetch_distance = 0;
 

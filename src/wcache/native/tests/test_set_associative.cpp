@@ -33,6 +33,7 @@
 #include <wcache/layout.h>
 
 #include <cstdint>
+#include <optional>
 #include <initializer_list>
 #include <random>
 #include <stdexcept>
@@ -227,6 +228,12 @@ constexpr std::int64_t kLine = 256;  // cin_block 16 x cout_block 16 x weight_by
 // set_associative.cpp as load-bearing and nothing else can observe it.
 class TinyMapper : public AddressMapper {
 public:
+    // Not a layout under study: these fixtures exist to drive the level and the
+    // array, and no test asks a fixture mapper for a neighbour.
+    std::optional<LineId> neighbour(LineId, Axis, std::int32_t) const override {
+        return std::nullopt;
+    }
+
     explicit TinyMapper(std::int64_t line_bytes) : line_bytes_(line_bytes) {}
 
     void expand(const Burst&, std::vector<LineId>&) const override {
@@ -265,6 +272,12 @@ public:
 // contradicting itself. That is checked below rather than argued.
 class DriftingLineSize : public AddressMapper {
 public:
+    // Not a layout under study: these fixtures exist to drive the level and the
+    // array, and no test asks a fixture mapper for a neighbour.
+    std::optional<LineId> neighbour(LineId, Axis, std::int32_t) const override {
+        return std::nullopt;
+    }
+
     void expand(const Burst&, std::vector<LineId>&) const override {
         throw std::logic_error("DriftingLineSize::expand: never called");
     }

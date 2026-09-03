@@ -202,6 +202,7 @@ MAPPER='struct M : AddressMapper {
   Placement locate(LineId, std::int64_t) const override { return Placement{SetIndex{0}, TagId{0}}; }
   LineId num_lines() const override { return LineId{1}; }
   std::int64_t line_size_bytes() const override { return 4; }
+  std::optional<LineId> neighbour(LineId, Axis, std::int32_t) const override { return std::nullopt; }
 };'
 
 # The same subclass with one override removed, by name.
@@ -313,6 +314,7 @@ tryL reject 'override drops const' 'struct M : AddressMapper {
   Placement locate(LineId, std::int64_t) const override { return Placement{SetIndex{0}, TagId{0}}; }
   LineId num_lines() const override { return LineId{1}; }
   std::int64_t line_size_bytes() const override { return 4; }
+  std::optional<LineId> neighbour(LineId, Axis, std::int32_t) const override { return std::nullopt; }
 }; int main(){ M m; (void)m; }'
 # Returning the lines instead of appending them is the shape the interface
 # rejected (a caller accumulates a tick into one reused buffer), so it must not
@@ -322,6 +324,7 @@ tryL reject 'expand returns a vector' 'struct M : AddressMapper {
   Placement locate(LineId, std::int64_t) const override { return Placement{SetIndex{0}, TagId{0}}; }
   LineId num_lines() const override { return LineId{1}; }
   std::int64_t line_size_bytes() const override { return 4; }
+  std::optional<LineId> neighbour(LineId, Axis, std::int32_t) const override { return std::nullopt; }
 }; int main(){ M m; (void)m; }'
 # num_lines is a LineId, not a raw count: the bound the engine compares tags
 # against is the same quantity as the ids it is bounding.
@@ -886,6 +889,7 @@ SAMAP='struct SM : AddressMapper {
   Placement locate(LineId, std::int64_t) const override { return Placement{SetIndex{0}, TagId{0}}; }
   LineId num_lines() const override { return LineId{1}; }
   std::int64_t line_size_bytes() const override { return 256; }
+  std::optional<LineId> neighbour(LineId, Axis, std::int32_t) const override { return std::nullopt; }
 };'
 tryS accept 'SetAssociativeArray constructed' "$SAMAP int main(){ SM m;
   SetAssociativeArray a(m, 65536, 8); return (int)a.num_slots(); }"

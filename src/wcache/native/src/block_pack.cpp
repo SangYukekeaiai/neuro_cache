@@ -423,4 +423,22 @@ std::string BlockPackMapper::line_size_terms(std::int64_t) const {
            std::to_string(cout_block_) + " x weight_bytes " + std::to_string(weight_bytes_);
 }
 
+
+
+// The flatten is one digit per axis (B17), so a neighbour is one stride away
+// and the only question is whether the digit stays inside its radix.
+std::optional<LineId> BlockPackMapper::neighbour(LineId line, Axis a,
+                                                 std::int32_t delta) const {
+    if (line.get() < 0 || line.get() >= num_lines_) {
+        reject_range("BlockPackMapper::neighbour: line " + std::to_string(line.get()) +
+                     " outside [0, " + std::to_string(num_lines_) + ")");
+    }
+    const std::int64_t stride = line_stride(a);   // throws on a bad Axis
+    const std::int64_t radix  = block_len(a);
+    const std::int64_t blk    = (line.get() / stride) % radix;
+    const std::int64_t want   = blk + delta;
+    if (want < 0 || want >= radix) return std::nullopt;
+    return LineId{line.get() + static_cast<std::int64_t>(delta) * stride};
+}
+
 }  // namespace wcache

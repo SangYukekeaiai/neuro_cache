@@ -38,6 +38,7 @@
 #include <wcache/types.h>
 
 #include <algorithm>
+#include <optional>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -73,6 +74,12 @@ public:
 // is out_of_range, and every check runs before the first append.
 class LinearMapper final : public AddressMapper {
 public:
+    // Not a layout under study: these fixtures exist to drive the level and the
+    // array, and no test asks a fixture mapper for a neighbour.
+    std::optional<LineId> neighbour(LineId, Axis, std::int32_t) const override {
+        return std::nullopt;
+    }
+
     explicit LinearMapper(std::int64_t n_lines) : n_lines_(n_lines) {}
 
     void set_recorder(Recorder* r) const { rec_ = r; }

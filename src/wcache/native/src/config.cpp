@@ -143,6 +143,8 @@ const I32Field kI32Fields[] = {
     {"l2_mshrs", &RunConfig::l2_mshrs},
     {"l2_tgts_per_mshr", &RunConfig::l2_tgts_per_mshr},
     {"l1_demand_reserve", &RunConfig::l1_demand_reserve},
+    {"l2_demand_reserve", &RunConfig::l2_demand_reserve},
+    {"l2_prefetch_distance", &RunConfig::l2_prefetch_distance},
     {"l2_banks", &RunConfig::l2_banks},
     {"prefetch_distance", &RunConfig::prefetch_distance},
 };
@@ -184,12 +186,6 @@ void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t 
     // Removed knob, refused by name. Letting it fall through to the
     // unknown-key path would tell a sweeper they mistyped when what actually
     // happened is that the dimension no longer exists.
-    if (key == "l2_demand_reserve") {
-        fail("key \"l2_demand_reserve\" is a removed knob: the L2 demand reserve was "
-             "deleted, so it is not a sweep dimension and must not load",
-             pos);
-    }
-
     for (const I32Field& f : kI32Fields) {
         if (key == f.key) {
             cfg.*(f.member) = to_i32(key, v, pos);
@@ -262,6 +258,41 @@ void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t 
         } else {
             fail("unknown prefetch_policy \"" + t + "\"", pos);
         }
+        return;
+    }
+
+    if (key == "l2_prefetch_policy") {
+        const std::string& t = enum_text(key, v, pos);
+        if (t == "none") {
+            cfg.l2_prefetch_policy = L2PrefetchKind::None;
+        } else if (t == "neighbour" || t == "neighbor") {
+            cfg.l2_prefetch_policy = L2PrefetchKind::Neighbour;
+        } else {
+            fail("unknown l2_prefetch_policy \"" + t + "\"", pos);
+        }
+        return;
+    }
+
+    if (key == "l2_prefetch_axis") {
+        const std::string& t = enum_text(key, v, pos);
+        // `pos` is the kernel position, which is KH here: under khkw_split a
+        // step along KH moves the position digit, which is what the 0831
+        // measurements scored as "pos +1".
+        if (t == "cin")        cfg.l2_prefetch_axis = Axis::CIN;
+        else if (t == "cout")  cfg.l2_prefetch_axis = Axis::COUT;
+        else if (t == "kh" || t == "pos") cfg.l2_prefetch_axis = Axis::KH;
+        else if (t == "kw")    cfg.l2_prefetch_axis = Axis::KW;
+        else fail("unknown l2_prefetch_axis \"" + t + "\"", pos);
+        return;
+    }
+
+    if (key == "l2_prefetch_up") {
+        cfg.l2_prefetch_up = to_i32(key, v, pos) != 0;
+        return;
+    }
+
+    if (key == "l2_prefetch_down") {
+        cfg.l2_prefetch_down = to_i32(key, v, pos) != 0;
         return;
     }
 
@@ -557,6 +588,36 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
         reject("prefetch_distance = " + std::to_string(cfg.prefetch_distance) +
                " must not be negative");
     }
+    // The L2 policy, mirroring the L1 rule below: a policy that is on at
+    // distance 0 would silently mean none, and two spellings of one behaviour
+    // is what the L1 rule exists to refuse.
+    if (cfg.l2_prefetch_policy == L2PrefetchKind::Neighbour && cfg.l2_prefetch_distance == 0) {
+        reject("l2_prefetch_policy = neighbour with l2_prefetch_distance = 0 would run as "
+               "none; set the policy to none or the distance to at least 1");
+    }
+    if (cfg.l2_prefetch_policy == L2PrefetchKind::Neighbour &&
+        !cfg.l2_prefetch_up && !cfg.l2_prefetch_down) {
+        reject("l2_prefetch_policy = neighbour with both directions off would run as none; "
+               "set the policy to none or turn a direction on");
+    }
+    if (cfg.l2_prefetch_distance < 0) {
+        reject("l2_prefetch_distance = " + std::to_string(cfg.l2_prefetch_distance) +
+               " must not be negative");
+    }
+    // Resolved exactly as l1_demand_reserve is, and refused on the same rule:
+    // a reserve at or above the file's capacity makes prefetching unreachable
+    // while claiming to be on.
+    if (cfg.l2_demand_reserve == -1) cfg.l2_demand_reserve = lines_per_burst;
+    if (cfg.l2_demand_reserve < 0) {
+        reject("l2_demand_reserve = " + std::to_string(cfg.l2_demand_reserve) +
+               " must not be negative");
+    }
+    if (cfg.l2_demand_reserve >= cfg.l2_mshrs) {
+        reject("l2_demand_reserve = " + std::to_string(cfg.l2_demand_reserve) +
+               " is at or above l2_mshrs = " + std::to_string(cfg.l2_mshrs) +
+               ", which would make L2 prefetching unreachable while claiming to be on");
+    }
+
     if (cfg.prefetch_policy == PrefetchKind::NextBurst && cfg.prefetch_distance == 0) {
         reject("prefetch_policy = next_burst with prefetch_distance = 0 would run as "
                "none, so it is refused rather than silently disabled");
@@ -641,6 +702,12 @@ EngineParams to_engine_params(const RunConfig& cfg) {
     p.l2_miss_latency  = SimTime{cfg.l2_miss_latency};
     p.core_accept_ii   = SimTime{cfg.core_accept_ii};
     p.inclusion        = cfg.inclusion;
+    p.l2.demand_reserve   = cfg.l2_demand_reserve;
+    p.l2_prefetch_policy   = cfg.l2_prefetch_policy;
+    p.l2_prefetch_axis     = cfg.l2_prefetch_axis;
+    p.l2_prefetch_distance = cfg.l2_prefetch_distance;
+    p.l2_prefetch_up       = cfg.l2_prefetch_up;
+    p.l2_prefetch_down     = cfg.l2_prefetch_down;
     p.prefetch_policy  = cfg.prefetch_policy;
     p.prefetch_distance = cfg.prefetch_distance;
     return p;

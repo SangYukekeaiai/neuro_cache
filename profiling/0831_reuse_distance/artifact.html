@@ -149,19 +149,36 @@ footer{margin-top:66px;padding-top:24px;border-top:1px solid var(--rule-2);
 <div class="wrap">
 
 <header>
-  <p class="kicker">Correction &middot; supersedes the L2 reading in Kernel-Indexed Cache Sweep</p>
+  <p class="kicker">Correction &middot; supersedes the L2 reading in Kernel-Indexed Cache Sweep &middot; scope narrowed by The Idle L2</p>
   <h1>Conflict, Not Capacity</h1>
   <p class="stand">The L2 in the best config hits 0.00%. Reuse-distance measurement says its
   working set fits in 256 KB. Both are true, and what separates them is the set index.</p>
   <div class="meta">
     <span><b>54.7M</b> references measured</span>
     <span><b>4</b> layers &times; <b>5</b> samples</span>
+    <span><b>144</b> engine runs</span>
     <span><b>khkw_split</b> 64 B / 512 KB L2 / pf 0</span>
-    <span>V1 V2 V3 V4 <b>pass</b></span>
+    <span>V1&ndash;V4, B1&ndash;B4 <b>pass</b></span>
     <span>2026-08-31</span>
   </div>
 </header>
 
+
+<section id="scope">
+  <span class="eyebrow">Scope, added 2026-08-31</span>
+  <h2>These four layers are not representative</h2>
+  <div class="col">
+    <p>Everything on this page was measured on V8, V9, R9 and R16, the four layers the 2026-08-23
+    study chose <em>because</em> their weight footprints spanned the L2 axis, which is to say
+    selected for having L2 pressure. A later scan over all 31 layers of both networks found that
+    <strong>only 5 of 31 have any L2 reuse at all</strong>. The other 26 touch every L2 line exactly
+    once, so no associativity, no capacity and no replacement policy can change them.</p>
+    <p>Every per-layer number below stands and every check still passes. What does not survive is
+    the extrapolation: the 12.7 to 14.5% cycle gain from more ways is real on the layers that have
+    reuse and is <strong>2.58% end to end</strong> across both whole networks.</p>
+    <p>The follow-on measurement is <a href="https://claude.ai/code/artifact/c399d99e-66cc-465e-9ece-1f1f574f6461">The Idle L2</a>.</p>
+  </div>
+</section>
 
 <section id="config">
   <span class="eyebrow">The execution config</span>
@@ -244,6 +261,8 @@ footer{margin-top:66px;padding-top:24px;border-top:1px solid var(--rule-2);
     <div class="key bad"><span class="kx">8,192</span><span class="lbl">lines the 512 KB L2 already held</span></div>
     <div class="key good"><span class="kx">14.5%</span><span class="lbl">cycles recovered on V8 by ways alone</span></div>
     <div class="key acc"><span class="kx">0.005%</span><span class="lbl">worst prediction-to-measurement gap</span></div>
+    <div class="key bad"><span class="kx">26.32%</span><span class="lbl">all Belady's MIN can reach at 16-way, half the ceiling</span></div>
+    <div class="key bad"><span class="kx">88</span><span class="lbl">of 88 tiles have their critical core untouched by Belady</span></div>
   </div>
 </section>
 
@@ -736,6 +755,180 @@ footer{margin-top:66px;padding-top:24px;border-top:1px solid var(--rule-2);
 </section>
 
 <section>
+  <span class="eyebrow">Belady's MIN</span>
+  <h2>What a perfect policy can and cannot rescue</h2>
+  <div class="col">
+    <p>The conflict result says 16-way loses reuse it has the capacity to keep. That leaves one
+    question open: is LRU simply the wrong policy here, or are the sets genuinely over-subscribed?
+    Belady's MIN separates them, because it evicts the line whose next use is furthest away and is
+    therefore the best any policy could do.</p>
+    <p>The answer is <strong>both, in measurable proportions</strong>.</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th>Layer</th><th class="n">LRU 16-way</th><th class="n">Belady 16-way</th>
+        <th class="n">LRU 64-way</th><th class="n">Belady 64-way</th><th class="n">Ceiling</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="lay">V8</td><td class="n zero">0.00%</td><td class="n">26.32%</td><td class="n full">52.63%</td><td class="n full">52.63%</td><td class="n dim">52.63%</td></tr>
+        <tr><td class="lay">V9</td><td class="n zero">0.00%</td><td class="n">26.32%</td><td class="n full">52.63%</td><td class="n full">52.63%</td><td class="n dim">52.63%</td></tr>
+        <tr><td class="lay">R9</td><td class="n dim">0.00%</td><td class="n dim">0.00%</td><td class="n dim">0.00%</td><td class="n dim">0.00%</td><td class="n dim">0.00%</td></tr>
+        <tr><td class="lay">R16</td><td class="n zero">0.00%</td><td class="n">26.32%</td><td class="n full">52.63%</td><td class="n full">52.63%</td><td class="n dim">52.63%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">L2 hit rate, mean of five samples. R9 is the control throughout: it has no L2 reuse,
+  so no policy and no geometry can move it.</p>
+
+  <div class="col">
+    <p><strong>LRU at 16-way is pathological, not merely suboptimal.</strong> It returns exactly
+    zero where the optimum returns 26.32%. That is not a policy losing a few points at the margin.</p>
+    <p><strong>And the optimum still only reaches half the ceiling.</strong> 26.32% is precisely half
+    of 52.63%, so even perfect knowledge of the future leaves half the available reuse on the floor
+    at 16-way. More lines are live in a set than the set has ways, and no replacement policy can
+    hold what does not fit.</p>
+    <p><strong>At 64-way, Belady and LRU are identical to the cycle.</strong> Once the ways are
+    there, LRU is already optimal, so there is no policy headroom left to chase. That is the
+    cleanest possible statement that associativity, not replacement, is the lever.</p>
+  </div>
+
+  <h3>The result that outranks the hit rate</h3>
+  <div class="col">
+    <p>Belady at 16-way wins 26.32% of its L2 accesses and buys essentially no makespan. The hit
+    rates are not in question: an offline simulation written independently against the engine&rsquo;s
+    own L2 reference sequence and its own line-to-set mapping reproduces 0.00% and 26.32% exactly.
+    What needs explaining is why a quarter of the accesses turning into hits is worth nothing.</p>
+    <p><strong>First, a correction.</strong> An earlier version of this page reported Belady as
+    <em>slower</em> than LRU, 282,854 cycles becoming 286,539. That excess is not the policy: it is
+    L2 port serialisation. With <code>l2_ii = 1</code> the L2 admits one request per cycle, and under
+    Belady a quarter of accesses return in 2 cycles instead of 26, so those cores come back to the
+    port about thirteen times sooner and collide with the core that sets the tile&rsquo;s time.
+    Removing the port limit removes the excess and flips the sign:</p>
+    <p>The accounting is unambiguous. At a 2000-cycle DRAM latency, where the memory leg dominates
+    everything, Belady saves <strong>42,540,344</strong> cycles of channel stall and gains
+    <strong>42,405,704</strong> cycles of barrier stall. Those agree to 0.3%. Every cycle it saves
+    in memory reappears as waiting.</p>
+  </div>
+<pre><code>                   LRU       Belady     delta
+l2_ii = 1       290,136     293,888    +3,752   &lt;- port artifact
+l2_ii = 0       290,136     289,856      -280   &lt;- the real policy effect</code></pre>
+  <div class="col">
+    <p>So Belady&rsquo;s floor really is LRU, as an optimal policy&rsquo;s must be. The residual
+    gain is just very small, and the rest of this section is about why.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>V8, l2_miss_latency 2000</th><th class="n">LRU 16-way</th><th class="n">Belady 16-way</th><th class="n">LRU 64-way</th></tr></thead>
+      <tbody>
+        <tr><td>DRAM accesses</td><td class="n">77,824</td><td class="n">56,576</td><td class="n">36,864</td></tr>
+        <tr><td>per core</td><td class="n">4,864</td><td class="n">3,536</td><td class="n">2,304</td></tr>
+        <tr><td>Channel stall</td><td class="n">155,814,208</td><td class="n full">113,273,864</td><td class="n full">73,805,568</td></tr>
+        <tr><td>Barrier stall</td><td class="n">12,608</td><td class="n zero">42,418,312</td><td class="n">21,944</td></tr>
+        <tr><td><strong>Stall total</strong></td><td class="n">155,826,816</td><td class="n zero">155,828,864</td><td class="n full">74,217,984</td></tr>
+        <tr><td><strong>Total cycles</strong></td><td class="n">9,901,400</td><td class="n zero">9,901,528</td><td class="n full">4,800,848</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">The composition changes completely and the total does not move at all. At 64-way,
+  by contrast, the stall total itself falls by half and the makespan follows.</p>
+
+  <div class="col">
+    <p>A simple model separates the two cases. If the makespan were set by each core's own serialised
+    miss chain, it would be the per-core miss count times the latency:</p>
+  </div>
+<pre><code>LRU    16-way   4,864 misses/core  ->  makespan = 4,946 x latency   holds
+LRU    64-way   2,304 misses/core  ->  makespan = 2,398 x latency   holds
+Belady 16-way   3,536 misses/core  ->  makespan = 4,946 x latency   FAILS, 40% excess</code></pre>
+  <div class="col">
+    <p>So Belady&rsquo;s misses are uniform in <em>total</em> per core, and every core really does
+    get exactly 1,280 hits, yet they are not uniform across the barrier intervals. Recovering the
+    tile for every L2 reference settles what happens, and no engine change was needed to do it:
+    under LRU at 16-way every access misses, so the k-th L2 fill row in the cache-state log is the
+    k-th reference&rsquo;s tile, 77,824 against 77,824. Joining that with the access log&rsquo;s core
+    gives the per-core, per-tile grid, and it reproduces every measured slope to the integer.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Arm</th><th class="n">max over cores of its total</th>
+        <th class="n">sum over tiles of the max</th><th class="n">measured slope</th><th class="n">ratio</th></tr></thead>
+      <tbody>
+        <tr><td class="lay">LRU 16-way</td><td class="n">4,864</td><td class="n">4,864</td><td class="n">4,864</td><td class="n">1.000</td></tr>
+        <tr><td class="lay">Belady 16-way</td><td class="n full">3,584</td><td class="n zero">4,864</td><td class="n zero">4,864</td><td class="n zero">1.357</td></tr>
+        <tr><td class="lay">LRU 64-way</td><td class="n full">2,304</td><td class="n full">2,304</td><td class="n full">2,304</td><td class="n">1.000</td></tr>
+        <tr><td class="lay">Belady 64-way</td><td class="n full">2,304</td><td class="n full">2,304</td><td class="n full">2,304</td><td class="n">1.000</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">A tile ends when its slowest core finishes, so the makespan measures the sum over
+  tiles of the per-tile maximum, while the DRAM count measures the maximum over cores of a total.
+  The first is never smaller. Ratio 1.000 means perfectly uniform, and only Belady at 16-way
+  diverges.</p>
+
+  <h3>MIN serves whole cores and starves the rest</h3>
+  <div class="col">
+    <p>Across the 88 tiles carrying L2 traffic:</p>
+  </div>
+<pre><code>tiles where Belady lands ZERO hits on any core:            24 of 88
+tiles where Belady helps EVERY core (so the max must fall):  0 of 88
+tiles whose per-tile MAXIMUM is unchanged:                  88 of 88</code></pre>
+  <div class="col">
+    <p>And the split inside a tile is bimodal rather than partial:</p>
+  </div>
+<pre><code>tile   refs/core   LRU max   MIN max   MIN min   spread
+   0        128       128       128       128        0
+   3         64        64        64        32       32
+   7         32        32        32         0       32
+  11         32        32        32         0       32</code></pre>
+  <div class="col">
+    <p>In tile 7 some cores fall from 32 misses to <strong>zero</strong>, completely served, while
+    others stay at 32, completely starved. Never 32 to 20. MIN keeps the sixteen lines with the
+    nearest next use in each set, and because the cores are structurally symmetric while their
+    lines sit at different points in the global next-use ordering, &ldquo;nearest sixteen&rdquo;
+    resolves to <em>whole cores</em>. The starved cores keep exactly LRU&rsquo;s count, so the
+    per-tile maximum is exactly LRU&rsquo;s in all 88 of 88 tiles, and the makespan cannot move by
+    a single cycle.</p>
+    <p><strong>Associativity works for the same reason MIN fails.</strong> Sixty-four ways gives
+    every core room at once, all sixteen fall to 2,304 together, the ratio stays at 1.000, and the
+    critical path drops by the full factor.</p>
+    <p>The lesson generalises past this machine. Total hits and the sum of per-tile maxima are
+    different objective functions, and optimising the first can be worth exactly zero on the second.
+    Belady is optimal for the wrong one. A replacement policy for a barrier-synchronised array would
+    have to be scoped to a tile and fair across cores, which is the opposite of a global optimiser.</p>
+    <p class="dim">An earlier version of this page attributed the effect to Belady helping
+    non-critical cores. Per-core accounting refutes that outright, since all sixteen cores are
+    identical, and it has been withdrawn.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Latency</span>
+  <h2>Against the NoC baseline</h2>
+  <div class="col">
+    <p>Total cycles, mean of five samples, against stage 3's <code>stage3_total_cycles</code>. Above
+    1.00&times; the cache wins.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th>Layer</th><th class="n">LRU 16-way</th><th class="n">Belady 16-way</th>
+        <th class="n">LRU 64-way</th><th class="n">nocsim</th><th class="n">Best vs nocsim</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="lay">V8</td><td class="n">282,854</td><td class="n">286,539</td><td class="n full">241,430</td><td class="n">302,253</td><td class="n full">1.25&times;</td></tr>
+        <tr><td class="lay">V9</td><td class="n">437,410</td><td class="n">438,533</td><td class="n full">381,610</td><td class="n">310,191</td><td class="n zero">0.81&times;</td></tr>
+        <tr><td class="lay">R9</td><td class="n">84,762</td><td class="n">84,762</td><td class="n">84,762</td><td class="n">77,142</td><td class="n zero">0.91&times;</td></tr>
+        <tr><td class="lay">R16</td><td class="n">188,838</td><td class="n">189,762</td><td class="n full">163,570</td><td class="n">151,485</td><td class="n zero">0.93&times;</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">The 64-way column is also Belady's, since the two are identical there. Against
+  Friday's reported 1.07 / 0.71 / 0.91 / 0.80, associativity moves every layer and turns V8 into a
+  clear win, but the cache is still behind the NoC on three of four.</p>
+</section>
+
+<section>
   <span class="eyebrow">What to change</span>
   <h2>The cheap fix and the real one</h2>
   <div class="col">
@@ -747,6 +940,13 @@ footer{margin-top:66px;padding-top:24px;border-top:1px solid var(--rule-2);
       <code>khkw_split</code>'s digits spreads a reuse window across the L2's 512 sets, 16-way
       keeps the win and costs nothing. This is the result worth having, and the access log already
       holds the data to test it.</li>
+      <li><strong>Do not chase the replacement policy.</strong> Belady's MIN reaches only half
+      the ceiling at 16-way, and at 64-way it is identical to LRU to the cycle. There is no policy
+      headroom worth engineering at either geometry.</li>
+      <li><strong>Optimise per tile, not per layer.</strong> Belady's extra hits turned into
+      barrier slack cycle for cycle and bought no speedup. Under a lock-step barrier the figure of
+      merit is the sum over tiles of the slowest core, and total hit rate is a proxy that can move
+      the wrong way. A policy tuned for this machine should be scoped to a tile.</li>
       <li><strong>Re-open the prefetch question.</strong> Friday found prefetching a 37&ndash;90%
       penalty at 64-byte lines, measured against an L2 that was returning 0.00%. With the L2
       actually hitting, the arithmetic behind that verdict changes and it deserves a re-run.</li>

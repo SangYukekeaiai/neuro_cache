@@ -238,6 +238,28 @@ struct EngineStats {
     // the channel, prefetched or not, because that is real traffic.
     std::int64_t l1_hits = 0, l1_accesses = 0;
     std::int64_t l2_hits = 0, l2_accesses = 0;
+
+    // --- the L2 prefetcher's outcomes (plan 0831-l2-cin-neighbour) -----------
+    //
+    // Same shape as the L1 block above and the same identity: every prefetch
+    // this policy issues ends in exactly one of the outcomes or one of the
+    // drops, so they sum to `l2_pf_issued`.
+    //
+    // `up` and `down` are split because the plan PREDICTS they behave
+    // differently -- the measured lead is +16 lines one way and -16 the other --
+    // and a single total would average the prediction away rather than test it.
+    std::int64_t l2_pf_issued = 0;
+    std::int64_t l2_pf_issued_up = 0, l2_pf_issued_down = 0;
+    std::int64_t l2_pf_timely = 0;   // a demand hit the line this prefetch put there
+    std::int64_t l2_pf_late   = 0;   // a demand merged onto the entry before it filled
+    std::int64_t l2_pf_wasted = 0;   // evicted still tagged, so never used
+    std::int64_t l2_pf_dropped_array_hit = 0;
+    std::int64_t l2_pf_dropped_entry     = 0;
+    std::int64_t l2_pf_dropped_no_slot   = 0;
+    std::int64_t l2_pf_dropped_reserve   = 0;
+    // Fired from a demand hit on a tagged line rather than from a miss. The
+    // difference between this and zero is what U4 bought.
+    std::int64_t l2_pf_retriggers = 0;
     std::int64_t dram_accesses = 0;
 
     // --- Part 8 "Model health".
@@ -327,6 +349,14 @@ struct EngineParams {
 
     PrefetchKind prefetch_policy   = PrefetchKind::None;
     std::int32_t prefetch_distance = 0;
+
+    // The L2 policy (plan 0831-l2-cin-neighbour). Independent of the L1 one
+    // above: they hook different levels and either may run without the other.
+    L2PrefetchKind l2_prefetch_policy   = L2PrefetchKind::None;
+    Axis           l2_prefetch_axis     = Axis::CIN;
+    std::int32_t   l2_prefetch_distance = 1;
+    bool           l2_prefetch_up       = true;
+    bool           l2_prefetch_down     = true;
 };
 
 class Engine final : public PrefetchIssuer {
@@ -591,6 +621,29 @@ private:
     std::int64_t waiting_ = 0;
 
     std::deque<Request> arena_;
+
+    // --- the L2 prefetcher (plan 0831-l2-cin-neighbour) ----------------------
+    std::unique_ptr<L2Prefetcher> l2_prefetcher_;
+
+    // The tag bit of tagged prefetching, held as a set of line ids rather than
+    // as a bit on the array. The array stores no per-line metadata and widening
+    // it for one policy's bit would be the wrong trade; the set is keyed by the
+    // same LineId the array is, and both of its edges (fill, evict) are single
+    // call sites in this file.
+    //
+    // A line is IN this set when a prefetch put it in the L2 and no demand has
+    // used it yet. That is exactly gem5's `CacheBlk::_prefetched`, with
+    // `clearPrefetched()` on the demand hit.
+    std::unordered_set<std::int64_t> l2_prefetched_;
+
+    // Scratch for one suggestion, so a prefetch does not allocate.
+    std::vector<LineId> l2_pf_scratch_;
+
+    // Issues whatever the policy suggests for `line`, subject to the budget.
+    // Called from `on_l2_probe` on a demand miss and on a demand hit to a
+    // tagged line, and from nowhere else: a prefetch never triggers a prefetch,
+    // so no cascade exists.
+    void l2_prefetch_from(LineId line, CoreId core, SimTime now);
     std::vector<Request*> free_;
 
     // Scratch, so no event handler allocates on a hot path. Separate buffers

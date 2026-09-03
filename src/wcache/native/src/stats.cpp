@@ -221,6 +221,12 @@ const std::vector<std::string>& csv_columns() {
         "pf_dropped_array_hit", "pf_dropped_matching", "pf_dropped_no_slot",
         "pf_dropped_targets_full", "pf_dropped_reserve",
         "pf_coverage", "pf_coverage_ceiling", "pf_budget_exhausted", "pf_pollution_evictions",
+        "l2_prefetch_policy", "l2_prefetch_axis", "l2_prefetch_distance",
+        "l2_prefetch_up", "l2_prefetch_down", "l2_demand_reserve",
+        "l2_pf_issued", "l2_pf_issued_up", "l2_pf_issued_down",
+        "l2_pf_timely", "l2_pf_late", "l2_pf_wasted", "l2_pf_retriggers",
+        "l2_pf_dropped_array_hit", "l2_pf_dropped_entry", "l2_pf_dropped_no_slot",
+        "l2_pf_dropped_reserve", "l2_pf_coverage",
         "padding_fraction", "port_bound_threshold",
         "l1_mshr_occ_p50", "l1_mshr_occ_p95", "l1_mshr_occ_max",
         "l2_mshr_occ_p50", "l2_mshr_occ_p95", "l2_mshr_occ_max",
@@ -311,6 +317,7 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
     r.i64("pf_dropped_targets_full", es.pf_dropped_targets_full);
     r.i64("pf_dropped_reserve", es.pf_dropped_reserve);
 
+
     // Part 8: "coverage is timely plus late over all bursts, and its ceiling is
     // the fraction of bursts that are not first-in-tile". The numerator counts
     // prefetched LINES; the two units coincide when a burst expands to one line,
@@ -321,6 +328,28 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
             static_cast<double>(es.demand_bursts));
     r.i64("pf_budget_exhausted", es.pf_budget_exhausted);
     r.i64("pf_pollution_evictions", es.pf_pollution_evictions);
+    // The L2 policy (plan 0831-l2-cin-neighbour). Config first so a row is
+    // self-describing, then the outcomes, which sum to `l2_pf_issued`.
+    r.str("l2_prefetch_policy", cfg.l2_prefetch_policy == L2PrefetchKind::None ? "none" : "neighbour");
+    r.str("l2_prefetch_axis", axis_name(cfg.l2_prefetch_axis));
+    r.i64("l2_prefetch_distance", cfg.l2_prefetch_distance);
+    r.i64("l2_prefetch_up", cfg.l2_prefetch_up ? 1 : 0);
+    r.i64("l2_prefetch_down", cfg.l2_prefetch_down ? 1 : 0);
+    r.i64("l2_demand_reserve", cfg.l2_demand_reserve);
+    r.i64("l2_pf_issued", es.l2_pf_issued);
+    r.i64("l2_pf_issued_up", es.l2_pf_issued_up);
+    r.i64("l2_pf_issued_down", es.l2_pf_issued_down);
+    r.i64("l2_pf_timely", es.l2_pf_timely);
+    r.i64("l2_pf_late", es.l2_pf_late);
+    r.i64("l2_pf_wasted", es.l2_pf_wasted);
+    r.i64("l2_pf_retriggers", es.l2_pf_retriggers);
+    r.i64("l2_pf_dropped_array_hit", es.l2_pf_dropped_array_hit);
+    r.i64("l2_pf_dropped_entry", es.l2_pf_dropped_entry);
+    r.i64("l2_pf_dropped_no_slot", es.l2_pf_dropped_no_slot);
+    r.i64("l2_pf_dropped_reserve", es.l2_pf_dropped_reserve);
+    // What fraction of the demand references this policy turned into hits.
+    r.ratio("l2_pf_coverage", static_cast<double>(es.l2_pf_timely),
+            static_cast<double>(es.l2_accesses));
 
     r.f64("padding_fraction", padding_fraction);
     // Q14's port-bound threshold, miss_fraction * l2_miss_latency * l2_banks /

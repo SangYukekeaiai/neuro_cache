@@ -10,6 +10,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -164,6 +165,22 @@ public:
 
     // One past the largest LineId this mapper can produce. The bound the
     // engine checks tags against, and what D2 divides by for coverage.
+    // The line `delta` BLOCKS along `a` from `line`, or nothing when that step
+    // leaves the layer. Blocks, not elements: on CIN and COUT one step is one
+    // `cin_block` / `cout_block`, and on KH and KW it is one row or column,
+    // which is what `block_len` already measures.
+    //
+    // Here rather than in a prefetcher because the arithmetic is the layout's:
+    // CIN is one digit at one stride under BlockPack and KhkwSplit and is SPLIT
+    // across two digits under SplitCin, and a policy that knew which would be a
+    // policy that had learned its layout. The engine holds an AddressMapper and
+    // never learns which one it has, and this keeps that true for prefetching.
+    //
+    // Throws std::out_of_range for a `line` outside [0, num_lines()), and
+    // std::logic_error for an Axis outside the enumerators.
+    virtual std::optional<LineId> neighbour(LineId line, Axis a,
+                                            std::int32_t delta) const = 0;
+
     virtual LineId num_lines() const = 0;
 
     // Bytes held by one line. On the interface rather than on the concrete

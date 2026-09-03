@@ -23,6 +23,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -80,6 +81,7 @@ public:
     // throws std::out_of_range outside it.
     void expand(const Burst& b, std::vector<LineId>& out) const override;
     Placement locate(LineId line, std::int64_t num_sets) const override;
+    std::optional<LineId> neighbour(LineId line, Axis a, std::int32_t delta) const override;
 
     // --- the flatten (A2c) ---------------------------------------------------
     //

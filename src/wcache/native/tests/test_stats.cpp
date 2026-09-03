@@ -113,7 +113,10 @@ void test_the_column_list_is_pinned() {
     // `cin_lo_blocks` joined it: a run that swaps the address mapper must say
     // which one it swapped to, or two rows differing only in the layout are
     // indistinguishable in the CSV.
-    CHECK_EQ(check::ssize(cols), std::int64_t{93});
+    // 109 since the L2 prefetch policy joined it (plan 0831-l2-cin-neighbour):
+    // its four config fields and twelve outcome counters. A run that swaps the
+    // L2 policy must say so in the row for the same reason `layout` had to.
+    CHECK_EQ(check::ssize(cols), std::int64_t{111});
     CHECK_TRUE(cols.front() == "run_id");
     CHECK_TRUE(cols.back() == "distinct_addr_per_core_tile_max");
     bool has_total = false, has_pad = false, has_hidden = false, has_sets = false;
@@ -148,8 +151,24 @@ void test_the_header_is_the_column_list_joined() {
 }
 
 void test_l2_demand_reserve_is_not_a_column() {
-    check::group("Task 13: l2_demand_reserve is NOT a column (G11, ruling Q8)");
-    for (const std::string& c : csv_columns()) CHECK_TRUE(c != "l2_demand_reserve");
+    check::group("l2_demand_reserve IS a column again (plan 0831-l2-cin-neighbour)");
+    // It stopped being one when it was inert. An L2-originated prefetch is the
+    // population that makes it live, so a row that does not carry it cannot be
+    // read: two runs differing only in the reserve would be indistinguishable.
+    const std::vector<std::string> cols = csv_columns();
+    bool found = false;
+    for (const std::string& c : cols) {
+        if (c == "l2_demand_reserve") found = true;
+    }
+    CHECK_TRUE(found);
+    // And the accounting identity the L1 block already owes.
+    bool issued = false, up = false, down = false;
+    for (const std::string& c : cols) {
+        if (c == "l2_pf_issued")      issued = true;
+        if (c == "l2_pf_issued_up")   up = true;
+        if (c == "l2_pf_issued_down") down = true;
+    }
+    CHECK_TRUE(issued && up && down);
 }
 
 void test_the_header_and_a_row_have_the_same_field_count() {

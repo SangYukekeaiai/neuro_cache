@@ -26,6 +26,7 @@
 #include <wcache/types.h>
 
 #include <algorithm>
+#include <optional>
 #include <cstdint>
 #include <cstdio>
 #include <memory>
@@ -63,6 +64,12 @@ using conformance::kAxes;
 // half a check.
 class PackedRowMajor : public AddressMapper {
 public:
+    // Not a layout under study: these fixtures exist to drive the level and the
+    // array, and no test asks a fixture mapper for a neighbour.
+    std::optional<LineId> neighbour(LineId, Axis, std::int32_t) const override {
+        return std::nullopt;
+    }
+
     PackedRowMajor(WeightShape shape, std::int64_t pack, std::int64_t weight_bytes)
         : shape_(shape), pack_(pack), weight_bytes_(weight_bytes) {}
 

@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Emit the sweep artifact HTML. Every number is read from the CSVs, never retyped."""
-import csv, json, pathlib, statistics, collections, html, sys
+import csv, json, math, pathlib, statistics, collections, html, sys
 
 D = pathlib.Path("/u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify")
 S4 = D / "stage4_wcache/outputs"
 OUT = pathlib.Path(sys.argv[1])
+COMMIT = __import__("subprocess").run(
+    ["git", "rev-parse", "--short", "HEAD"], cwd=D.parent.parent,
+    capture_output=True, text=True).stdout.strip()
 
 TAGS = ["V8", "V9", "R9", "R16"]
 NAME = {}
@@ -12,6 +15,10 @@ sweep = list(csv.DictReader(open(S4 / "khkw_sweep.csv")))
 comp  = list(csv.DictReader(open(S4 / "khkw_vs_stage3.csv")))
 ctl   = list(csv.DictReader(open(S4 / "khkw_layout_control.csv")))
 cap   = list(csv.DictReader(open(S4 / "khkw_l2_capacity.csv")))
+# The 2026-08-31 extension: the one winning config over every layer of both
+# networks, against a nocsim baseline regenerated for the same 31 layers.
+ALLD  = D.parent / "0831_all_layer_streams/outputs"
+allr  = list(csv.DictReader(open(ALLD / "all_layers_vs_nocsim.csv")))
 s3    = json.load(open(D / "stage3_nocsim/outputs/stage3_results.json"))
 for r in s3: NAME[r["tag"]] = r["layer"]
 BASE  = {t: statistics.mean(r["total_cycles"] for r in s3 if r["tag"] == t) for t in TAGS}
@@ -142,6 +149,62 @@ for t in TAGS:
                    f'{statistics.mean(float(r["l1_hit_rate"]) for r in rs)*100:.2f}%',
                    num(statistics.mean(float(r["dram_accesses"]) for r in rs)),
                    bar(BASE[t] / c)])
+
+# --- T8: all 31 layers at the one best config ---------------------------------
+NET = {"V": "vgg16", "R": "resnet19"}
+t8 = []
+for r in allr:
+    t8.append([f'<b>{r["tag"]}</b><span class="sub">{r["layer"]}</span>',
+               NET[r["tag"][0]],
+               num(float(r["wcache_cycles"])), num(float(r["nocsim_total_cycles"])),
+               bar(float(r["speedup_vs_nocsim_total"])),
+               f'{float(r["cycles_over_compute_floor"]):.2f}&times;',
+               f'{float(r["l1_hit_rate"])*100:.2f}%',
+               f'{float(r["l2_hit_rate"])*100:.2f}%',
+               num(float(r["dram_bytes"]) / 1048576, 2)])
+
+A = {}
+A["n"] = len(allr)
+_sp = [float(r["speedup_vs_nocsim_total"]) for r in allr]
+A["beat"] = sum(1 for x in _sp if x > 1)
+A["geo"] = math.exp(statistics.mean(math.log(x) for x in _sp))
+A["sp_lo"], A["sp_hi"] = min(_sp), max(_sp)
+A["top_tag"] = max(allr, key=lambda r: float(r["speedup_vs_nocsim_total"]))["tag"]
+A["low_tag"] = min(allr, key=lambda r: float(r["speedup_vs_nocsim_total"]))["tag"]
+_al1 = [float(r["l1_hit_rate"]) for r in allr]
+A["l1_lo"], A["l1_hi"] = min(_al1) * 100, max(_al1) * 100
+A["l2_hi"] = max(float(r["l2_hit_rate"]) for r in allr) * 100
+A["l2_zero"] = sum(1 for r in allr if float(r["l2_hit_rate"]) == 0)
+_fl = [float(r["cycles_over_compute_floor"]) for r in allr]
+A["fl_lo"], A["fl_hi"] = min(_fl), max(_fl)
+A["nv"] = sum(1 for r in allr if r["tag"].startswith("V"))
+A["nr"] = sum(1 for r in allr if r["tag"].startswith("R"))
+# Shape-identical layers must land on identical nocsim cycles; listing the
+# groups that do is a consistency check the reader can audit, not a claim.
+_by = collections.defaultdict(list)
+for r in allr:
+    _by[r["nocsim_total_cycles"]].append(r["tag"])
+A["pairs"] = ", ".join("/".join(v) for v in _by.values() if len(v) > 1)
+# How much slack nocsim itself has: its cycles over its own compute floor. This
+# separates the winners far better than the L1 hit rate does, and both
+# correlations are computed rather than asserted so the claim stays checkable.
+_nf = [float(r["nocsim_total_cycles"]) / float(r["nocsim_compute_per_node"]) for r in allr]
+A["nf_lo"], A["nf_hi"] = min(_nf), max(_nf)
+A["corr_l1"] = statistics.correlation(_sp, _al1)
+A["corr_nf"] = statistics.correlation(_sp, _nf)
+A["at_floor"] = sum(1 for x in _nf if x < 1.05)
+A["at_floor_beat"] = sum(1 for x, n in zip(_sp, _nf) if n < 1.05 and x > 1)
+A["slack"] = sum(1 for x in _nf if x > 1.5)
+A["slack_beat"] = sum(1 for x, n in zip(_sp, _nf) if n > 1.5 and x > 1)
+_win = [(r, n) for r, x, n in zip(allr, _sp, _nf) if x > 1]
+_cx, _cxnf = max(_win, key=lambda rn: float(rn[0]["l1_hit_rate"]))
+A["cx_tag"] = _cx["tag"]
+A["cx_l1"] = float(_cx["l1_hit_rate"]) * 100
+A["cx_sp"] = float(_cx["speedup_vs_nocsim_total"])
+A["cx_nf"] = _cxnf
+# engine-runs on the page: the sweep's rows plus one per layer-sample here
+A["runs"] = len(sweep) + A["n"] * 5
+A["n_pairs"] = sum(1 for v in _by.values() if len(v) > 1)
 
 # --- every number the prose quotes, computed here so a rerun cannot strand one --
 F = {}
@@ -385,13 +448,14 @@ HTML = f"""<title>Kernel-Indexed Cache Sweep</title>
 <header>
   <h1>Kernel-Indexed Cache Sweep</h1>
   <p class="standfirst">A new weight layout puts the kernel position at the bottom of the L1 set
-  index. Forty-eight cache configurations, four layers, five samples, measured against stage 3.</p>
+  index. Forty-eight cache configurations on four layers, then the winning one on all
+  {A['n']} layers of both networks, five samples each, measured against nocsim.</p>
   <div class="meta">
-    <span>960 engine-runs</span>
+    <span>{A['runs']:,} engine-runs</span>
     <span><b>khkw_split</b> layout</span>
-    <span>V8 &middot; V9 &middot; R9 &middot; R16</span>
-    <span>commit <b>26ef6f0</b></span>
-    <span>2026-08-28</span>
+    <span>{A['n']} layers &middot; vgg16 + resnet19</span>
+    <span>commit <b>{COMMIT}</b></span>
+    <span>2026-08-31</span>
   </div>
 </header>
 
@@ -409,6 +473,13 @@ HTML = f"""<title>Kernel-Indexed Cache Sweep</title>
     earlier version of this page reported speedups up to 5.8&times;; those came from a defect in
     <code>nocsim</code> that re-sent the weight tile on every DRAM step, inflating the baseline by
     2&times; on the vgg16 layers and 8&times; on R16. The defect is fixed and stage 3 re-run.</p>
+    <p><b>The L2 is dead on every layer.</b> Extending the winning configuration to all
+    {A['n']} layers of both networks puts the L2 hit rate at 0.00% on
+    {A['l2_zero']} of {A['n']}. What the four-layer probe found is a property of the
+    workload, not of the layers that happened to be sampled.</p>
+    <p><b>Over all {A['n']} layers it is roughly a wash</b> &mdash; {A['beat']} come out
+    ahead of nocsim, geomean {A['geo']:.3f}&times;, spanning
+    {A['sp_lo']:.2f}&times; to {A['sp_hi']:.2f}&times;.</p>
     <p><b>Bigger lines win outright</b> across the whole 16&ndash;64 B range, on every layer, with or
     without prefetching.</p>
     <p><b>Prefetching costs cycles</b> at 32 and 64 bytes, by up to {F['pf_worst']:.0f}%. It pays
@@ -461,6 +532,54 @@ HTML = f"""<title>Kernel-Indexed Cache Sweep</title>
   </div>
   {table([("Layer",0),("Configuration",0),("Cycles",1),("Stage 3",1),("vs stage 3",1),
           ("Over floor",1),("L1 hit",1),("L2 hit",1)], t1)}
+</section>
+
+<section>
+  <span class="eyebrow">All layers</span>
+  <h2>The winning configuration, over every layer of both networks</h2>
+  <div class="col">
+  <p>Everything else on this page is four layers. This is the single best point above &mdash;
+  64-byte lines, one L2 bank, no prefetch &mdash; run over all {A['n']} valid layers,
+  {A['nv']} of vgg16 and {A['nr']} of resnet19, five samples each, against a nocsim
+  baseline regenerated for the same {A['n']} layers on the same schedules.</p>
+  <p>The four layers of the sweep reproduce their rows above to the digit, on both the cache side
+  and the nocsim side, so the other {A['n'] - 4} sit on the same code path and the same
+  config rather than a re-tuned one.</p>
+  <p><b>The L2 hit rate is 0.00% on all {A['l2_zero']} layers</b>, the maximum anywhere in the
+  set being {A['l2_hi']:.2f}%. The capacity cliff the four-layer probe located is therefore
+  not an artifact of those four: at 512 KB and 16-way, this L2 returns nothing for any layer either
+  network has. The L1 carries the workload alone, between {A['l1_lo']:.2f}% and
+  {A['l1_hi']:.2f}%.</p>
+  <p>Against nocsim, {A['beat']} of {A['n']} layers come out ahead, geomean
+  {A['geo']:.3f}&times;. The spread is wide and it is structured: {A['top_tag']} reaches
+  {A['sp_hi']:.2f}&times; while {A['low_tag']} sits at {A['sp_lo']:.2f}&times;.</p>
+  <p>What separates them is not the cache. It is how much slack the <i>baseline</i> has: nocsim's
+  own cycles over its own compute floor, which ranges from {A['nf_lo']:.2f}&times; to
+  {A['nf_hi']:.2f}&times; across the set. That ratio predicts the speedup almost exactly
+  (r = {A['corr_nf']:.3f}). On {A['at_floor']} of the {A['n']} layers nocsim is already
+  sitting on its floor, within 5%, and <b>{A['at_floor_beat']} of those {A['at_floor']} can be
+  beaten by anything</b> &mdash; there are no cycles there to win back, whatever the memory system
+  does. Of the {A['slack']} layers where nocsim runs more than 1.5&times; its floor,
+  {A['slack_beat']} fall to the cache.</p>
+  <p>The L1 hit rate is the tempting explanation and it is the weaker one
+  (r = {A['corr_l1']:.3f}). {A['cx_tag']} is the case that breaks it: a
+  {A['cx_l1']:.2f}% L1, near the top of the set, and still {A['cx_sp']:.2f}&times;
+  ahead, because its baseline had {A['cx_nf']:.2f}&times; of slack to give. Read the L1 column as what the layout achieved, and the floor column as what
+  was available to achieve.</p>
+  <p>A consistency check the reader can audit: {A['n_pairs']} groups of layers land on
+  <i>identical</i> nocsim cycle counts &mdash; {A['pairs']}. Those are shape-identical layers,
+  the same case <code>LAYER_SWAP.md</code> recorded for V8 and V9, whose tensors and next-layer
+  CIN match so the solver returns the same schedule. Their cache numbers match within each group
+  too, while V8 and V9 differ because there the spikes differ rather than the shape.</p>
+  </div>
+  <div class="keys">
+    <div class="key"><span class="k">{A['geo']:.3f}&times;</span><span class="l">geomean vs nocsim, {A['n']} layers</span></div>
+    <div class="key"><span class="k">{A['beat']}/{A['n']}</span><span class="l">layers ahead of nocsim</span></div>
+    <div class="key down"><span class="k">{A['l2_hi']:.2f}%</span><span class="l">best L2 hit rate, any layer</span></div>
+    <div class="key up"><span class="k">{A['fl_lo']:.2f}&times;</span><span class="l">closest any layer gets to the floor</span></div>
+  </div>
+  {table([("Layer",0),("Net",0),("Cycles",1),("nocsim",1),("vs nocsim",1),
+          ("Over floor",1),("L1 hit",1),("L2 hit",1),("DRAM MiB",1)], t8)}
 </section>
 
 <section>
@@ -622,7 +741,10 @@ srun -A bebv-delta-gpu -p gpuA100x4-interactive --gpus=1 -n1 -c 16 \\
   Stage 4 of the 2026-08-23 stagewise verification. Row-level data in
   <code>stage4_wcache/outputs/</code>: <code>khkw_sweep.csv</code> (960 rows),
   <code>khkw_vs_stage3.csv</code> (192), <code>khkw_layout_control.csv</code> (60),
-  <code>khkw_l2_capacity.csv</code> (120).
+  <code>khkw_l2_capacity.csv</code> (120). The all-layer extension is in
+  <code>profiling/0831_all_layer_streams/outputs/</code>:
+  <code>all_layers_vs_nocsim.csv</code> ({A['n']} rows),
+  <code>wcache_rows.csv</code> (155), <code>nocsim_rows.json</code> (155).
 </footer>
 </div>
 """

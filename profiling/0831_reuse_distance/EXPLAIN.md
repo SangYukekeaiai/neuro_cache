@@ -1,55 +1,53 @@
-# EXPLAIN: U1 through U6, all complete
+# EXPLAIN: units U1-U6 and W1-W5, all complete
 
-**Erasable.** The record is `PROGRESS.md`; the plan is
-`log/2026-08-31-reuse-distance-plan.md`; the result is the artifact at
-https://claude.ai/code/artifact/38f8e8d6-02fb-486a-af96-b9b9b03d3983
+**Erasable.** The record is `PROGRESS.md`. Plans are
+`log/2026-08-31-reuse-distance-plan.md` and `log/2026-08-31-belady-l2-plan.md`.
+Result: https://claude.ai/code/artifact/38f8e8d6-02fb-486a-af96-b9b9b03d3983
 
 ## Reproduce
 
-    # engine, once
     make -C ../../src/wcache/native MODE=release lib apps
+    make -C ../../src/wcache/native test          # 21 suites
 
-    # this folder
-    g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Wsign-conversion -Wconversion -Wshadow \
-        test_reuse_distance.cpp -o test_reuse_distance && ./test_reuse_distance
-    g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Wsign-conversion -Wconversion -Wshadow \
-        reuse_tool.cpp -o reuse_tool
-    python3 run_reuse_hist.py 4      # 24 runs, ~12 s, V1 and V4
-    python3 analyze_reuse.py         # V2, V3, the finding, ~70 s
+    W="-std=c++17 -O2 -Wall -Wextra -Wpedantic -Wsign-conversion -Wconversion -Wshadow"
+    g++ $W test_reuse_distance.cpp -o test_reuse_distance && ./test_reuse_distance
+    g++ $W reuse_tool.cpp -o reuse_tool
+    python3 run_reuse_hist.py 4     # 24 runs, ~12 s,  V1 V4
+    python3 analyze_reuse.py        # V2 V3 and the conflict finding, ~70 s
+    python3 plot_reuse.py           # outputs/spectra.svg, embedded in the artifact
+    python3 run_belady.py           # 120 runs, ~6 min, B1 B2 B3
 
-`reuse_tool` and `test_reuse_distance` are build products and are not checked in.
+## Engine changes
 
-## What each unit is
+Three, all additive and all inert by default:
 
-- **U1** `reuse_distance.h`: `StackDistance` (Fenwick over the timestamp axis) and
-  `ReuseHistogram`. No engine dependency at all, which is what let it be proved
-  against a naive back-scan oracle before anything fed it. 850 checks.
-- **U2** `../../src/wcache/native/include/wcache/access_log.h`: the engine's only
-  change. A dumper, 8 bytes per demand reference, written at the same two sites
-  that increment `l1_accesses` and `l2_accesses`.
-- **U3** `reuse_tool.cpp`: log in, histogram CSV out. Seventeen stacks per run.
-- **U4** `run_reuse_hist.py`: the 20 best-config runs plus 4 for V4.
-- **U5** `analyze_reuse.py`: the curve, V2, V3, and the associativity experiment.
-- **U6** `artifact.html`.
+- `include/wcache/access_log.h` plus two hook lines in `engine.cpp` (U2)
+- `include/wcache/next_use.h`, `BeladyPolicy` in `stamp_policy.h/.cpp`, and the
+  optional `note_next_use` verb on `ReplacementPolicy` (W1, W2)
+- `l2_policy` in config, `--l2-oracle` on `wcache_run`, the occurrence counter
+  in `CacheLevel` (W3)
 
-## Outputs
+Checked inert: B4 shows an oracle attached to an LRU L2 leaves all 93 columns
+identical bar `sim_wall_seconds`.
 
-    outputs/reuse_hist.csv        3,106 rows, level/core/distance/count per (layer,sample)
-    outputs/reuse_runs.csv        the 93-column results row per run
-    outputs/v4_independence.csv   the L1-histogram config-independence check
-    outputs/hit_rate_curve.csv    predicted hit rate vs capacity, both levels, 4 layers
-    outputs/analysis.json         everything the artifact quotes
+## The three results
 
-## The one thing to read if you read nothing else
+1. **The L2 was never short of capacity.** Largest reuse distance in the corpus
+   is 3,071 lines; the 512 KB L2 held 8,192. At fixed capacity, 16-way to 64-way
+   takes the hit rate 0.00% to 52.63% and cuts 12.7-14.5% of cycles, matching a
+   4 MB L2 exactly at one eighth the size.
 
-The L2 was never short of capacity. Largest reuse distance in the corpus: 3,071
-lines. Lines the 512 KB L2 already held: 8,192. Holding capacity fixed and going
-16-way to 64-way takes the hit rate from 0.00% to 52.63% and cuts 12.7 to 14.5%
-off total cycles, matching the 4 MB L2 exactly at one eighth the capacity.
+2. **The conflict has two components, and neither is the policy.** Belady's MIN
+   gets 26.32% at 16-way, exactly half the ceiling, so the sets really are
+   over-subscribed. LRU gets 0.00%, so it is also pathological. At 64-way Belady
+   and LRU are identical to the cycle.
 
-The L1 says the same thing from the other side: its 8-way array beats
-fully-associative LRU by up to 5.36 points, because the `khkw_split` index
-spreads a reuse window across the L1's 32 sets. The same index concentrates one
-across the L2's 512 sets. Correct where it was tuned, unexamined one level down.
+3. **A lock-step barrier makes hit rate the wrong objective.** Belady's 20,480
+   extra hits on V8 cut channel stall 26% and core stall 18%, and the run is
+   SLOWER: the barrier absorbs 418,786 cycles of it as slack. Ways work because
+   they lift the critical core too.
 
-Three open items are listed at the bottom of `PROGRESS.md`. Nothing is committed.
+## What I would look at next
+
+`PROGRESS.md`'s open questions, of which the live one is re-cutting the L2 set
+index. Everything needed to test it is already in the access log.

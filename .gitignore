@@ -130,3 +130,15 @@ profiling/0823_stagewise_verify/stage4_wcache/inputs/streams/*.wcts
 # are the reviewable record; the outputs are not.
 debug/wcache_instruments/*.csv
 debug/wcache_instruments/*.txt
+
+# Core dumps from crashed sweep runs
+core.*
+
+# Machine-local symlinks into /work scratch (regenerate with
+# profiling/0831_all_layer_streams/gen_streams.py)
+profiling/0831_all_layer_streams/streams
+profiling/0831_all_layer_streams/tc
+profiling/0831_all_layer_streams/weight_traces
+
+# Nested repo, unrelated to the wcache work
+profiling/0728_status_replay/site_source/

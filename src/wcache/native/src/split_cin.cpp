@@ -490,4 +490,38 @@ std::string SplitCinMapper::line_size_terms(std::int64_t) const {
            std::to_string(weight_bytes_);
 }
 
+
+
+std::optional<LineId> SplitCinMapper::neighbour(LineId line, Axis a,
+                                                std::int32_t delta) const {
+    if (line.get() < 0 || line.get() >= num_lines_) {
+        reject_range("SplitCinMapper::neighbour: line " + std::to_string(line.get()) +
+                     " outside [0, " + std::to_string(num_lines_) + ")");
+    }
+    // KH, KW and COUT are one digit each. CIN is SPLIT across cin_hi and
+    // cin_lo, so a step of one cin block can carry between two digits, which is
+    // exactly the case a prefetcher must not be asked to know about.
+    if (a != Axis::CIN) {
+        Digit d = Digit::KH;
+        if (a == Axis::KW)       d = Digit::KW;
+        else if (a == Axis::COUT) d = Digit::COUT;
+        else if (a != Axis::KH)   throw std::logic_error("SplitCinMapper::neighbour: unknown Axis");
+        const std::int64_t stride = digit_stride(d);
+        const std::int64_t radix  = digit_radix(d);
+        const std::int64_t blk    = (line.get() / stride) % radix;
+        const std::int64_t want   = blk + delta;
+        if (want < 0 || want >= radix) return std::nullopt;
+        return LineId{line.get() + static_cast<std::int64_t>(delta) * stride};
+    }
+    const std::int64_t lo  = (line.get() / digit_stride(Digit::CIN_LO)) % n_cin_lo_;
+    const std::int64_t hi  = (line.get() / digit_stride(Digit::CIN_HI)) % n_cin_hi_;
+    const std::int64_t blk = hi * n_cin_lo_ + lo;
+    const std::int64_t want = blk + delta;
+    if (want < 0 || want >= n_cin_blocks_) return std::nullopt;
+    const std::int64_t base = line.get() - hi * digit_stride(Digit::CIN_HI)
+                                         - lo * digit_stride(Digit::CIN_LO);
+    return LineId{base + (want / n_cin_lo_) * digit_stride(Digit::CIN_HI)
+                       + (want % n_cin_lo_) * digit_stride(Digit::CIN_LO)};
+}
+
 }  // namespace wcache

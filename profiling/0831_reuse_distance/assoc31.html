@@ -1,0 +1,332 @@
+<title>Per-Layer Cache Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap">
+<style>
+:root{
+  --ground:#ECEFEC; --surface:#FFFFFF; --raise:#E0E6E1; --sunk:#DCE3DD;
+  --ink:#161F1A; --muted:#5C6A62; --rule:#D1DAD3; --rule-2:#B2BFB6;
+  --live:#2C6A4F; --idle:#93A099;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1210; --surface:#151C18; --raise:#1D2622; --sunk:#111815;
+    --ink:#E2EAE5; --muted:#8B9A92; --rule:#232E28; --rule-2:#35433B;
+    --live:#63C097; --idle:#5C6A63;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1210; --surface:#151C18; --raise:#1D2622; --sunk:#111815;
+  --ink:#E2EAE5; --muted:#8B9A92; --rule:#232E28; --rule-2:#35433B;
+  --live:#63C097; --idle:#5C6A63;
+}
+*{box-sizing:border-box}
+body{background:var(--ground); color:var(--ink);
+  font-family:Newsreader,Georgia,serif; font-size:17px; line-height:1.58;
+  margin:0; padding:0 22px 80px; -webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto} .col{max-width:66ch}
+h1,h2,.eyebrow,th,.lbl{font-family:"Bricolage Grotesque",system-ui,sans-serif}
+code,td,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+header{padding:54px 0 24px;border-bottom:1px solid var(--rule-2)}
+h1{font-size:clamp(2.2rem,5.5vw,3.4rem);font-weight:700;line-height:1.0;
+  letter-spacing:-.03em;margin:0 0 16px;text-wrap:balance}
+.stand{font-size:1.1rem;color:var(--muted);margin:0;max-width:60ch}
+.meta{display:flex;flex-wrap:wrap;gap:6px 24px;margin-top:22px;
+  font-family:"IBM Plex Mono",monospace;font-size:.71rem;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em}
+.meta b{color:var(--ink);font-weight:500}
+section{padding:46px 0 0}
+.eyebrow{display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.15em;color:var(--live);margin:0 0 8px}
+h2{font-size:1.55rem;font-weight:700;letter-spacing:-.02em;margin:0 0 8px;text-wrap:balance}
+p{margin:0 0 13px} strong{font-weight:600}
+.chart{margin:22px 0 4px;background:var(--surface);border:1px solid var(--rule);
+  padding:18px 16px 12px;overflow-x:auto}
+.chart svg{display:block;width:100%;min-width:700px;height:auto}
+.chart text{font-family:"IBM Plex Mono",monospace;font-size:9px;fill:var(--muted)}
+.chart text.lyr{fill:var(--ink)}
+.chart text.hd{font-family:"Bricolage Grotesque",sans-serif;font-size:10px;
+  fill:var(--muted);text-transform:uppercase;letter-spacing:.09em}
+.chart text.net{font-family:"Bricolage Grotesque",sans-serif;font-size:11px;
+  font-weight:700;fill:var(--ink)}
+.chart text.v{fill:var(--ink)} .chart text.v2{fill:var(--live);font-weight:500}
+.chart .bar.idle{fill:var(--idle);opacity:.6} .chart .bar.win{fill:var(--live)}
+.scroll{overflow-x:auto;margin:20px 0 4px;border:1px solid var(--rule);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.81rem}
+th{text-align:left;font-weight:600;font-size:.66rem;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--muted);padding:10px 13px;border-bottom:1px solid var(--rule-2);
+  white-space:nowrap;background:var(--raise)}
+td{padding:7px 13px;border-bottom:1px solid var(--rule);vertical-align:baseline;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+th.n,td.n{text-align:right}
+td.lay{font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:.88rem}
+.hi{color:var(--live);font-weight:500} .dim{color:var(--idle)}
+.pc{display:block;font-size:.72em;color:var(--muted);font-weight:400}
+.cap{padding:10px 2px;font-size:.8rem;color:var(--muted);max-width:76ch;margin:0 0 4px}
+code{font-size:.87em;background:var(--raise);padding:1px 5px;border:1px solid var(--rule)}
+footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--rule-2);
+  font-size:.78rem;color:var(--muted)}
+:focus-visible{outline:2px solid var(--live);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Per-Layer Cache Profile</h1>
+  <p class="stand">Hit and miss rates, L2 reuse-distance distribution, and L2 reuse-count
+  distribution, for all 31 layers of both networks.</p>
+  <div class="meta">
+    <span><b>31</b> layers</span>
+    <span>vgg16 <b>12</b> &middot; resnet19 <b>19</b></span>
+    <span>loas, <b>16</b> cores, sample 0</span>
+    <span>2026-08-31</span>
+  </div>
+</header>
+
+<section>
+  <span class="eyebrow">1. Hit and miss</span>
+  <h2>L1 miss rate spans a 250-fold range</h2>
+  <div class="col">
+    <p>L1 hit rates all sit between 92.53% and 99.97%, so the miss rate is the readable quantity:
+    it runs from 0.03% to 7.47%. The L2 hit rate is <strong>0.00% on every layer</strong> at this
+    geometry, so its miss rate is 100% throughout.</p>
+  </div>
+  <div class="chart">
+<svg viewBox="-2 0 658 536" role="img" aria-label="L1 miss rate for all 31 layers, spanning 0.03 to 7.47 percent. The five layers that have L2 reuse are marked.">
+<text class="lyr" x="160" y="37" text-anchor="end">features_3</text>
+<rect class="bar idle" x="168" y="29" width="1.4" height="10"><title>layer_01_features_3: L1 hit 99.97%, miss 0.03%, 2,045,168 accesses</title></rect>
+<text class="v" x="538" y="37">0.03%</text>
+<text class="lyr" x="160" y="53" text-anchor="end">features_7</text>
+<rect class="bar idle" x="168" y="45" width="5.4" height="10"><title>layer_02_features_7: L1 hit 99.89%, miss 0.11%, 1,022,816 accesses</title></rect>
+<text class="v" x="538" y="53">0.11%</text>
+<text class="lyr" x="160" y="69" text-anchor="end">features_10</text>
+<rect class="bar idle" x="168" y="61" width="3.6" height="10"><title>layer_03_features_10: L1 hit 99.93%, miss 0.07%, 3,121,184 accesses</title></rect>
+<text class="v" x="538" y="69">0.07%</text>
+<text class="lyr" x="160" y="85" text-anchor="end">features_14</text>
+<rect class="bar idle" x="168" y="77" width="19.6" height="10"><title>layer_04_features_14: L1 hit 99.59%, miss 0.41%, 1,130,432 accesses</title></rect>
+<text class="v" x="538" y="85">0.41%</text>
+<text class="lyr" x="160" y="101" text-anchor="end">features_17</text>
+<rect class="bar idle" x="168" y="93" width="18.1" height="10"><title>layer_05_features_17: L1 hit 99.62%, miss 0.38%, 2,449,856 accesses</title></rect>
+<text class="v" x="538" y="101">0.38%</text>
+<text class="lyr" x="160" y="117" text-anchor="end">features_20</text>
+<rect class="bar idle" x="168" y="109" width="17.1" height="10"><title>layer_06_features_20: L1 hit 99.64%, miss 0.36%, 2,590,464 accesses</title></rect>
+<text class="v" x="538" y="117">0.36%</text>
+<text class="lyr" x="160" y="133" text-anchor="end">features_24</text>
+<rect class="bar idle" x="168" y="125" width="84.3" height="10"><title>layer_07_features_24: L1 hit 98.25%, miss 1.75%, 1,053,440 accesses</title></rect>
+<text class="v" x="538" y="133">1.75%</text>
+<text class="lyr" x="160" y="149" text-anchor="end">features_27</text>
+<rect class="bar win" x="168" y="141" width="144.4" height="10"><title>layer_08_features_27: L1 hit 97.00%, miss 3.00%, 2,597,632 accesses</title></rect>
+<text class="v" x="538" y="149">3.00%</text>
+<text class="v2" x="592" y="149">has L2 reuse</text>
+<text class="lyr" x="160" y="165" text-anchor="end">features_30</text>
+<rect class="bar win" x="168" y="157" width="75.1" height="10"><title>layer_09_features_30: L1 hit 98.44%, miss 1.56%, 4,995,072 accesses</title></rect>
+<text class="v" x="538" y="165">1.56%</text>
+<text class="v2" x="592" y="165">has L2 reuse</text>
+<text class="lyr" x="160" y="181" text-anchor="end">features_34</text>
+<rect class="bar idle" x="168" y="173" width="360.0" height="10"><title>layer_10_features_34: L1 hit 92.53%, miss 7.47%, 493,568 accesses</title></rect>
+<text class="v" x="538" y="181">7.47%</text>
+<text class="lyr" x="160" y="197" text-anchor="end">features_37</text>
+<rect class="bar idle" x="168" y="189" width="262.9" height="10"><title>layer_11_features_37: L1 hit 94.55%, miss 5.45%, 675,840 accesses</title></rect>
+<text class="v" x="538" y="197">5.45%</text>
+<text class="lyr" x="160" y="213" text-anchor="end">features_40</text>
+<rect class="bar idle" x="168" y="205" width="252.4" height="10"><title>layer_12_features_40: L1 hit 94.76%, miss 5.24%, 704,000 accesses</title></rect>
+<text class="v" x="538" y="213">5.24%</text>
+<text class="lyr" x="160" y="229" text-anchor="end">layer1_0_conv1</text>
+<rect class="bar idle" x="168" y="221" width="1.5" height="10"><title>layer_01_layer1_0_conv1: L1 hit 99.97%, miss 0.03%, 3,752,864 accesses</title></rect>
+<text class="v" x="538" y="229">0.03%</text>
+<text class="lyr" x="160" y="245" text-anchor="end">layer1_0_conv2</text>
+<rect class="bar idle" x="168" y="237" width="6.6" height="10"><title>layer_02_layer1_0_conv2: L1 hit 99.86%, miss 0.14%, 839,472 accesses</title></rect>
+<text class="v" x="538" y="245">0.14%</text>
+<text class="lyr" x="160" y="261" text-anchor="end">layer1_0_shortcut_0</text>
+<rect class="bar idle" x="168" y="253" width="1.5" height="10"><title>layer_03_layer1_0_shortcut_0: L1 hit 99.97%, miss 0.03%, 3,752,864 accesses</title></rect>
+<text class="v" x="538" y="261">0.03%</text>
+<text class="lyr" x="160" y="277" text-anchor="end">layer1_1_conv1</text>
+<rect class="bar idle" x="168" y="269" width="4.5" height="10"><title>layer_04_layer1_1_conv1: L1 hit 99.91%, miss 0.09%, 2,494,848 accesses</title></rect>
+<text class="v" x="538" y="277">0.09%</text>
+<text class="lyr" x="160" y="293" text-anchor="end">layer1_1_conv2</text>
+<rect class="bar idle" x="168" y="285" width="6.1" height="10"><title>layer_05_layer1_1_conv2: L1 hit 99.87%, miss 0.13%, 1,827,840 accesses</title></rect>
+<text class="v" x="538" y="293">0.13%</text>
+<text class="lyr" x="160" y="309" text-anchor="end">layer1_2_conv1</text>
+<rect class="bar idle" x="168" y="301" width="3.8" height="10"><title>layer_06_layer1_2_conv1: L1 hit 99.92%, miss 0.08%, 2,948,288 accesses</title></rect>
+<text class="v" x="538" y="309">0.08%</text>
+<text class="lyr" x="160" y="325" text-anchor="end">layer1_2_conv2</text>
+<rect class="bar idle" x="168" y="317" width="3.8" height="10"><title>layer_07_layer1_2_conv2: L1 hit 99.92%, miss 0.08%, 2,910,528 accesses</title></rect>
+<text class="v" x="538" y="325">0.08%</text>
+<text class="lyr" x="160" y="341" text-anchor="end">layer2_0_conv1</text>
+<rect class="bar idle" x="168" y="333" width="2.7" height="10"><title>layer_08_layer2_0_conv1: L1 hit 99.94%, miss 0.06%, 8,330,112 accesses</title></rect>
+<text class="v" x="538" y="341">0.06%</text>
+<text class="lyr" x="160" y="357" text-anchor="end">layer2_0_conv2</text>
+<rect class="bar idle" x="168" y="349" width="16.1" height="10"><title>layer_09_layer2_0_conv2: L1 hit 99.67%, miss 0.33%, 1,382,144 accesses</title></rect>
+<text class="v" x="538" y="357">0.33%</text>
+<text class="lyr" x="160" y="373" text-anchor="end">layer2_0_shortcut_0</text>
+<rect class="bar idle" x="168" y="365" width="2.7" height="10"><title>layer_10_layer2_0_shortcut_0: L1 hit 99.94%, miss 0.06%, 8,330,112 accesses</title></rect>
+<text class="v" x="538" y="373">0.06%</text>
+<text class="lyr" x="160" y="389" text-anchor="end">layer2_1_conv1</text>
+<rect class="bar idle" x="168" y="381" width="8.8" height="10"><title>layer_11_layer2_1_conv1: L1 hit 99.82%, miss 0.18%, 5,064,576 accesses</title></rect>
+<text class="v" x="538" y="389">0.18%</text>
+<text class="lyr" x="160" y="405" text-anchor="end">layer2_1_conv2</text>
+<rect class="bar idle" x="168" y="397" width="6.7" height="10"><title>layer_12_layer2_1_conv2: L1 hit 99.86%, miss 0.14%, 6,590,528 accesses</title></rect>
+<text class="v" x="538" y="405">0.14%</text>
+<text class="lyr" x="160" y="421" text-anchor="end">layer2_2_conv1</text>
+<rect class="bar idle" x="168" y="413" width="6.1" height="10"><title>layer_13_layer2_2_conv1: L1 hit 99.87%, miss 0.13%, 7,261,376 accesses</title></rect>
+<text class="v" x="538" y="421">0.13%</text>
+<text class="lyr" x="160" y="437" text-anchor="end">layer2_2_conv2</text>
+<rect class="bar idle" x="168" y="429" width="5.8" height="10"><title>layer_14_layer2_2_conv2: L1 hit 99.88%, miss 0.12%, 7,710,208 accesses</title></rect>
+<text class="v" x="538" y="437">0.12%</text>
+<text class="lyr" x="160" y="453" text-anchor="end">layer3_0_conv1</text>
+<rect class="bar idle" x="168" y="445" width="6.3" height="10"><title>layer_15_layer3_0_conv1: L1 hit 99.87%, miss 0.13%, 14,196,864 accesses</title></rect>
+<text class="v" x="538" y="453">0.13%</text>
+<text class="lyr" x="160" y="469" text-anchor="end">layer3_0_conv2</text>
+<rect class="bar win" x="168" y="461" width="95.2" height="10"><title>layer_16_layer3_0_conv2: L1 hit 98.02%, miss 1.98%, 1,969,728 accesses</title></rect>
+<text class="v" x="538" y="469">1.98%</text>
+<text class="v2" x="592" y="469">has L2 reuse</text>
+<text class="lyr" x="160" y="485" text-anchor="end">layer3_0_shortcut_0</text>
+<rect class="bar idle" x="168" y="477" width="6.3" height="10"><title>layer_17_layer3_0_shortcut_0: L1 hit 99.87%, miss 0.13%, 14,196,864 accesses</title></rect>
+<text class="v" x="538" y="485">0.13%</text>
+<text class="lyr" x="160" y="501" text-anchor="end">layer3_1_conv1</text>
+<rect class="bar win" x="168" y="493" width="109.9" height="10"><title>layer_18_layer3_1_conv1: L1 hit 97.72%, miss 2.28%, 3,412,736 accesses</title></rect>
+<text class="v" x="538" y="501">2.28%</text>
+<text class="v2" x="592" y="501">has L2 reuse</text>
+<text class="lyr" x="160" y="517" text-anchor="end">layer3_1_conv2</text>
+<rect class="bar win" x="168" y="509" width="70.4" height="10"><title>layer_19_layer3_1_conv2: L1 hit 98.54%, miss 1.46%, 5,330,944 accesses</title></rect>
+<text class="v" x="538" y="517">1.46%</text>
+<text class="v2" x="592" y="517">has L2 reuse</text>
+<text class="net" x="0" y="37">vgg16</text>
+<text class="net" x="0" y="229">resnet19</text>
+<text class="hd" x="168" y="19">L1 miss rate</text>
+</svg>
+  </div>
+  <p class="cap">Bar length is L1 miss rate on a linear scale. Green marks the five layers that
+  have any L2 reuse; hover any bar for its exact counts.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Net</th><th>Layer</th><th class="n">L1 accesses</th>
+        <th class="n">L1 hit</th><th class="n">L1 miss</th>
+        <th class="n">L2 accesses</th><th class="n">L2 hit</th><th class="n">L2 miss</th></tr></thead>
+      <tbody>
+<tr><td class="lay">vgg16</td><td>features_3</td><td class="n">2,045,168</td><td class="n">99.97%</td><td class="n dim">0.03%</td><td class="n">576</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">vgg16</td><td>features_7</td><td class="n">1,022,816</td><td class="n">99.89%</td><td class="n dim">0.11%</td><td class="n">1,152</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">vgg16</td><td>features_10</td><td class="n">3,121,184</td><td class="n">99.93%</td><td class="n dim">0.07%</td><td class="n">2,304</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">vgg16</td><td>features_14</td><td class="n">1,130,432</td><td class="n">99.59%</td><td class="n dim">0.41%</td><td class="n">4,608</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">vgg16</td><td>features_17</td><td class="n">2,449,856</td><td class="n">99.62%</td><td class="n dim">0.38%</td><td class="n">9,216</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">vgg16</td><td>features_20</td><td class="n">2,590,464</td><td class="n">99.64%</td><td class="n dim">0.36%</td><td class="n">9,216</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">vgg16</td><td>features_24</td><td class="n">1,053,440</td><td class="n">98.25%</td><td class="n dim">1.75%</td><td class="n">18,432</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">vgg16</td><td>features_27</td><td class="n">2,597,632</td><td class="n">97.00%</td><td class="n dim">3.00%</td><td class="n">77,824</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">vgg16</td><td>features_30</td><td class="n">4,995,072</td><td class="n">98.44%</td><td class="n dim">1.56%</td><td class="n">77,824</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">vgg16</td><td>features_34</td><td class="n">493,568</td><td class="n">92.53%</td><td class="n dim">7.47%</td><td class="n">36,864</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">vgg16</td><td>features_37</td><td class="n">675,840</td><td class="n">94.55%</td><td class="n dim">5.45%</td><td class="n">36,864</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">vgg16</td><td>features_40</td><td class="n">704,000</td><td class="n">94.76%</td><td class="n dim">5.24%</td><td class="n">36,864</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_0_conv1</td><td class="n">3,752,864</td><td class="n">99.97%</td><td class="n dim">0.03%</td><td class="n">1,152</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_0_conv2</td><td class="n">839,472</td><td class="n">99.86%</td><td class="n dim">0.14%</td><td class="n">1,152</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_0_shortcut_0</td><td class="n">3,752,864</td><td class="n">99.97%</td><td class="n dim">0.03%</td><td class="n">1,152</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_1_conv1</td><td class="n">2,494,848</td><td class="n">99.91%</td><td class="n dim">0.09%</td><td class="n">2,304</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_1_conv2</td><td class="n">1,827,840</td><td class="n">99.87%</td><td class="n dim">0.13%</td><td class="n">2,304</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_2_conv1</td><td class="n">2,948,288</td><td class="n">99.92%</td><td class="n dim">0.08%</td><td class="n">2,304</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_2_conv2</td><td class="n">2,910,528</td><td class="n">99.92%</td><td class="n dim">0.08%</td><td class="n">2,304</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_0_conv1</td><td class="n">8,330,112</td><td class="n">99.94%</td><td class="n dim">0.06%</td><td class="n">4,608</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_0_conv2</td><td class="n">1,382,144</td><td class="n">99.67%</td><td class="n dim">0.33%</td><td class="n">4,608</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_0_shortcut_0</td><td class="n">8,330,112</td><td class="n">99.94%</td><td class="n dim">0.06%</td><td class="n">4,608</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_1_conv1</td><td class="n">5,064,576</td><td class="n">99.82%</td><td class="n dim">0.18%</td><td class="n">9,216</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_1_conv2</td><td class="n">6,590,528</td><td class="n">99.86%</td><td class="n dim">0.14%</td><td class="n">9,216</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_2_conv1</td><td class="n">7,261,376</td><td class="n">99.87%</td><td class="n dim">0.13%</td><td class="n">9,216</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_2_conv2</td><td class="n">7,710,208</td><td class="n">99.88%</td><td class="n dim">0.12%</td><td class="n">9,216</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_0_conv1</td><td class="n">14,196,864</td><td class="n">99.87%</td><td class="n dim">0.13%</td><td class="n">18,432</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_0_conv2</td><td class="n">1,969,728</td><td class="n">98.02%</td><td class="n dim">1.98%</td><td class="n">38,912</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_0_shortcut_0</td><td class="n">14,196,864</td><td class="n">99.87%</td><td class="n dim">0.13%</td><td class="n">18,432</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_1_conv1</td><td class="n">3,412,736</td><td class="n">97.72%</td><td class="n dim">2.28%</td><td class="n">77,824</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_1_conv2</td><td class="n">5,330,944</td><td class="n">98.54%</td><td class="n dim">1.46%</td><td class="n">77,824</td><td class="n dim">0.00%</td><td class="n">100.00%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">2. Global reuse distance</span>
+  <h2>Two values, and only on five layers</h2>
+  <div class="col">
+    <p>Reuse distance is counted in distinct L2 lines touched between two references to the same
+    line. A first reference is cold and has no distance. Twenty-six layers have <em>no</em> finite
+    distances at all: every line reaches the L2 once and is never asked for again.</p>
+    <p>The five that do have reuse are identical in shape. Every reference sits at exactly
+    <strong>1023</strong> or exactly <strong>3071</strong>, in the same 47.37% / 5.26% proportion.
+    Nothing in between, on any layer.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Net</th><th>Layer</th><th class="n">Cold</th>
+        <th class="n">d = 1023</th><th class="n">d = 3071</th><th class="n">L2 references</th></tr></thead>
+      <tbody>
+<tr><td class="lay">vgg16</td><td>features_27</td><td class="n dim">36,864<span class="pc">47.37%</span></td><td class="n hi">36,864<span class="pc">47.37%</span></td><td class="n hi">4,096<span class="pc">5.26%</span></td><td class="n">77,824</td></tr>
+<tr><td class="lay">vgg16</td><td>features_30</td><td class="n dim">36,864<span class="pc">47.37%</span></td><td class="n hi">36,864<span class="pc">47.37%</span></td><td class="n hi">4,096<span class="pc">5.26%</span></td><td class="n">77,824</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_0_conv2</td><td class="n dim">18,432<span class="pc">47.37%</span></td><td class="n hi">18,432<span class="pc">47.37%</span></td><td class="n hi">2,048<span class="pc">5.26%</span></td><td class="n">38,912</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_1_conv1</td><td class="n dim">36,864<span class="pc">47.37%</span></td><td class="n hi">36,864<span class="pc">47.37%</span></td><td class="n hi">4,096<span class="pc">5.26%</span></td><td class="n">77,824</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_1_conv2</td><td class="n dim">36,864<span class="pc">47.37%</span></td><td class="n hi">36,864<span class="pc">47.37%</span></td><td class="n hi">4,096<span class="pc">5.26%</span></td><td class="n">77,824</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">The other 26 layers are omitted from this table because every one of their
+  references is cold. Percentages are of that layer's L2 references.</p>
+</section>
+
+<section>
+  <span class="eyebrow">3. Reuse count</span>
+  <h2>Touched once, or touched six times</h2>
+  <div class="col">
+    <p>How many times each distinct L2 line is referenced. Across the whole corpus this takes
+    exactly two values, <strong>1</strong> and <strong>6</strong>, and never anything else.</p>
+    <p>That is what the average ratio conceals. A layer at 2.11 is not a layer whose lines are
+    touched about twice; it is 78% of lines touched once and 22% touched six times.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Net</th><th>Layer</th><th class="n">Lines touched 1x</th>
+        <th class="n">Lines touched 6x</th><th class="n">Distinct lines</th>
+        <th class="n">Mean refs / line</th></tr></thead>
+      <tbody>
+<tr><td class="lay">vgg16</td><td>features_3</td><td class="n">576<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">576</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">vgg16</td><td>features_7</td><td class="n">1,152<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">1,152</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">vgg16</td><td>features_10</td><td class="n">2,304<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">2,304</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">vgg16</td><td>features_14</td><td class="n">4,608<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">4,608</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">vgg16</td><td>features_17</td><td class="n">9,216<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">9,216</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">vgg16</td><td>features_20</td><td class="n">9,216<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">9,216</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">vgg16</td><td>features_24</td><td class="n">18,432<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">18,432</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">vgg16</td><td>features_27</td><td class="n">28,672<span class="pc">77.8%</span></td><td class="n hi">8,192<span class="pc">22.2%</span></td><td class="n">36,864</td><td class="n hi">2.11</td></tr>
+<tr><td class="lay">vgg16</td><td>features_30</td><td class="n">28,672<span class="pc">77.8%</span></td><td class="n hi">8,192<span class="pc">22.2%</span></td><td class="n">36,864</td><td class="n hi">2.11</td></tr>
+<tr><td class="lay">vgg16</td><td>features_34</td><td class="n">36,864<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">36,864</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">vgg16</td><td>features_37</td><td class="n">36,864<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">36,864</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">vgg16</td><td>features_40</td><td class="n">36,864<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">36,864</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_0_conv1</td><td class="n">1,152<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">1,152</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_0_conv2</td><td class="n">1,152<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">1,152</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_0_shortcut_0</td><td class="n">1,152<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">1,152</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_1_conv1</td><td class="n">2,304<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">2,304</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_1_conv2</td><td class="n">2,304<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">2,304</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_2_conv1</td><td class="n">2,304<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">2,304</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer1_2_conv2</td><td class="n">2,304<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">2,304</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_0_conv1</td><td class="n">4,608<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">4,608</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_0_conv2</td><td class="n">4,608<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">4,608</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_0_shortcut_0</td><td class="n">4,608<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">4,608</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_1_conv1</td><td class="n">9,216<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">9,216</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_1_conv2</td><td class="n">9,216<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">9,216</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_2_conv1</td><td class="n">9,216<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">9,216</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer2_2_conv2</td><td class="n">9,216<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">9,216</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_0_conv1</td><td class="n">18,432<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">18,432</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_0_conv2</td><td class="n">14,336<span class="pc">77.8%</span></td><td class="n hi">4,096<span class="pc">22.2%</span></td><td class="n">18,432</td><td class="n hi">2.11</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_0_shortcut_0</td><td class="n">18,432<span class="pc">100.0%</span></td><td class="n dim">0</td><td class="n">18,432</td><td class="n dim">1.00</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_1_conv1</td><td class="n">28,672<span class="pc">77.8%</span></td><td class="n hi">8,192<span class="pc">22.2%</span></td><td class="n">36,864</td><td class="n hi">2.11</td></tr>
+<tr><td class="lay">resnet19</td><td>layer3_1_conv2</td><td class="n">28,672<span class="pc">77.8%</span></td><td class="n hi">8,192<span class="pc">22.2%</span></td><td class="n">36,864</td><td class="n hi">2.11</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">The hot set is 8,192 lines on the four large layers and 4,096 on
+  <code>layer3_0_conv2</code>. At 64-byte lines those are 512 KB and 256 KB.</p>
+</section>
+
+<footer>
+  <p><strong>Config.</strong> <code>khkw_split</code>, 64 B lines (cin_block 16 &times; cout_block 4
+  &times; 1 B), L1 16 KB 8-way private &times; 16 cores, L2 512 KB 16-way 1 bank, lru,
+  non_inclusive, latencies 0 / 2 / 24, prefetch none. One sample per layer.</p>
+  <p><strong>Source.</strong> <code>profiling/0831_reuse_distance/analyze31.py</code>, raw data in
+  <code>outputs/perlayer31.csv</code>.</p>
+</footer>
+</div>

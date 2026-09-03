@@ -52,6 +52,9 @@ Engine::Engine(const AddressMapper& mapper, const TileTrace& trace, const Engine
     }
 
     prefetcher_ = make_prefetcher(params.prefetch_policy, params.prefetch_distance, n_cores);
+    l2_prefetcher_ = make_l2_prefetcher(params.l2_prefetch_policy, params.l2_prefetch_axis,
+                                        params.l2_prefetch_distance, params.l2_prefetch_up,
+                                        params.l2_prefetch_down);
 
     const std::size_t n = static_cast<std::size_t>(n_cores);
     cores_.assign(n, CoreState{});
@@ -333,15 +336,52 @@ void Engine::on_l1_probe(Request& r, SimTime now) {
     reinject_all(granted_, now);
 }
 
+// The L2 policy's issue path (plan 0831-l2-cin-neighbour section 6b).
+//
+// Every suggestion costs exactly what a demand costs below the L1: an L2 bank
+// port slot here, an L2 MSHR entry inside `triage`, and on a miss a DRAM slot
+// and the bytes. Nothing is discounted, which is the whole reason the L1
+// policy lost cycles at 64-byte lines and is the standard this one is held to.
+//
+// It does NOT take an L1 port slot or an L1 entry, because it never touches the
+// L1. That is `mshr1 == nullptr` seen from the resource side.
+void Engine::l2_prefetch_from(LineId line, CoreId core, SimTime now) {
+    l2_pf_scratch_.clear();
+    l2_prefetcher_->suggest(mapper_, line, l2_pf_scratch_);
+    for (const LineId want : l2_pf_scratch_) {
+        // The direction, for the split the plan predicts will differ.
+        if (want.get() > line.get()) ++stats_.l2_pf_issued_up;
+        else                         ++stats_.l2_pf_issued_down;
+        ++stats_.l2_pf_issued;
+
+        // demand = false and no L1 entry: the two facts that make `triage`'s
+        // `is_prefetch_at_issue` true here, which is what routes this request
+        // down the four drop branches instead of ever letting it wait.
+        Request& pf = acquire(core, want, BurstIndex{0}, false, now);
+        pf.level = Level::L2;
+        const std::int32_t bank = l2_.bank_of(want);
+        const SimTime accept    = l2_.port(bank).reserve(now);
+        queue_.schedule(accept + l2_.port(bank).latency(), EventKind::L2Probe, NoRefusal, core,
+                        EventPayload{&pf, nullptr, BurstIndex{0}, 0});
+    }
+}
+
 void Engine::on_l2_probe(Request& r, SimTime now) {
     // I6, at the one place it can be broken: only a request holding an L1 entry
     // ever reaches the L2, and it still holds it. 4.1's whole argument rests on
     // this, since it is what makes the L2's wait sets views over structures that
     // already exist rather than storage.
-    if (r.level != Level::L2 || r.mshr1 == nullptr) {
+    // I6, RESTATED by plan 0831-l2-cin-neighbour: a request that can WAIT at
+    // the L2 holds an L1 entry. An L2-originated prefetch never waits -- it is
+    // dropped at issue exactly as an L1 prefetch is -- so it needs no L1 entry,
+    // and it is the first request in the design to reach here without one.
+    // 4.1's argument is untouched: it is about the waiting population, and this
+    // request never joins it.
+    if (r.level != Level::L2 || (r.mshr1 == nullptr && r.demand)) {
         engine_error("on_l2_probe", "line " + std::to_string(r.line.get()) +
                                         " reached the L2 without holding an L1 entry (I6)");
     }
+    const bool l2_prefetch = !r.demand && r.mshr1 == nullptr;
 
     const bool woken_onto_resident = r.line_resident_at_wake;
     r.line_resident_at_wake        = false;
@@ -361,6 +401,31 @@ void Engine::on_l2_probe(Request& r, SimTime now) {
     }
 
     if (result == TriageOutcome::Hit) note_hit(Level::L2, r.core, r.line, r.demand);
+
+    // The trigger (plan 0831 section 6). Fires on a DEMAND miss, and on a
+    // demand hit to a line a prefetch put there and nobody has used yet.
+    //
+    // The second row is what keeps the chain alive. On a miss-only rule, line
+    // b+1 arrives by prefetch, its demand HITS, that hit fires nothing, and
+    // b+2 is never fetched: the chain dies every other line and the hit rate
+    // caps at exactly half. Measured on V8: 50.0% miss-only against 96.9%
+    // with this row.
+    if (r.demand) {
+        if (result == TriageOutcome::Forwarded) {
+            l2_prefetch_from(r.line, r.core, now);
+        } else if (result == TriageOutcome::Hit) {
+            const auto tag = l2_prefetched_.find(r.line.get());
+            if (tag != l2_prefetched_.end()) {
+                // Cleared here, exactly as gem5 clears `_prefetched` inside its
+                // `if (satisfied)` branch: the line has now been used, so it is
+                // an ordinary line and a later hit fires nothing.
+                l2_prefetched_.erase(tag);
+                ++stats_.l2_pf_timely;
+                ++stats_.l2_pf_retriggers;
+                l2_prefetch_from(r.line, r.core, now);
+            }
+        }
+    }
 
     switch (result) {
         case TriageOutcome::Hit:
@@ -394,17 +459,29 @@ void Engine::on_l2_probe(Request& r, SimTime now) {
             break;
         }
 
+        case TriageOutcome::DroppedArrayHit:
+        case TriageOutcome::DroppedEntry:
+        case TriageOutcome::DroppedNoSlot:
+        case TriageOutcome::DroppedReserve:
+            // Reachable only for an L2-originated prefetch. For anything else
+            // it is still the old error: a demand dropped at the L2 would leave
+            // an L1 entry nobody will ever fill, surfacing much later as D12's
+            // deadlock rather than here.
+            if (!l2_prefetch) {
+                engine_error("on_l2_probe",
+                             "line " + std::to_string(r.line.get()) +
+                                 " was dropped at the L2 while holding an L1 entry, which would "
+                                 "leave that entry unfillable");
+            }
+            if (result == TriageOutcome::DroppedArrayHit) ++stats_.l2_pf_dropped_array_hit;
+            else if (result == TriageOutcome::DroppedEntry) ++stats_.l2_pf_dropped_entry;
+            else if (result == TriageOutcome::DroppedNoSlot) ++stats_.l2_pf_dropped_no_slot;
+            else ++stats_.l2_pf_dropped_reserve;
+            release(r);
+            break;
+
         default:
-            // Unreachable, and it is the invariant rather than the enum that
-            // makes it so: every request at the L2 holds an L1 entry, so
-            // `is_prefetch_at_issue` is false for all of them and triage's four
-            // drop branches cannot be taken here. Checked because the failure it
-            // would produce is an L1 entry nobody will ever fill, which surfaces
-            // much later as D12's deadlock rather than here.
-            engine_error("on_l2_probe",
-                         "line " + std::to_string(r.line.get()) +
-                             " was dropped at the L2 while holding an L1 entry, which would "
-                             "leave that entry unfillable");
+            engine_error("on_l2_probe", "unknown TriageOutcome at the L2");
     }
 
     reinject_all(granted_, now);
@@ -420,6 +497,24 @@ void Engine::on_l2_fill(Mshr& e, SimTime now) {
     const InsertResult res = l2_.install(line);
     if (res.evicted && params_.inclusion == Inclusion::Inclusive) {
         back_invalidate(res.evicted_line, now);
+    }
+
+    // The tag bit (plan 0831 U4). Set when a prefetch put this line here and no
+    // demand has merged onto the entry; a line that leaves still tagged was
+    // never used, which is the waste term gem5 counts as `prefetchUnused`.
+    if (e.pf_opened && !e.demand) {
+        l2_prefetched_.insert(line.get());
+    } else if (e.pf_opened && e.demand) {
+        // A demand arrived while the prefetch was still in flight: it hid part
+        // of the latency but not all of it.
+        ++stats_.l2_pf_late;
+    }
+    if (res.evicted) {
+        const auto gone = l2_prefetched_.find(res.evicted_line.get());
+        if (gone != l2_prefetched_.end()) {
+            l2_prefetched_.erase(gone);
+            ++stats_.l2_pf_wasted;
+        }
     }
 
     if (instrumented()) {
@@ -441,6 +536,16 @@ void Engine::on_l2_fill(Mshr& e, SimTime now) {
     // finishes later. The two are separated by `l2_to_l1_latency`, which is the
     // knob that keeps the split structural even at its default of 0.
     for (Request* t : retire_.targets) {
+        // An L2-originated prefetch is the entry's primary, so it appears here
+        // like any other target, and it is the one target with no L1 entry to
+        // fill: nobody is waiting on it, and the line it wanted is now resident
+        // in the L2, which was the whole point. Scheduling an L1Fill on its null
+        // entry is what a first draft of this did, and it segfaulted on the
+        // first prefetch that reached a fill.
+        if (t->mshr1 == nullptr) {
+            release(*t);
+            continue;
+        }
         queue_.schedule(now + params_.l2_to_l1_latency, EventKind::L1Fill, NoRefusal, t->core,
                         EventPayload{nullptr, t->mshr1, t->burst, 0});
     }

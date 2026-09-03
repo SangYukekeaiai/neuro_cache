@@ -236,4 +236,43 @@ std::string KhkwSplitMapper::line_size_terms(std::int64_t) const {
            std::to_string(weight_bytes_);
 }
 
+
+
+std::optional<LineId> KhkwSplitMapper::neighbour(LineId line, Axis a,
+                                                 std::int32_t delta) const {
+    if (line.get() < 0 || line.get() >= num_lines_) {
+        reject_range("KhkwSplitMapper::neighbour: line " + std::to_string(line.get()) +
+                     " outside [0, " + std::to_string(num_lines_) + ")");
+    }
+    // CIN and COUT are each ONE digit here, so they are one stride away. KH and
+    // KW are two digits of the split position and need the position rebuilt,
+    // which is the whole reason this arithmetic belongs to the mapper.
+    if (a == Axis::CIN || a == Axis::COUT) {
+        const Digit d = (a == Axis::CIN) ? Digit::CIN : Digit::COUT;
+        const std::int64_t stride = digit_stride(d);
+        const std::int64_t radix  = digit_radix(d);
+        const std::int64_t blk    = (line.get() / stride) % radix;
+        const std::int64_t want   = blk + delta;
+        if (want < 0 || want >= radix) return std::nullopt;
+        return LineId{line.get() + static_cast<std::int64_t>(delta) * stride};
+    }
+    if (a != Axis::KH && a != Axis::KW) {
+        throw std::logic_error("KhkwSplitMapper::neighbour: unknown Axis");
+    }
+    // pos = kh * KW + kw, stored as (pos / n_pos_lo, pos % n_pos_lo).
+    const std::int64_t pos_lo = (line.get() / digit_stride(Digit::POS_LO)) % n_pos_lo_;
+    const std::int64_t pos_hi = line.get() / digit_stride(Digit::POS_HI);
+    const std::int64_t pos    = pos_hi * n_pos_lo_ + pos_lo;
+    const std::int64_t kw     = pos % shape_.KW;
+    const std::int64_t kh     = pos / shape_.KW;
+    const std::int64_t nkh    = (a == Axis::KH) ? kh + delta : kh;
+    const std::int64_t nkw    = (a == Axis::KW) ? kw + delta : kw;
+    if (nkh < 0 || nkh >= shape_.KH || nkw < 0 || nkw >= shape_.KW) return std::nullopt;
+    const std::int64_t npos = nkh * shape_.KW + nkw;
+    const std::int64_t base = line.get() - pos_hi * digit_stride(Digit::POS_HI)
+                                         - pos_lo * digit_stride(Digit::POS_LO);
+    return LineId{base + (npos / n_pos_lo_) * digit_stride(Digit::POS_HI)
+                       + (npos % n_pos_lo_) * digit_stride(Digit::POS_LO)};
+}
+
 }  // namespace wcache
