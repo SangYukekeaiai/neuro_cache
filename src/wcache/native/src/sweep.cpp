@@ -145,6 +145,8 @@ void BroadcastSweep::run(const TileObserver& on_tile) {
 
 const Engine& BroadcastSweep::engine(std::size_t i) const { return *engines_.at(i); }
 
+Engine& BroadcastSweep::engine(std::size_t i) { return *engines_.at(i); }
+
 const RunConfig& BroadcastSweep::config(std::size_t i) const { return configs_.at(i); }
 
 double BroadcastSweep::wall_seconds(std::size_t i) const { return wall_.at(i); }

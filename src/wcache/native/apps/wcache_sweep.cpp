@@ -53,6 +53,21 @@ const char* const kUsage =
     "  --hist PATH            write the per-(core, tile) distinct-address histogram\n"
     "                         here as CSV. The histogram is a property of the trace,\n"
     "                         so it is written once per sweep. Off by default.\n"
+    "  --oracle PATH          an access log from a PRIOR run over the SAME trace and\n"
+    "                         the SAME layout, used to build the next-use oracles\n"
+    "                         Belady needs: one per core for the private L1s, one\n"
+    "                         shared for the L2. Required by any grid point naming\n"
+    "                         policy = belady or l2_policy = belady, and inert at\n"
+    "                         every other point. ONE set of oracles serves the whole\n"
+    "                         grid, which is safe because the sweep is single\n"
+    "                         threaded and cooperative.\n"
+    "                         The L1 oracles are EXACT, because each core's L1\n"
+    "                         demand stream is a pure function of the trace, the\n"
+    "                         core and the mapper. The L2 one is APPROXIMATE under\n"
+    "                         policy = belady, because a Belady L1 changes which\n"
+    "                         references miss, so the run's L2 stream is a different\n"
+    "                         sequence and not a reordering of the log's. The\n"
+    "                         overrun counts on stderr are how far apart they were.\n"
     "  --max-engines N        refuse a grid larger than N live engines, so an\n"
     "                         oversized grid fails at startup rather than by OOM\n"
     "                         three hours in. Default 256.\n"
@@ -64,6 +79,7 @@ struct Options {
     std::string  trace_path;
     std::string  out_path = "-";
     std::string  hist_path;
+    std::string  oracle_path;
     RowIdentity  id;
     std::int32_t max_engines = 256;
     bool         header      = true;
@@ -80,6 +96,7 @@ bool parse_args(int argc, char** argv, Options& opt) {
         else if (flag == "--trace")       opt.trace_path  = value_of(argc, argv, i);
         else if (flag == "--out")         opt.out_path    = value_of(argc, argv, i);
         else if (flag == "--hist")        opt.hist_path   = value_of(argc, argv, i);
+        else if (flag == "--oracle")      opt.oracle_path = value_of(argc, argv, i);
         else if (flag == "--arm")         opt.id.arm      = value_of(argc, argv, i);
         else if (flag == "--tier")        opt.id.tier     = value_of(argc, argv, i);
         else if (flag == "--run-id")      opt.id.run_id   = value_of(argc, argv, i);
@@ -139,6 +156,17 @@ void run(Options& opt) {
             std::cerr << "wcache_sweep: configuration " << i << " warning [" << w.code
                       << "] " << w.message << "\n";
         }
+        // Refused here, before a single engine is built, for the reason
+        // --max-engines is: a grid that cannot produce the number it names
+        // should fail at startup and not after the pass. Config validation
+        // cannot make this call, because it cannot see a CLI flag.
+        if (opt.oracle_path.empty() && (grid[i].policy == PolicyKind::BELADY ||
+                                        grid[i].l2_policy == PolicyKind::BELADY)) {
+            throw std::runtime_error("configuration " + std::to_string(i) +
+                                     " names belady, which needs --oracle: without a "
+                                     "future every slot looks dead and the run would "
+                                     "report a hit rate no policy produced");
+        }
     }
 
     // One mapper for the whole grid, built from the FIRST point's layout.
@@ -159,7 +187,25 @@ void run(Options& opt) {
     PaddingMeter padding(mapper, shape,
                          static_cast<std::int64_t>(grid[0].cin_block) * grid[0].cout_block);
 
+    // Belady's oracles, built ONCE and shared by every grid point. Declared
+    // before the sweep so they outlive the engines that point at them.
+    //
+    // Sharing is safe because BroadcastSweep is single threaded and cooperative:
+    // no two engines are inside `next_use` at once. `NextUseOracle::next_use` is
+    // non-const only because it bumps `overruns_`, so a grid carrying two belady
+    // points would report their overruns as one sum. The 0907 grid has one.
+    OracleSet oracles;
+    if (!opt.oracle_path.empty()) {
+        oracles = build_oracles(opt.oracle_path, hdr.n_cores);
+        report_oracles("wcache_sweep", opt.oracle_path, oracles);
+    }
+
     BroadcastSweep sweep(trace, mapper, grid, opt.max_engines);
+    if (oracles.l2) {
+        for (std::size_t i = 0; i < sweep.size(); ++i) {
+            attach_oracles("wcache_sweep", oracles, sweep.config(i), sweep.engine(i));
+        }
+    }
     sweep.run([&](const StreamingTileTrace& window) {
         // The driver owns the loop, so everything that has to see a tile sees
         // it here, once, for the whole grid. Both of these are properties of
@@ -171,6 +217,8 @@ void run(Options& opt) {
                       << hdr.n_tiles << " done on " << sweep.size() << " engines\n";
         }
     });
+
+    if (oracles.l2) report_overruns("wcache_sweep", oracles);
 
     const std::int64_t tick_base_total = trace.tick_base(hdr.n_tiles);
     const double       padding_fraction = padding.fraction();

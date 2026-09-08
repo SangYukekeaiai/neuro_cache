@@ -61,6 +61,14 @@ public:
 
     std::size_t      size() const { return engines_.size(); }
     const Engine&    engine(std::size_t i) const;
+    // The mutable overload exists so a driver can attach an instrument to a
+    // grid point after the sweep is built and before it runs, which is what
+    // `wcache_sweep --oracle` does. It is NOT an invitation to steer the sweep
+    // from outside: the tile loop is this class's, and the app is the layer
+    // that knows which trace and which mapper the engines run (decisions B10
+    // and B23), so an attach-oracles method here would put the app's knowledge
+    // in the wrong file.
+    Engine&          engine(std::size_t i);
     const RunConfig& config(std::size_t i) const;
 
     // Wall seconds spent inside engine dispatch for configuration i, for the

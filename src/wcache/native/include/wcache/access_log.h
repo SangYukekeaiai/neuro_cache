@@ -45,8 +45,13 @@
 #include <cstdint>
 #include <cstdio>
 #include <ostream>
+#include <stdexcept>
 #include <vector>
 
+// For `Level`, which lives in mshr.h. Included here rather than left to the
+// caller: this header compiled only because every existing includer happened to
+// reach mshr.h first, and app_support.h, which does not, found that out.
+#include "wcache/mshr.h"
 #include "wcache/types.h"
 
 namespace wcache {
@@ -97,9 +102,20 @@ public:
             throw std::out_of_range("AccessLog::observe: line id " + std::to_string(id) +
                                     " does not fit the 32-bit record field");
         }
+        const std::int32_t c = core.get();
+        if (c < 0 || c > kMaxCore) {
+            // Checked for the same reason the line id above is, and it became
+            // worth checking when the per-core L1 oracles arrived: those are
+            // built by splitting this file on the core field, so a truncated id
+            // folds core 256's references into core 0's oracle and the run gets
+            // a future that belongs to another core. policy.h:116 gives the
+            // design range as 8 to 256 cores, which puts 256 exactly here.
+            throw std::out_of_range("AccessLog::observe: core id " + std::to_string(c) +
+                                    " does not fit the 8-bit record field");
+        }
         AccessRecord r;
         r.level  = level == Level::L1 ? std::uint8_t{0} : std::uint8_t{1};
-        r.core   = static_cast<std::uint8_t>(core.get());
+        r.core   = static_cast<std::uint8_t>(c);
         r.demand = 1;
         r.pad    = 0;
         r.line   = static_cast<std::uint32_t>(id);
@@ -119,6 +135,7 @@ public:
 
     static constexpr std::uint64_t kMagic   = 0x5743414C4F473031ULL;  // "WCALOG01"
     static constexpr std::int64_t  kMaxLine = 0xFFFFFFFF;
+    static constexpr std::int32_t  kMaxCore = 0xFF;
 
 private:
     // Batched because the alternative is one ostream::write per reference across

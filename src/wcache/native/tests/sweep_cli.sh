@@ -39,18 +39,20 @@ JSON
          --run-id fixed --tier smoke --hist "$tmp/hist.csv" \
          --progress > "$tmp/sweep.csv" 2> "$tmp/progress.txt" || { cat "$tmp/progress.txt"; exit 1; }
 
-# 1. A header and one row per grid point, every row the pinned 93 columns.
+# 1. A header and one row per grid point, every row the pinned 111 columns.
 #
 # 91 and not 90: `stall_l1_port` was added, which is the bucket V21's partition
 # was missing. The 91 the plan's prose used to assert was an unrelated
-# arithmetic error against a 90-entry list. 93 since `layout` and
-# `cin_lo_blocks` joined it: a run that swaps the address mapper must say
-# which one it swapped to.
+# arithmetic error against a 90-entry list. 111 since the L2 neighbour
+# prefetcher joined it, adding five `l2_prefetch_*` knobs and thirteen
+# `l2_pf_*` counters to the 93 that `layout` and `cin_lo_blocks` had brought
+# it to; `layout` is there because a run that swaps the address mapper must
+# say which one it swapped to.
 "$py" - "$tmp/sweep.csv" <<'PY'
 import csv, sys
 rows = list(csv.reader(open(sys.argv[1])))
 assert len(rows) == 5, len(rows)
-assert all(len(r) == 93 for r in rows), [len(r) for r in rows]
+assert all(len(r) == 111 for r in rows), [len(r) for r in rows]
 head = rows[0]
 data = [dict(zip(head, r)) for r in rows[1:]]
 assert [(r["l1_size_bytes"], r["prefetch_distance"]) for r in data] == \
@@ -90,7 +92,7 @@ test "$(wc -l < "$tmp/hist.csv")" -eq 17
 # `run_id` is pinned on both sides and `sim_wall_seconds` is excluded BY NAME,
 # because those two cannot be equal across two runs by construction: one
 # defaults to a fresh UUIDv4 and the other is wall clock. Every other one of
-# the 93 columns must match exactly.
+# the 111 columns must match exactly.
 cat > "$tmp/point.json" <<'JSON'
 {"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
  "l1_assoc": 8, "l2_size_bytes": 524288, "l2_assoc": 16,
@@ -181,5 +183,76 @@ assert sweep[0]["padding_fraction"] == run[0]["padding_fraction"], \
     (sweep[0]["padding_fraction"], run[0]["padding_fraction"])
 print(f"padding meter: {pad} in the sweep and in the single run alike")
 PADPY
+
+# 9. The belady arm of a grid, which is what profiling/0907_index_policy needs.
+#
+# Belady is offline, so it takes two passes over the stream: one prior run
+# writes the access log, and the sweep turns that log into one oracle per core
+# for the private L1s plus one shared oracle for the L2. ONE set of oracles
+# serves every point of the grid, and only the points naming belady are
+# attached to it.
+#
+# ptb_resnet19 with a squeezed L1, not the loas slice the rest of this file
+# uses: with a cache large enough to hold the layer nothing is ever evicted, so
+# an optimal replacement policy and LRU give the identical row and the check
+# would pass on a broken oracle.
+"$py" "$root/src/wcache/examples/to_stream.py" \
+    "$root/src/wcache/examples/ptb_resnet19_layer01_v2.json" > "$tmp/reuse.wcts"
+cat > "$tmp/tight.json" <<'JSON'
+{"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
+ "l1_size_bytes": 256, "l1_assoc": 2, "l2_size_bytes": 4096, "l2_assoc": 4}
+JSON
+cat > "$tmp/oracle_grid.json" <<'JSON'
+{"base": {"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
+          "l1_size_bytes": 256, "l1_assoc": 2, "l2_size_bytes": 4096, "l2_assoc": 4},
+ "axes": {"policy": ["lru", "belady"]}}
+JSON
+
+# Pass 1 under lru. Any non-belady policy would do, because a core's L1 demand
+# stream is a pure function of the trace, the core and the mapper.
+"$run" --config "$tmp/tight.json" --trace "$tmp/reuse.wcts" --run-id fixed --no-header \
+       --access-log "$tmp/access.bin" > /dev/null
+"$sweep" --config-grid "$tmp/oracle_grid.json" --trace "$tmp/reuse.wcts" --run-id fixed \
+         --header --oracle "$tmp/access.bin" > "$tmp/oracle_sweep.csv" 2> "$tmp/oracle.err"
+# The L1 oracles are EXACT, so their overrun count is 0 and not merely small.
+grep -q "oracle overruns, l1 0," "$tmp/oracle.err"
+
+# The same belady point run alone by wcache_run, which is section 4's criterion
+# applied to the arm that needs an oracle: an oracle attached inside a sweep must
+# give the row it gives outside one.
+sed -e 's/{/{"policy": "belady", /' "$tmp/tight.json" > "$tmp/tight_belady.json"
+"$run" --config "$tmp/tight_belady.json" --trace "$tmp/reuse.wcts" --run-id fixed \
+       --header --oracle "$tmp/access.bin" > "$tmp/oracle_point.csv" 2> /dev/null
+
+"$py" - "$tmp/oracle_sweep.csv" "$tmp/oracle_point.csv" <<'ORACLEPY'
+import csv, sys
+rows = list(csv.reader(open(sys.argv[1])))
+point = list(csv.reader(open(sys.argv[2])))
+assert len(rows) == 3, len(rows)
+head = rows[0]
+data = [dict(zip(head, r)) for r in rows[1:]]
+assert [r["policy"] for r in data] == ["lru", "belady"], [r["policy"] for r in data]
+# The demand stream does not depend on the policy, which is what lets one log
+# serve a second pass at all.
+assert data[0]["l1_accesses"] == data[1]["l1_accesses"], data
+assert data[1]["max_wait_depth"] == "0", data[1]["max_wait_depth"]
+# An optimal policy cannot lose to LRU on the same geometry, and here it wins,
+# so the oracles really reached the belady point and only that point.
+assert int(data[1]["l1_hits"]) > int(data[0]["l1_hits"]), data
+assert int(data[1]["l2_hits"]) > int(data[0]["l2_hits"]), data
+differ = [(c, a, b) for c, a, b in zip(head, rows[2], point[1]) if a != b]
+assert [c for c, _, _ in differ] in ([], ["sim_wall_seconds"]), differ
+print(f"sweep belady row == run belady row: l1_hits "
+      f"{data[0]['l1_hits']} -> {data[1]['l1_hits']}")
+ORACLEPY
+
+# 10. A grid naming belady with no --oracle is refused before a single engine is
+#     built, and the refusal names the offending point.
+if "$sweep" --config-grid "$tmp/oracle_grid.json" --trace "$tmp/reuse.wcts" \
+        2> "$tmp/no_oracle.txt"; then
+    echo "expected a nonzero exit for a belady grid point with no --oracle"; exit 1
+fi
+grep -q "configuration 1" "$tmp/no_oracle.txt"
+grep -q -- "--oracle" "$tmp/no_oracle.txt"
 
 echo "sweep_cli: OK"

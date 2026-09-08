@@ -32,7 +32,7 @@ test "$(wc -l < "$tmp/a.csv")" -eq 2
 # `sim_wall_seconds` is wall-clock, so two runs of one binary over one stream
 # differ in those two cells by design. Pinning --run-id removes the first, and
 # the comparison below excludes `sim_wall_seconds` BY NAME and asserts that
-# every other one of the 93 columns matches, which is what §10.6's replay
+# every other one of the 111 columns matches, which is what §10.6's replay
 # contract actually claims.
 "$bin" --config "$tmp/cfg.json" --trace - --run-id fixed --header < "$tmp/fixture.wcts" > "$tmp/b.csv"
 "$py" - "$tmp/a.csv" "$tmp/b.csv" <<'PY'
@@ -45,18 +45,20 @@ assert [c for c, _, _ in differ] in ([], ["sim_wall_seconds"]), differ
 print(f"path vs stdin: {len(a[0]) - len(differ)} of {len(a[0])} columns identical")
 PY
 
-# 3. The row's arity matches the header's, and both are the pinned 93.
+# 3. The row's arity matches the header's, and both are the pinned 111.
 #
 # 91 and not 90: `stall_l1_port` was added, which is the bucket V21's partition
 # was missing. The 91 the plan's prose used to assert was an unrelated
-# arithmetic error against a 90-entry list. 93 since `layout` and
-# `cin_lo_blocks` joined it: a run that swaps the address mapper must say
-# which one it swapped to.
+# arithmetic error against a 90-entry list. 111 since the L2 neighbour
+# prefetcher joined it, adding five `l2_prefetch_*` knobs and thirteen
+# `l2_pf_*` counters to the 93 that `layout` and `cin_lo_blocks` had brought
+# it to; `layout` is there because a run that swaps the address mapper must
+# say which one it swapped to.
 "$py" - "$tmp/a.csv" <<'PY'
 import csv, sys
 rows = list(csv.reader(open(sys.argv[1])))
 assert len(rows) == 2, rows
-assert len(rows[0]) == len(rows[1]) == 93, (len(rows[0]), len(rows[1]))
+assert len(rows[0]) == len(rows[1]) == 111, (len(rows[0]), len(rows[1]))
 row = dict(zip(rows[0], rows[1]))
 assert int(row["total_cycles"]) > 0
 assert int(row["l1_accesses"]) > 0
@@ -79,8 +81,13 @@ print("oracle arm: OK")
 PY
 
 # 5. A rejected config exits nonzero and names the knob.
+#
+# A reserve AT the file it reserves from, which is refused on the same rule the
+# L1 uses: it would make prefetching unreachable while claiming to be on. A bare
+# `l2_demand_reserve` is no longer the example, because the knob went live with
+# the L2 neighbour prefetcher and a plain value of 4 now loads and runs.
 cat > "$tmp/bad.json" <<'JSON'
-{"l2_demand_reserve": 4}
+{"l2_demand_reserve": 20, "l2_mshrs": 20}
 JSON
 if "$bin" --config "$tmp/bad.json" --trace "$tmp/fixture.wcts" 2> "$tmp/err.txt"; then
     echo "expected a nonzero exit for l2_demand_reserve"; exit 1
@@ -147,5 +154,58 @@ assert a["l1_hits"] != b["l1_hits"], "the layout knob did not reach the mapper"
 print(f"layout gate: dram_bytes {a['dram_bytes']} both, "
       f"l1_hits {a['l1_hits']} -> {b['l1_hits']}")
 GATE
+
+# 9. Belady at BOTH levels, in two passes, which is the only way an offline
+#    policy can be run: pass 1 writes the access log, pass 2 turns it into one
+#    oracle per core for the private L1s plus one shared oracle for the L2.
+#
+# The squeezed L1 of section 8 is reused rather than the loas slice, and for the
+# same reason: with a cache large enough to hold the layer nothing is ever
+# evicted, so an optimal replacement policy and LRU produce the identical row
+# and the check would pass on a broken oracle.
+#
+# Pass 1 is run under `lru`. Any non-belady policy would do, because a core's L1
+# demand stream is a pure function of the trace, the core and the mapper, and
+# `lru` is the arm the belady number is compared against anyway.
+cat > "$tmp/tight.json" <<'JSON'
+{"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
+ "l1_size_bytes": 256, "l1_assoc": 2, "l2_size_bytes": 4096, "l2_assoc": 4}
+JSON
+sed -e 's/{/{"policy": "belady", /' "$tmp/tight.json" > "$tmp/tight_belady.json"
+
+"$bin" --config "$tmp/tight.json" --trace "$tmp/reuse.wcts" --run-id fixed --header \
+       --access-log "$tmp/access.bin" > "$tmp/lru.csv"
+"$bin" --config "$tmp/tight_belady.json" --trace "$tmp/reuse.wcts" --run-id fixed --header \
+       --oracle "$tmp/access.bin" > "$tmp/belady.csv" 2> "$tmp/belady.err"
+
+# The L1 oracles are EXACT, so their overrun count is 0 and not merely small: an
+# overrun means pass 2 asked for a reference pass 1 never logged, which for a
+# private L1 can only mean the two passes disagree about the stream.
+grep -q "oracle overruns, l1 0," "$tmp/belady.err"
+
+"$py" - "$tmp/lru.csv" "$tmp/belady.csv" <<'BELPY'
+import csv, sys
+lru, bel = [dict(zip(*list(csv.reader(open(f))))) for f in sys.argv[1:]]
+assert lru["policy"] == "lru" and bel["policy"] == "belady", (lru["policy"], bel["policy"])
+# The demand stream does not depend on the policy, which is the assumption the
+# whole two-pass scheme rests on, so this equality is the scheme's own check.
+assert lru["l1_accesses"] == bel["l1_accesses"], (lru["l1_accesses"], bel["l1_accesses"])
+# Nothing blocked, so no request re-triaged and no occurrence was counted twice.
+assert bel["max_wait_depth"] == "0", bel["max_wait_depth"]
+# An optimal policy cannot lose to LRU on the same geometry, and here it wins,
+# so the oracle is reaching the L1 rather than being carried along inertly.
+assert int(bel["l1_hits"]) > int(lru["l1_hits"]), (lru["l1_hits"], bel["l1_hits"])
+assert int(bel["l2_hits"]) > int(lru["l2_hits"]), (lru["l2_hits"], bel["l2_hits"])
+print(f"belady: l1_hits {lru['l1_hits']} -> {bel['l1_hits']}, "
+      f"l2_hits {lru['l2_hits']} -> {bel['l2_hits']}")
+BELPY
+
+# 10. The same config with no oracle is refused rather than run. A silent
+#     fallback would report an every-slot-looks-dead policy as Belady's bound.
+if "$bin" --config "$tmp/tight_belady.json" --trace "$tmp/reuse.wcts" \
+        2> "$tmp/no_oracle.txt"; then
+    echo "expected a nonzero exit for policy = belady with no --oracle"; exit 1
+fi
+grep -q -- "--oracle" "$tmp/no_oracle.txt"
 
 echo "run_cli: OK"

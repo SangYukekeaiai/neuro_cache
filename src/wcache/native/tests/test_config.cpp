@@ -257,6 +257,35 @@ void test_policy_random_is_rejected() {
     CHECK_THROWS(std::invalid_argument, validate(c, 4, w));
 }
 
+void test_policy_belady_is_accepted_and_names_both_levels() {
+    check::group("0907: policy = belady validates, and resolves to belady at both levels");
+    // The refusal that stood here said Belady is measured at the L2 only. That
+    // was a scope statement for the 0831 stage, not a property of the policy,
+    // and the L1 oracles the apps now build are what retired it.
+    RunConfig c = parse_config(R"({"policy": "belady"})");
+    std::vector<Warning> w;
+    validate(c, 4, w);
+    CHECK_TRUE(c.policy == PolicyKind::BELADY);
+    // `l2_policy` is unset, so it follows `policy`, and that resolution runs
+    // before any check. One word therefore names both oracles, which is what
+    // the 0907 grid's `belady` arm relies on.
+    CHECK_TRUE(c.l2_policy == PolicyKind::BELADY);
+}
+
+void test_l2_policy_belady_still_leaves_the_l1_on_lru() {
+    check::group("0907: l2_policy = belady with policy = lru is what it always was");
+    // The guarantee that no committed L2 result moves, checked rather than
+    // asserted: every one of them was produced by exactly this configuration.
+    RunConfig c = parse_config(R"({"policy": "lru", "l2_policy": "belady"})");
+    std::vector<Warning> w;
+    validate(c, 4, w);
+    CHECK_TRUE(c.policy == PolicyKind::LRU);
+    CHECK_TRUE(c.l2_policy == PolicyKind::BELADY);
+    const EngineParams p = to_engine_params(c);
+    CHECK_TRUE(p.l1.policy == PolicyKind::LRU);
+    CHECK_TRUE(p.l2.policy == PolicyKind::BELADY);
+}
+
 void test_a_burst_wider_than_the_l1_mshr_file_is_rejected() {
     check::group("Task 10: lines_per_burst > l1_mshrs is rejected");
     RunConfig c = parse_config(R"({"l1_mshrs": 2})");
@@ -658,6 +687,8 @@ int main() {
     test_a_partial_set_is_rejected_at_l1();
     test_a_partial_set_is_rejected_at_l2();
     test_policy_random_is_rejected();
+    test_policy_belady_is_accepted_and_names_both_levels();
+    test_l2_policy_belady_still_leaves_the_l1_on_lru();
     test_a_burst_wider_than_the_l1_mshr_file_is_rejected();
     test_core_accept_ii_below_one_is_rejected();
     test_a_negative_prefetch_distance_is_rejected();

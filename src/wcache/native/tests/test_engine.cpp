@@ -30,6 +30,7 @@
 #include <wcache/cache_level.h>
 #include <wcache/event.h>
 #include <wcache/mshr.h>
+#include <wcache/next_use.h>
 #include <wcache/types.h>
 
 #include <algorithm>
@@ -1688,6 +1689,70 @@ void test_r8_hidden_latency_is_never_negative() {
     }
 }
 
+// ===========================================================================
+// Belady at the L1: one oracle per core, end to end
+// ===========================================================================
+
+void test_a_per_core_oracle_matches_the_l1_stream_it_was_built_from() {
+    check::group("0907: per-core L1 oracles line up with the run, reference for reference");
+
+    // The whole per-core-alignment claim, in the two assertions at the bottom:
+    // every core's oracle answered every question it was asked (no overrun), and
+    // the references they hold together are exactly the L1 accesses the run
+    // counted. Those two are what let a driver build the oracles from a PRIOR
+    // run's access log and trust them in this one.
+    //
+    // ORACLE: the expected line sequences are read off the fixture below, not
+    // out of the engine. `LinearMapper` makes a burst of `count` lines from
+    // `first_line` the ids first_line .. first_line + count - 1, so each core's
+    // L1 demand stream is its own bursts' lines in trace order and nothing else.
+    FakeTrace tr(3);
+    const std::int32_t t0 = tr.add_tile(4);
+    tr.add_burst(t0, 0, 0, 0, 2);
+    tr.add_burst(t0, 0, 2, 4, 2);
+    tr.add_burst(t0, 1, 0, 0, 2);
+    tr.add_burst(t0, 2, 1, 8, 1);
+    const std::int32_t t1 = tr.add_tile(4);
+    tr.add_burst(t1, 0, 0, 0, 2);   // lines 0 and 1 again, so the futures are not all kNever
+    tr.add_burst(t1, 1, 1, 4, 2);
+    tr.add_burst(t1, 2, 0, 8, 1);
+
+    const std::vector<std::vector<std::int64_t>> streams = {
+        {0, 1, 4, 5, 0, 1},
+        {0, 1, 4, 5},
+        {8, 8},
+    };
+
+    // Reserved and filled COMPLETELY before anything attaches, because
+    // `CacheLevel` keeps a raw pointer: a reallocation part way through would
+    // leave the levels attached to freed oracles. Same hazard, same fix, as the
+    // per-core `CacheLevel` vector in src/engine.cpp, and the same shape the
+    // apps use.
+    std::vector<NextUseOracle> oracles;
+    oracles.reserve(streams.size());
+    for (const std::vector<std::int64_t>& s : streams) oracles.emplace_back(s);
+
+    LinearMapper map(64);
+    EngineParams p = fx::unbounded_params();
+    p.l1.policy    = PolicyKind::BELADY;
+    Engine e(map, tr, p);
+    for (std::size_t c = 0; c < oracles.size(); ++c) {
+        e.l1(CoreId{static_cast<std::int32_t>(c)}).attach_next_use(&oracles[c]);
+    }
+    e.run();
+
+    std::int64_t references = 0;
+    for (std::size_t c = 0; c < oracles.size(); ++c) {
+        // Nothing was asked that the oracle could not answer, which is what
+        // "this core's stream is a pure function of the trace and the mapper"
+        // means where it can be observed.
+        CHECK_EQ(oracles[c].overruns(), 0);
+        references += oracles[c].references();
+    }
+    CHECK_EQ(references, e.stats().l1_accesses);
+    CHECK_EQ(references, std::int64_t{12});   // the fixture's own count, hand added
+}
+
 int main() {
     test_unbounded_baseline_reproduces_the_trace();
     test_a_tile_whose_cores_all_idle_still_advances();
@@ -1729,5 +1794,6 @@ int main() {
     test_r8_takes_the_earliest_anchor_across_the_lines_of_a_burst();
     test_r8_hidden_latency_is_identically_zero_at_distance_zero();
     test_r8_hidden_latency_is_never_negative();
+    test_a_per_core_oracle_matches_the_l1_stream_it_was_built_from();
     return check::summary();
 }

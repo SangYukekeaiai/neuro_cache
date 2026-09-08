@@ -6,11 +6,31 @@ One grid over `policy` alone. Everything except `policy` is the 0903_l1_8k
 control, not a fifth result. `l2_policy` stays unset so both levels follow
 `policy`. `belady` is the offline bound.
 
+TWO PASSES PER STREAM. Belady is offline: it needs to know where each line is
+next referenced, which only a prior run can say. So each job runs wcache_run
+once under `lru` to write an access log, then the sweep with `--oracle` over
+that log, then deletes it. The `lru` pass is not a wasted run: a core's L1
+demand stream is a pure function of the trace, the core and the mapper, so any
+non-belady policy would produce the same log, and `lru` is the control arm the
+belady number is compared against anyway.
+
+WHAT THE BOUND IS WORTH. The per-core L1 oracles are EXACT, for the reason just
+given. The L2 oracle is APPROXIMATE, because a Belady L1 changes which
+references miss, so pass 2's L2 stream is a genuinely different sequence and not
+a reordering of pass 1's. The two things that make the approximation checkable
+are the oracle overrun counts the binary prints on stderr and the
+`max_wait_depth == 0` assertion below: nothing blocked means nothing re-triaged,
+so no reference was counted twice and the occurrence indices line up.
+
+Scratch: the access logs are written under $WCACHE_SCRATCH (default the system
+temp directory), never into the stage directory. They are 113 MB each at the
+widest layer, one per concurrent job, and each is deleted as soon as it is used.
+
 Usage: conda run -n base python run_sweep.py [workers]
 """
 from __future__ import annotations
 
-import csv, json, math, pathlib, statistics, subprocess, sys, time
+import csv, json, math, os, pathlib, statistics, subprocess, sys, tempfile, time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 STAGE = pathlib.Path(__file__).resolve().parent
@@ -19,6 +39,8 @@ sys.path.insert(0, str(ROOT / "src"))
 from archmodels.trace import valid_layer_names  # noqa: E402
 
 BIN     = ROOT / "src/wcache/native/build/release/wcache_sweep"
+RUNBIN  = ROOT / "src/wcache/native/build/release/wcache_run"
+SCRATCH = pathlib.Path(os.environ.get("WCACHE_SCRATCH", tempfile.gettempdir()))
 STREAMS = ROOT / "profiling/0831_all_layer_streams/streams"
 NOCSIM  = ROOT / "profiling/0831_all_layer_streams/outputs/all_layers_vs_nocsim.csv"
 OUT     = STAGE / "outputs"
@@ -50,18 +72,44 @@ def tags():
 
 
 def one(args):
-    tag, layer, s, grid_path, commit = args
-    r = subprocess.run(
-        [str(BIN), "--config-grid", str(grid_path),
-         "--trace", str(STREAMS / f"{tag}_s{s:05d}.wcts"),
-         "--arm", "cache", "--tier", "policy",
-         "--run-id", f"policy-{tag}-s{s}", "--git-commit", commit, "--header"],
-        capture_output=True, text=True)
+    tag, layer, s, grid_path, pass1_path, commit = args
+    stream = STREAMS / f"{tag}_s{s:05d}.wcts"
+    log = SCRATCH / f"wcache_oracle_{tag}_s{s}_{os.getpid()}.bin"
+    try:
+        p1 = subprocess.run(
+            [str(RUNBIN), "--config", str(pass1_path), "--trace", str(stream),
+             "--access-log", str(log), "--out", "/dev/null", "--no-header"],
+            capture_output=True, text=True)
+        if p1.returncode != 0:
+            raise RuntimeError(f"{tag} s{s} pass 1: {p1.stderr[-1500:]}")
+
+        r = subprocess.run(
+            [str(BIN), "--config-grid", str(grid_path),
+             "--trace", str(stream), "--oracle", str(log),
+             "--arm", "cache", "--tier", "policy",
+             "--run-id", f"policy-{tag}-s{s}", "--git-commit", commit, "--header"],
+            capture_output=True, text=True)
+    finally:
+        log.unlink(missing_ok=True)
     if r.returncode != 0:
         raise RuntimeError(f"{tag} s{s}: {r.stderr[-1500:]}")
     rows = list(csv.DictReader(r.stdout.splitlines()))
     if len(rows) != len(ARMS):
         raise RuntimeError(f"{tag} s{s}: got {len(rows)} rows, expected {len(ARMS)}")
+    # Refused rather than reported: under blocking a refused request re-triages
+    # and is counted a second time, which shifts every later occurrence index by
+    # one and makes the oracle answer for the wrong reference.
+    for d in rows:
+        if d.get("max_wait_depth") not in ("0", None):
+            raise RuntimeError(f"{tag} s{s}: max_wait_depth = {d['max_wait_depth']}, "
+                               "so requests re-triaged and the oracle indices shifted")
+    # The overrun counts the binary printed. L1 overruns mean the two passes
+    # disagree about a core's stream, which cannot happen if the assumption above
+    # holds, so they are refused; L2 overruns are expected under a Belady L1 and
+    # are reported rather than refused.
+    for line in r.stderr.splitlines():
+        if "oracle overruns" in line and ", l1 0," not in line:
+            raise RuntimeError(f"{tag} s{s}: {line}")
     for i, d in enumerate(rows):
         d["_tag"], d["_sample"], d["_arm"], d["_layer"] = tag, str(s), ARMS[i], layer
     return rows
@@ -142,8 +190,12 @@ def main() -> int:
                             capture_output=True, text=True).stdout.strip()
     grid_path = OUT / "_grid.json"
     grid_path.write_text(json.dumps(GRID, indent=1) + "\n")
+    # Pass 1's configuration: the control arm, one point, no grid.
+    pass1_path = OUT / "_pass1.json"
+    pass1_path.write_text(json.dumps(dict(BASE, policy="lru"), indent=1) + "\n")
 
-    jobs = [(t, l, s, grid_path, commit) for t, l in tags() for s in range(N_SAMPLES)]
+    jobs = [(t, l, s, grid_path, pass1_path, commit)
+            for t, l in tags() for s in range(N_SAMPLES)]
     print(f"=== {len(jobs)} streams x {len(GRID)} configs, {workers} workers ===", flush=True)
     rows, fails, t0 = [], 0, time.time()
     with ThreadPoolExecutor(max_workers=workers) as pool:

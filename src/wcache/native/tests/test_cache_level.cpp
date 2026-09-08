@@ -18,6 +18,7 @@
 #include <wcache/cache_level.h>
 
 #include <wcache/mshr.h>
+#include <wcache/next_use.h>
 #include <wcache/types.h>
 
 #include <cstdint>
@@ -681,6 +682,151 @@ void test_the_constructor_refuses_what_its_parts_refuse() {
     CHECK_THROWS(std::invalid_argument, CacheLevel(Level::L1, map, no_banks, counter));
 }
 
+// ===========================================================================
+// Belady's oracle at the level (plan 0831-belady unit W3, extended to the L1)
+// ===========================================================================
+//
+// The three sites in cache_level.cpp that read `next_use_` had no direct test:
+// they were covered only through wcache_run's L2 arm. Making the L1 an oracle
+// too is what makes them worth pinning here, because the L1 is PRIVATE and the
+// property that matters is per-level independence.
+//
+// Everything below observes the oracle through the VICTIM, which is the only
+// thing an attached oracle can change. A spy on the policy would test the spy.
+
+// One set of two ways under BeladyPolicy, so a third fill has to choose between
+// the two lines and the choice is the oracle's answer.
+LevelParams belady_level() {
+    LevelParams p = fx::level(1, 2, 4, 2);
+    p.policy      = PolicyKind::BELADY;
+    return p;
+}
+
+// A demand probe followed by the fill it missed on, which is the pair the
+// oracle is read across: the probe consumes the line's occurrence and leaves the
+// answer behind, and the fill picks it up.
+InsertResult probe_then_install(CacheLevel& lvl, Arena& arena, std::int64_t line) {
+    std::vector<Request*> granted;
+    Request& r = arena.demand(0, line);
+    lvl.triage(r, granted);
+    return lvl.install(LineId{line});
+}
+
+void test_two_levels_read_their_own_oracles() {
+    check::group("W3: each level's victim comes from ITS oracle, not a shared one");
+
+    // Two different futures for the same two lines. Under A, line 10 is
+    // referenced again and line 20 never is; under B it is the other way round.
+    // MIN evicts the line whose next use is furthest away, so a level that read
+    // the wrong oracle evicts the wrong line and nothing else changes.
+    NextUseOracle a(std::vector<std::int64_t>{10, 10});
+    NextUseOracle b(std::vector<std::int64_t>{20, 20});
+
+    LinearMapper map(64);
+    RefusalCounter counter;
+    CacheLevel la(Level::L1, map, belady_level(), counter);
+    CacheLevel lb(Level::L1, map, belady_level(), counter);
+    la.attach_next_use(&a);
+    lb.attach_next_use(&b);
+
+    Arena arena;
+    for (CacheLevel* lvl : {&la, &lb}) {
+        probe_then_install(*lvl, arena, 10);
+        probe_then_install(*lvl, arena, 20);
+    }
+    const InsertResult ra = probe_then_install(la, arena, 30);
+    const InsertResult rb = probe_then_install(lb, arena, 30);
+
+    CHECK_TRUE(ra.evicted);
+    CHECK_TRUE(rb.evicted);
+    CHECK_EQ(ra.evicted_line, LineId{20});  // A knows only line 10's future
+    CHECK_EQ(rb.evicted_line, LineId{10});  // B knows only line 20's
+
+    // This is the per-core L1 property in miniature: one oracle over the merged
+    // stream would give both levels the same answer, and the two lines above
+    // would come out equal.
+}
+
+void test_an_oracle_on_an_lru_level_changes_no_victim() {
+    check::group("W3: check B4, an oracle on an LRU level is a no-op for the result");
+
+    // What licenses attaching an oracle to a level without moving a committed
+    // result. Stated in cache_level.h; checked here, where it can actually fail.
+    NextUseOracle oracle(std::vector<std::int64_t>{10, 10});
+
+    LinearMapper map(64);
+    RefusalCounter counter;
+    CacheLevel watched(Level::L1, map, fx::level(1, 2, 4, 2), counter);
+    CacheLevel bare(Level::L1, map, fx::level(1, 2, 4, 2), counter);
+    watched.attach_next_use(&oracle);
+
+    Arena arena;
+    std::vector<Request*> granted;
+    const auto drive = [&](CacheLevel& lvl) {
+        probe_then_install(lvl, arena, 10);
+        probe_then_install(lvl, arena, 20);
+        Request& hot = arena.demand(0, 10);          // a hit, which moves LRU order
+        CHECK_TRUE(lvl.triage(hot, granted) == TriageOutcome::Hit);
+        return lvl.install(LineId{30});
+    };
+    const InsertResult with_oracle = drive(watched);
+    const InsertResult without     = drive(bare);
+    CHECK_TRUE(with_oracle.evicted && without.evicted);
+    CHECK_EQ(with_oracle.evicted_line, without.evicted_line);
+    CHECK_EQ(with_oracle.evicted_line, LineId{20});  // LRU, and the oracle did not vote
+
+    // Not vacuous: the level really did consult the oracle. Line 20 is not in it,
+    // so every probe of 20 overran, which is only reachable through `next_use`.
+    CHECK_TRUE(oracle.overruns() > 0);
+}
+
+void test_a_prefetch_does_not_advance_the_occurrence() {
+    check::group("W3: a prefetch probe leaves the demand occurrence alone");
+
+    // The alignment that makes an oracle built from an access log match the run:
+    // both probe sites are guarded on `r.demand`, exactly as `l1_accesses` is, so
+    // the k-th demand probe of a line reads the k-th record for it.
+    //
+    // KNOWN LIMITATION, pinned rather than fixed: the FILL site is guarded on the
+    // oracle alone, with no `r.demand`, so a prefetch FILL stamps whatever the
+    // last demand probe of that line left behind, or kNever. Under the 0907 base
+    // both prefetch policies are `none`, so it cannot bite there; the apps warn
+    // on stderr when belady meets a prefetcher rather than refusing, because
+    // `l2_policy = belady` with an L2 prefetcher is a configuration that runs
+    // today and a refusal would break a rerun of it.
+    NextUseOracle plain(std::vector<std::int64_t>{10, 10});
+    NextUseOracle prefetched(std::vector<std::int64_t>{10, 10});
+
+    LinearMapper map(64);
+    RefusalCounter counter;
+    CacheLevel quiet(Level::L1, map, belady_level(), counter);
+    CacheLevel noisy(Level::L1, map, belady_level(), counter);
+    quiet.attach_next_use(&plain);
+    noisy.attach_next_use(&prefetched);
+
+    Arena arena;
+    std::vector<Request*> granted;
+    // The only difference between the two levels: three prefetch probes of line
+    // 10 before anything else. If any of them consumed an occurrence, the demand
+    // probe below would read occurrence 1 and get kNever, line 10 and line 20
+    // would both look dead, and the victim would flip to the lower slot.
+    for (int i = 0; i < 3; ++i) {
+        Request& pf = arena.prefetch(0, 10, i);
+        noisy.triage(pf, granted);
+    }
+    for (CacheLevel* lvl : {&quiet, &noisy}) {
+        probe_then_install(*lvl, arena, 10);
+        probe_then_install(*lvl, arena, 20);
+    }
+    const InsertResult rq = probe_then_install(quiet, arena, 30);
+    const InsertResult rn = probe_then_install(noisy, arena, 30);
+
+    CHECK_EQ(rq.evicted_line, LineId{20});
+    CHECK_EQ(rn.evicted_line, rq.evicted_line);
+    // And the counts agree: the prefetches asked the oracle nothing at all.
+    CHECK_EQ(plain.overruns(), prefetched.overruns());
+}
+
 void test_the_level_reports_its_own_geometry() {
     check::group("C1: the level's accessors report the array it actually built");
 
@@ -726,5 +872,8 @@ int main() {
     test_bank_of();
     test_the_constructor_refuses_what_its_parts_refuse();
     test_the_level_reports_its_own_geometry();
+    test_two_levels_read_their_own_oracles();
+    test_an_oracle_on_an_lru_level_changes_no_victim();
+    test_a_prefetch_does_not_advance_the_occurrence();
     return check::summary();
 }

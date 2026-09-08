@@ -81,6 +81,23 @@ const char* const kUsage =
     "  --line-trace-line N    only this line id, at both levels. Default -1, all.\n"
     "  --line-trace-limit N   stop after N rows. Default -1, unbounded.\n"
     "\n"
+    "  --oracle PATH          an access log from a PRIOR run over the SAME trace and\n"
+    "                         the SAME layout, used to build the next-use oracles\n"
+    "                         Belady needs: one per core for the private L1s, one\n"
+    "                         shared for the L2. Required by policy = belady or\n"
+    "                         l2_policy = belady, and inert under any other policy.\n"
+    "                         The L1 oracles are exact WHILE NOTHING BLOCKS: each\n"
+    "                         core's L1 demand stream is then a pure function of the\n"
+    "                         trace, the core and the mapper. A refused request\n"
+    "                         re-probes and is counted twice, which shifts every\n"
+    "                         later occurrence index, so check max_wait_depth == 0\n"
+    "                         in the row; the binary warns on stderr when it is not.\n"
+    "                         The L2 one is APPROXIMATE under policy = belady, no\n"
+    "                         matter what blocks, because a Belady L1 changes which\n"
+    "                         references miss, so this run's L2 stream is a\n"
+    "                         different sequence and not a reordering of the log's.\n"
+    "                         The overrun counts on stderr are how far apart they\n"
+    "                         turned out to be.\n"
     "  --l2-oracle PATH       an access log from a PRIOR run, used to build the\n"
     "                         next-use oracle Belady needs. Required by\n"
     "                         l2_policy = belady and inert under any other\n"
@@ -107,6 +124,7 @@ struct Options {
 
     std::string  state_path;
     std::string  access_log_path;
+    std::string  oracle_path;
     std::string  l2_oracle_path;
     std::int32_t state_core  = -1;
     std::int32_t state_tile  = -1;
@@ -140,6 +158,7 @@ bool parse_args(int argc, char** argv, Options& opt) {
         else if (flag == "--hist")       opt.hist_path      = value_of(argc, argv, i);
         else if (flag == "--cache-state") opt.state_path    = value_of(argc, argv, i);
         else if (flag == "--access-log") opt.access_log_path = value_of(argc, argv, i);
+        else if (flag == "--oracle")    opt.oracle_path    = value_of(argc, argv, i);
         else if (flag == "--l2-oracle") opt.l2_oracle_path = value_of(argc, argv, i);
         else if (flag == "--cache-state-core")
             opt.state_core = static_cast<std::int32_t>(int_value_of(argc, argv, i));
@@ -184,32 +203,18 @@ bool parse_args(int argc, char** argv, Options& opt) {
         throw UsageError("--line-trace-level / --line-trace-core / --line-trace-tile / "
                          "--line-trace-line / --line-trace-limit need --line-trace");
     }
+    // Refused rather than resolved by precedence: the two flags build different
+    // oracle sets from the same file, and a run that silently used one of them
+    // would report a number the command line does not explain.
+    if (!opt.oracle_path.empty() && !opt.l2_oracle_path.empty()) {
+        throw UsageError("--oracle and --l2-oracle name the same kind of file for "
+                         "different levels; give one or the other");
+    }
     check_arm(opt.id.arm);
     return true;
 }
 
 // --- the run -----------------------------------------------------------------
-
-void read_l2_lines(const std::string& path, std::vector<std::int64_t>& out) {
-    std::ifstream in(path, std::ios::binary);
-    if (!in) throw std::runtime_error("cannot read " + path);
-    std::uint64_t magic = 0;
-    in.read(reinterpret_cast<char*>(&magic), sizeof(magic));
-    if (!in || magic != AccessLog::kMagic) {
-        throw std::runtime_error(path + " is not an access log (magic mismatch)");
-    }
-    constexpr std::size_t kBatch = 1 << 16;
-    std::vector<AccessRecord> buf(kBatch);
-    for (;;) {
-        in.read(reinterpret_cast<char*>(buf.data()),
-                static_cast<std::streamsize>(kBatch * sizeof(AccessRecord)));
-        const std::size_t got = static_cast<std::size_t>(in.gcount()) / sizeof(AccessRecord);
-        for (std::size_t i = 0; i < got; ++i) {
-            if (buf[i].level == 1 && buf[i].demand == 1) out.push_back(buf[i].line);
-        }
-        if (got < kBatch) break;
-    }
-}
 
 void run(Options& opt) {
     std::ifstream cfg_in(opt.config_path);
@@ -255,6 +260,18 @@ void run(Options& opt) {
     } else {
         PaddingMeter padding(mapper, shape,
                              static_cast<std::int64_t>(cfg.cin_block) * cfg.cout_block);
+        // Declared BEFORE the engine, so they are destroyed after it. The
+        // engine and its levels hold raw non-owning NextUseOracle pointers, and
+        // an oracle that died first would leave those dangling through the
+        // engine's own teardown. Nothing dereferences them there today, but
+        // only because neither Engine nor CacheLevel declares a destructor,
+        // which is an invariant resting on the absence of code. wcache_sweep
+        // already orders them this way; the two now agree.
+        //
+        // Filled below, after the engine exists, since attaching needs it.
+        OracleSet                      oracles;
+        std::unique_ptr<NextUseOracle> l2_oracle;
+
         Engine engine(mapper, trace, to_engine_params(cfg));
         double engine_seconds = 0.0;
 
@@ -278,25 +295,52 @@ void run(Options& opt) {
             engine.set_cache_state_log(state_log.get());
         }
 
-        // Belady's oracle, built from a prior run's access log. Attached before
-        // the first tile so the L2 has a future for every reference it sees.
+        // Belady's oracles, built from a prior run's access log. Attached before
+        // the first tile so every level that needs a future has one for its
+        // first reference.
         //
         // A config naming belady without an oracle is refused rather than run:
         // silently falling back would report a Belady hit rate that is really
         // an every-slot-looks-dead policy, which is the one wrong answer here.
-        std::unique_ptr<NextUseOracle> l2_oracle;
-        if (!opt.l2_oracle_path.empty()) {
+        //
+        // The L1's half of that refusal stands OUTSIDE the chain below, and must
+        // stay outside it. As the chain's last arm it was unreachable whenever
+        // an earlier arm matched, so `policy = belady` with `--l2-oracle` took
+        // the L2 branch, left every L1 slot reading kNever, picked an arbitrary
+        // victim and exited 0 with a row still labelled policy = belady. Only
+        // `--oracle` builds the per-core L1 oracles, so only `--oracle` can
+        // satisfy `policy = belady`, and saying that here makes it true for
+        // every combination of flags rather than for the ones the chain reaches.
+        if (opt.oracle_path.empty() && cfg.policy == PolicyKind::BELADY) {
+            throw std::runtime_error("policy = belady needs --oracle; --l2-oracle covers "
+                                     "l2_policy only: without a per-core future every L1 "
+                                     "slot looks dead and the run would report a hit rate "
+                                     "no policy produced");
+        }
+        if (!opt.oracle_path.empty()) {
+            oracles = build_oracles(opt.oracle_path, hdr.n_cores);
+            attach_oracles(oracles, cfg, engine);
+            report_oracles("wcache_run", opt.oracle_path, oracles);
+        } else if (!opt.l2_oracle_path.empty()) {
+            // Its own branch, not merged with `--oracle`. It is the flag every
+            // committed L2 result was produced with, and a separate branch is
+            // the cheapest guarantee that none of those results moves. The null
+            // `l1_by_core` is what keeps it reading the L2 records alone, as the
+            // reader it replaced did: it neither builds the per-core stream it
+            // would throw away nor refuses a log written by a wider run.
             std::vector<std::int64_t> l2_lines;
-            read_l2_lines(opt.l2_oracle_path, l2_lines);
+            read_oracle_lines(opt.l2_oracle_path, hdr.n_cores, nullptr, l2_lines);
             l2_oracle.reset(new NextUseOracle(l2_lines));
             engine.l2().attach_next_use(l2_oracle.get());
             std::cerr << "wcache_run: l2 oracle " << opt.l2_oracle_path << ", "
                       << l2_oracle->references() << " references over "
                       << l2_oracle->distinct_lines() << " lines\n";
         } else if (cfg.l2_policy == PolicyKind::BELADY) {
-            throw std::runtime_error("l2_policy = belady needs --l2-oracle: without a "
-                                     "future every slot looks dead and the run would "
-                                     "report a hit rate no policy produced");
+            // `policy` is already settled above, so this arm covers `l2_policy`
+            // alone, which either flag can satisfy.
+            throw std::runtime_error("l2_policy = belady needs --oracle or --l2-oracle: "
+                                     "without a future every slot looks dead and the run "
+                                     "would report a hit rate no policy produced");
         }
 
         // Binary, so the reader can size its own buffer from the file length.
@@ -344,6 +388,8 @@ void run(Options& opt) {
         engine_seconds +=
             std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 
+        report_overruns("wcache_run", oracles, engine.stats().max_wait_depth);
+
         // Said in each file and on stderr both: a truncated instrument that says
         // so nowhere reads as a run that simply stopped early.
         if (state_log) {
@@ -384,11 +430,6 @@ void run(Options& opt) {
 
 }  // namespace
 
-
-// The L2 half of an access log, as the line sequence NextUseOracle is built
-// from. Only L2 records are kept: the oracle serves one level, and mixing the
-// L1's stream in would make every L2 line look as though it were referenced far
-// more often than it is.
 
 int main(int argc, char** argv) {
     Options opt;
