@@ -19,6 +19,8 @@ const char* name_of(PolicyKind k) {
         case PolicyKind::FIFO:   return "fifo";
         case PolicyKind::RANDOM: return "random";
         case PolicyKind::BELADY: return "belady";
+        case PolicyKind::RRIP:   return "rrip";
+        case PolicyKind::LFU:    return "lfu";
     }
     throw std::logic_error("RunStats: unknown PolicyKind");
 }

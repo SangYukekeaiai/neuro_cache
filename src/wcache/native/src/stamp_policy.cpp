@@ -167,11 +167,141 @@ SlotId BeladyPolicy::pick_victim(const std::vector<Candidate>& candidates) {
     return victim;
 }
 
+// --- Least frequently used ---------------------------------------------------
+
+LfuPolicy::LfuPolicy(std::int32_t num_slots) {
+    if (num_slots < 1) {
+        reject("LfuPolicy", "num_slots must be >= 1, got " + std::to_string(num_slots));
+    }
+    count_.assign(static_cast<std::size_t>(num_slots), 0);
+}
+
+std::size_t LfuPolicy::index_or_reject(const char* verb, SlotId slot) const {
+    const std::int32_t s = slot.get();
+    if (s < 0 || static_cast<std::size_t>(s) >= count_.size()) {
+        throw std::out_of_range("LfuPolicy::" + std::string(verb) + ": slot " +
+                                std::to_string(s) + " is outside [0, " +
+                                std::to_string(count_.size()) + ")");
+    }
+    return static_cast<std::size_t>(s);
+}
+
+void LfuPolicy::on_hit(SlotId slot) { ++count_[index_or_reject("on_hit", slot)]; }
+
+// Reset to zero rather than left alone: the count belongs to the line, not to
+// the slot, so a new line starts with no references of its own. Inheriting the
+// previous occupant's count would let an evicted line's history protect its
+// replacement.
+void LfuPolicy::on_fill(SlotId slot) { count_[index_or_reject("on_fill", slot)] = 0; }
+
+// The count belongs to the line, not to the slot. The slot now holds no line,
+// so the count is cleared.
+void LfuPolicy::on_invalidate(SlotId slot) {
+    count_[index_or_reject("on_invalidate", slot)] = 0;
+}
+
+SlotId LfuPolicy::pick_victim(const std::vector<Candidate>& candidates) {
+    if (candidates.empty()) {
+        reject("LfuPolicy::pick_victim", "the candidate set is empty");
+    }
+
+    SlotId       victim = candidates[0].slot;
+    std::int64_t fewest = count_[index_or_reject("pick_victim", victim)];
+
+    for (std::size_t i = 1; i < candidates.size(); ++i) {
+        const SlotId       slot = candidates[i].slot;
+        const std::int64_t uses = count_[index_or_reject("pick_victim", slot)];
+        if (uses < fewest || (uses == fewest && slot < victim)) {
+            fewest = uses;
+            victim = slot;
+        }
+    }
+    return victim;
+}
+
+// --- Static RRIP -------------------------------------------------------------
+
+namespace {
+
+// A 2-bit RRPV, so the maximum is 3 and it is the value that names a victim.
+constexpr std::uint8_t kRripMaxRrpv = 3;
+
+// SRRIP inserts one below the maximum: a new line is predicted not to be
+// re-referenced soon, but it is given one aging round to prove otherwise before
+// it becomes a victim.
+constexpr std::uint8_t kRripInsertRrpv = 2;
+
+}  // namespace
+
+RripPolicy::RripPolicy(std::int32_t num_slots) {
+    if (num_slots < 1) {
+        reject("RripPolicy", "num_slots must be >= 1, got " + std::to_string(num_slots));
+    }
+    rrpv_.assign(static_cast<std::size_t>(num_slots), kRripMaxRrpv);
+}
+
+std::size_t RripPolicy::index_or_reject(const char* verb, SlotId slot) const {
+    const std::int32_t s = slot.get();
+    if (s < 0 || static_cast<std::size_t>(s) >= rrpv_.size()) {
+        throw std::out_of_range("RripPolicy::" + std::string(verb) + ": slot " +
+                                std::to_string(s) + " is outside [0, " +
+                                std::to_string(rrpv_.size()) + ")");
+    }
+    return static_cast<std::size_t>(s);
+}
+
+void RripPolicy::on_hit(SlotId slot) { rrpv_[index_or_reject("on_hit", slot)] = 0; }
+
+void RripPolicy::on_fill(SlotId slot) {
+    rrpv_[index_or_reject("on_fill", slot)] = kRripInsertRrpv;
+}
+
+// The maximum, so a slot holding no line is evicted before any line that does,
+// which is correct: an empty way is always the better victim.
+void RripPolicy::on_invalidate(SlotId slot) {
+    rrpv_[index_or_reject("on_invalidate", slot)] = kRripMaxRrpv;
+}
+
+SlotId RripPolicy::pick_victim(const std::vector<Candidate>& candidates) {
+    if (candidates.empty()) {
+        reject("RripPolicy::pick_victim", "the candidate set is empty");
+    }
+
+    // Aging in two passes, not one. The textbook loop increments every candidate
+    // and rescans until it finds a maximum, which walks the vector and would
+    // make the RRPVs it leaves behind depend on where a candidate sits. The
+    // largest RRPV present fixes the whole answer: raising every candidate by
+    // (max - that) puts at least one at the maximum and none above it, in one
+    // uniform step that no permutation can change.
+    std::uint8_t highest = 0;
+    for (const Candidate& c : candidates) {
+        const std::uint8_t v = rrpv_[index_or_reject("pick_victim", c.slot)];
+        if (v > highest) {
+            highest = v;
+        }
+    }
+    const std::uint8_t rise = static_cast<std::uint8_t>(kRripMaxRrpv - highest);
+
+    SlotId victim = candidates[0].slot;
+    bool   found  = false;
+    for (const Candidate& c : candidates) {
+        std::uint8_t& v = rrpv_[index_or_reject("pick_victim", c.slot)];
+        v              = static_cast<std::uint8_t>(v + rise);
+        if (v == kRripMaxRrpv && (!found || c.slot < victim)) {
+            victim = c.slot;
+            found  = true;
+        }
+    }
+    return victim;
+}
+
 std::unique_ptr<ReplacementPolicy> make_policy(PolicyKind kind, std::int32_t num_slots) {
     switch (kind) {
         case PolicyKind::LRU:    return std::make_unique<LruPolicy>(num_slots);
         case PolicyKind::FIFO:   return std::make_unique<FifoPolicy>(num_slots);
         case PolicyKind::BELADY: return std::make_unique<BeladyPolicy>(num_slots);
+        case PolicyKind::RRIP:   return std::make_unique<RripPolicy>(num_slots);
+        case PolicyKind::LFU:    return std::make_unique<LfuPolicy>(num_slots);
         case PolicyKind::RANDOM:
             reject("make_policy",
                    "policy 'random' is a placeholder and is not implemented; use 'lru' or 'fifo'");

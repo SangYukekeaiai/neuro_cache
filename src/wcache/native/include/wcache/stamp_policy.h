@@ -163,6 +163,87 @@ private:
     std::vector<std::int64_t> next_use_;
 };
 
+// Least frequently used: one reference count per slot, and the victim is the
+// least referenced line.
+//
+// It does not inherit StampPolicy, because a count is not a stamp: two counts
+// are equal whenever two lines have been used equally often, which is the
+// common case rather than the exception, and the base class's monotonic counter
+// has no part in it. What it does share is the flat-vector-indexed-by-SlotId
+// shape and the order-independence contract.
+//
+// Pure LFU never ages, so a line that was hot early can outlive its usefulness
+// and hold a way against newer lines. That ceiling is known and accepted here.
+class LfuPolicy final : public ReplacementPolicy {
+public:
+    // Throws std::invalid_argument for a non-positive count, as StampPolicy
+    // does and for the same reason.
+    explicit LfuPolicy(std::int32_t num_slots);
+
+    void on_hit(SlotId slot) override;
+    void on_fill(SlotId slot) override;
+    void on_invalidate(SlotId slot) override;
+
+    // The smallest count among `candidates`, ties broken by the smallest slot
+    // id. The tie-break is required, not defensive: counts tie constantly, and
+    // without it the answer would be whichever tied slot the vector happened to
+    // hold first, which is the dependency on candidate order policy.h forbids.
+    //
+    // Throws as StampPolicy::pick_victim does, for the same two reasons.
+    SlotId pick_victim(const std::vector<Candidate>& candidates) override;
+
+private:
+    std::size_t index_or_reject(const char* verb, SlotId slot) const;
+
+    // One reference count per slot, indexed by SlotId. int64 for the reason
+    // StampPolicy's counter is: it advances once per hit over a whole sweep.
+    std::vector<std::int64_t> count_;
+};
+
+// Static re-reference interval prediction, with a 2-bit re-reference prediction
+// value (RRPV) per slot: 0 means "predicted to be re-referenced soon", 3 means
+// "predicted not to be re-referenced again", and 3 is therefore the victim.
+//
+// It does not inherit StampPolicy for the same reason LfuPolicy does not: an
+// RRPV is not a stamp, ties at 3 are the normal case, and the base class's
+// monotonic counter has no part in it. What it does share is the
+// flat-vector-indexed-by-SlotId shape and the order-independence contract.
+//
+// M and the insertion value are compile-time constants (stamp_policy.cpp names
+// them), per the plan: they become knobs only if a sweep asks for them.
+class RripPolicy final : public ReplacementPolicy {
+public:
+    // Throws std::invalid_argument for a non-positive count, as StampPolicy
+    // does and for the same reason.
+    explicit RripPolicy(std::int32_t num_slots);
+
+    // A hit sets the RRPV to 0, a fill to the insertion value, and an
+    // invalidate to the maximum, so an empty way is picked before any line.
+    void on_hit(SlotId slot) override;
+    void on_fill(SlotId slot) override;
+    void on_invalidate(SlotId slot) override;
+
+    // Ages the candidates until at least one is at the maximum RRPV, then
+    // returns the smallest slot id among those at the maximum. The tie-break is
+    // required, not defensive: aging routinely leaves several candidates at the
+    // maximum, and without it the answer would be whichever the vector happened
+    // to hold first, which is the dependency on candidate order policy.h
+    // forbids. The aging itself is likewise a single uniform raise rather than
+    // a mutate-and-rescan loop, so the RRPVs it writes do not depend on the
+    // order either. Mutating here is what the non-const signature is for.
+    //
+    // Throws as StampPolicy::pick_victim does, for the same two reasons.
+    SlotId pick_victim(const std::vector<Candidate>& candidates) override;
+
+private:
+    std::size_t index_or_reject(const char* verb, SlotId slot) const;
+
+    // One RRPV per slot, indexed by SlotId. uint8 because the value is 2 bits;
+    // nothing here counts, so the int64 the other two policies need does not
+    // apply.
+    std::vector<std::uint8_t> rrpv_;
+};
+
 // The config vocabulary, per plan 2.2's `l1_policy` and `l2_policy` fields.
 //
 // `random` is an enumerator with no class behind it, which is the plan's
@@ -173,7 +254,14 @@ private:
 // missing feature (V29).
 // BELADY is offline and needs an oracle attached, which config validation
 // enforces: naming it without one is refused rather than run as LRU.
-enum class PolicyKind : std::uint8_t { LRU = 0, FIFO = 1, RANDOM = 2, BELADY = 3 };
+enum class PolicyKind : std::uint8_t {
+    LRU    = 0,
+    FIFO   = 1,
+    RANDOM = 2,
+    BELADY = 3,
+    RRIP   = 4,
+    LFU    = 5
+};
 
 // The policy `kind` names, sized for an array of `num_slots` slots.
 //

@@ -228,6 +228,10 @@ void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t 
             assign(PolicyKind::FIFO);
         } else if (t == "random") {
             assign(PolicyKind::RANDOM);
+        } else if (t == "rrip") {
+            assign(PolicyKind::RRIP);
+        } else if (t == "lfu") {
+            assign(PolicyKind::LFU);
         } else {
             if (t == "belady") assign(PolicyKind::BELADY);
             else fail("unknown policy \"" + t + "\"", pos);
