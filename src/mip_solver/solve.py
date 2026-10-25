@@ -74,6 +74,9 @@ def solve_schedule(
     dataflow.validate_for_arch(arch)
     bitwidths = parse_snn_bitwidths(arch_path)
 
+    # The mapspace is parsed and initialized, but no constraint or objective
+    # reads it, so it does not change the solution; only its path is
+    # recorded in result["configs"].
     mapspace = None
     if mapspace_path is not None:
         mapspace = parse_snn_mapspace(mapspace_path)

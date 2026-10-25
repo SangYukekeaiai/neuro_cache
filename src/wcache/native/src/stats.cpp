@@ -175,8 +175,8 @@ void emit_config(Row& r, const RunConfig& cfg) {
     r.i64("l2_mshrs", cfg.l2_mshrs);
     r.i64("l2_tgts_per_mshr", cfg.l2_tgts_per_mshr);
     r.i64("l1_demand_reserve", cfg.l1_demand_reserve);
-    // `l2_demand_reserve` is deliberately absent: ruling Q8 removed the knob and
-    // Task 10 rejects it at config load (G11).
+    // l2_demand_reserve is not echoed here; it is written with the other L2
+    // prefetch fields in the RunStats constructor below.
     r.str("prefetch_policy", name_of(cfg.prefetch_policy));
     r.i64("prefetch_distance", cfg.prefetch_distance);
     r.i64("l1_latency", cfg.l1_latency);

@@ -5,10 +5,10 @@ Mirrors CoSA's total_util and data_size design:
 
   total_util  = Σ_{inner mem levels i} Σ_v  buf_util[(i,v)]
               → REWARD: sum of inner memory utilisation across all inner
-                hardware levels (MEM_NODE and MEM_NOC), each restricted to
-                factors at positions ≤ i via the Z matrix.
+                hardware levels (MEM_NODE and MEM_NOC), each summed over
+                the factor levels i < gb_start.
                 In this project's single-inner-level hierarchy both levels
-                reduce to the same level-0-only expression, so
+                reduce to the same expression, so
                 util_hat = 2 × Σ_v node_utilization[(MEM_NODE, v)].
 
   data_size[v] = Σ_{i < gb_start} (0.8 + 0.04·i) · log2(f) · (x_sp + x_tp) · A[d][v]
@@ -115,10 +115,10 @@ def _build_node_util_reward(
 ) -> Tuple[Dict, LinExpr]:
     """NodeLevel L1 spad utilization — capacity constraint + util_hat reward.
 
-    CoSA sums buf_util over ALL inner hardware levels (MEM_NODE and MEM_NOC),
-    each Z-restricted to inner factors. In this project's single-inner-level
-    hierarchy both reduce to level-0-only expressions, so util_hat += expr_node
-    twice (once for MEM_NODE, once for MEM_NOC's inner Z-contribution).
+    CoSA sums buf_util over ALL inner hardware levels (MEM_NODE and MEM_NOC).
+    Each term sums the factor levels i < gb_start_level. In this project's
+    single-inner-level hierarchy both terms are the same expression, so
+    util_hat += expr_node twice (once for MEM_NODE, once for MEM_NOC).
     """
     result: Dict = {}
     util_hat = LinExpr()
@@ -140,7 +140,7 @@ def _build_node_util_reward(
                         expr_node += coef * x[(i, d, n, k)]
         result[(MEM_NODE, v)] = expr_node
         util_hat += expr_node  # MEM_NODE inner contribution
-        util_hat += expr_node  # MEM_NOC inner Z-contribution (level 0 ≤ gb_start)
+        util_hat += expr_node  # MEM_NOC term, same expression (levels i < gb_start)
     return result, util_hat
 
 

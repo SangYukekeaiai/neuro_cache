@@ -5,7 +5,7 @@ Contains four categories of constants consumed by the MIP solver:
 
   1. Variable indices and metadata  (VAR_*, NUM_VARS, VAR_NAMES, TRAFFIC_MULT)
   2. A matrix – dim-to-variable buffer-size relation
-  3. B matrix – variable-to-memory-level relation, and derived Z matrix
+  3. B matrix – variable-to-memory-level relation
   4. SNN_GB_START_LEVEL – the loop-level index where NoCLevel begins
 
 SNN_GB_START_LEVEL lives here rather than in mip_solver/schedule.py (which
@@ -40,13 +40,6 @@ For SNN there is no bypass: all three variables exist at all three levels.
   weight (v=0)       1          1        1
   psum   (v=1)       1          1        1
   vmem   (v=2)       1          1        1
-
-Z matrix (derived from B)
-------------------------------------
-Z[v][i][i'] = 1  iff B[v][i] == 1  AND  i' <= i.
-Historically used for cumulative memory-visibility accounting: when the
-permutation cursor is at position i', Z selects only the memory levels at i'
-or deeper that actually store variable v.
 """
 
 from typing import List
@@ -91,7 +84,7 @@ _A: List[List[int]] = [
 ]
 
 # ---------------------------------------------------------------------------
-# 3. B matrix  [NUM_VARS × NUM_MEM_LEVELS]  and derived Z matrix
+# 3. B matrix  [NUM_VARS × NUM_MEM_LEVELS]
 # ---------------------------------------------------------------------------
 # Rows indexed by variable  (v): weight=0, psum=1, vmem=2
 # Cols indexed by mem level (i): NodeLevel=0, NoCLevel=1, OffChip=2
@@ -101,38 +94,3 @@ _B: List[List[int]] = [
     [1, 1, 1],  # psum   – stored at all three levels
     [1, 1, 1],  # vmem   – stored at all three levels
 ]
-
-
-def build_Z(B: List[List[int]], num_mems: int) -> List[List[List[int]]]:
-    """Derive the cumulative Z matrix from B.
-
-    Z[v][i][i'] = 1  iff  B[v][i] == 1  and  i' <= i.
-
-    Interpretation: when the permutation cursor sits at level i', only memory
-    levels at or deeper than i' that actually store variable v are "active"
-    for buffer-utilisation accounting.
-
-    Args:
-        B:        Variable-to-memory-level matrix, shape [num_vars][num_mems].
-        num_mems: Number of memory levels.
-
-    Returns:
-        Z of shape [num_vars][num_mems][num_mems].
-
-    Example (all-ones B, num_mems=3)::
-
-        Z[v][2][0] = 1   (level 2 stores v, cursor 0 <= 2)
-        Z[v][0][2] = 0   (level 0 stores v, but cursor 2 > 0)
-    """
-    num_vars = len(B)
-    Z: List[List[List[int]]] = []
-    for v in range(num_vars):
-        Z_v: List[List[int]] = []
-        for i in range(num_mems):
-            row = [0] * num_mems
-            if B[v][i] == 1:
-                for i_prime in range(i + 1):
-                    row[i_prime] = 1
-            Z_v.append(row)
-        Z.append(Z_v)
-    return Z

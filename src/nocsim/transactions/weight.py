@@ -100,7 +100,7 @@ def load_weight(
 
     # Iterate in deterministic order so CSV output is reproducible
     for addr, pes in sorted(groups.items()):
-        # Encode destination PE(s) in the label for get_deps lookup
+        # Encode destination PE(s) in the label
         pe_tag = "-".join(str(p) for p in pes)
         label  = f"{label_prefix}__send_{pe_tag}"
 

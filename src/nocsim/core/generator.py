@@ -3,7 +3,6 @@
 Owns:
   - the running tc_id counter
   - the ordered list of all TCs produced so far
-  - the write_deps dict  (label → list of tc_ids that produced that label)
   - unicast_hops / multicast_hops / dram_cost counters, each a per-variable
     dict keyed by "weight" / "psum" / "vmem"
 
@@ -22,11 +21,6 @@ follow a two-part scheme separated by ``__``:
     e.g.  "weight_0_2__send_5"          unicast weight to PE 5 at step (0,2)
           "psum_0_2__kchain_4_8"        K-chain link from PE 4 to PE 8
           "mac_0_2__count_5"            MAC COUNT at PE 5, step (0,2)
-
-get_deps uses the ``__`` separator to distinguish:
-  - exact-match lookups  (label already contains ``__``)
-  - prefix-match lookups (label is the base_name only; optionally filtered
-                          by pe_id extracted from the suffix)
 """
 
 from __future__ import annotations
@@ -61,7 +55,6 @@ class TC_Generator:
         self.dram_latency = dram_latency
         self.tc_id = 0
         self.tcs:        List[TC]             = []
-        self.write_deps: Dict[str, List[int]] = {}
 
         # Per-variable cost counters, keyed by "weight" / "psum" / "vmem".
         # Pre-seeded (not defaultdict) so all three keys are always present,
@@ -83,10 +76,9 @@ class TC_Generator:
         """Ceiling divide size_bits by PACKET_SIZE."""
         return (size_bits - 1) // PACKET_SIZE + 1
 
-    def _append(self, tc: TC, label: str) -> int:
-        """Append tc to the list, register label → [tc_id], return tc_id."""
+    def _append(self, tc: TC) -> int:
+        """Append tc to the list, return its tc_id."""
         self.tcs.append(tc)
-        self.write_deps[label] = [self.tc_id]
         self.tc_id += 1
         return self.tc_id - 1
 
@@ -126,7 +118,7 @@ class TC_Generator:
         if src == self.noc.dram_port or dest == self.noc.dram_port:
             self.dram_cost[var_name] += math.ceil(num_packets * self.dram_latency)
 
-        return self._append(tc, label)
+        return self._append(tc)
 
     def multicast(
         self,
@@ -159,7 +151,7 @@ class TC_Generator:
             hops = max(self.noc.manhattan(src, d) for d in dests)
             self.multicast_hops[var_name] += hops + num_packets * FLITS_PER_PACKET
 
-        return self._append(tc, label)
+        return self._append(tc)
 
     def count(
         self,
@@ -178,63 +170,7 @@ class TC_Generator:
         annotation = f"{label}: COUNT {node_id} for {cycles} cycles  dep={deps}"
         tc = TC(self.tc_id, node_id, COUNT, deps, "", 0, 0, annotation)
         tc.create_count(cycles)
-        return self._append(tc, label)
-
-    # ------------------------------------------------------------------
-    # Dependency resolution
-    # ------------------------------------------------------------------
-
-    def _get_reqs(self, base: str, pe_id: int, out: List[str]) -> None:
-        """Collect write_deps keys that match base, filtered by pe_id.
-
-        Two matching modes:
-          - base contains ``__``  →  exact key match (one specific TC)
-          - base has no ``__``    →  prefix match on the part before ``__``
-              - pe_id == -1       →  accept all keys with this prefix
-              - pe_id != -1       →  only accept keys whose suffix encodes pe_id
-                                     (suffix = last ``_``-delimited field,
-                                      PE IDs joined by ``-`` for multicast groups)
-        """
-        if "__" in base:
-            # exact match
-            if base in self.write_deps:
-                out.append(base)
-        else:
-            for key in self.write_deps:
-                if key.split("__")[0] != base:
-                    continue
-                if pe_id == -1:
-                    out.append(key)
-                else:
-                    # suffix is the last "_"-separated token; IDs joined by "-"
-                    id_field = key.split("_")[-1]
-                    ids = [int(x) for x in id_field.split("-")]
-                    if pe_id in ids:
-                        out.append(key)
-
-    def get_deps(
-        self,
-        dep_labels: List[str],
-        pe_id: int = -1,
-    ) -> List[int]:
-        """Resolve a list of label references to concrete tc_ids.
-
-        Args:
-            dep_labels: List of label strings (exact or prefix).
-            pe_id:      If != -1, restrict prefix matches to labels whose
-                        suffix encodes this PE id.  Use -1 to match all.
-
-        Returns:
-            Flat list of tc_ids that the caller should list as deps.
-        """
-        matched_keys: List[str] = []
-        for lbl in dep_labels:
-            self._get_reqs(lbl, pe_id, matched_keys)
-
-        tc_ids: List[int] = []
-        for key in matched_keys:
-            tc_ids.extend(self.write_deps[key])
-        return tc_ids
+        return self._append(tc)
 
     # ------------------------------------------------------------------
     # Output

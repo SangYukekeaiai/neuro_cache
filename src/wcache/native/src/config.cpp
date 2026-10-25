@@ -184,9 +184,8 @@ const std::string& enum_text(const std::string& key, const Value& v, std::size_t
 }
 
 void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t pos) {
-    // Removed knob, refused by name. Letting it fall through to the
-    // unknown-key path would tell a sweeper they mistyped when what actually
-    // happened is that the dimension no longer exists.
+    // Each key is matched against the typed field tables below. A key that is
+    // in no table is an unknown-key error.
     for (const I32Field& f : kI32Fields) {
         if (key == f.key) {
             cfg.*(f.member) = to_i32(key, v, pos);
@@ -715,9 +714,6 @@ EngineParams to_engine_params(const RunConfig& cfg) {
     p.l2.banks            = cfg.l2_banks;
     p.l2.mshrs            = cfg.l2_mshrs;
     p.l2.tgts_per_mshr    = cfg.l2_tgts_per_mshr;
-    // The L2 demand reserve is a removed knob: it is 0 here and there is no
-    // config key that can change it.
-    p.l2.demand_reserve = 0;
 
     p.l2_to_l1_latency = SimTime{cfg.l2_to_l1_latency};
     p.dram_ii          = SimTime{cfg.dram_ii};

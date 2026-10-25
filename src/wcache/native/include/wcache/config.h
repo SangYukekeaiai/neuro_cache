@@ -124,8 +124,8 @@ struct Warning {
 // Parses a flat JSON object. Every field is optional and falls back to the
 // struct's default above. An UNKNOWN key is an ERROR, not a warning: a typo in a
 // swept knob that loads silently is a run that measures the default while
-// claiming to measure the sweep. `l2_demand_reserve` is rejected by name with
-// its own message, since a knob that was removed must not load quietly.
+// claiming to measure the sweep. `l2_demand_reserve` is an ordinary integer key
+// (-1 selects the default, one burst's worth of lines, resolved during validation).
 //
 // Throws std::invalid_argument, naming the byte offset, on anything outside the
 // accepted subset: one object, string keys, and integer or string values.

@@ -38,7 +38,7 @@ Both must appear — neither subsumes the other.
                              ← t_chain[vmem_step-1]          (D: vmem carry-over from prev T)
 
 "vmem_step" counts only is_last_K firings within a dram_i block, not raw noc_i.
-vs_hist and lif_hist are sparse (populated only at is_last_K noc_i values), so the
+vs_hist is sparse (populated only at is_last_K noc_i values), and LIF fires only there, so the
 raw noc_i-2 offset would miss the prior entry whenever K is a NoC temporal dimension
 (consecutive is_last_K steps are K_noc × N_inner noc_i apart, not 2).
 A rolling deque of size 2 (vmem_store_ring / lif_ring) is used instead.
@@ -302,7 +302,6 @@ def combine(
         mac_hist: Dict[int, dict] = {}   # MAC COUNT results
         ps_hist:  Dict[int, dict] = {}   # psum stores
         # Sparse histories (keyed by noc_i, only at is_last_K steps):
-        lif_hist: Dict[int, dict] = {}   # LIF COUNT results (for DRAM store fallback)
         vs_hist:  Dict[int, dict] = {}   # vmem stores       (for DRAM store fallback)
         # Ring buffers of size 2 for vmem/LIF double-buffer deps.
         # These count vmem-steps (is_last_K firings), not raw noc_i, so the
@@ -496,7 +495,7 @@ def combine(
             # prev_tchain_tails (T carry-over ordering dep), and the node
             # double-buffer for the LIF phase.
             # lif_ring[-2] is "2 vmem-steps ago" (same local bank reuse),
-            # not noc_i-2: lif_hist is sparse (only is_last_K steps), so the
+            # not noc_i-2: LIF fires only at is_last_K steps, so the
             # raw offset would miss the prior entry when K is a NoC temporal dim.
             # prev_tchain_tails: when is_vmem_gb_free=True (T-inner-K), no
             # store/load path exists for vmem, so this is the ONLY dep that
@@ -509,7 +508,6 @@ def combine(
                 gen, nodes, lif_cyc, lif_deps,
                 label_prefix=f"lif_{nlbl}",
             )
-            lif_hist[noc_i] = lif_tcs
             lif_ring.append(lif_tcs)
 
             # ── Step 8: T-chain  (T=0 → T=1 → … → T_max per group) ──────
