@@ -33,8 +33,7 @@
 
 #include "NoC.h"
 #include "Transaction.h"
-
-constexpr int FLITS_PER_PACKET = 4;  // must match core/transaction.py
+#include "constants.h"
 
 struct SimResult {
     long long total_cycles     = 0;

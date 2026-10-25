@@ -21,6 +21,8 @@ import csv, json, pathlib, subprocess, sys, time
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
+sys.path.insert(0, str(ROOT / "profiling"))
+from common import KHKW_KEYS, base_config  # noqa: E402
 BIN  = ROOT / "src/wcache/native/build/release/wcache_sweep"
 STRM = HERE / "inputs/streams"
 OUT  = HERE / "outputs"
@@ -32,21 +34,9 @@ LINE_BYTES = [16, 32, 64]
 BANKS      = [1, 2, 4, 8]
 DISTANCES  = [0, 1, 2, 4]
 
-COUT_BLOCK = 4  # the innermost 4 COUT the sweep spec fixes
-
-BASE = {
-    "cout_block":      COUT_BLOCK,
-    "weight_bytes":    1,
-    "layout":          "khkw_split",
-    "l1_size_bytes":   16384,
-    "l1_assoc":        8,
-    "l2_size_bytes":   524288,
-    "l2_assoc":        16,
-    "l2_mshrs":        32,
-    "l1_latency":      0,
-    "l2_latency":      2,
-    "l2_miss_latency": 24,
-}
+BASE = base_config(KHKW_KEYS, drop=("cin_block", "l2_banks",
+                                    "prefetch_policy", "prefetch_distance"))
+COUT_BLOCK = BASE["cout_block"]  # the innermost 4 COUT the sweep spec fixes
 
 
 def grid_for(line_bytes):

@@ -8,7 +8,7 @@ BIN  := eventsim
 
 all: $(BIN)
 
-$(BIN): $(SRCS) Transaction.h NoC.h EventSim.h
+$(BIN): $(SRCS) Transaction.h NoC.h EventSim.h constants.h
 	$(CXX) $(CXXFLAGS) -o $(BIN) $(SRCS)
 
 clean:

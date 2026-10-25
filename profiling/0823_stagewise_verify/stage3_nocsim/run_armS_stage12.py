@@ -29,6 +29,8 @@ ROOT = STAGE.parents[2]
 IN, OUT = STAGE / "inputs", STAGE / "outputs"
 
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "profiling"))
+from common import next_cin_for  # noqa: E402
 import tracegen  # noqa: E402
 
 ARCH = "loas"
@@ -53,12 +55,6 @@ TRACE_OUT = OUT / "weight_traces_single_node"
 
 def sha(path: pathlib.Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
-
-
-def next_cin_for(meta, layer):
-    names = list(meta["layers"])
-    i = names.index(layer)
-    return meta["layers"][names[i + 1]][2] if i + 1 < len(names) else None
 
 
 def stage1() -> dict:

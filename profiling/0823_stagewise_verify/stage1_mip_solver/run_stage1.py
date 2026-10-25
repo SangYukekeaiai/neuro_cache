@@ -32,6 +32,8 @@ ROOT = STAGE.parents[2]
 IN, OUT = STAGE / "inputs", STAGE / "outputs"
 
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "profiling"))
+from common import next_cin_for  # noqa: E402
 from archmodels.trace import build_workload_from_trace  # noqa: E402
 from mip_solver.modes import TrafficMode  # noqa: E402
 from mip_solver.solve import _mode_score, solve_schedule  # noqa: E402
@@ -108,9 +110,7 @@ def stage_inputs() -> dict:
     workloads = {}
     for trace_dir, layer in LAYERS:
         meta = metas[trace_dir]
-        names = list(meta["layers"])
-        i = names.index(layer)
-        next_cin = meta["layers"][names[i + 1]][2] if i + 1 < len(names) else None
+        next_cin = next_cin_for(meta, layer)
         wl = build_workload_from_trace(meta, layer, next_cin=next_cin)
         p = IN / "workloads" / f"{trace_dir}__{layer}.yaml"
         p.write_text(yaml.safe_dump(wl, sort_keys=False))
@@ -147,12 +147,6 @@ def stage_inputs() -> dict:
     (IN / "MANIFEST.json").write_text(json.dumps(manifest, indent=1) + "\n")
     return {"arch_pes": arch_pes, "arch_noc": arch_noc, "metas": metas,
             "workloads": workloads}
-
-
-def next_cin_for(meta, layer):
-    names = list(meta["layers"])
-    i = names.index(layer)
-    return meta["layers"][names[i + 1]][2] if i + 1 < len(names) else None
 
 
 def strategy_digest(result) -> dict:

@@ -42,7 +42,8 @@ import yaml
 STAGE = pathlib.Path(__file__).resolve().parent
 ROOT = STAGE.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from archmodels.trace import valid_layer_names  # noqa: E402
+sys.path.insert(0, str(ROOT / "profiling"))
+from common import base_config, tags  # noqa: E402
 
 OUT = STAGE / "outputs"
 WCACHE_BIN = ROOT / "src/wcache/native/build/release/wcache_sweep"
@@ -54,28 +55,11 @@ LAYER_YAMLS = STAGE / "layers"
 TC_DIR = STAGE / "tc"                      # nocsim transaction lists
 N_NODES = 16
 N_SAMPLES = 5
-WORKLOADS = [("V", "vgg16_T4_n5"), ("R", "resnet19_T4_n5")]
 
 # The khkw_64b grid's winning point, verbatim from
 # stage4_wcache/outputs/_khkw_grid/khkw_64b.json[0]. Line size is derived:
 # cin_block * cout_block * weight_bytes = 16 * 4 * 1 = 64 B.
-BEST = {
-    "layout": "khkw_split", "cin_block": 16, "cout_block": 4, "weight_bytes": 1,
-    "l1_size_bytes": 16384, "l1_assoc": 8,
-    "l2_size_bytes": 524288, "l2_assoc": 16, "l2_mshrs": 32, "l2_banks": 1,
-    "l1_latency": 0, "l2_latency": 2, "l2_miss_latency": 24,
-    "prefetch_policy": "none", "prefetch_distance": 0,
-}
-
-
-def combos() -> list:
-    """(tag, trace_dir, layer) for every valid layer of both workloads."""
-    out = []
-    for prefix, trace_dir in WORKLOADS:
-        meta = json.loads((ROOT / "input_trace/loas" / trace_dir / "meta.json").read_text())
-        for layer in valid_layer_names(meta):
-            out.append((f"{prefix}{int(layer.split('_')[1])}", trace_dir, layer))
-    return out
+BEST = base_config(drop=("l2_prefetch_policy",))
 
 
 def layer_yaml(tag: str, trace_dir: str, layer: str) -> pathlib.Path:
@@ -116,7 +100,7 @@ def phase_wcache(workers: int) -> pathlib.Path:
     grid_path.write_text(json.dumps([BEST], indent=1) + "\n")
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                             capture_output=True, text=True).stdout.strip()
-    jobs = [(t, d, l, s, grid_path, commit) for t, d, l in combos() for s in range(N_SAMPLES)]
+    jobs = [(t, d, l, s, grid_path, commit) for t, d, l in tags() for s in range(N_SAMPLES)]
     print(f"=== W: {len(jobs)} wcache runs, {workers} workers ===", flush=True)
     rows, t0 = [], time.time()
     with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -178,7 +162,7 @@ def phase_nocsim(workers: int) -> pathlib.Path:
     if dst.exists():
         print(f"N: have {dst}, skipping")
         return dst
-    jobs = [(t, d, l, s) for t, d, l in combos() for s in range(N_SAMPLES)]
+    jobs = [(t, d, l, s) for t, d, l in tags() for s in range(N_SAMPLES)]
     print(f"=== N: {len(jobs)} nocsim runs, {workers} workers ===", flush=True)
     rows, t0 = [], time.time()
     with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -214,7 +198,7 @@ def phase_join() -> pathlib.Path:
     for r in wrows:
         groups.setdefault(r["_tag"], []).append(r)
 
-    order = [t for t, _, _ in combos()]
+    order = [t for t, _, _ in tags()]
     out = []
     for tag in order:
         rs = groups.get(tag)

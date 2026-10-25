@@ -6,44 +6,12 @@
 #include <string>
 #include <vector>
 
+#include "layout_common.h"
+
 namespace wcache {
 namespace {
 
-constexpr Axis kAxes[4] = {Axis::KH, Axis::KW, Axis::CIN, Axis::COUT};
-
-[[noreturn]] void reject(const std::string& what) {
-    throw std::invalid_argument("KhkwSplitMapper: " + what);
-}
-
-[[noreturn]] void reject_range(const std::string& what) {
-    throw std::out_of_range("KhkwSplitMapper: " + what);
-}
-
-void positive_or_reject(const char* name, std::int64_t v) {
-    if (v < 1) reject(std::string(name) + " must be >= 1, got " + std::to_string(v));
-}
-
-std::int64_t checked_mul(std::int64_t a, std::int64_t b, const char* what) {
-    if (b > INT64_MAX / a) {
-        reject(std::string(what) + " overflows a signed 64-bit value: " +
-               std::to_string(a) + " * " + std::to_string(b));
-    }
-    return a * b;
-}
-
-std::int64_t blocks_covering(std::int32_t extent, std::int32_t block) {
-    return (static_cast<std::int64_t>(extent) + block - 1) / block;
-}
-
-std::int32_t block_size_on(Axis a, std::int32_t cin_block, std::int32_t cout_block) {
-    switch (a) {
-        case Axis::KH:
-        case Axis::KW:   return 1;
-        case Axis::CIN:  return cin_block;
-        case Axis::COUT: return cout_block;
-    }
-    throw std::logic_error("KhkwSplitMapper: unknown Axis in block_size_on");
-}
+constexpr const char* kName = "KhkwSplitMapper";
 
 }  // namespace
 
@@ -55,19 +23,10 @@ KhkwSplitMapper::KhkwSplitMapper(WeightShape shape,
       cin_block_(cin_block),
       cout_block_(cout_block),
       weight_bytes_(weight_bytes) {
-    for (Axis a : kAxes) {
-        const std::int32_t n = extent_on(shape, a);
-        if (n < 1) {
-            reject(std::string(axis_name(a)) + " extent must be >= 1, got " +
-                   std::to_string(n));
-        }
-    }
-    positive_or_reject("cin_block", cin_block);
-    positive_or_reject("cout_block", cout_block);
-    positive_or_reject("weight_bytes", weight_bytes);
+    detail::check_shape_and_blocking(kName, shape, cin_block, cout_block, weight_bytes);
 
-    n_cin_blocks_  = blocks_covering(shape.CIN, cin_block);
-    n_cout_blocks_ = blocks_covering(shape.COUT, cout_block);
+    n_cin_blocks_  = detail::blocks_covering(shape.CIN, cin_block);
+    n_cout_blocks_ = detail::blocks_covering(shape.COUT, cout_block);
 
     // The kernel position, and the split. Both extents are int32 and already
     // checked positive, so the product cannot overflow int64.
@@ -75,22 +34,22 @@ KhkwSplitMapper::KhkwSplitMapper(WeightShape shape,
     n_pos_lo_ = std::min<std::int64_t>(kPosLoRadix, n_pos_);
     n_pos_hi_ = (n_pos_ + n_pos_lo_ - 1) / n_pos_lo_;
 
-    line_size_bytes_ = checked_mul(checked_mul(cin_block, cout_block, "line_size_bytes"),
-                                   weight_bytes, "line_size_bytes");
+    line_size_bytes_ = detail::line_size_bytes(kName, cin_block, cout_block, weight_bytes);
 
     stride_[static_cast<int>(Digit::POS_LO)] = 1;
     stride_[static_cast<int>(Digit::CIN)]    = n_pos_lo_;
     stride_[static_cast<int>(Digit::COUT)]   =
-        checked_mul(n_cin_blocks_, n_pos_lo_, "COUT line stride");
+        detail::checked_mul(kName, n_cin_blocks_, n_pos_lo_, "COUT line stride");
     stride_[static_cast<int>(Digit::POS_HI)] =
-        checked_mul(n_cout_blocks_, stride_[static_cast<int>(Digit::COUT)],
-                    "POS_HI line stride");
+        detail::checked_mul(kName, n_cout_blocks_, stride_[static_cast<int>(Digit::COUT)],
+                            "POS_HI line stride");
 
     // The radix product, as the loose bound num_lines_ must not exceed. The
     // exact bound below is smaller whenever the split is ragged, which for a
     // 3x3 kernel it always is.
     const std::int64_t radix_product =
-        checked_mul(n_pos_hi_, stride_[static_cast<int>(Digit::POS_HI)], "num_lines");
+        detail::checked_mul(kName, n_pos_hi_, stride_[static_cast<int>(Digit::POS_HI)],
+                            "num_lines");
 
     // One past the largest line this flatten can produce, and not the radix
     // product: with n_pos = 9 and n_pos_lo = 8 the pair (pos_hi, pos_lo) takes
@@ -112,8 +71,9 @@ KhkwSplitMapper::KhkwSplitMapper(WeightShape shape,
         + (n_cin_blocks_ - 1)  * stride_[static_cast<int>(Digit::CIN)];
 
     if (num_lines_ < 1 || num_lines_ > radix_product) {
-        reject("num_lines " + std::to_string(num_lines_) +
-               " is outside (0, radix product " + std::to_string(radix_product) + "]");
+        detail::reject(kName, "num_lines " + std::to_string(num_lines_) +
+                       " is outside (0, radix product " + std::to_string(radix_product) +
+                       "]");
     }
 }
 
@@ -149,18 +109,11 @@ std::int64_t KhkwSplitMapper::block_len(Axis a) const {
 }
 
 LineId KhkwSplitMapper::line_of(const Coord& c) const {
-    for (Axis a : kAxes) {
-        const std::int32_t v = coord_on(c, a);
-        const std::int32_t n = extent_on(shape_, a);
-        if (v < 0 || v >= n) {
-            reject_range(std::string(axis_name(a)) + " coordinate out of range [0, " +
-                         std::to_string(n) + "), got " + std::to_string(v));
-        }
-    }
+    detail::check_in_shape(kName, shape_, c);
 
     const auto blk_of = [&](Axis a) -> std::int64_t {
         return static_cast<std::int64_t>(coord_on(c, a)) /
-               block_size_on(a, cin_block_, cout_block_);
+               detail::block_size_on(kName, a, cin_block_, cout_block_);
     };
 
     const std::int64_t pos = static_cast<std::int64_t>(coord_on(c, Axis::KH)) * shape_.KW +
@@ -174,66 +127,20 @@ LineId KhkwSplitMapper::line_of(const Coord& c) const {
     return LineId{line};
 }
 
-// The contract layout.h states, discharged the way SplitCinMapper discharges
-// it: the lines are built in a local vector so a call that throws part way
-// leaves `out` untouched by construction, and the result is sorted and
-// de-duplicated unconditionally.
-//
-// The sort is load-bearing here in a way it is not for the other two mappers. A
-// burst along KH or KW walks `pos`, and line_of is NOT monotone in pos: raising
-// pos from 7 to 8 wraps pos_lo to 0 and raises pos_hi, which under a small
-// COUT x CIN grid can move the line down. Neither the increasing-ids guarantee
-// nor the unique() below, which removes only ADJACENT equals, would hold
-// without it.
+// The sort in detail::expand_burst is load-bearing here in a way it is not for
+// the other two mappers. A burst along KH or KW walks `pos`, and line_of is NOT
+// monotone in pos: raising pos from 7 to 8 wraps pos_lo to 0 and raises
+// pos_hi, which under a small COUT x CIN grid can move the line down.
 void KhkwSplitMapper::expand(const Burst& b, std::vector<LineId>& out) const {
-    if (b.count < 1) {
-        reject("burst count must be >= 1, got " + std::to_string(b.count));
-    }
-    positive_or_reject("burst stride", b.stride);
-
-    const std::int32_t n     = extent_on(shape_, b.axis);
-    const std::int64_t start = coord_on(b.anchor, b.axis);
-    // int64 because count and stride are both int32 and their product is not:
-    // a wild count would otherwise wrap into a valid-looking coordinate.
-    const std::int64_t last  = start + static_cast<std::int64_t>(b.count - 1) * b.stride;
-    if (last < 0 || last >= n) {
-        reject_range(std::string(axis_name(b.axis)) + " coordinate out of range [0, " +
-                     std::to_string(n) + "), got " + std::to_string(last));
-    }
-
-    std::vector<LineId> lines;
-    for (std::int32_t i = 0; i < b.count; ++i) {
-        const std::int64_t v = start + static_cast<std::int64_t>(i) * b.stride;
-        lines.push_back(line_of(with_coord_on(b.anchor, b.axis, static_cast<std::int32_t>(v))));
-    }
-
-    std::sort(lines.begin(), lines.end());
-    lines.erase(std::unique(lines.begin(), lines.end()), lines.end());
-    out.insert(out.end(), lines.begin(), lines.end());
+    detail::expand_burst(kName, *this, b, out);
 }
 
-// Identical to the other two mappers, and that is the design rather than an
-// accident: a layout moves which line an element lands on and leaves the
-// cache's indexing alone. The range check runs BEFORE the division, because
-// LineId is signed and a negative id would come back out of `line % num_sets`
-// as a negative set index.
 Placement KhkwSplitMapper::locate(LineId line, std::int64_t num_sets) const {
-    const std::int64_t v = line.get();
-    if (v < 0 || v >= num_lines_) {
-        reject_range("line id out of range [0, " + std::to_string(num_lines_) + "), got " +
-                     std::to_string(v));
-    }
-    return Placement{SetIndex{v % num_sets}, TagId{v / num_sets}};
+    return detail::locate_line(kName, num_lines_, line, num_sets);
 }
 
-// The same three factors, in the same order and with the same separator, as
-// BlockPackMapper and SplitCinMapper: the three layouts produce the same line
-// size out of the same config fields, and a reader should not be able to tell
-// from the message which one they are looking at.
 std::string KhkwSplitMapper::line_size_terms(std::int64_t) const {
-    return "cin_block " + std::to_string(cin_block_) + " x cout_block " +
-           std::to_string(cout_block_) + " x weight_bytes " +
-           std::to_string(weight_bytes_);
+    return detail::line_size_terms(cin_block_, cout_block_, weight_bytes_);
 }
 
 
@@ -241,8 +148,9 @@ std::string KhkwSplitMapper::line_size_terms(std::int64_t) const {
 std::optional<LineId> KhkwSplitMapper::neighbour(LineId line, Axis a,
                                                  std::int32_t delta) const {
     if (line.get() < 0 || line.get() >= num_lines_) {
-        reject_range("KhkwSplitMapper::neighbour: line " + std::to_string(line.get()) +
-                     " outside [0, " + std::to_string(num_lines_) + ")");
+        detail::reject_range(kName, "KhkwSplitMapper::neighbour: line " +
+                                        std::to_string(line.get()) + " outside [0, " +
+                                        std::to_string(num_lines_) + ")");
     }
     // CIN and COUT are each ONE digit here, so they are one stride away. KH and
     // KW are two digits of the split position and need the position rebuilt,

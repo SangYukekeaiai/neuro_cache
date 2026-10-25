@@ -76,7 +76,7 @@ ulimit -c 0 2>/dev/null || true
 # naming: it is header-only AND was included by no translation unit at all until
 # tests/test_event.cpp existed, so before this round nothing in the tree either
 # compiled it or could mutate it.
-FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h include/wcache/set_associative.h include/wcache/policy.h include/wcache/stamp_policy.h include/wcache/port.h include/wcache/event.h include/wcache/mshr.h include/wcache/trace.h include/wcache/cache_level.h include/wcache/engine.h include/wcache/prefetcher.h src/block_pack.cpp src/set_associative.cpp src/stamp_policy.cpp src/port.cpp src/mshr.cpp src/cache_level.cpp src/engine.cpp src/engine_core.cpp src/prefetcher.cpp include/wcache/config.h src/config.cpp include/wcache/stream_format.h include/wcache/byte_source.h include/wcache/stream_trace.h src/stream_trace.cpp include/wcache/stats.h src/stats.cpp include/wcache/hist.h apps/wcache_run.cpp include/wcache/sweep.h src/sweep.cpp apps/app_support.h apps/wcache_sweep.cpp"
+FILES="include/wcache/types.h include/wcache/layout.h include/wcache/block_pack.h include/wcache/cache.h include/wcache/set_associative.h include/wcache/policy.h include/wcache/stamp_policy.h include/wcache/port.h include/wcache/event.h include/wcache/mshr.h include/wcache/trace.h include/wcache/cache_level.h include/wcache/engine.h include/wcache/prefetcher.h src/block_pack.cpp src/layout_common.h src/layout_common.cpp src/set_associative.cpp src/stamp_policy.cpp src/port.cpp src/mshr.cpp src/cache_level.cpp src/engine.cpp src/engine_core.cpp src/prefetcher.cpp include/wcache/config.h src/config.cpp include/wcache/stream_format.h include/wcache/byte_source.h include/wcache/stream_trace.h src/stream_trace.cpp include/wcache/stats.h src/stats.cpp include/wcache/hist.h apps/wcache_run.cpp include/wcache/sweep.h src/sweep.cpp apps/app_support.h apps/wcache_sweep.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
@@ -223,6 +223,9 @@ mutate_layout() { mutate_in include/wcache/layout.h "$@"; }
 mutate_cache() { mutate_in include/wcache/cache.h "$@"; }
 mutate_pack_h() { mutate_in include/wcache/block_pack.h "$@"; }
 mutate_pack() { mutate_in src/block_pack.cpp "$@"; }
+# The helpers, burst walk and placement the three layout mappers share.
+mutate_lc_h() { mutate_in src/layout_common.h "$@"; }
+mutate_lc() { mutate_in src/layout_common.cpp "$@"; }
 mutate_sa_h() { mutate_in include/wcache/set_associative.h "$@"; }
 mutate_sa() { mutate_in src/set_associative.cpp "$@"; }
 mutate_pol() { mutate_in include/wcache/policy.h "$@"; }
@@ -473,68 +476,68 @@ echo "== A2b: the extent checks"
 # The boundary, not the sign. `< 1` and `< 0` agree on every negative value and
 # disagree only at zero, which is the value a config loader that forgot a field
 # actually produces.
-mutate_pack kill 'extent check accepts 0'   's|if (n < 1) {|if (n < 0) {|'
+mutate_lc kill 'extent check accepts 0'   's|if (n < 1) {|if (n < 0) {|'
 # All four extents are radices in the flatten, so dropping one is a whole axis
 # left unvalidated. Two cases, on the two that are easiest to believe are
 # harmless: KW because it is not blocked, COUT because it is last.
-mutate_pack kill 'KW dropped from the loop'   's|constexpr Axis kAxes\[4\] = {Axis::KH, Axis::KW, Axis::CIN, Axis::COUT};|constexpr Axis kAxes[4] = {Axis::KH, Axis::KH, Axis::CIN, Axis::COUT};|'
-mutate_pack kill 'COUT dropped from the loop' 's|constexpr Axis kAxes\[4\] = {Axis::KH, Axis::KW, Axis::CIN, Axis::COUT};|constexpr Axis kAxes[4] = {Axis::KH, Axis::KW, Axis::CIN, Axis::CIN};|'
+mutate_lc_h kill 'KW dropped from the loop'   's|constexpr Axis kAxes\[4\] = {Axis::KH, Axis::KW, Axis::CIN, Axis::COUT};|constexpr Axis kAxes[4] = {Axis::KH, Axis::KH, Axis::CIN, Axis::COUT};|'
+mutate_lc_h kill 'COUT dropped from the loop' 's|constexpr Axis kAxes\[4\] = {Axis::KH, Axis::KW, Axis::CIN, Axis::COUT};|constexpr Axis kAxes[4] = {Axis::KH, Axis::KW, Axis::CIN, Axis::CIN};|'
 
 echo "== A2b: the block and element checks"
-mutate_pack kill 'positive_or_reject accepts 0' 's|if (v < 1) reject|if (v < 0) reject|'
-mutate_pack kill 'cin_block unchecked'    '/positive_or_reject("cin_block", cin_block);/d'
-mutate_pack kill 'cout_block unchecked'   '/positive_or_reject("cout_block", cout_block);/d'
+mutate_lc_h kill 'positive_or_reject accepts 0' 's|if (v < 1) reject|if (v < 0) reject|'
+mutate_lc kill 'cin_block unchecked'    '/positive_or_reject(cls, "cin_block", cin_block);/d'
+mutate_lc kill 'cout_block unchecked'   '/positive_or_reject(cls, "cout_block", cout_block);/d'
 # weight_bytes is not a layout radix, which is exactly why it is the one a
 # reader would believe is safe to skip. A zero makes line_size_bytes zero and
 # D1 divides cache_size_bytes by it.
-mutate_pack kill 'weight_bytes unchecked' '/positive_or_reject("weight_bytes", weight_bytes);/d'
+mutate_lc kill 'weight_bytes unchecked' '/positive_or_reject(cls, "weight_bytes", weight_bytes);/d'
 
 echo "== A2b: the message is part of the contract"
 # N11 asks that a range failure be diagnosable. A message that only restates the
 # rule is what v1 shipped, and it does not say which parameter or what it held.
-mutate_pack kill 'the offending value is dropped' 's|" must be >= 1, got " + std::to_string(v)|" must be >= 1"|'
-mutate_pack kill 'the parameter name is dropped'  's|reject(std::string(name) + " must be >= 1|reject(std::string("a parameter") + " must be >= 1|'
-mutate_pack kill 'the axis name is dropped'       's|reject(std::string(axis_name(a)) + " extent must be >= 1|reject(std::string("an") + " extent must be >= 1|'
+mutate_lc_h kill 'the offending value is dropped' 's|" must be >= 1, got " + std::to_string(v)|" must be >= 1"|'
+mutate_lc_h kill 'the parameter name is dropped'  's|reject(cls, std::string(name) + " must be >= 1|reject(cls, std::string("a parameter") + " must be >= 1|'
+mutate_lc kill 'the axis name is dropped'       's|reject(cls, std::string(axis_name(a)) + " extent must be >= 1|reject(cls, std::string("an") + " extent must be >= 1|'
 # One spelling of the prefix is what makes every message this class produces
 # findable by the class name.
-mutate_pack kill 'the prefix is dropped'          's|throw std::invalid_argument("BlockPackMapper: " + what);|throw std::invalid_argument(what);|'
+mutate_lc kill 'the prefix is dropped'          's|throw std::invalid_argument(std::string(cls) + ": " + what);|throw std::invalid_argument(what);|'
 # A bad configuration is invalid_argument. A2d'"'"'s range failures will be
 # out_of_range, and the two must stay tellable apart at the catch site.
-mutate_pack kill 'rejection type changed'         's|throw std::invalid_argument("BlockPackMapper: " + what);|throw std::runtime_error("BlockPackMapper: " + what);|'
+mutate_lc kill 'rejection type changed'         's|throw std::invalid_argument(std::string(cls) + ": " + what);|throw std::runtime_error(std::string(cls) + ": " + what);|'
 
 echo "== A2b: the ceiling"
 # A short final block still occupies a whole line. A floor drops it, and on the
 # corpus that is COUT 64 at cout_block 128 becoming zero lines.
-mutate_pack kill 'ceiling becomes floor'  's|return (static_cast<std::int64_t>(extent) + block - 1) / block;|return static_cast<std::int64_t>(extent) / block;|'
+mutate_lc_h kill 'ceiling becomes floor'  's|return (static_cast<std::int64_t>(extent) + block - 1) / block;|return static_cast<std::int64_t>(extent) / block;|'
 # The other side: a rounding term that over-counts is invisible to any suite
 # whose extents never divide exactly.
-mutate_pack kill 'ceiling over-counts'    's|(static_cast<std::int64_t>(extent) + block - 1) / block|(static_cast<std::int64_t>(extent) + block) / block|'
+mutate_lc_h kill 'ceiling over-counts'    's|(static_cast<std::int64_t>(extent) + block - 1) / block|(static_cast<std::int64_t>(extent) + block) / block|'
 
 echo "== A2b: the two block counts"
 # num_lines is a product, so swapping the two counts leaves it unchanged. These
 # three are the reason n_cin_blocks() and n_cout_blocks() are exposed at all.
-mutate_pack kill 'n_cin_blocks measures COUT'  's|n_cin_blocks_  = blocks_covering(shape.CIN, cin_block);|n_cin_blocks_  = blocks_covering(shape.COUT, cin_block);|'
-mutate_pack kill 'n_cout_blocks uses cin_block' 's|n_cout_blocks_ = blocks_covering(shape.COUT, cout_block);|n_cout_blocks_ = blocks_covering(shape.COUT, cin_block);|'
-mutate_pack kill 'the two block counts swap'   's|n_cin_blocks_  = blocks_covering(shape.CIN, cin_block);|n_cout_blocks_ = blocks_covering(shape.CIN, cin_block);|; s|n_cout_blocks_ = blocks_covering(shape.COUT, cout_block);|n_cin_blocks_  = blocks_covering(shape.COUT, cout_block);|'
+mutate_pack kill 'n_cin_blocks measures COUT'  's|n_cin_blocks_  = detail::blocks_covering(shape.CIN, cin_block);|n_cin_blocks_  = detail::blocks_covering(shape.COUT, cin_block);|'
+mutate_pack kill 'n_cout_blocks uses cin_block' 's|n_cout_blocks_ = detail::blocks_covering(shape.COUT, cout_block);|n_cout_blocks_ = detail::blocks_covering(shape.COUT, cin_block);|'
+mutate_pack kill 'the two block counts swap'   's|n_cin_blocks_  = detail::blocks_covering(shape.CIN, cin_block);|n_cout_blocks_ = detail::blocks_covering(shape.CIN, cin_block);|; s|n_cout_blocks_ = detail::blocks_covering(shape.COUT, cout_block);|n_cin_blocks_  = detail::blocks_covering(shape.COUT, cout_block);|'
 
 echo "== A2b: the two products"
-mutate_pack kill 'line_size drops weight_bytes' 's|weight_bytes, "line_size_bytes")|1, "line_size_bytes")|'
+mutate_lc kill 'line_size drops weight_bytes' 's|weight_bytes, "line_size_bytes")|1, "line_size_bytes")|'
 # line_size_bytes is a function of the three layout parameters ONLY. Reading the
 # shape makes L1 and L2 a different cache for every layer, and makes the size
 # axis of the sweep incomparable across layers.
-mutate_pack kill 'line_size reads the shape'    's|checked_mul(cin_block, cout_block, "line_size_bytes")|checked_mul(shape.CIN, cout_block, "line_size_bytes")|'
-mutate_pack kill 'num_lines drops KW'           's|checked_mul(shape.KH, shape.KW, "num_lines")|checked_mul(shape.KH, 1, "num_lines")|'
+mutate_pack kill 'line_size reads the shape'    's|detail::line_size_bytes(kName, cin_block, cout_block, weight_bytes)|detail::line_size_bytes(kName, shape.CIN, cout_block, weight_bytes)|'
+mutate_pack kill 'num_lines drops KW'           's|checked_mul(kName, shape.KH, shape.KW, "num_lines")|checked_mul(kName, shape.KH, 1, "num_lines")|'
 mutate_pack kill 'num_lines drops n_cin_blocks'  's|n_cin_blocks_, "num_lines")|1, "num_lines")|'
 mutate_pack kill 'num_lines drops n_cout_blocks' 's|n_cout_blocks_, "num_lines");|1, "num_lines");|'
 
 echo "== A2b: the overflow guards"
 # num_lines_ is the bound every later range check is written against, so a
 # wrapped one is worse than a wrong one.
-mutate_pack kill 'the guard never fires'     's|if (b > INT64_MAX / a) {|if (b > INT64_MAX) {|'
+mutate_lc kill 'the guard never fires'     's|if (b > INT64_MAX / a) {|if (b > INT64_MAX) {|'
 # The guard is a boundary, not a blanket rejection of large inputs: `>=` rejects
 # the largest product that actually fits.
-mutate_pack kill 'the guard is off by one'   's|if (b > INT64_MAX / a) {|if (b >= INT64_MAX / a) {|'
-mutate_pack kill 'checked_mul drops a factor' 's|    return a \* b;|    return a;|'
+mutate_lc kill 'the guard is off by one'   's|if (b > INT64_MAX / a) {|if (b >= INT64_MAX / a) {|'
+mutate_lc kill 'checked_mul drops a factor' 's|    return a \* b;|    return a;|'
 
 # The four A2d tripwire mutations that used to sit here are gone with the stubs
 # they mutated: they replaced the two `logic_error` bodies with a silent return
@@ -589,17 +592,17 @@ mutate_pack kill 'A2c COUT radix is not 1' \
 mutate_pack kill 'A2c CIN radix reads n_cin_blocks' \
     's|stride_\[static_cast<int>(Axis::CIN)\]  = n_cout_blocks_;|stride_[static_cast<int>(Axis::CIN)]  = n_cin_blocks_;|'
 mutate_pack kill 'A2c KW radix drops n_cin_blocks' \
-    's|checked_mul(n_cin_blocks_, n_cout_blocks_, "KW line stride")|checked_mul(1, n_cout_blocks_, "KW line stride")|'
+    's|checked_mul(kName, n_cin_blocks_, n_cout_blocks_, "KW line stride")|checked_mul(kName, 1, n_cout_blocks_, "KW line stride")|'
 # F11's class, restated on the radices: with a square kernel KH and KW are
 # interchangeable and nothing in the suite could tell them apart. The KH radix
 # is the one that multiplies by the OTHER kernel extent.
 mutate_pack kill 'A2c KH radix multiplies by KH' \
-    's|checked_mul(shape.KW, stride_\[static_cast<int>(Axis::KW)\], "KH line stride")|checked_mul(shape.KH, stride_[static_cast<int>(Axis::KW)], "KH line stride")|'
+    's|checked_mul(kName, shape.KW, stride_\[static_cast<int>(Axis::KW)\],|checked_mul(kName, shape.KH, stride_[static_cast<int>(Axis::KW)],|'
 # And the nesting itself: KH steps over a whole KW row of planes, so it is
 # built from the KW radix. Built from the CIN one it steps over a plane
 # instead, which is a smaller stride that still produces plausible ids.
 mutate_pack kill 'A2c KH radix nests on CIN' \
-    's|checked_mul(shape.KW, stride_\[static_cast<int>(Axis::KW)\], "KH line stride")|checked_mul(shape.KW, stride_[static_cast<int>(Axis::CIN)], "KH line stride")|'
+    's|checked_mul(kName, shape.KW, stride_\[static_cast<int>(Axis::KW)\],|checked_mul(kName, shape.KW, stride_[static_cast<int>(Axis::CIN)],|'
 
 echo "== A2c: line_stride and block_len"
 # The lookup B24 exists for. A constant index compiles, answers, and is wrong
@@ -641,12 +644,12 @@ mutate_pack kill 'A2c the flatten overwrites' \
 # The two block sizes exchanged. On the corpus cin_block and cout_block are
 # swept independently, so this is a configuration that really occurs rather
 # than a contrived one.
-mutate_pack kill 'A2c CIN divides by cout_block' \
+mutate_lc_h kill 'A2c CIN divides by cout_block' \
     's|        case Axis::CIN:  return cin_block;|        case Axis::CIN:  return cout_block;|'
 # KH and KW are not blocked, and saying so as "their block size is 1" is what
 # keeps line_of free of per-axis code. Giving them a real divisor collapses the
 # three kernel rows onto one line.
-mutate_pack kill 'A2c the kernel axes get a block size' \
+mutate_lc_h kill 'A2c the kernel axes get a block size' \
     's|        case Axis::KW:   return 1;|        case Axis::KW:   return cin_block;|'
 
 echo "== A2c: B25, the range check"
@@ -654,14 +657,14 @@ echo "== A2c: B25, the range check"
 # toward zero, so every cin in [-(cin_block - 1), -1] divides to block 0 and
 # names a real line: dropping the lower half of the check produces an ordinary
 # id from a bad coordinate and nothing downstream can tell.
-mutate_pack kill 'A2c the range check drops the lower half' \
+mutate_lc_h kill 'A2c the range check drops the lower half' \
     's@if (v < 0 || v >= n) {@if (v >= n) {@'
-mutate_pack kill 'A2c the range check never fires' \
+mutate_lc_h kill 'A2c the range check never fires' \
     's@if (v < 0 || v >= n) {@if (false) {@'
 # The boundary, not the direction: `v > n` accepts the one coordinate one past
 # the last element, which is exactly what an off-by-one in a caller's loop
 # produces.
-mutate_pack kill 'A2c the range check is off by one' \
+mutate_lc_h kill 'A2c the range check is off by one' \
     's@if (v < 0 || v >= n) {@if (v < 0 || v > n) {@'
 # B25's rejected alternative, written out. Checking the QUOTIENT against
 # block_len is the change a later reader is most likely to make, because it
@@ -670,18 +673,18 @@ mutate_pack kill 'A2c the range check is off by one' \
 # coordinate that truncates to block 0. This case is what makes B25 a tested
 # decision rather than a comment.
 mutate_pack kill 'A2c the range check uses block_len' \
-    's@if (v < 0 || v >= n) {@const std::int32_t q_ = v / block_size_on(a, cin_block_, cout_block_); if (q_ < 0 || q_ >= block_len(a)) {@'
+    's@    detail::check_in_shape(kName, shape_, c);@    for (Axis a : kAxes) { const std::int64_t q_ = coord_on(c, a) / detail::block_size_on(kName, a, cin_block_, cout_block_); if (q_ < 0 || q_ >= block_len(a)) detail::reject_range(kName, "coordinate out of range"); }@'
 # out_of_range, not invalid_argument: a bad configuration is found once at
 # construction and a bad coordinate once per access while the trace replays,
 # and B27's whole vocabulary is that a catch site can tell them apart.
-mutate_pack kill 'A2c the range failure is invalid_argument' \
-    's@throw std::out_of_range("BlockPackMapper: " + what);@throw std::invalid_argument("BlockPackMapper: " + what);@'
+mutate_lc kill 'A2c the range failure is invalid_argument' \
+    's@throw std::out_of_range(std::string(cls) + ": " + what);@throw std::invalid_argument(std::string(cls) + ": " + what);@'
 # N11 again, on the message this increment is the first in the tree to produce.
-mutate_pack kill 'A2c the range message drops the prefix' \
-    's@throw std::out_of_range("BlockPackMapper: " + what);@throw std::out_of_range(what);@'
-mutate_pack kill 'A2c the range message drops the value' \
+mutate_lc kill 'A2c the range message drops the prefix' \
+    's@throw std::out_of_range(std::string(cls) + ": " + what);@throw std::out_of_range(what);@'
+mutate_lc_h kill 'A2c the range message drops the value' \
     's@"), got " + std::to_string(v)@")"@'
-mutate_pack kill 'A2c the range message drops the axis' \
+mutate_lc_h kill 'A2c the range message drops the axis' \
     's@std::string(axis_name(a)) + " coordinate out of range@std::string("a") + " coordinate out of range@'
 
 # The one A2c line the suite cannot reach. block_size_on is file-local and
@@ -691,9 +694,9 @@ mutate_pack kill 'A2c the range message drops the axis' \
 # and the honest record is a stated survivor rather than a case quietly left
 # out of the list. It becomes reachable at A2d only if expand or locate ever
 # reaches block_size_on with an axis read from a burst.
-mutate_pack allow 'A2c block_size_on invents an answer' \
-    's@throw std::logic_error("BlockPackMapper: unknown Axis in block_size_on");@return 1;@' \
-    'block_size_on is file-local and line_of, its only caller, walks kAxes'
+mutate_lc_h allow 'A2c block_size_on invents an answer' \
+    's@throw std::logic_error(std::string(cls) + ": unknown Axis in block_size_on");@return 1;@' \
+    'block_size_on is called only from the three line_of, each with a member of kAxes'
 
 # ---------------------------------------------------------------------------
 # A2d: expand and locate
@@ -719,18 +722,18 @@ mutate_pack allow 'A2c block_size_on invents an answer' \
 echo "== A2d: B38, the count check"
 # The boundary, not the sign. `< 1` and `< 0` agree on every negative count and
 # disagree only at zero, which is the count an empty burst list produces.
-mutate_pack kill 'A2d the count check accepts 0' \
+mutate_lc_h kill 'A2d the count check accepts 0' \
     's|    if (b.count < 1) {|    if (b.count < 0) {|'
-mutate_pack kill 'A2d the count check never fires' \
+mutate_lc_h kill 'A2d the count check never fires' \
     's|    if (b.count < 1) {|    if (false) {|'
 # invalid_argument, not out_of_range: a count of zero is malformed whatever
 # layer it is applied to, while a coordinate past an extent is well formed and
 # outside THIS layer. B27's whole value is that a catch site can tell them
 # apart, and the conformance Env keeps the two tiers in separate buckets for
 # exactly this case.
-mutate_pack kill 'A2d the count failure is out_of_range' \
-    's|        reject("burst count must be >= 1|        reject_range("burst count must be >= 1|'
-mutate_pack kill 'A2d the count message drops the value' \
+mutate_lc_h kill 'A2d the count failure is out_of_range' \
+    's|        reject(cls, "burst count must be >= 1|        reject_range(cls, "burst count must be >= 1|'
+mutate_lc_h kill 'A2d the count message drops the value' \
     's|"burst count must be >= 1, got " + std::to_string(b.count)|"burst count must be >= 1"|'
 
 echo "== A2d: B49, the stride check"
@@ -738,18 +741,18 @@ echo "== A2d: B49, the stride check"
 # Deleting the check does not merely make a backwards burst legal: it makes the
 # unreachable-sort argument below false again, so this case and the `allow` in
 # the walk section are two halves of one statement.
-mutate_pack kill 'A2d the stride check is deleted' \
-    '/    positive_or_reject("burst stride", b.stride);/d'
+mutate_lc_h kill 'A2d the stride check is deleted' \
+    '/    positive_or_reject(cls, "burst stride", b.stride);/d'
 # The boundary, not the sign, the same distinction the count check draws: `< 1`
 # and `< 0` agree on every negative stride and disagree only at 0, which is the
 # standing-still run.
-mutate_pack kill 'A2d the stride check accepts 0' \
-    's|    positive_or_reject("burst stride", b.stride);|    if (b.stride < 0) reject("burst stride must be >= 1, got " + std::to_string(b.stride));|'
+mutate_lc_h kill 'A2d the stride check accepts 0' \
+    's|    positive_or_reject(cls, "burst stride", b.stride);|    if (b.stride < 0) reject(cls, "burst stride must be >= 1, got " + std::to_string(b.stride));|'
 # invalid_argument, not out_of_range. A stride of 0 or less is malformed at
 # every layer, so its tier is the count's and not the coordinate's, and B27's
 # whole value is that a catch site can tell the two apart.
-mutate_pack kill 'A2d the stride failure is out_of_range' \
-    's|    positive_or_reject("burst stride", b.stride);|    if (b.stride < 1) reject_range("burst stride must be >= 1, got " + std::to_string(b.stride));|'
+mutate_lc_h kill 'A2d the stride failure is out_of_range' \
+    's|    positive_or_reject(cls, "burst stride", b.stride);|    if (b.stride < 1) reject_range(cls, "burst stride must be >= 1, got " + std::to_string(b.stride));|'
 
 echo "== A2d: the order of the three refusals"
 # layout.h states each rule and says nothing about their order, so these two
@@ -757,10 +760,10 @@ echo "== A2d: the order of the three refusals"
 # are worth pinning because U10's re-throw at the engine boundary dispatches on
 # the exception TYPE: a burst wrong in two ways reaches a different catch site
 # depending on which check ran first.
-mutate_pack kill 'A2d the stride check runs before the count check' \
-    's|    if (b.count < 1) {|    positive_or_reject("burst stride", b.stride);\n    if (b.count < 1) {|'
-mutate_pack kill 'A2d the stride check runs after the range check' \
-    's|    positive_or_reject("burst stride", b.stride);||; s|    std::vector<LineId> lines;|    positive_or_reject("burst stride", b.stride);\n    std::vector<LineId> lines;|'
+mutate_lc_h kill 'A2d the stride check runs before the count check' \
+    's|    if (b.count < 1) {|    positive_or_reject(cls, "burst stride", b.stride);\n    if (b.count < 1) {|'
+mutate_lc_h kill 'A2d the stride check runs after the range check' \
+    's|    positive_or_reject(cls, "burst stride", b.stride);||; s|    std::vector<LineId> lines;|    positive_or_reject(cls, "burst stride", b.stride);\n    std::vector<LineId> lines;|'
 
 echo "== A2d: the far end of the walk"
 # The single most important mutation in this unit, and the one that took a
@@ -771,13 +774,13 @@ echo "== A2d: the far end of the walk"
 # rather than whatever the element-by-element walk reached first after
 # narrowing to int32. The killing case is a stride of 2^30, where the far end is
 # 2^32 and truncates to a perfectly legal 0.
-mutate_pack kill 'A2d the far end check is deleted' \
+mutate_lc_h kill 'A2d the far end check is deleted' \
     's@    if (last < 0 || last >= n) {@    if (false) {@'
-mutate_pack kill 'A2d the far end is computed in int32' \
+mutate_lc_h kill 'A2d the far end is computed in int32' \
     's|const std::int64_t last  = start + static_cast<std::int64_t>(b.count - 1) \* b.stride;|const std::int64_t last  = start + static_cast<std::int32_t>(b.count - 1) * b.stride;|'
 # The off-by-one: `count` where the walk uses `count - 1` rejects the widest
 # legal burst on every axis, which is the whole-axis COUT run the corpus emits.
-mutate_pack kill 'A2d the far end drops the count offset' \
+mutate_lc_h kill 'A2d the far end drops the count offset' \
     's|static_cast<std::int64_t>(b.count - 1) \* b.stride|static_cast<std::int64_t>(b.count) * b.stride|'
 # The two halves of the check are separately observable, and B49 changed what
 # separates them. A downward walk is gone, so `last < 0` now holds exactly when
@@ -785,20 +788,20 @@ mutate_pack kill 'A2d the far end drops the count offset' \
 # kills this is the mirror of the 2^30 one above: anchor -8, count 4, stride 1
 # makes the far end -5 while the walk would reach -8 first, so with the check
 # the message names -5 and without it -8.
-mutate_pack kill 'A2d the far end drops the lower half' \
+mutate_lc_h kill 'A2d the far end drops the lower half' \
     's@    if (last < 0 || last >= n) {@    if (last >= n) {@'
-mutate_pack kill 'A2d the far end drops the upper half' \
+mutate_lc_h kill 'A2d the far end drops the upper half' \
     's@    if (last < 0 || last >= n) {@    if (last < 0) {@'
 # The boundary, not the direction: `> n` accepts the coordinate one past the
 # last element, which is what an off-by-one in a caller's loop produces.
-mutate_pack kill 'A2d the far end is off by one' \
+mutate_lc_h kill 'A2d the far end is off by one' \
     's@    if (last < 0 || last >= n) {@    if (last < 0 || last > n) {@'
 # The far end is measured on the WALKED axis. Reading the anchor's COUT whatever
 # the burst says is "today's corpus always says COUT" baked in, and it is the
 # fake RejectsUnpackedAxis's sibling from the other side.
-mutate_pack kill 'A2d the far end assumes COUT' \
-    's|const std::int32_t n     = extent_on(shape_, b.axis);|const std::int32_t n     = extent_on(shape_, Axis::COUT);|'
-mutate_pack kill 'A2d the walk assumes COUT' \
+mutate_lc_h kill 'A2d the far end assumes COUT' \
+    's|const std::int32_t n     = extent_on(m.shape(), b.axis);|const std::int32_t n     = extent_on(m.shape(), Axis::COUT);|'
+mutate_lc_h kill 'A2d the walk assumes COUT' \
     's|const std::int64_t start = coord_on(b.anchor, b.axis);|const std::int64_t start = coord_on(b.anchor, Axis::COUT);|'
 
 echo "== A2d: the walk, B31 and the accumulate pattern"
@@ -823,29 +826,29 @@ echo "== A2d: the walk, B31 and the accumulate pattern"
 # becomes killable again the moment a non-monotone layout or a permuted flatten
 # with a negative radix exists, and the `A2d the stride check is deleted` case
 # above is what would announce a reversal of B49.
-mutate_pack allow 'A2d expand drops the sort' \
+mutate_lc_h allow 'A2d expand drops the sort' \
     '/    std::sort(lines.begin(), lines.end());/d' \
     'stride >= 1 (B49) makes every walk this mapper accepts already increasing'
 # unique() removes ADJACENT equals only, so this is not the same mutation as
 # the one above: without it a packed burst appends one id per element and a
 # caller counting distinct lines over-counts every one of them.
-mutate_pack kill 'A2d expand drops the de-duplication' \
+mutate_lc_h kill 'A2d expand drops the de-duplication' \
     '/    lines.erase(std::unique(lines.begin(), lines.end()), lines.end());/d'
 # The accumulate pattern layout.h describes: a whole tick's demand goes into one
 # reused buffer. Assigning keeps only the last core's lines, and every earlier
 # core's demand vanishes with no error anywhere.
-mutate_pack kill 'A2d expand assigns instead of appending' \
+mutate_lc_h kill 'A2d expand assigns instead of appending' \
     's|    out.insert(out.end(), lines.begin(), lines.end());|    out = lines;|'
-mutate_pack kill 'A2d expand prepends' \
+mutate_lc_h kill 'A2d expand prepends' \
     's|    out.insert(out.end(), lines.begin(), lines.end());|    out.insert(out.begin(), lines.begin(), lines.end());|'
 # The stride is a format v2 header field and nothing downstream may assume it
 # is 1. Walking flat gives a sorted, distinct, in-range answer of a plausible
 # size for every burst, so only a check that pins expand's MEANING sees it.
-mutate_pack kill 'A2d the walk ignores the stride' \
+mutate_lc_h kill 'A2d the walk ignores the stride' \
     's|const std::int64_t v = start + static_cast<std::int64_t>(i) \* b.stride;|const std::int64_t v = start + static_cast<std::int64_t>(i);|'
 # One element short. The last element of a burst is the one that crosses into
 # the next block, so dropping it is a line the core needed and never asked for.
-mutate_pack kill 'A2d the walk stops one short' \
+mutate_lc_h kill 'A2d the walk stops one short' \
     's|    for (std::int32_t i = 0; i < b.count; ++i) {|    for (std::int32_t i = 0; i + 1 < b.count; ++i) {|'
 
 echo "== A2d: locate"
@@ -853,20 +856,20 @@ echo "== A2d: locate"
 # negative id comes back out of `line % num_sets` as a negative set index and a
 # cache array subscripts its slot vector from below. That is v1's F9, found in
 # the release build after the signedness change made it reachable.
-mutate_pack kill 'A2d locate never range checks' \
-    's@    if (v < 0 || v >= num_lines_) {@    if (false) {@'
-mutate_pack kill 'A2d locate drops the lower half' \
-    's@    if (v < 0 || v >= num_lines_) {@    if (v >= num_lines_) {@'
-mutate_pack kill 'A2d locate drops the upper half' \
-    's@    if (v < 0 || v >= num_lines_) {@    if (v < 0) {@'
-mutate_pack kill 'A2d locate is off by one' \
-    's@    if (v < 0 || v >= num_lines_) {@    if (v < 0 || v > num_lines_) {@'
+mutate_lc_h kill 'A2d locate never range checks' \
+    's@    if (v < 0 || v >= num_lines) {@    if (false) {@'
+mutate_lc_h kill 'A2d locate drops the lower half' \
+    's@    if (v < 0 || v >= num_lines) {@    if (v >= num_lines) {@'
+mutate_lc_h kill 'A2d locate drops the upper half' \
+    's@    if (v < 0 || v >= num_lines) {@    if (v < 0) {@'
+mutate_lc_h kill 'A2d locate is off by one' \
+    's@    if (v < 0 || v >= num_lines) {@    if (v < 0 || v > num_lines) {@'
 # out_of_range, not invalid_argument: a LineId outside [0, num_lines()) is well
 # formed and outside THIS layer, which is the same tier line_of throws from.
-mutate_pack kill 'A2d the locate failure is invalid_argument' \
-    's|        reject_range("line id out of range|        reject("line id out of range|'
-mutate_pack kill 'A2d the locate message loses its subject' \
-    's|reject_range("line id out of range \[0, "|reject_range("[0, "|'
+mutate_lc_h kill 'A2d the locate failure is invalid_argument' \
+    's|        reject_range(cls, "line id out of range|        reject(cls, "line id out of range|'
+mutate_lc_h kill 'A2d the locate message loses its subject' \
+    's|reject_range(cls, "line id out of range \[0, "|reject_range(cls, "[0, "|'
 # The identity is the definition of the pair, and swapping the two fields is
 # silent at a small set count and catastrophic at a large one.
 #
@@ -875,10 +878,10 @@ mutate_pack kill 'A2d the locate message loses its subject' \
 # not compile and would be a weaker mutation, killed by the compiler before it
 # ever reached the identity check. The value swap is the one that still
 # produces a well-typed mapper that is wrong, so it is the one kept.
-mutate_pack kill 'A2d locate swaps set index and tag' \
+mutate_lc_h kill 'A2d locate swaps set index and tag' \
     's|    return Placement{SetIndex{v % num_sets}, TagId{v / num_sets}};|    return Placement{SetIndex{v / num_sets}, TagId{v % num_sets}};|'
-mutate_pack kill 'A2d locate divides by num_lines' \
-    's|    return Placement{SetIndex{v % num_sets}, TagId{v / num_sets}};|    return Placement{SetIndex{v % num_lines_}, TagId{v / num_lines_}};|'
+mutate_lc_h kill 'A2d locate divides by num_lines' \
+    's|    return Placement{SetIndex{v % num_sets}, TagId{v / num_sets}};|    return Placement{SetIndex{v % num_lines}, TagId{v / num_lines}};|'
 
 echo "== A4a: the CacheArray interface (plan 2.2)"
 # Like A2a's, these are killed mostly at COMPILE time rather than by a failing
@@ -1162,14 +1165,14 @@ mutate_layout kill 'Q3 the default reads the line size again' \
     's|        return std::to_string(line_bytes);|        return std::to_string(line_size_bytes());|'
 # BlockPackMapper's override, one factor at a time. The three factors are what
 # the obligation asked for, so dropping any one of them retires it silently.
-mutate_pack kill 'A4b line_size_terms drops weight_bytes' \
-    's| + " x weight_bytes " + std::to_string(weight_bytes_);|;|'
-mutate_pack kill 'A4b line_size_terms names cin_block twice' \
-    's|std::to_string(cout_block_) + " x weight_bytes "|std::to_string(cin_block_) + " x weight_bytes "|'
+mutate_lc kill 'A4b line_size_terms drops weight_bytes' \
+    's| + " x weight_bytes " + std::to_string(weight_bytes);|;|'
+mutate_lc kill 'A4b line_size_terms names cin_block twice' \
+    's|std::to_string(cout_block) + " x weight_bytes "|std::to_string(cin_block) + " x weight_bytes "|'
 # The override reduced to the default, which is the change that looks like a
 # simplification and is exactly the obligation being undone.
 mutate_pack kill 'A4b line_size_terms reports the bare product' \
-    's|    return "cin_block " + std::to_string(cin_block_) + " x cout_block " +|    return std::to_string(line_size_bytes_); return "cin_block " + std::to_string(cin_block_) + " x cout_block " +|'
+    's|    return detail::line_size_terms(cin_block_, cout_block_, weight_bytes_);|    return std::to_string(line_size_bytes_);|'
 
 echo "== A4b: the copy control on the polymorphic base (cache.h)"
 # The A4a-to-A4b carried obligation. `r1 = r2` through two base references

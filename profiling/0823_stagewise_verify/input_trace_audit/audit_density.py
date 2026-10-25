@@ -5,6 +5,8 @@ Checks the premise that SNN input spike density should sit near 10%, across all
 12 vgg16 and 19 resnet19 layers of the full 10,000-sample captures.
 """
 import json, pathlib, sys, numpy as np
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+from common import next_cin_for  # noqa: E402
 
 R = pathlib.Path('/work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas')
 OUT = pathlib.Path(__file__).resolve().parent
@@ -34,7 +36,8 @@ for td in ['vgg16_T4_all', 'resnet19_T4_all']:
     for i, ln in enumerate(names):
         a = np.load(R / td / f'{ln}.npy', mmap_mode='r')
         T, _B, cin, hin, _win = a.shape
-        cout = m['layers'][names[i + 1]][2] if i + 1 < len(names) else cin
+        nc = next_cin_for(m, ln)
+        cout = cin if nc is None else nc
         x = np.asarray(a[:, :N]).astype(np.uint8)
         d = float(x.mean())
         s = x.sum(axis=0)

@@ -23,18 +23,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 STAGE = pathlib.Path(__file__).resolve().parent
 ROOT  = STAGE.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from archmodels.trace import valid_layer_names  # noqa: E402
+sys.path.insert(0, str(ROOT / "profiling"))
+from common import base_config, tags  # noqa: E402
 
 BIN     = ROOT / "src/wcache/native/build/release/wcache_sweep"
 STREAMS = ROOT / "profiling/0831_all_layer_streams/streams"
 OUT     = STAGE / "outputs"
 N_SAMPLES = 5
 
-BASE = {"layout": "khkw_split", "cin_block": 16, "cout_block": 4, "weight_bytes": 1,
-        "l1_size_bytes": 16384, "l1_assoc": 8,
-        "l2_size_bytes": 524288, "l2_assoc": 16, "l2_mshrs": 32, "l2_banks": 1,
-        "l1_latency": 0, "l2_latency": 2, "l2_miss_latency": 24,
-        "prefetch_policy": "none", "prefetch_distance": 0}
+BASE = base_config(drop=("l2_prefetch_policy",))
 PF = dict(l2_prefetch_policy="neighbour", l2_prefetch_axis="cin", l2_prefetch_distance=1)
 GRID = [
     dict(BASE, l2_prefetch_policy="none"),
@@ -43,15 +40,6 @@ GRID = [
     dict(BASE, **PF, l2_prefetch_up=1, l2_prefetch_down=1),   # both
 ]
 ARM = {0: "off", 1: "up", 2: "down", 3: "both"}
-
-
-def tags():
-    out = []
-    for prefix, tdir in [("V", "vgg16_T4_n5"), ("R", "resnet19_T4_n5")]:
-        meta = json.loads((ROOT / "input_trace/loas" / tdir / "meta.json").read_text())
-        for layer in valid_layer_names(meta):
-            out.append((f"{prefix}{int(layer.split('_')[1])}", layer))
-    return out
 
 
 def one(args):
@@ -79,7 +67,7 @@ def main() -> int:
     grid_path.write_text(json.dumps(GRID, indent=1) + "\n")
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                             capture_output=True, text=True).stdout.strip()
-    jobs = [(t, l, s, grid_path, commit) for t, l in tags() for s in range(N_SAMPLES)]
+    jobs = [(t, l, s, grid_path, commit) for t, _, l in tags() for s in range(N_SAMPLES)]
     print(f"=== {len(jobs)} streams x {len(GRID)} configs, {workers} workers ===", flush=True)
     rows, t0 = [], time.time()
     with ThreadPoolExecutor(max_workers=workers) as pool:

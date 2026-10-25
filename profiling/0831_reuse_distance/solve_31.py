@@ -6,7 +6,9 @@ four the 0823 stage-4 study used; the same call, over every layer instead.
 import json, pathlib, sys, time
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "profiling"))
 import tracegen
+from common import next_cin_for
 
 ARCH = "loas"
 TRACE_ROOT = ROOT / "input_trace/loas"
@@ -21,11 +23,11 @@ def main():
     for td in DIRS:
         meta = json.load(open(TRACE_ROOT / td / "meta.json"))
         names = list(meta["layers"])
-        for i, layer in enumerate(names):
+        for layer in names:
             out = CACHE / ARCH / td / f"{layer}.json"
             if out.exists():
                 print(f"  skip  {td}/{layer}"); skip += 1; continue
-            next_cin = meta["layers"][names[i+1]][2] if i+1 < len(names) else None
+            next_cin = next_cin_for(meta, layer)
             t0 = time.time()
             try:
                 art = tracegen.solve_and_cache_schedule(

@@ -16,6 +16,8 @@ import csv, json, pathlib, subprocess, sys, time
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
+sys.path.insert(0, str(ROOT / "profiling"))
+from common import base_config  # noqa: E402
 BIN  = ROOT / "src/wcache/native/build/release/wcache_sweep"
 STRM = HERE / "inputs/streams"
 OUT  = HERE / "outputs"
@@ -25,12 +27,10 @@ TAGS    = ["V8", "V9", "R9", "R16"]
 SAMPLES = range(5)
 SIZES   = [512 * 1024, 1 << 20, 2 << 20, 4 << 20, 8 << 20, 16 << 20]
 
-BASE = {
-    "cin_block": 16, "cout_block": 4, "weight_bytes": 1, "layout": "khkw_split",
-    "l1_size_bytes": 16384, "l1_assoc": 8, "l2_assoc": 16, "l2_mshrs": 32,
-    "l1_latency": 0, "l2_latency": 2, "l2_miss_latency": 24,
-    "l2_banks": 1, "prefetch_policy": "none", "prefetch_distance": 0,
-}
+BASE = base_config(("cin_block", "cout_block", "weight_bytes", "layout",
+                    "l1_size_bytes", "l1_assoc", "l2_assoc", "l2_mshrs",
+                    "l1_latency", "l2_latency", "l2_miss_latency",
+                    "l2_banks", "prefetch_policy", "prefetch_distance"))
 
 
 def one(args):

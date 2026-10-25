@@ -22,6 +22,8 @@ import time
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+sys.path.insert(0, str(ROOT / "profiling"))
+from common import KHKW_KEYS, base_config  # noqa: E402
 RUN  = ROOT / "src/wcache/native/build/release/wcache_run"
 STRM = ROOT / "profiling/0823_stagewise_verify/stage4_wcache/inputs/streams"
 GRID = ROOT / "profiling/0823_stagewise_verify/stage4_wcache/outputs/_khkw_grid/khkw_64b.json"
@@ -32,14 +34,7 @@ TAGS    = ["V8", "V9", "R9", "R16"]
 SAMPLES = range(5)
 MAX_ITERS = 4
 
-BEST = {
-    "cout_block": 4, "weight_bytes": 1, "layout": "khkw_split",
-    "l1_size_bytes": 16384, "l1_assoc": 8,
-    "l2_size_bytes": 524288, "l2_assoc": 16, "l2_mshrs": 32,
-    "l1_latency": 0, "l2_latency": 2, "l2_miss_latency": 24,
-    "cin_block": 16, "l2_banks": 1,
-    "prefetch_policy": "none", "prefetch_distance": 0,
-}
+BEST = base_config(KHKW_KEYS)
 
 # Plan section 5. Arm E's assoc is filled in from l2_size_bytes at run time.
 ARMS = [

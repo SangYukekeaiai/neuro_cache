@@ -29,7 +29,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 STAGE = pathlib.Path(__file__).resolve().parent
 ROOT  = STAGE.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from archmodels.trace import valid_layer_names  # noqa: E402
+sys.path.insert(0, str(ROOT / "profiling"))
+from common import base_config, tags  # noqa: E402
 
 BIN     = ROOT / "src/wcache/native/build/release/wcache_run"
 STREAMS = ROOT / "profiling/0831_all_layer_streams/streams"
@@ -37,21 +38,7 @@ OUT     = STAGE / "outputs"
 SAMPLE  = 0
 
 # The 0831 baseline arm, unchanged. Both prefetchers off.
-CONFIG = {"layout": "khkw_split", "cin_block": 16, "cout_block": 4, "weight_bytes": 1,
-          "l1_size_bytes": 16384, "l1_assoc": 8,
-          "l2_size_bytes": 524288, "l2_assoc": 16, "l2_mshrs": 32, "l2_banks": 1,
-          "l1_latency": 0, "l2_latency": 2, "l2_miss_latency": 24,
-          "prefetch_policy": "none", "prefetch_distance": 0,
-          "l2_prefetch_policy": "none"}
-
-
-def tags():
-    out = []
-    for prefix, tdir in [("V", "vgg16_T4_n5"), ("R", "resnet19_T4_n5")]:
-        meta = json.loads((ROOT / "input_trace/loas" / tdir / "meta.json").read_text())
-        for layer in valid_layer_names(meta):
-            out.append((f"{prefix}{int(layer.split('_')[1])}", layer, tdir))
-    return out
+CONFIG = base_config()
 
 
 def _cv(xs):
@@ -210,7 +197,7 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     cfg_path = OUT / "_config.json"
     cfg_path.write_text(json.dumps(CONFIG, indent=1) + "\n")
-    jobs = [(t, l, w, cfg_path) for t, l, w in tags()]
+    jobs = [(t, l, w, cfg_path) for t, w, l in tags()]
     print(f"=== {len(jobs)} layers, sample {SAMPLE}, {workers} workers ===", flush=True)
     rows, hists, setrows, t0 = [], {}, [], time.time()
     with ThreadPoolExecutor(max_workers=workers) as pool:

@@ -6,6 +6,8 @@ final output written to the CSV file.
 """
 
 from __future__ import annotations
+import pathlib
+import re
 from json import JSONEncoder
 from typing import List
 
@@ -19,8 +21,20 @@ COUNT     = 2   # computation counter:  one node runs for N cycles
 # ---------------------------------------------------------------------------
 # Network packet constants  (kept identical to CoSA for compatibility)
 # ---------------------------------------------------------------------------
+_EVENTSIM_CONSTANTS_H = pathlib.Path(__file__).resolve().parents[1] / "eventsim" / "constants.h"
+
+
+def _read_flits_per_packet() -> int:
+    """FLITS_PER_PACKET as defined for the eventsim build (its single source)."""
+    m = re.search(r"^constexpr int FLITS_PER_PACKET = (\d+);",
+                  _EVENTSIM_CONSTANTS_H.read_text(), re.MULTILINE)
+    if m is None:
+        raise RuntimeError(f"FLITS_PER_PACKET not found in {_EVENTSIM_CONSTANTS_H}")
+    return int(m.group(1))
+
+
 FLIT_SIZE   = 64    # bits per flit
-FLITS_PER_PACKET = 4    # payload flits per packet  (1 header flit excluded)
+FLITS_PER_PACKET = _read_flits_per_packet()    # payload flits per packet  (1 header flit excluded)
 PACKET_SIZE = FLIT_SIZE * FLITS_PER_PACKET   # 256 bits per packet
 
 

@@ -6,7 +6,9 @@
 // AddressMapper subclass, because a class deriving from a flatten in order to
 // disagree with part of it is exactly the shape that makes a bug in one
 // override invisible in the others. This layout disagrees with BlockPackMapper
-// about the nesting, so it is a sibling and shares no code with it.
+// about the nesting, so it is a sibling. The two share only the
+// layout-independent checks, burst walk and placement in src/layout_common.h,
+// never the flatten.
 //
 // --- the problem this layout is for ------------------------------------------
 //

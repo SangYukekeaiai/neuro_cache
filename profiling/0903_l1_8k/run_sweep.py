@@ -15,7 +15,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 STAGE = pathlib.Path(__file__).resolve().parent
 ROOT  = STAGE.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from archmodels.trace import valid_layer_names  # noqa: E402
+sys.path.insert(0, str(ROOT / "profiling"))
+from common import base_config, tags  # noqa: E402
 
 BIN     = ROOT / "src/wcache/native/build/release/wcache_sweep"
 STREAMS = ROOT / "profiling/0831_all_layer_streams/streams"
@@ -23,12 +24,7 @@ NOCSIM  = ROOT / "profiling/0831_all_layer_streams/outputs/all_layers_vs_nocsim.
 OUT     = STAGE / "outputs"
 N_SAMPLES = 5
 
-BASE = {"layout": "khkw_split", "cin_block": 16, "cout_block": 4, "weight_bytes": 1,
-        "l1_assoc": 8,
-        "l2_size_bytes": 524288, "l2_assoc": 16, "l2_mshrs": 32, "l2_banks": 1,
-        "l1_latency": 0, "l2_latency": 2, "l2_miss_latency": 24,
-        "prefetch_policy": "none", "prefetch_distance": 0,
-        "l2_prefetch_policy": "none"}
+BASE = base_config(drop=("l1_size_bytes",))
 
 GRID = [dict(BASE, l1_size_bytes=16384), dict(BASE, l1_size_bytes=8192)]
 ARMS = ["off_16k", "off_8k"]
@@ -37,15 +33,6 @@ STALL_COLS = ["stall_total", "stall_l1_slot", "stall_l1_line", "stall_l1_port",
               "stall_l2_slot", "stall_l2_line", "stall_l2_port", "stall_channel"]
 RATE_COLS  = ["l1_hit_rate", "l2_hit_rate", "l1_accesses", "l2_accesses",
               "dram_accesses", "dram_bytes", "l1_evictions"]
-
-
-def tags():
-    out = []
-    for prefix, tdir in [("V", "vgg16_T4_n5"), ("R", "resnet19_T4_n5")]:
-        meta = json.loads((ROOT / "input_trace/loas" / tdir / "meta.json").read_text())
-        for layer in valid_layer_names(meta):
-            out.append((f"{prefix}{int(layer.split('_')[1])}", layer))
-    return out
 
 
 def one(args):
@@ -80,7 +67,7 @@ def aggregate(rows, avail):
             for (t, a), rs in g.items() if a == "off_16k"}
 
     by_layer = []
-    for tag, _ in tags():
+    for tag, _, _ in tags():
         for arm in ARMS:
             rs = g.get((tag, arm))
             if not rs:
@@ -142,7 +129,7 @@ def main() -> int:
     grid_path = OUT / "_grid.json"
     grid_path.write_text(json.dumps(GRID, indent=1) + "\n")
 
-    jobs = [(t, l, s, grid_path, commit) for t, l in tags() for s in range(N_SAMPLES)]
+    jobs = [(t, l, s, grid_path, commit) for t, _, l in tags() for s in range(N_SAMPLES)]
     print(f"=== {len(jobs)} streams x {len(GRID)} configs, {workers} workers ===", flush=True)
     rows, fails, t0 = [], 0, time.time()
     with ThreadPoolExecutor(max_workers=workers) as pool:

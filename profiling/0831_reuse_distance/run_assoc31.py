@@ -11,16 +11,13 @@ disk is one stream, not 31.
 import csv, json, pathlib, subprocess, sys, tempfile, time
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "profiling"))
+from common import KHKW_KEYS, base_config  # noqa: E402
 GEN  = ROOT / "scripts/generate_weight_traces.py"
 RUN  = ROOT / "src/wcache/native/build/release/wcache_run"
 OUT  = pathlib.Path(__file__).resolve().parent / "outputs"
 
-BASE = {"cout_block":4,"weight_bytes":1,"layout":"khkw_split",
-        "l1_size_bytes":16384,"l1_assoc":8,
-        "l2_size_bytes":524288,"l2_mshrs":32,
-        "l1_latency":0,"l2_latency":2,"l2_miss_latency":24,
-        "cin_block":16,"l2_banks":1,
-        "prefetch_policy":"none","prefetch_distance":0}
+BASE = base_config(KHKW_KEYS, drop=("l2_assoc",))
 
 DIRS = {"vgg16_T4_n5":"vgg16", "resnet19_T4_n5":"resnet19"}
 
