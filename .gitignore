@@ -142,3 +142,6 @@ profiling/0831_all_layer_streams/weight_traces
 
 # Nested repo, unrelated to the wcache work
 profiling/0728_status_replay/site_source/
+
+# Ad-hoc screenshots pasted into chat sessions, not project material
+uploaded_sceenshots/

@@ -209,13 +209,23 @@ private:
 // monotonic counter has no part in it. What it does share is the
 // flat-vector-indexed-by-SlotId shape and the order-independence contract.
 //
-// M and the insertion value are compile-time constants (stamp_policy.cpp names
-// them), per the plan: they become knobs only if a sweep asks for them.
+// M IS a knob, because a sweep asked for it (plan 0907-linesize). The width
+// defaults to 2, which is SRRIP as published and is what every result taken
+// before this parameter existed used, so no committed number moves. At M = 5 the
+// RRPV runs 0..31 and a set of 32 ways can hold a full priority order over its
+// occupants rather than four buckets. The insertion value stays derived, one
+// below the maximum, so the widths differ in resolution and not in policy.
 class RripPolicy final : public ReplacementPolicy {
 public:
-    // Throws std::invalid_argument for a non-positive count, as StampPolicy
-    // does and for the same reason.
-    explicit RripPolicy(std::int32_t num_slots);
+    // `bits` is M, the RRPV width: the maximum is 2^bits - 1 and the insertion
+    // value one below it.
+    //
+    // Throws std::invalid_argument for a non-positive count, as StampPolicy does
+    // and for the same reason, and for `bits` outside [1, 8]. The upper bound is
+    // the width of the uint8 the RRPVs are stored in, and it is checked rather
+    // than assumed because a wider M would silently wrap the aging step and turn
+    // the oldest line into the newest.
+    explicit RripPolicy(std::int32_t num_slots, std::int32_t bits = 2);
 
     // A hit sets the RRPV to 0, a fill to the insertion value, and an
     // invalidate to the maximum, so an empty way is picked before any line.
@@ -238,10 +248,16 @@ public:
 private:
     std::size_t index_or_reject(const char* verb, SlotId slot) const;
 
-    // One RRPV per slot, indexed by SlotId. uint8 because the value is 2 bits;
+    // One RRPV per slot, indexed by SlotId. uint8 because M is capped at 8;
     // nothing here counts, so the int64 the other two policies need does not
     // apply.
     std::vector<std::uint8_t> rrpv_;
+
+    // 2^bits - 1 and one below it, fixed at construction. Members rather than
+    // the file-scope constants they replace, so two levels of one run may hold
+    // different widths.
+    std::uint8_t max_rrpv_;
+    std::uint8_t insert_rrpv_;
 };
 
 // The config vocabulary, per plan 2.2's `l1_policy` and `l2_policy` fields.
@@ -272,6 +288,10 @@ enum class PolicyKind : std::uint8_t {
 // under -DNDEBUG, and D1's config load reaches this call with a value a human
 // typed. This is the one place the refusal lives, so no config path can pick a
 // policy the enum admits and silently fall back to LRU.
-std::unique_ptr<ReplacementPolicy> make_policy(PolicyKind kind, std::int32_t num_slots);
+// `rrip_bits` is read only for PolicyKind::RRIP and is ignored by every other
+// kind, which is why it is defaulted rather than required: a call site that does
+// not build RRIP has nothing to say about it.
+std::unique_ptr<ReplacementPolicy> make_policy(PolicyKind kind, std::int32_t num_slots,
+                                               std::int32_t rrip_bits = 2);
 
 }  // namespace wcache

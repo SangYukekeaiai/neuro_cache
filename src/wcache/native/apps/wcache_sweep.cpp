@@ -203,7 +203,7 @@ void run(Options& opt) {
     BroadcastSweep sweep(trace, mapper, grid, opt.max_engines);
     if (oracles.l2) {
         for (std::size_t i = 0; i < sweep.size(); ++i) {
-            attach_oracles("wcache_sweep", oracles, sweep.config(i), sweep.engine(i));
+            attach_oracles(oracles, sweep.config(i), sweep.engine(i));
         }
     }
     sweep.run([&](const StreamingTileTrace& window) {
@@ -218,7 +218,19 @@ void run(Options& opt) {
         }
     });
 
-    if (oracles.l2) report_overruns("wcache_sweep", oracles);
+    // `max_wait_depth` is per ENGINE, and only the belady points produce the
+    // numbers the warning can invalidate, so the depth handed over is the
+    // maximum over THOSE points. Taking it over the whole grid would let an lru
+    // arm that blocked raise a warning about belady numbers that are sound,
+    // and a sweep exists to run arms that differ.
+    std::int64_t belady_wait_depth = 0;
+    for (std::size_t i = 0; i < sweep.size(); ++i) {
+        const RunConfig& c = sweep.config(i);
+        if (c.policy != PolicyKind::BELADY && c.l2_policy != PolicyKind::BELADY) continue;
+        const std::int64_t d = sweep.engine(i).stats().max_wait_depth;
+        if (d > belady_wait_depth) belady_wait_depth = d;
+    }
+    report_overruns("wcache_sweep", oracles, belady_wait_depth);
 
     const std::int64_t tick_base_total = trace.tick_base(hdr.n_tiles);
     const double       padding_fraction = padding.fraction();

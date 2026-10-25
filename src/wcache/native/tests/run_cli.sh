@@ -32,7 +32,7 @@ test "$(wc -l < "$tmp/a.csv")" -eq 2
 # `sim_wall_seconds` is wall-clock, so two runs of one binary over one stream
 # differ in those two cells by design. Pinning --run-id removes the first, and
 # the comparison below excludes `sim_wall_seconds` BY NAME and asserts that
-# every other one of the 111 columns matches, which is what §10.6's replay
+# every other one of the 112 columns matches, which is what §10.6's replay
 # contract actually claims.
 "$bin" --config "$tmp/cfg.json" --trace - --run-id fixed --header < "$tmp/fixture.wcts" > "$tmp/b.csv"
 "$py" - "$tmp/a.csv" "$tmp/b.csv" <<'PY'
@@ -45,7 +45,7 @@ assert [c for c, _, _ in differ] in ([], ["sim_wall_seconds"]), differ
 print(f"path vs stdin: {len(a[0]) - len(differ)} of {len(a[0])} columns identical")
 PY
 
-# 3. The row's arity matches the header's, and both are the pinned 111.
+# 3. The row's arity matches the header's, and both are the pinned 112.
 #
 # 91 and not 90: `stall_l1_port` was added, which is the bucket V21's partition
 # was missing. The 91 the plan's prose used to assert was an unrelated
@@ -58,7 +58,7 @@ PY
 import csv, sys
 rows = list(csv.reader(open(sys.argv[1])))
 assert len(rows) == 2, rows
-assert len(rows[0]) == len(rows[1]) == 111, (len(rows[0]), len(rows[1]))
+assert len(rows[0]) == len(rows[1]) == 112, (len(rows[0]), len(rows[1]))
 row = dict(zip(rows[0], rows[1]))
 assert int(row["total_cycles"]) > 0
 assert int(row["l1_accesses"]) > 0

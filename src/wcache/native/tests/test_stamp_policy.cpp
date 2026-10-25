@@ -1263,6 +1263,68 @@ void test_lfu_and_rrip_are_order_independent() {
         read_rrpv, slots, SlotId{1});
 }
 
+// --- the RRPV width (plan 0907-linesize) -------------------------------------
+//
+// M is a constructor argument now, so two facts need pinning: the default is
+// still 2, so no committed result moves, and a wider M really does give a
+// deeper order rather than being accepted and ignored.
+//
+// The probe is aging itself. pick_victim raises every candidate by
+// (max - the largest RRPV among them), so a slot at the insertion value is one
+// raise from the maximum at ANY width. What the width changes is how many
+// raises a slot that was just hit needs to walk from 0 back to the maximum, and
+// that count is what separates M = 2 from M = 5 here.
+void test_rrip_bits_widens_the_rrpv() {
+    check::group("P5: RRIP -- a wider M gives a deeper priority order");
+
+    for (std::int32_t bits : {2, 3, 5}) {
+        const int max_rrpv = (1 << bits) - 1;
+        RripPolicy p(32, bits);
+        p.on_fill(SlotId{0});
+        p.on_fill(SlotId{1});
+        p.on_hit(SlotId{0});          // slot 0 -> 0, slot 1 -> max - 1
+
+        // One raise puts slot 1 at the maximum, so it goes first at every width.
+        CHECK_EQ(p.pick_victim(candidates_over({0, 1})), SlotId{1});
+
+        // Slot 0 was raised to 1 by that call and now needs max_rrpv - 1 more
+        // raises to reach the maximum. Each single-candidate pick_victim is one
+        // raise, and the slot is trivially the victim throughout; the fact being
+        // pinned is that the walk takes exactly this many steps, which IS the
+        // depth the width buys.
+        for (int i = 1; i < max_rrpv; ++i) {
+            CHECK_EQ(p.pick_victim(candidates_over({0})), SlotId{0});
+        }
+
+        // A second slot freshly hit is now strictly younger than slot 0, and at
+        // M = 2 there is no room left to express that: slot 0 is already at the
+        // maximum either way. At M = 5 there is.
+        RripPolicy q(32, bits);
+        q.on_fill(SlotId{0});
+        q.on_fill(SlotId{1});
+        q.on_hit(SlotId{1});
+        CHECK_EQ(q.pick_victim(candidates_over({0, 1})), SlotId{0});
+    }
+}
+
+void test_rrip_refuses_a_width_outside_the_store() {
+    check::group("P5: RRIP -- a width outside [1, 8] is refused");
+    CHECK_THROWS(std::invalid_argument, RripPolicy(32, 0));
+    CHECK_THROWS(std::invalid_argument, RripPolicy(32, 9));
+    CHECK_THROWS(std::invalid_argument, RripPolicy(0, 2));
+}
+
+// The default reaches through make_policy unchanged, which is what keeps every
+// row taken before the knob existed reproducible.
+void test_make_policy_passes_rrip_bits_through() {
+    check::group("P5: make_policy -- rrip_bits defaults to 2 and is passed through");
+    CHECK_TRUE(make_policy(PolicyKind::RRIP, 32) != nullptr);
+    CHECK_TRUE(make_policy(PolicyKind::RRIP, 32, 5) != nullptr);
+    // Inert on every other kind rather than refused: a call site that does not
+    // build RRIP has nothing to say about the width.
+    CHECK_TRUE(make_policy(PolicyKind::LRU, 32, 5) != nullptr);
+}
+
 int main() {
     test_the_constructor_refuses_a_non_positive_slot_count();
     test_every_verb_bound_checks_its_slot();
@@ -1288,5 +1350,8 @@ int main() {
     test_rrip_invalidate_pins_a_slot_at_the_maximum();
     test_rrip_ties_go_to_the_smallest_slot_id();
     test_lfu_and_rrip_are_order_independent();
+    test_rrip_bits_widens_the_rrpv();
+    test_rrip_refuses_a_width_outside_the_store();
+    test_make_policy_passes_rrip_bits_through();
     return check::summary();
 }

@@ -224,20 +224,29 @@ SlotId LfuPolicy::pick_victim(const std::vector<Candidate>& candidates) {
 namespace {
 
 // A 2-bit RRPV, so the maximum is 3 and it is the value that names a victim.
-constexpr std::uint8_t kRripMaxRrpv = 3;
-
-// SRRIP inserts one below the maximum: a new line is predicted not to be
-// re-referenced soon, but it is given one aging round to prove otherwise before
-// it becomes a victim.
-constexpr std::uint8_t kRripInsertRrpv = 2;
+// The widest M the uint8 store admits. Checked rather than assumed: at M = 9 the
+// maximum would be 511, the assignment would wrap to 255, and the aging step
+// would turn the oldest line into a middling one with no diagnostic.
+constexpr std::int32_t kRripMaxBits = 8;
 
 }  // namespace
 
-RripPolicy::RripPolicy(std::int32_t num_slots) {
+RripPolicy::RripPolicy(std::int32_t num_slots, std::int32_t bits) {
     if (num_slots < 1) {
         reject("RripPolicy", "num_slots must be >= 1, got " + std::to_string(num_slots));
     }
-    rrpv_.assign(static_cast<std::size_t>(num_slots), kRripMaxRrpv);
+    if (bits < 1 || bits > kRripMaxBits) {
+        reject("RripPolicy", "rrip_bits must be in [1, " + std::to_string(kRripMaxBits) +
+                             "], got " + std::to_string(bits));
+    }
+    max_rrpv_ = static_cast<std::uint8_t>((1u << static_cast<unsigned>(bits)) - 1u);
+    // SRRIP inserts one below the maximum: a new line is predicted not to be
+    // re-referenced soon, but it is given one aging round to prove otherwise
+    // before it becomes a victim. At M = 1 the maximum is 1 and the insertion
+    // value is 0, which makes every fill look freshly used; that is degenerate
+    // rather than wrong, and it is left legal so the width sweep has an endpoint.
+    insert_rrpv_ = static_cast<std::uint8_t>(max_rrpv_ - (max_rrpv_ > 0 ? 1 : 0));
+    rrpv_.assign(static_cast<std::size_t>(num_slots), max_rrpv_);
 }
 
 std::size_t RripPolicy::index_or_reject(const char* verb, SlotId slot) const {
@@ -253,13 +262,13 @@ std::size_t RripPolicy::index_or_reject(const char* verb, SlotId slot) const {
 void RripPolicy::on_hit(SlotId slot) { rrpv_[index_or_reject("on_hit", slot)] = 0; }
 
 void RripPolicy::on_fill(SlotId slot) {
-    rrpv_[index_or_reject("on_fill", slot)] = kRripInsertRrpv;
+    rrpv_[index_or_reject("on_fill", slot)] = insert_rrpv_;
 }
 
 // The maximum, so a slot holding no line is evicted before any line that does,
 // which is correct: an empty way is always the better victim.
 void RripPolicy::on_invalidate(SlotId slot) {
-    rrpv_[index_or_reject("on_invalidate", slot)] = kRripMaxRrpv;
+    rrpv_[index_or_reject("on_invalidate", slot)] = max_rrpv_;
 }
 
 SlotId RripPolicy::pick_victim(const std::vector<Candidate>& candidates) {
@@ -280,14 +289,14 @@ SlotId RripPolicy::pick_victim(const std::vector<Candidate>& candidates) {
             highest = v;
         }
     }
-    const std::uint8_t rise = static_cast<std::uint8_t>(kRripMaxRrpv - highest);
+    const std::uint8_t rise = static_cast<std::uint8_t>(max_rrpv_ - highest);
 
     SlotId victim = candidates[0].slot;
     bool   found  = false;
     for (const Candidate& c : candidates) {
         std::uint8_t& v = rrpv_[index_or_reject("pick_victim", c.slot)];
         v              = static_cast<std::uint8_t>(v + rise);
-        if (v == kRripMaxRrpv && (!found || c.slot < victim)) {
+        if (v == max_rrpv_ && (!found || c.slot < victim)) {
             victim = c.slot;
             found  = true;
         }
@@ -295,12 +304,13 @@ SlotId RripPolicy::pick_victim(const std::vector<Candidate>& candidates) {
     return victim;
 }
 
-std::unique_ptr<ReplacementPolicy> make_policy(PolicyKind kind, std::int32_t num_slots) {
+std::unique_ptr<ReplacementPolicy> make_policy(PolicyKind kind, std::int32_t num_slots,
+                                               std::int32_t rrip_bits) {
     switch (kind) {
         case PolicyKind::LRU:    return std::make_unique<LruPolicy>(num_slots);
         case PolicyKind::FIFO:   return std::make_unique<FifoPolicy>(num_slots);
         case PolicyKind::BELADY: return std::make_unique<BeladyPolicy>(num_slots);
-        case PolicyKind::RRIP:   return std::make_unique<RripPolicy>(num_slots);
+        case PolicyKind::RRIP:   return std::make_unique<RripPolicy>(num_slots, rrip_bits);
         case PolicyKind::LFU:    return std::make_unique<LfuPolicy>(num_slots);
         case PolicyKind::RANDOM:
             reject("make_policy",

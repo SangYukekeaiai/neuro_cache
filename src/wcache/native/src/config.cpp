@@ -137,6 +137,7 @@ const I32Field kI32Fields[] = {
     {"cout_block", &RunConfig::cout_block},
     {"weight_bytes", &RunConfig::weight_bytes},
     {"l1_assoc", &RunConfig::l1_assoc},
+    {"rrip_bits", &RunConfig::rrip_bits},
     {"l2_assoc", &RunConfig::l2_assoc},
     {"l1_mshrs", &RunConfig::l1_mshrs},
     {"l1_tgts_per_mshr", &RunConfig::l1_tgts_per_mshr},
@@ -586,6 +587,12 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
     if (cfg.l2_policy == PolicyKind::RANDOM) {
         reject("l2_policy = random is a placeholder and is not implemented");
     }
+    // Refused rather than clamped: a width outside the store's range would
+    // silently wrap the aging step, and 1 is legal but degenerate (see the
+    // RripPolicy constructor), so a human who typed 0 or 9 meant something else.
+    if (cfg.rrip_bits < 1 || cfg.rrip_bits > 8) {
+        reject("rrip_bits = " + std::to_string(cfg.rrip_bits) + " must be in [1, 8]");
+    }
     if (cfg.policy == PolicyKind::RANDOM) {
         reject("policy = random is a placeholder and is not implemented");
     }
@@ -691,6 +698,7 @@ EngineParams to_engine_params(const RunConfig& cfg) {
     p.l1.cache_size_bytes = cfg.l1_size_bytes;
     p.l1.associativity    = cfg.l1_assoc;
     p.l1.policy           = cfg.policy;
+    p.l1.rrip_bits        = cfg.rrip_bits;
     p.l1.latency          = SimTime{cfg.l1_latency};
     p.l1.ii               = SimTime{cfg.l1_ii};
     p.l1.banks            = 1;
@@ -701,6 +709,7 @@ EngineParams to_engine_params(const RunConfig& cfg) {
     p.l2.cache_size_bytes = cfg.l2_size_bytes;
     p.l2.associativity    = cfg.l2_assoc;
     p.l2.policy           = cfg.l2_policy;
+    p.l2.rrip_bits        = cfg.rrip_bits;
     p.l2.latency          = SimTime{cfg.l2_latency};
     p.l2.ii               = SimTime{cfg.l2_ii};
     p.l2.banks            = cfg.l2_banks;

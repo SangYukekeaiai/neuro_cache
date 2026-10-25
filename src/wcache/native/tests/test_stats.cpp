@@ -116,9 +116,11 @@ void test_the_column_list_is_pinned() {
     // 109 since the L2 prefetch policy joined it (plan 0831-l2-cin-neighbour):
     // its four config fields and twelve outcome counters. A run that swaps the
     // L2 policy must say so in the row for the same reason `layout` had to.
-    CHECK_EQ(check::ssize(cols), std::int64_t{111});
+    // 112 since `rrip_bits` joined it (plan 0907-linesize), appended at the END
+    // so every column an existing result set is read by keeps its position.
+    CHECK_EQ(check::ssize(cols), std::int64_t{112});
     CHECK_TRUE(cols.front() == "run_id");
-    CHECK_TRUE(cols.back() == "distinct_addr_per_core_tile_max");
+    CHECK_TRUE(cols.back() == "rrip_bits");
     bool has_total = false, has_pad = false, has_hidden = false, has_sets = false;
     for (const std::string& c : cols) {
         if (c == "total_cycles")     has_total  = true;

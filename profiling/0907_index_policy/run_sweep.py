@@ -1,36 +1,28 @@
 #!/usr/bin/env python3
 """Replacement policy at L1 and L2, all 31 layers, against the nocsim makespan.
 
-One grid over `policy` alone. Everything except `policy` is the 0903_l1_8k
-`off_16k` BASE, so the `lru` arm must reproduce that stage's row -- it is the
-control, not a fifth result. `l2_policy` stays unset so both levels follow
-`policy`. `belady` is the offline bound.
+A grid over `policy` x `l1_size_bytes`: {lru, rrip, lfu} x {16 KB, 8 KB}, six
+points. Everything else is the 0903_l1_8k BASE, which makes that stage the
+control for both geometries: `lru_16k` must reproduce its `off_16k` row and
+`lru_8k` its `off_8k` row. `l2_policy` stays unset so both levels follow
+`policy`, and each policy is scored against lru AT ITS OWN SIZE so the number
+measures the policy rather than the capacity.
 
-TWO PASSES PER STREAM. Belady is offline: it needs to know where each line is
-next referenced, which only a prior run can say. So each job runs wcache_run
-once under `lru` to write an access log, then the sweep with `--oracle` over
-that log, then deletes it. The `lru` pass is not a wasted run: a core's L1
-demand stream is a pure function of the trace, the core and the mapper, so any
-non-belady policy would produce the same log, and `lru` is the control arm the
-belady number is compared against anyway.
+ONE PASS PER STREAM. Every arm here is an ONLINE policy, so the sweep reads each
+stream once and needs nothing from a prior run.
 
-WHAT THE BOUND IS WORTH. The per-core L1 oracles are EXACT, for the reason just
-given. The L2 oracle is APPROXIMATE, because a Belady L1 changes which
-references miss, so pass 2's L2 stream is a genuinely different sequence and not
-a reordering of pass 1's. The two things that make the approximation checkable
-are the oracle overrun counts the binary prints on stderr and the
-`max_wait_depth == 0` assertion below: nothing blocked means nothing re-triaged,
-so no reference was counted twice and the occurrence indices line up.
-
-Scratch: the access logs are written under $WCACHE_SCRATCH (default the system
-temp directory), never into the stage directory. They are 113 MB each at the
-widest layer, one per concurrent job, and each is deleted as soon as it is used.
+`belady` is deliberately NOT an arm, and its absence is what keeps that true. It
+is built and correct at both levels, but it is offline: it needs a prior
+wcache_run over each stream to write a 113 MB access log for the oracle to read,
+which doubles the work of every job and puts a scratch file beside it. The bound
+belongs in a stage of its own, run once the three online policies have been
+compared and it is clear how much room is left to bound.
 
 Usage: conda run -n base python run_sweep.py [workers]
 """
 from __future__ import annotations
 
-import csv, json, math, os, pathlib, statistics, subprocess, sys, tempfile, time
+import csv, json, math, pathlib, statistics, subprocess, sys, time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 STAGE = pathlib.Path(__file__).resolve().parent
@@ -39,8 +31,6 @@ sys.path.insert(0, str(ROOT / "src"))
 from archmodels.trace import valid_layer_names  # noqa: E402
 
 BIN     = ROOT / "src/wcache/native/build/release/wcache_sweep"
-RUNBIN  = ROOT / "src/wcache/native/build/release/wcache_run"
-SCRATCH = pathlib.Path(os.environ.get("WCACHE_SCRATCH", tempfile.gettempdir()))
 STREAMS = ROOT / "profiling/0831_all_layer_streams/streams"
 NOCSIM  = ROOT / "profiling/0831_all_layer_streams/outputs/all_layers_vs_nocsim.csv"
 OUT     = STAGE / "outputs"
@@ -53,8 +43,21 @@ BASE = {"layout": "khkw_split", "cin_block": 16, "cout_block": 4, "weight_bytes"
         "prefetch_policy": "none", "prefetch_distance": 0,
         "l2_prefetch_policy": "none"}
 
-ARMS = ["lru", "rrip", "lfu", "belady"]
-GRID = [dict(BASE, policy=p) for p in ARMS]
+POLICIES = ["lru", "rrip", "lfu"]
+L1_SIZES = [16384, 8192]
+
+# The grid is the product, and ARMS is its labelling in the SAME order, because
+# `one` matches a CSV row to its arm by index. Size is the outer loop so that
+# the three policies of one geometry stay adjacent in every output.
+GRID = [dict(BASE, policy=p, l1_size_bytes=sz) for sz in L1_SIZES for p in POLICIES]
+ARMS = [f"{p}_{sz // 1024}k" for sz in L1_SIZES for p in POLICIES]
+
+# The control for a given point is lru AT ITS OWN SIZE, so `speedup_vs_lru`
+# measures the policy and not the geometry. Comparing an 8 KB arm against the
+# 16 KB lru would fold the capacity loss the 0903_l1_8k stage already measured
+# into every 8 KB number here.
+def arm_size(arm):    return arm.rsplit("_", 1)[1]
+def arm_policy(arm):  return arm.rsplit("_", 1)[0]
 
 STALL_COLS = ["stall_total", "stall_l1_slot", "stall_l1_line", "stall_l1_port",
               "stall_l2_slot", "stall_l2_line", "stall_l2_port", "stall_channel"]
@@ -72,44 +75,18 @@ def tags():
 
 
 def one(args):
-    tag, layer, s, grid_path, pass1_path, commit = args
+    tag, layer, s, grid_path, commit = args
     stream = STREAMS / f"{tag}_s{s:05d}.wcts"
-    log = SCRATCH / f"wcache_oracle_{tag}_s{s}_{os.getpid()}.bin"
-    try:
-        p1 = subprocess.run(
-            [str(RUNBIN), "--config", str(pass1_path), "--trace", str(stream),
-             "--access-log", str(log), "--out", "/dev/null", "--no-header"],
-            capture_output=True, text=True)
-        if p1.returncode != 0:
-            raise RuntimeError(f"{tag} s{s} pass 1: {p1.stderr[-1500:]}")
-
-        r = subprocess.run(
-            [str(BIN), "--config-grid", str(grid_path),
-             "--trace", str(stream), "--oracle", str(log),
-             "--arm", "cache", "--tier", "policy",
-             "--run-id", f"policy-{tag}-s{s}", "--git-commit", commit, "--header"],
-            capture_output=True, text=True)
-    finally:
-        log.unlink(missing_ok=True)
+    r = subprocess.run(
+        [str(BIN), "--config-grid", str(grid_path), "--trace", str(stream),
+         "--arm", "cache", "--tier", "policy",
+         "--run-id", f"policy-{tag}-s{s}", "--git-commit", commit, "--header"],
+        capture_output=True, text=True)
     if r.returncode != 0:
         raise RuntimeError(f"{tag} s{s}: {r.stderr[-1500:]}")
     rows = list(csv.DictReader(r.stdout.splitlines()))
     if len(rows) != len(ARMS):
         raise RuntimeError(f"{tag} s{s}: got {len(rows)} rows, expected {len(ARMS)}")
-    # Refused rather than reported: under blocking a refused request re-triages
-    # and is counted a second time, which shifts every later occurrence index by
-    # one and makes the oracle answer for the wrong reference.
-    for d in rows:
-        if d.get("max_wait_depth") not in ("0", None):
-            raise RuntimeError(f"{tag} s{s}: max_wait_depth = {d['max_wait_depth']}, "
-                               "so requests re-triaged and the oracle indices shifted")
-    # The overrun counts the binary printed. L1 overruns mean the two passes
-    # disagree about a core's stream, which cannot happen if the assumption above
-    # holds, so they are refused; L2 overruns are expected under a Belady L1 and
-    # are reported rather than refused.
-    for line in r.stderr.splitlines():
-        if "oracle overruns" in line and ", l1 0," not in line:
-            raise RuntimeError(f"{tag} s{s}: {line}")
     for i, d in enumerate(rows):
         d["_tag"], d["_sample"], d["_arm"], d["_layer"] = tag, str(s), ARMS[i], layer
     return rows
@@ -125,8 +102,8 @@ def aggregate(rows, avail):
     g = {}
     for r in rows:
         g.setdefault((r["_tag"], r["_arm"]), []).append(r)
-    base = {t: statistics.mean(float(r["total_cycles"]) for r in rs)
-            for (t, a), rs in g.items() if a == "lru"}
+    base = {(t, arm_size(a)): statistics.mean(float(r["total_cycles"]) for r in rs)
+            for (t, a), rs in g.items() if arm_policy(a) == "lru"}
 
     by_layer = []
     for tag, _ in tags():
@@ -139,10 +116,12 @@ def aggregate(rows, avail):
             mc  = statistics.mean(cyc)
             nr  = noc.get(tag)
             row = {"tag": tag, "layer": rs[0]["layer"], "workload": rs[0]["workload"],
-                   "arm": arm, "policy": rs[0]["policy"], "samples": len(rs),
+                   "arm": arm, "policy": rs[0]["policy"],
+                   "l1_size_bytes": rs[0]["l1_size_bytes"],
+                   "l1_num_sets": rs[0]["l1_num_sets"], "samples": len(rs),
                    "cycles": round(mc, 1),
                    "cycles_spread": round((max(cyc) - min(cyc)) / mc, 4),
-                   "speedup_vs_lru": round(base[tag] / mc, 4),
+                   "speedup_vs_lru": round(base[(tag, arm_size(arm))] / mc, 4),
                    "nocsim_total_cycles": round(float(nr["nocsim_total_cycles"]), 1) if nr else "",
                    "nocsim_compute_per_node": round(float(nr["nocsim_compute_per_node"]), 1) if nr else "",
                    "speedup_vs_nocsim_total":
@@ -190,11 +169,8 @@ def main() -> int:
                             capture_output=True, text=True).stdout.strip()
     grid_path = OUT / "_grid.json"
     grid_path.write_text(json.dumps(GRID, indent=1) + "\n")
-    # Pass 1's configuration: the control arm, one point, no grid.
-    pass1_path = OUT / "_pass1.json"
-    pass1_path.write_text(json.dumps(dict(BASE, policy="lru"), indent=1) + "\n")
 
-    jobs = [(t, l, s, grid_path, pass1_path, commit)
+    jobs = [(t, l, s, grid_path, commit)
             for t, l in tags() for s in range(N_SAMPLES)]
     print(f"=== {len(jobs)} streams x {len(GRID)} configs, {workers} workers ===", flush=True)
     rows, fails, t0 = [], 0, time.time()

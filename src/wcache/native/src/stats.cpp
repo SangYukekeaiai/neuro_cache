@@ -234,7 +234,13 @@ const std::vector<std::string>& csv_columns() {
         "l2_mshr_occ_p50", "l2_mshr_occ_p95", "l2_mshr_occ_max",
         "max_wait_depth", "hits_downgraded_to_miss", "events", "events_per_cycle",
         "sim_wall_seconds",
-        "distinct_addr_per_core_tile_p50", "distinct_addr_per_core_tile_max"};
+        "distinct_addr_per_core_tile_p50", "distinct_addr_per_core_tile_max",
+        // Appended at the END, after the existing schema, so every column an
+        // existing result set is read by keeps its position. A run that widens
+        // the RRPV must say so in its own row, for the reason `layout` and
+        // `cin_lo_blocks` are columns: two rows measuring different machines
+        // must not look configured the same way.
+        "rrip_bits"};
     return cols;
 }
 
@@ -390,6 +396,7 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
     r.f64("sim_wall_seconds", sim_wall_seconds);
     r.i64("distinct_addr_per_core_tile_p50", distinct_p50);
     r.i64("distinct_addr_per_core_tile_max", distinct_max);
+    r.i64("rrip_bits", cfg.rrip_bits);
 
     cells_ = r.take();
 }

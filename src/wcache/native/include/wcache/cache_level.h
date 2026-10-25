@@ -107,6 +107,10 @@ struct LevelParams {
     std::int32_t associativity    = 1;
     PolicyKind   policy           = PolicyKind::LRU;
 
+    // M for RRIP, ignored by every other policy. Defaults to 2, which is SRRIP
+    // as published and what every result taken before the knob existed used.
+    std::int32_t rrip_bits        = 2;
+
     // The port's two numbers (4.3). `ii = 0` is N13's escape hatch, which is how
     // the unbounded baseline of V1 is built; `latency = 0` is 2.5b's default for
     // `l1_latency`, which is what makes a 100% hit run reproduce the scratchpad

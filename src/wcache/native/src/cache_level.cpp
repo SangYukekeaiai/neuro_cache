@@ -77,7 +77,7 @@ CacheLevel::CacheLevel(Level level,
 
     // After the array, so a policy is never sized from a geometry the array
     // refused. `make_policy` is what rejects Random (Q5, V29, decision B95).
-    policy_ = make_policy(params.policy, slots);
+    policy_ = make_policy(params.policy, slots, params.rrip_bits);
 
     if (params.banks < 1) {
         throw std::invalid_argument("CacheLevel: banks must be >= 1, got " +
