@@ -123,6 +123,11 @@ profiling/0823_stagewise_verify/stage2_weight_trace/inputs/input_trace/
 # from Stage 2 inputs by scripts/generate_weight_traces.py (verified 2026-08-25).
 profiling/0823_stagewise_verify/stage4_wcache/inputs/streams/*.wcts
 
+# Stage 3 bulk outputs (311 MB): untracked 2026-10-25, kept on disk; see
+# profiling/0823_stagewise_verify/UNTRACKED_OUTPUTS.md.
+profiling/0823_stagewise_verify/stage3_nocsim/outputs/weight_traces_single_node/
+profiling/0823_stagewise_verify/stage3_nocsim/outputs/tc/
+
 # wcache debugging instruments: the cache-state log and the line trace, plus
 # the aligned text views to_txt.py renders from them. All are regenerable by
 # `wcache_run --cache-state` / `--line-trace`, and a whole layer runs to
