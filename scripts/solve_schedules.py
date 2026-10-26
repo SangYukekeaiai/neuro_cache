@@ -58,18 +58,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def _iter_valid_layers(trace_root: pathlib.Path, trace_dir_name: str):
-    """Yield (layer_name, meta, next_cin) for every valid layer in
+    """Yield (layer_name, meta) for every valid layer in
     trace_root/trace_dir_name, in meta.json order."""
     trace_dir = trace_root / trace_dir_name
     with open(trace_dir / "meta.json") as fh:
         meta = json.load(fh)
-    names = list(meta["layers"])
-    valid = set(valid_layer_names(meta))
-    for i, name in enumerate(names):
-        if name not in valid:
-            continue
-        next_cin = meta["layers"][names[i + 1]][2] if i + 1 < len(names) else None
-        yield name, meta, next_cin
+    for name in valid_layer_names(meta):
+        yield name, meta
 
 
 def main() -> int:
@@ -83,7 +78,7 @@ def main() -> int:
         layers = list(_iter_valid_layers(trace_root, trace_dir_name))
         for arch_name in args.archs:
             arch_yaml = DEFAULT_ARCH_YAML[arch_name]
-            for layer_name, meta, next_cin in layers:
+            for layer_name, meta in layers:
                 out_path = cache_dir / arch_name / trace_dir_name / f"{layer_name}.json"
                 if out_path.exists() and not args.force:
                     print(f"  skip (exists): {arch_name}/{trace_dir_name}/{layer_name}")
@@ -98,7 +93,7 @@ def main() -> int:
                     artifact = tracegen.solve_and_cache_schedule(
                         arch_name, arch_yaml, DEFAULT_DATAFLOW_YAML[arch_name],
                         trace_dir_name, layer_name,
-                        meta, next_cin, cache_dir,
+                        meta, cache_dir,
                     )
                     row["status"] = "OK"
                     row["dram_num_steps"] = artifact.dram_num_steps

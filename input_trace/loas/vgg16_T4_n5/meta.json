@@ -92,6 +92,68 @@
    2
   ]
  },
+ "layer_params": {
+  "layer_01_features_3": {
+   "cout": 64,
+   "kernel": 3,
+   "stride": 1
+  },
+  "layer_02_features_7": {
+   "cout": 128,
+   "kernel": 3,
+   "stride": 1
+  },
+  "layer_03_features_10": {
+   "cout": 128,
+   "kernel": 3,
+   "stride": 1
+  },
+  "layer_04_features_14": {
+   "cout": 256,
+   "kernel": 3,
+   "stride": 1
+  },
+  "layer_05_features_17": {
+   "cout": 256,
+   "kernel": 3,
+   "stride": 1
+  },
+  "layer_06_features_20": {
+   "cout": 256,
+   "kernel": 3,
+   "stride": 1
+  },
+  "layer_07_features_24": {
+   "cout": 512,
+   "kernel": 3,
+   "stride": 1
+  },
+  "layer_08_features_27": {
+   "cout": 512,
+   "kernel": 3,
+   "stride": 1
+  },
+  "layer_09_features_30": {
+   "cout": 512,
+   "kernel": 3,
+   "stride": 1
+  },
+  "layer_10_features_34": {
+   "cout": 512,
+   "kernel": 3,
+   "stride": 1
+  },
+  "layer_11_features_37": {
+   "cout": 512,
+   "kernel": 3,
+   "stride": 1
+  },
+  "layer_12_features_40": {
+   "cout": 512,
+   "kernel": 3,
+   "stride": 1
+  }
+ },
  "subset": {
   "of": "vgg16_T4_all",
   "n": 5,

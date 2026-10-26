@@ -100,17 +100,8 @@ def parse_args() -> argparse.Namespace:
 def iter_layers(trace_root: pathlib.Path, trace_name: str):
     with open(trace_root / trace_name / "meta.json") as file:
         meta = json.load(file)
-    names = list(meta["layers"])
-    valid = set(valid_layer_names(meta))
-    for index, name in enumerate(names):
-        if name not in valid:
-            continue
-        next_cin = (
-            meta["layers"][names[index + 1]][2]
-            if index + 1 < len(names)
-            else None
-        )
-        yield name, meta, next_cin
+    for name in valid_layer_names(meta):
+        yield name, meta
 
 
 def build_combos(trace_root: pathlib.Path, cache_dir: pathlib.Path, force: bool):
@@ -121,12 +112,12 @@ def build_combos(trace_root: pathlib.Path, cache_dir: pathlib.Path, force: bool)
             for instances in INSTANCE_COUNTS:
                 for node_size in NODE_SIZES:
                     for noc_size in NOC_SIZES:
-                        for layer_name, meta, next_cin in layers:
+                        for layer_name, meta in layers:
                             combos.append({
                                 "arch": arch, "instances": instances,
                                 "node_size": node_size, "noc_size": noc_size,
                                 "trace_dir": trace_name, "layer": layer_name,
-                                "meta": meta, "next_cin": next_cin,
+                                "meta": meta,
                                 "cache_dir": str(cache_dir), "force": force,
                             })
     return combos
@@ -214,7 +205,7 @@ def _solve_one(combo: dict) -> dict:
     try:
         artifact = tracegen.solve_and_cache_schedule(
             arch, str(arch_yaml), dataflow_yaml, trace_name, layer_name,
-            combo["meta"], combo["next_cin"], cache_dir,
+            combo["meta"], cache_dir,
         )
         row["status"] = "OK"
         row["mode"] = artifact.mode

@@ -129,6 +129,11 @@ def run_one_combo(args: argparse.Namespace) -> int:
     if not schedule_path.exists():
         print(f"ERROR: no cached schedule at {schedule_path} -- run solve_schedules.py first")
         return 1
+    try:
+        tracegen.check_schedule_matches_trace(schedule_path, trace_root / args.trace_dir, args.layer)
+    except ValueError as e:
+        print(f"ERROR: {e}")
+        return 1
 
     out_dir = pathlib.Path(args.out_dir)
     combo_tag = args.combo_tag or ""
@@ -195,6 +200,8 @@ def _all_layer_targets(trace_root: pathlib.Path, trace_dirs: Sequence[str]):
 def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices):
     """Reconstruct and save whichever of `indices` aren't already saved for
     this (arch, trace_dir, layer). Returns (num_done, seconds)."""
+    sched_path = schedule_cache / arch_name / trace_dir_name / f"{layer_name}.json"
+    tracegen.check_schedule_matches_trace(sched_path, trace_root / trace_dir_name, layer_name)
     out_dir = out_root / arch_name / trace_dir_name / layer_name
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -202,7 +209,6 @@ def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir
     if not missing:
         return 0, 0.0
 
-    sched_path = schedule_cache / arch_name / trace_dir_name / f"{layer_name}.json"
     t0 = time.time()
     artifact, prob, tiles = tracegen.load_schedule(sched_path)
     trace = load_layer_trace(trace_root / trace_dir_name, layer_name, mmap=True)
@@ -304,6 +310,12 @@ def run_stream(args: argparse.Namespace) -> int:
     if not schedule_path.exists():
         print(f"ERROR: no cached schedule at {schedule_path} -- run solve_schedules.py first",
               file=sys.stderr)
+        return 1
+    try:
+        tracegen.check_schedule_matches_trace(
+            schedule_path, pathlib.Path(args.trace_root) / args.trace_dir, args.layer)
+    except ValueError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
         return 1
 
     artifact, prob, tiles = tracegen.load_schedule(schedule_path)

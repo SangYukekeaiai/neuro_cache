@@ -36,7 +36,6 @@ from wcache_baseline import sweep  # noqa: E402
 from demo import DEFAULT_JOBS, load_grid  # noqa: E402
 from subset_input_traces import DEFAULT_SRC as FULL_CAPTURE  # noqa: E402
 from archmodels.trace import valid_layer_names  # noqa: E402
-from common import next_cin_for  # noqa: E402
 from util import data_root  # noqa: E402
 
 
@@ -77,7 +76,7 @@ def solve_schedule(bench, trace_root, trace_dir, layer, cache):
     import tracegen
     meta = json.loads((trace_root / trace_dir / "meta.json").read_text())
     tracegen.solve_and_cache_schedule(bench, ss.DEFAULT_ARCH_YAML[bench], ss.DEFAULT_DATAFLOW_YAML[bench],
-                                      trace_dir, layer, meta, next_cin_for(meta, layer), cache)
+                                      trace_dir, layer, meta, cache)
 
 
 def sample_commands(a, sched, trace_dir, layer, s, stream, grid_files):

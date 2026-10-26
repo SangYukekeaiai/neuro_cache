@@ -36,17 +36,8 @@ def parse_args() -> argparse.Namespace:
 def iter_layers(trace_root: pathlib.Path, trace_name: str):
     with open(trace_root / trace_name / "meta.json") as file:
         meta = json.load(file)
-    names = list(meta["layers"])
-    valid = set(valid_layer_names(meta))
-    for index, name in enumerate(names):
-        if name not in valid:
-            continue
-        next_cin = (
-            meta["layers"][names[index + 1]][2]
-            if index + 1 < len(names)
-            else None
-        )
-        yield name, meta, next_cin
+    for name in valid_layer_names(meta):
+        yield name, meta
 
 
 def main() -> int:
@@ -60,7 +51,7 @@ def main() -> int:
         for arch in ARCHS:
             arch_yaml = str(ROOT / f"configs/arch/{arch}_multinode.yaml")
             dataflow_yaml = str(ROOT / f"configs/dataflow/{arch}.yaml")
-            for layer_name, meta, next_cin in layers:
+            for layer_name, meta in layers:
                 out_path = cache_dir / arch / trace_name / f"{layer_name}.json"
                 row = {
                     "arch": arch,
@@ -82,7 +73,6 @@ def main() -> int:
                         trace_name,
                         layer_name,
                         meta,
-                        next_cin,
                         cache_dir,
                     )
                     row["status"] = "OK"

@@ -1,9 +1,11 @@
 """Loads real captured spike traces and builds matching workload problem
 dicts directly from their metadata.
 
-input_trace/loas/<workload>/ holds one meta.json (layer name -> real
-input-tensor shape [T, B, Cin, Hin, Win]) plus one <layer_name>.npy per
-captured layer, binary uint8 (0/1 spikes). No such loader existed before
+input_trace/loas/<workload>/ holds one meta.json plus one <layer_name>.npy
+per captured layer, binary uint8 (0/1 spikes). meta.json's "layers" maps
+layer name -> real input-tensor shape [T, B, Cin, Hin, Win]; its
+"layer_params" maps the same names -> {"cout", "kernel", "stride"} of that
+captured conv (output channels, square kernel size, stride). No such loader existed before
 this -- the 5 arch pilots' own verification scripts each called np.load ad hoc.
 
 Generic per-network workload YAMLs do NOT match these captured layers'
@@ -21,8 +23,10 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-KH = KW = 3   # blanket assumption, matching every archmodel's own
-              # reconstruct_tile_sequence docstring: stride-1 convolution.
+KH = KW = 3   # every arch model's C++ replay walks 3x3 stride-1 windows
+              # (e.g. src/archmodels/loas/LoASGen.h reads input row ho+kh-pad),
+              # so valid_layer_names leaves out any other kernel or stride.
+LAYER_PARAM_KEYS = ("cout", "kernel", "stride")
 PAD = 1       # "same" padding for a 3x3/stride-1 conv (the standard VGG/
               # ResNet convention) -- HO = Hin + 2*PAD - KH + 1 = Hin when
               # PAD=1, KH=3. PAD=0 ("valid" convolution, HO=Hin-2) was this
@@ -77,42 +81,63 @@ def load_layer_trace(trace_dir: pathlib.Path, layer_name: str, mmap: bool = Fals
     return trace
 
 
-def valid_layer_names(meta: Dict[str, Any]) -> List[str]:
-    """Return meta['layers'] keys whose Hin/Win support a KHxKW=3x3,
-    PAD=1 receptive field (HO=Hin+2*PAD-KH+1>=1, same for WO), in
-    meta.json's own order.
+def layer_params(meta: Dict[str, Any], layer_name: str) -> Dict[str, int]:
+    """meta["layer_params"][layer_name]: {"cout", "kernel", "stride"} of that
+    captured conv.
 
-    With PAD=1 ("same" padding, HO=Hin exactly for a 3x3/stride-1 conv),
-    this is vacuous in practice for this project's real captured layers
-    (every Hin/Win>=1 already gives HO/WO>=1) -- kept as a real check
-    rather than assumed, since a future differently-shaped capture could
-    still violate it, and past behavior with PAD=0 did exclude 3 real
-    vgg16 layers on exactly this condition.
+    Raises:
+        ValueError: if meta["layer_params"] is not a dict, the entry is
+                    missing, or any of the three is not a positive int.
     """
-    names = []
-    for name, (_t, _b, _cin, hin, win) in meta["layers"].items():
-        ho = hin + 2 * PAD - (KH - 1)
-        wo = win + 2 * PAD - (KW - 1)
-        if ho >= 1 and wo >= 1:
-            names.append(name)
-    return names
+    all_params = meta.get("layer_params", {})
+    if not isinstance(all_params, dict):
+        raise ValueError(f"layer_params is {type(all_params).__name__}, want a dict "
+                         f"(layer name -> {{cout, kernel, stride}})")
+    p = all_params.get(layer_name)
+    bad = [k for k in LAYER_PARAM_KEYS
+           if not (isinstance(p, dict) and isinstance(p.get(k), int)
+                   and not isinstance(p[k], bool) and p[k] > 0)]
+    if bad:
+        raise ValueError(
+            f"layer_params[{layer_name!r}] = {p!r} lacks a positive int "
+            f"{', '.join(bad)} (meta.json needs cout, kernel and stride for every layer)"
+        )
+    return p
 
 
-def build_workload_from_trace(
-    meta: Dict[str, Any], layer_name: str, next_cin: Optional[int] = None
-) -> Dict[str, Any]:
+def exclusion_reason(meta: Dict[str, Any], layer_name: str) -> Optional[str]:
+    """Why the arch models cannot replay this layer, or None when they can:
+    its kernel is not KHxKW=3x3 or its stride is not 1, or its Hin/Win give
+    no output with PAD=1 (HO=Hin+2*PAD-KH+1<1, same for WO).
+
+    Raises:
+        ValueError: from layer_params(), if the layer's entry is incomplete.
+    """
+    p = layer_params(meta, layer_name)
+    if p["kernel"] != KH or p["stride"] != 1:
+        return (f"kernel {p['kernel']}x{p['kernel']}, stride {p['stride']}: "
+                f"the arch models replay only {KH}x{KW} stride-1 convs")
+    _t, _b, _cin, hin, win = meta["layers"][layer_name]
+    if hin + 2 * PAD - (KH - 1) < 1 or win + 2 * PAD - (KW - 1) < 1:
+        return f"Hin={hin}/Win={win} too small for a {KH}x{KW} conv with PAD={PAD}"
+    return None
+
+
+def valid_layer_names(meta: Dict[str, Any]) -> List[str]:
+    """Return meta['layers'] keys the arch models can replay (exclusion_reason
+    is None), in meta.json's own order."""
+    return [name for name in meta["layers"] if exclusion_reason(meta, name) is None]
+
+
+def build_workload_from_trace(meta: Dict[str, Any], layer_name: str) -> Dict[str, Any]:
     """Build a {"problem": {...}} dict for one captured layer, derived
     directly from meta.json -- KH=KW=3, stride-1, PAD=1 ("same" padding,
-    the standard VGG/ResNet 3x3-conv convention -- HO=Hin, WO=Win exactly).
+    the standard VGG/ResNet 3x3-conv convention -- HO=Hin, WO=Win exactly),
+    COUT from meta["layer_params"].
 
     Args:
         meta:      the parsed meta.json dict.
         layer_name: e.g. "layer_01_features_3".
-        next_cin:  the NEXT captured layer's CIN (this layer's real COUT,
-                   since meta.json's "layers" dict is network-sequential --
-                   layer i's output channels = layer i+1's input channels).
-                   None (the last captured layer in a model) falls back to
-                   reusing this layer's own CIN as COUT.
 
     Returns:
         {"problem": {"KH":3, "KW":3, "CIN":.., "COUT":.., "HO":.., "WO":..,
@@ -120,22 +145,18 @@ def build_workload_from_trace(
         pass to SNNProb.
 
     Raises:
-        ValueError: if this layer's Hin/Win are too small for KH=KW=3 even
-                    with PAD=1 (use valid_layer_names() to filter these
-                    out first -- vacuous in practice for real captures).
+        ValueError: if the layer's layer_params entry is incomplete, or the
+                    layer is excluded (exclusion_reason; use
+                    valid_layer_names() to filter these out first).
     """
+    reason = exclusion_reason(meta, layer_name)
+    if reason is not None:
+        raise ValueError(f"build_workload_from_trace: '{layer_name}' is excluded: {reason}")
     t, _b, cin, hin, win = meta["layers"][layer_name]
     ho, wo = hin + 2 * PAD - (KH - 1), win + 2 * PAD - (KW - 1)
-    if ho < 1 or wo < 1:
-        raise ValueError(
-            f"build_workload_from_trace: '{layer_name}' has Hin={hin}/Win={win}, "
-            f"too small for a {KH}x{KW} receptive field even with PAD={PAD} "
-            f"(HO={ho}, WO={wo})"
-        )
-    cout = next_cin if next_cin is not None else cin
     return {
         "problem": {
-            "KH": KH, "KW": KW, "CIN": cin, "COUT": cout,
+            "KH": KH, "KW": KW, "CIN": cin, "COUT": layer_params(meta, layer_name)["cout"],
             "HO": ho, "WO": wo, "T": t, "shape": "snn-layer",
         }
     }

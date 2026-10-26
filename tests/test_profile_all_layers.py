@@ -11,19 +11,24 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scripts"))
 import profile_all_layers as pal  # noqa: E402
 
 
-def capture(root, name, layers, n_samples=5):
-    """A trace dir with a meta.json; `layers` maps name -> [T, B, Cin, Hin, Win]."""
+def capture(root, name, layers, n_samples=5, params=None):
+    """A trace dir with a meta.json; `layers` maps name -> [T, B, Cin, Hin, Win],
+    each a 3x3 stride-1 conv unless `params` says otherwise."""
     d = root / name
     d.mkdir(parents=True)
-    (d / "meta.json").write_text(json.dumps({"n_samples": n_samples, "layers": layers}))
+    lp = {n: {"cout": s[2], "kernel": 3, "stride": 1} for n, s in layers.items()}
+    lp.update(params or {})
+    (d / "meta.json").write_text(json.dumps({"n_samples": n_samples, "layers": layers, "layer_params": lp}))
 
 
 @pytest.fixture
 def trace_root(tmp_path):
     root = tmp_path / "traces"
     capture(root, "vgg", {"v1": [4, 5, 64, 8, 8], "v2": [4, 5, 64, 8, 8]})
-    # Hin = Win = 0 gives no 3x3 output, so valid_layer_names drops it.
-    capture(root, "res", {"r1": [4, 5, 32, 4, 4], "r_bad": [4, 5, 32, 0, 0]})
+    # valid_layer_names drops r_bad (Hin = Win = 0 gives no 3x3 output) and the
+    # 1x1 stride-2 shortcut r_sc (the arch models replay only 3x3 stride-1 convs).
+    capture(root, "res", {"r1": [4, 5, 32, 4, 4], "r_bad": [4, 5, 32, 0, 0], "r_sc": [4, 5, 32, 4, 4]},
+            params={"r_sc": {"cout": 64, "kernel": 1, "stride": 2}})
     (root / "notes").mkdir()
     return root
 

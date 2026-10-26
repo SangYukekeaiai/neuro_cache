@@ -75,7 +75,6 @@ def solve_and_cache_schedule(
     trace_dir_name: str,
     layer_name: str,
     meta: Dict[str, Any],
-    next_cin: Optional[int],
     cache_dir: pathlib.Path,
 ) -> ScheduleArtifact:
     """Solve one (arch, layer)'s schedule across every TrafficMode, keep the
@@ -99,7 +98,7 @@ def solve_and_cache_schedule(
     """
     from mip_solver.solve import solve_best_schedule  # lazy: see module-level comment
 
-    workload = build_workload_from_trace(meta, layer_name, next_cin=next_cin)
+    workload = build_workload_from_trace(meta, layer_name)
     layer_path = _dump_workload_path(workload)
     prob = SNNProb(pathlib.Path(layer_path))
 
@@ -142,6 +141,33 @@ def load_schedule(path: pathlib.Path) -> Tuple[ScheduleArtifact, SNNProb, List[N
     schedule = schedule_from_strategy(artifact.result["strategy"], prob)
     tiles = list(iter_node_tiles(schedule, prob))
     return artifact, prob, tiles
+
+
+def check_schedule_matches_trace(
+    schedule_path: pathlib.Path, trace_dir: pathlib.Path, layer_name: str
+) -> None:
+    """Raise ValueError when the schedule at schedule_path was solved for a
+    different workload than trace_dir/meta.json now gives layer_name, e.g.
+    one solved before meta.json carried the layer's true COUT."""
+    meta = json.loads((pathlib.Path(trace_dir) / "meta.json").read_text())
+    try:
+        want = build_workload_from_trace(meta, layer_name)["problem"]
+    except ValueError as exc:
+        raise ValueError(f"schedule {schedule_path}: {exc}") from exc
+    doc = json.loads(pathlib.Path(schedule_path).read_text())
+    got = doc["workload"]["problem"]
+    if got != want:
+        diff = ", ".join(f"{k} {got.get(k)} (meta.json: {want.get(k)})"
+                         for k in sorted(set(got) | set(want)) if got.get(k) != want.get(k))
+        arch = doc.get("result", {}).get("configs", {}).get("arch") or "the arch it was solved with"
+        raise ValueError(
+            f"stale schedule {schedule_path}: solved for {diff}. It must be re-solved with "
+            f"Gurobi against {arch} (result.configs.arch) and written back to its own "
+            f"directory: tracegen.solve_and_cache_schedule with that arch, as "
+            f"profiling/0831_all_layer_streams/solve_all_layers.py does for the inst16/pe16 "
+            f"arch; scripts/solve_schedules.py --force --cache-dir <schedule root> solves "
+            f"only against configs/arch/<arch>.yaml"
+        )
 
 
 @dataclass

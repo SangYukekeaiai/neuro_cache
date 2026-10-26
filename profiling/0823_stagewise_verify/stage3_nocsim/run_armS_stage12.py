@@ -29,8 +29,6 @@ ROOT = STAGE.parents[2]
 IN, OUT = STAGE / "inputs", STAGE / "outputs"
 
 sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(ROOT / "profiling"))
-from common import next_cin_for  # noqa: E402
 import tracegen  # noqa: E402
 
 ARCH = "loas"
@@ -69,7 +67,7 @@ def stage1() -> dict:
         t0 = time.time()
         art = tracegen.solve_and_cache_schedule(
             ARCH, str(ARCH_YAML), str(DATAFLOW_YAML),
-            trace_dir, layer, meta, next_cin_for(meta, layer), SCHED_DIR)
+            trace_dir, layer, meta, SCHED_DIR)
         p = SCHED_DIR / ARCH / trace_dir / f"{layer}.json"
         prob = art.workload["problem"]
         rows[f"{trace_dir}/{layer}"] = {

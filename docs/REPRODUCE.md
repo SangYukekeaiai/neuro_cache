@@ -48,15 +48,23 @@ what is missing; exit 0 means complete.
   input_trace/loas/vgg16_T4_n5/. `<bench>` is the archmodel name (loas, ptb, spinalflow,
   prosperity, gustavsnn); `<trace_dir>` is `<network>_T<T>_n<N>` for an N-sample subset and
   `<network>_T<T>_all` for a full capture.
-- meta.json fields the code reads: `layers`, an ordered dict layer name -> `[T, B, Cin, Hin, Win]`
-  (network order: layer i's COUT is layer i+1's CIN, the last layer reuses its own CIN;
-  `archmodels.trace.build_workload_from_trace`); `n_samples`, equal to B
+- meta.json fields the code reads: `layers`, an ordered dict layer name -> `[T, B, Cin, Hin, Win]`;
+  `layer_params`, a dict with the same layer names -> `{"cout", "kernel", "stride"}` (output
+  channels, square kernel size, stride; positive ints, every layer needs all three;
+  `archmodels.trace.layer_params`, and `build_workload_from_trace` takes COUT from it); `n_samples`, equal to B
   (scripts/subset_input_traces.py); `dtype`, "uint8". Provenance fields (`arch`, `timestep`,
   `batch_size`, `dataset`, `captured_at`, and `subset` with `of`, `n`, `seed`, `sample_indices`)
   are written by the capture and the subset script and not read by the pipeline.
 - `<layer>.npy`: uint8 0/1 spikes, shape exactly `[T, B, Cin, Hin, Win]` as meta.json declares
-  (`archmodels.trace.load_layer_trace` refuses any other shape). Every layer is replayed as a
-  3x3 stride-1 PAD=1 convolution, so Hin and Win must be at least 1.
+  (`archmodels.trace.load_layer_trace` refuses any other shape). The arch models replay only
+  3x3 stride-1 PAD=1 convolutions, so `archmodels.trace.valid_layer_names` leaves out every
+  layer whose `kernel` is not 3, whose `stride` is not 1, or whose Hin or Win is below 1, and
+  `exclusion_reason` says why; `--check-bench` lists each excluded layer with its reason. In
+  input_trace/loas/resnet19_T4_n5 that excludes the stride-2 `layerS_0_conv1` and the 1x1
+  stride-2 `layerS_0_shortcut_0` layers (6 of 19).
+- Tracked schedules: `tracegen.check_schedule_matches_trace` refuses a schedule whose
+  `workload.problem` differs from the one meta.json now gives (scripts/generate_weight_traces.py
+  and scripts/demo.py call it); re-solve such a schedule with `scripts/solve_schedules.py --force`.
 - Layer names: `layer_NN_<anything>`; the `V<n>`/`R<n>` tags of profiling/common.py take n from
   `NN`, and the V/R prefix from the trace dir names in `common.WORKLOADS`.
 - Subset: `python scripts/subset_input_traces.py --src $NEURO_CACHE_DATA/neuro_cache_trace/input_trace/<bench>

@@ -7,7 +7,7 @@
    "KH": 3,
    "KW": 3,
    "CIN": 256,
-   "COUT": 128,
+   "COUT": 256,
    "HO": 8,
    "WO": 8,
    "T": 4,
@@ -17,7 +17,7 @@
  "result": {
   "status": "OPTIMAL",
   "has_solution": true,
-  "objective": 150.76386206940674,
+  "objective": 158.69533387500618,
   "strategy": {
    "NodeLevel": {
     "temporal_tile": {
@@ -53,7 +53,7 @@
    },
    "NoCLevel": {
     "temporal_permutation": {
-     "order": "WOx2 -> HOx4 -> WOx2 -> HOx2 -> WOx2",
+     "order": "WOx2 -> HOx4 -> WOx2 -> HOx2",
      "loops": [
       {
        "dim": "WO",
@@ -70,10 +70,6 @@
       {
        "dim": "HO",
        "size": 2
-      },
-      {
-       "dim": "WO",
-       "size": 2
       }
      ]
     },
@@ -89,10 +85,14 @@
    },
    "DRAM": {
     "temporal_permutation": {
-     "order": "COUTx2",
+     "order": "COUTx4 -> WOx2",
      "loops": [
       {
        "dim": "COUT",
+       "size": 4
+      },
+      {
+       "dim": "WO",
        "size": 2
       }
      ]
@@ -102,8 +102,8 @@
   "metrics": {
    "util": {
     "weight": 147456.0,
-    "psum": 32768.0,
-    "vmem": 16384.0
+    "psum": 16384.0,
+    "vmem": 8192.0
    },
    "spatial_cost": {
     "weight": 16.0,
@@ -111,11 +111,11 @@
     "vmem": 16.0
    },
    "temporal_traffic": {
-    "weight": 2.0,
+    "weight": 4.0,
     "psum": 0.0,
     "vmem": 0.0
    },
-   "delay": 1179648,
+   "delay": 2359296,
    "capacity": {
     "weight": 1966080,
     "psum": 65536,
@@ -123,11 +123,11 @@
    }
   },
   "configs": {
-   "arch": "/u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage1_mip_solver/inputs/arch/loas_inst16_node32kb_noc2MiB_pe16.yaml",
-   "dataflow": "/u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify/stage1_mip_solver/inputs/dataflow/loas.yaml",
+   "arch": "/home/ya867177/neuro_cache-wcache/profiling/0823_stagewise_verify/stage1_mip_solver/inputs/arch/loas_inst16_node32kb_noc2MiB_pe16.yaml",
+   "dataflow": "/home/ya867177/neuro_cache-wcache/profiling/0823_stagewise_verify/stage1_mip_solver/inputs/dataflow/loas.yaml",
    "mapspace": null
   }
  },
- "dram_num_steps": 2,
+ "dram_num_steps": 8,
  "mode": "gb_oooo"
 }

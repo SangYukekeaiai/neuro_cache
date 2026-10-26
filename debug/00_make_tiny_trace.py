@@ -2,9 +2,7 @@
 
 Writes a meta.json + one float32 .npy per layer, the format
 src/archmodels/trace.py's load_layer_trace expects. layer_00 is the layer
-every later debug stage exercises; layer_01 only supplies layer_00's COUT
-via build_workload_from_trace's next_cin lookup, so its contents are never
-read.
+every later debug stage exercises; layer_01's contents are never read.
 """
 
 import json
@@ -23,6 +21,10 @@ META = {
     "layers": {
         "layer_00": [2, 1, 1, 2, 2],
         "layer_01": [2, 1, 4, 2, 2],
+    },
+    "layer_params": {
+        "layer_00": {"cout": 4, "kernel": 3, "stride": 1},
+        "layer_01": {"cout": 4, "kernel": 3, "stride": 1},
     },
 }
 

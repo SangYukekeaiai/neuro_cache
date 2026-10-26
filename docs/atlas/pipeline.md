@@ -69,13 +69,14 @@ default `<repo>/data`) and `CONDA_ENV` (`scripts/env.sh:4`, default `cosa_snn`).
 
 ```
 input_trace/loas/<wl>/meta.json + layer_NN_*.npy  (uint8 [T,B,Cin,Hin,Win])
-   | archmodels.trace.build_workload_from_trace  (KH=KW=3, PAD=1, COUT=next layer's CIN)
+   | archmodels.trace.build_workload_from_trace  (KH=KW=3, PAD=1, COUT from meta.json layer_params)
    v
 {"problem": {KH,KW,CIN,COUT,HO,WO,T,shape}}  -> temp YAML -> parsers.SNNProb
    | mip_solver.solve.solve_best_schedule  (13 TrafficModes, Gurobi, keep lowest score)   [Gurobi needed]
    v
 ScheduleArtifact JSON  <cache>/<arch>/<trace_dir>/<layer>.json
-   | tracegen.load_schedule -> nocsim.schedule.decode.schedule_from_strategy -> iter_node_tiles
+   | tracegen.check_schedule_matches_trace, then tracegen.load_schedule
+   |   -> nocsim.schedule.decode.schedule_from_strategy -> iter_node_tiles
    v
 list[NodeTileSpec]  (dram_i, noc_i, core_id, node_bound{dim}, tile_offset{dim})
    | archmodels/<arch>/native_bridge: task.bin + trace.bin -> <arch>gen -> out.bin
@@ -91,12 +92,23 @@ LayerWeightTrace (one per sample)
 
 Formats crossing each boundary:
 
-1. **Input trace.** `meta.json` maps layer name -> `[T, B, Cin, Hin, Win]`
+1. **Input trace.** `meta.json` `layers` maps layer name -> `[T, B, Cin, Hin, Win]`
    (stored subset: T=4, B=5); `.npy` is that array, `dtype` "uint8" in
-   `meta.json`. `load_layer_trace` checks shape equality (`src/archmodels/trace.py:71-76`).
-2. **Workload dict.** `build_workload_from_trace` (`src/archmodels/trace.py:101`):
-   KH=KW=3, stride 1, PAD=1 so HO=Hin, WO=Win; COUT = next layer's CIN, last
-   layer reuses its own CIN.
+   `meta.json`. `load_layer_trace` checks shape equality (`src/archmodels/trace.py:75-80`).
+   `meta.json` `layer_params` maps the same names -> `{"cout", "kernel", "stride"}`;
+   `layer_params()` (`src/archmodels/trace.py:84`) raises `ValueError` when an entry or
+   field is missing (key list `LAYER_PARAM_KEYS`, :29). Both `_n5` metas carry it
+   (added 2026-10-26; resnet19 `layerS_0_conv1` and `layerS_0_shortcut_0` have stride 2,
+   the shortcuts kernel 1).
+2. **Workload dict.** `build_workload_from_trace` (`src/archmodels/trace.py:127`):
+   KH=KW=3, stride 1, PAD=1 so HO=Hin, WO=Win (:151); COUT =
+   `layer_params[layer]["cout"]` (:154). It raises for a layer `exclusion_reason`
+   (:103) names: kernel != 3 or stride != 1 (:112-114; the arch models replay only
+   3x3 stride-1 windows, e.g. `src/archmodels/loas/LoASGen.h:74` reads input row
+   `ho + kh - pad_h`), or HO/WO < 1 (:116-117). `valid_layer_names` (:121) keeps the
+   rest: 25 of the 31 `_n5` layers (resnet19 loses layers 01, 03, 08, 10, 15, 17).
+   `tracegen.check_schedule_matches_trace` (`src/tracegen.py:146`) refuses a
+   schedule whose `workload.problem` differs from this dict (:157-164).
 3. **Schedule JSON** (`tracegen.ScheduleArtifact`, `src/tracegen.py:50`):
    `{arch, trace_dir, layer_name, workload:{problem:{...}}, result:{status,
    has_solution, objective, strategy:{NodeLevel{temporal_tile,spatial_split},
@@ -198,17 +210,18 @@ Invocations of downstream code made by in-scope code, and the reverse:
 ### 1.5 One run, step by step (the stream path used by 0820 and every later stage)
 
 1. `generate_weight_traces.py --stream --arch loas --trace-dir D --layer L
-   --sample-start s --sample-count 1 --schedule-cache C` -> `parse_args` :339
+   --sample-start s --sample-count 1 --schedule-cache C` -> `parse_args` :351
    rejects `--workers>1`, `--all-layers`, missing `--trace-dir/--layer`
-   (:383-389).
-2. `run_stream` :293: `_resolve_samples` :74 gives `[s]`; loads
-   `C/loas/D/L.json`.
-3. `tracegen.load_schedule` (`src/tracegen.py:132`): JSON -> `ScheduleArtifact`;
+   (:396-401).
+2. `run_stream` :299: `_resolve_samples` :74 gives `[s]`; checks
+   `C/loas/D/L.json` against meta.json with `tracegen.check_schedule_matches_trace`
+   (:314-319), then loads it.
+3. `tracegen.load_schedule` (`src/tracegen.py:130`): JSON -> `ScheduleArtifact`;
    the workload is dumped to a temp YAML (`_dump_workload_path` :62,
    `delete=False` at :63), parsed as `SNNProb`; `schedule_from_strategy`
    decodes the strategy; `iter_node_tiles` yields one `NodeTileSpec` per
    (dram step, NoC step, core).
-4. `n_cores` = product of `schedule.spatial_factors` (`scripts/generate_weight_traces.py:317-320`),
+4. `n_cores` = product of `schedule.spatial_factors` (`scripts/generate_weight_traces.py:330-332`),
    so idle cores still count.
 5. `load_layer_trace(..., mmap=True)` maps the `.npy` (:322).
 6. `tracegen.reconstruct_samples` (`src/tracegen.py:294`) imports
@@ -339,13 +352,19 @@ l2_prefetch none`. Drivers take subsets or overrides through
 - `ScheduleArtifact` :50 dataclass. `mode` defaults to `"base"` so old caches load (:59).
 - `_dump_workload_path(workload)` :62 writes a temp YAML with `delete=False`
   (:63) and never removes it; `_prob_from_workload` :68 wraps it in `SNNProb`.
-- `solve_and_cache_schedule(arch_name, arch_yaml, dataflow_yaml, trace_dir_name, layer_name, meta, next_cin, cache_dir)` :72
+- `solve_and_cache_schedule(arch_name, arch_yaml, dataflow_yaml, trace_dir_name, layer_name, meta, cache_dir)` :71
   -> builds workload, calls `mip_solver.solve.solve_best_schedule` (imported
-  lazily :101 so the rest of the module needs no `gurobipy`), decodes to get
-  `dram_num_steps`, writes `cache_dir/<arch>/<trace_dir>/<layer>.json` (:125-127).
-  Always re-solves; raises `ValueError` if all modes infeasible (:109-110).
-- `load_schedule(path)` :132 -> `(artifact, prob, tiles)`; tiles rebuilt with
+  lazily :99 so the rest of the module needs no `gurobipy`), decodes to get
+  `dram_num_steps`, writes `cache_dir/<arch>/<trace_dir>/<layer>.json` (:123-126).
+  Always re-solves; raises `ValueError` if all modes infeasible (:107-111).
+- `load_schedule(path)` :130 -> `(artifact, prob, tiles)`; tiles rebuilt with
   `iter_node_tiles`, not stored.
+- `check_schedule_matches_trace(schedule_path, trace_dir, layer_name)` :146: raises
+  `ValueError` naming the schedule path when its `workload.problem` differs from
+  `build_workload_from_trace` on `trace_dir/meta.json` (stale schedule, "re-solve with
+  `scripts/solve_schedules.py --force`") or the layer is excluded. Called before every
+  `load_schedule` in `scripts/generate_weight_traces.py` (:150, :212, :315) and by
+  `scripts/demo.py` `schedules_for` (:264).
 - `CoreEntry` :149, `TickEntry` :160, `TileWeightTrace` :197, `LayerWeightTrace` :211:
   the nested trace shape. Absent cores are omitted, not padded.
 - `merge_cores_by_tick(core_results)` :169: cross-core merge, ticks ascending.
@@ -450,10 +469,12 @@ Python:
   same MAC/LIF count for every tile from the loop factors (`_pe_cycles` :52,
   `_lif_cycles` :67 counts only dims with `_A[j][VAR_VMEM]`). Used by nocsim when
   no weight trace is given (`src/nocsim/combine.py:224`).
-- `trace.py`: `KH = KW = 3` :24, `PAD = 1` :26; `load_layer_trace(trace_dir, layer_name, mmap=False)` :35
-  (docstring now says uint8, :6 and :50);
-  `valid_layer_names(meta)` :80 (HO,WO>=1; never filters with PAD=1);
-  `build_workload_from_trace(meta, layer_name, next_cin=None)` :101.
+- `trace.py`: `KH = KW = 3` :26, `LAYER_PARAM_KEYS` :29, `PAD = 1` :30;
+  `load_layer_trace(trace_dir, layer_name, mmap=False)` :39 (docstring says uint8, :5 and :54);
+  `layer_params(meta, layer_name)` :84; `exclusion_reason(meta, layer_name)` :103
+  (kernel/stride, then HO,WO>=1); `valid_layer_names(meta)` :121 (layers whose
+  `exclusion_reason` is None); `build_workload_from_trace(meta, layer_name)` :127
+  (COUT from `layer_params`).
 - `<arch>/__init__.py` (5 files): docstrings only (paper, fixed deployment);
   they now name the C++ header and the Python reference under
   `dump/python_reference/archmodels/<arch>/` (e.g. `src/archmodels/loas/__init__.py:5-7`).
@@ -573,26 +594,27 @@ C++ (each `Makefile`: `g++ -O2 -std=c++17 -Wall -Wextra -o <arch>gen main.cpp`):
   `scripts/tmp/run_loas_sweep_combo.sh:10` (and, per the `d2a9de8` commit
   message, `profiling/0820_phaseD_spad_vs_cache/run_sweep.slurm`).
 - `solve_schedules.py`: `ROOT` from `__file__` (:23-24); `parse_args` :47,
-  `_iter_valid_layers` :60 (next_cin inline :71), `main` :75 (rows
-  OK/SKIPPED/INFEASIBLE/ERROR -> `summary.csv` :114). Arch YAML fixed by name
+  `_iter_valid_layers` :60, `main` :70 (rows
+  OK/SKIPPED/INFEASIBLE/ERROR -> `summary.csv` :109). Arch YAML fixed by name
   :34-40 (single-node files, now `ROOT`-absolute); no override flag.
 - `generate_weight_traces.py`: `ROOT` from `__file__` (:46-47);
   `DEFAULT_TRACE_ROOT` :57; `_resolve_samples` :74 (explicit range, else
   `tracegen.sample_indices`); mode 1 `run_one_combo` :126 with `_STATE` :89,
   `_init_worker` :92, `_process_chunk` :104, `_chunks` :119 (skip existing
   samples :141 unless `--force`); mode 2 `run_all_layers` :251 with
-  `_layers_for` :181, `_all_layer_targets` :187, `_regenerate_layer` :195
-  (`SAMPLE_CHUNK_SIZE=10` :64, no `--combo-tag`), `_regenerate_one_layer_task` :220,
-  `_run_pass` :226 (two passes, `FIRST_PASS_SAMPLES=10` :67; `--workers 0` =
-  `len(os.sched_getaffinity(0))` :257); mode 3 `run_stream` :293, `emit_stream` :272;
-  `parse_args` :339 (sentinel test `n_samples != 100` :378).
+  `_layers_for` :186, `_all_layer_targets` :192, `_regenerate_layer` :200
+  (`SAMPLE_CHUNK_SIZE=10` :64, no `--combo-tag`), `_regenerate_one_layer_task` :226,
+  `_run_pass` :232 (two passes, `FIRST_PASS_SAMPLES=10` :67; `--workers 0` =
+  `len(os.sched_getaffinity(0))` :263); mode 3 `run_stream` :299, `emit_stream` :278;
+  `parse_args` :351 (sentinel test `n_samples != 100` :390). All three modes call
+  `tracegen.check_schedule_matches_trace` before `load_schedule` (:150, :212, :315).
 - `subset_input_traces.py`: `ROOT` from `__file__` (:41-42), imports
   `util.data_root`; `subset_one(src_dir, dest_dir, n, seed)` :50:
   `np.random.default_rng(seed).choice`, sorted (:61), same indices for every
   layer, rewrites `B` and adds `meta["subset"]` (:83); `main` :97.
 - `solve_inst16_subset.py`: `ROOT` from `__file__` (:18-19); `ARCHS` :22,
   `LAYERS` :26 (4 `_T4_all` layers), `main` :34 (arch
-  `configs/arch/<arch>_inst16.yaml` :48, next_cin inline :64).
+  `configs/arch/<arch>_inst16.yaml` :48).
 - `scripts/tmp/` (tracked, not in the brief): multinode sweep generator/solver/
   analyzers, `probe_gurobi_concurrency.py`, `run_combo.sh`,
   `run_loas_sweep_combo.sh` (the latter shows how the 0803 inputs were made:
@@ -661,9 +683,8 @@ files in 9 stage directories: 0823 `run_stage1.py`, `run_armS_stage12.py`,
   `ROOT/src` must be on `sys.path` first. Replaces the per-stage `tags()` /
   `combos()` copies; callers unpack the 3-tuple (e.g.
   `profiling/0907_linesize/run_sweep.py:185`).
-- `next_cin_for(meta, layer)` :53: next captured layer's CIN (= this layer's
-  COUT), `None` for the last layer. Replaces the inline copies in the
-  profiling stages; `audit_density.py:41-42` maps `None` to the layer's own CIN.
+- `next_cin_for` was removed 2026-10-26: COUT now comes from meta.json
+  `layer_params` (`audit_density.py:39` reads it directly).
 
 #### 2.9.2 Sweep drivers
 
@@ -709,10 +730,10 @@ Diffs: `0903_l1_8k/run_sweep.py` (`one` :38, `geomean` :56,
   budget), `replay_check.sh` (dump then replay equals stdin run),
   `test_resume.sh` (atomic per-unit resume), `test_slurm_shape.sh` (greps the
   `.slurm` for Delta settings).
-- `0823_stagewise_verify/stage1_mip_solver/run_stage1.py`: `TRACE_ROOT` :46
-  (`data_root()`), `LAYERS` :51, `sha` :69, `split_30_1_1` :73, `write_arch` :79,
-  `kb` :89, `stage_inputs` :93 (uses `common.next_cin_for`), `strategy_digest` :153,
-  `run_num_pes` :166, `run_all_modes` :195, `run_noc_sizes` :230, `main` :269.
+- `0823_stagewise_verify/stage1_mip_solver/run_stage1.py`: `TRACE_ROOT` :44
+  (`data_root()`), `LAYERS` :49, `sha` :67, `split_30_1_1` :71, `write_arch` :77,
+  `kb` :87, `stage_inputs` :91 (MANIFEST `workloads` entries carry `cout`), `strategy_digest` :150,
+  `run_num_pes` :163, `run_all_modes` :192, `run_noc_sizes` :227, `main` :266.
 - `.../stage2_weight_trace/run_stage2.py`: `COMBO_TAG` :35, `COMBOS` :44,
   `sha` :53, `stage_inputs` :57 (copies schedules and rewrites `trace_dir`
   `_all` -> `_n5`), `run_generator` :121, `input_trace_stats` :153,
@@ -853,8 +874,8 @@ stage's `UNTRACKED_OUTPUTS.md`, added in `9012d22`, was not read).
 
 Resolved by phase 2 and dropped from this list: `build_Z` (removed); the
 base wcache config retyped in 15+ drivers (now `profiling/common.py:13`);
-the inline "next layer's CIN" in the profiling stages (now
-`common.next_cin_for`); per-stage `tags()`/`combos()` copies in seven drivers;
+the inline "next layer's CIN" in the profiling stages (then
+`common.next_cin_for`; since 2026-10-26 COUT comes from meta.json `layer_params`); per-stage `tags()`/`combos()` copies in seven drivers;
 every `/u/yyu9`, `/work/hdd/bebv`, `/projects/bebv` path in `.py/.sh`; cwd
 dependence of `scripts/*.py` and the 0820 producer; the conda env name
 disagreement; wrong docstrings for trace dtype, `BW_VMEM`, `S[1]`,
@@ -892,10 +913,13 @@ tracked 0823 stage-3 outputs.
 
 ### 3.2 Duplicated logic
 
-- "COUT = next layer's CIN" is now `profiling/common.py:53` for profiling, but
-  still inline in `scripts/solve_schedules.py:71` and
-  `scripts/solve_inst16_subset.py:64` (scripts do not import `profiling/`).
-  Belongs in `archmodels.trace` next to `build_workload_from_trace`.
+- No longer duplicated: COUT, kernel and stride come only from meta.json
+  `layer_params`, read by `layer_params` (`src/archmodels/trace.py:84`), which
+  `valid_layer_names` (:126) and `build_workload_from_trace` (:132, COUT at :159)
+  use. `profiling/common.py:54` and `scripts/solve_schedules.py:66` call
+  `valid_layer_names`; `scripts/solve_inst16_subset.py` reaches
+  `build_workload_from_trace` through `tracegen.solve_and_cache_schedule`
+  (`src/tracegen.py:101`).
 - Five stage-1 solve loops with the same structure: `scripts/solve_schedules.py:75`,
   `scripts/solve_inst16_subset.py:34`, `profiling/0831_reuse_distance/solve_31.py:18`,
   `profiling/0831_all_layer_streams/solve_all_layers.py:112`,
@@ -1120,9 +1144,12 @@ license path in a docstring, `~/miniconda3`). Data paths now go through
 ## 5. Open questions the code alone cannot answer
 
 1. Which code produced the 0728 CSVs and the 0823 `w5b`..`w5g` CSVs?
-2. ResNet `*_shortcut_0` layers are given KH=KW=3, PAD=1 (`src/archmodels/trace.py:24-26`);
-   are they really 3x3 in the captured model, and is "next layer's CIN" the
-   right COUT around shortcut layers (e.g. `layer_02 conv2` -> `layer_03 shortcut`)?
+2. Resolved 2026-10-26: shortcut layers are 1x1 stride 2, and each stage's
+   `layerS_0_conv1` is stride 2 (Hin halves before `conv2`); "next layer's CIN" gave
+   `layer_02`, `layer_09`, `layer_16` half their COUT. meta.json `layer_params` now
+   holds the true cout/kernel/stride, `build_workload_from_trace` reads COUT from it
+   (`src/archmodels/trace.py:154`), and `valid_layer_names` leaves out the 6 layers
+   the 3x3 stride-1 replay cannot model (`src/archmodels/trace.py:112-114`).
 3. What do `run_sweep.slurm` (0820; the 0803 one was removed 2026-10-26), `requirements.txt` and
    `profiling/0823_stagewise_verify/UNTRACKED_OUTPUTS.md` contain (not read)?
 4. How is `profiling/0831_reuse_distance/reuse_tool` built?

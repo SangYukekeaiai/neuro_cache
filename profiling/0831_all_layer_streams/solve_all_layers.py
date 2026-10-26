@@ -41,8 +41,6 @@ STAGE1_0823 = ROOT / "profiling/0823_stagewise_verify/stage1_mip_solver"
 
 sys.path.insert(0, str(ROOT / "src"))
 from archmodels.trace import valid_layer_names  # noqa: E402
-sys.path.insert(0, str(ROOT / "profiling"))
-from common import next_cin_for  # noqa: E402
 import tracegen  # noqa: E402
 from util import data_root  # noqa: E402
 
@@ -73,7 +71,7 @@ def load_meta(trace_dir: str) -> dict:
 def solve_one(trace_dir: str, layer: str, meta: dict, out_root: pathlib.Path):
     return tracegen.solve_and_cache_schedule(
         ARCH, str(ARCH_YAML), str(DATAFLOW_YAML),
-        trace_dir, layer, meta, next_cin_for(meta, layer), out_root)
+        trace_dir, layer, meta, out_root)
 
 
 def write_n5_copy(all_dir: str, n5_dir: str, layer: str) -> pathlib.Path:

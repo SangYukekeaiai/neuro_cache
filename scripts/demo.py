@@ -39,7 +39,8 @@ import wcache_baseline as wb  # noqa: E402  (puts src/, profiling/ and stage4 on
 from wcache_baseline import sweep  # noqa: E402
 import run_stage3  # noqa: E402
 from archmodels import ARCH_NATIVE_BRIDGES  # noqa: E402
-from archmodels.trace import valid_layer_names  # noqa: E402
+from archmodels.trace import exclusion_reason, layer_params, valid_layer_names  # noqa: E402
+import tracegen  # noqa: E402
 from common import INPUT_TRACE, tags  # noqa: E402
 from util import data_root  # noqa: E402
 
@@ -132,8 +133,16 @@ def check_inputs(bench, layers, samples):
             problems.append(f"missing {meta}")
             continue
         m = json.loads(meta.read_text())
-        if layer not in valid_layer_names(m):
+        if layer not in m["layers"]:
             problems.append(f"{layer} is not a valid layer in {meta}")
+            continue
+        try:
+            reason = exclusion_reason(m, layer)
+        except ValueError as e:
+            problems.append(f"{meta}: {e}")
+            continue
+        if reason is not None:
+            problems.append(f"{d}/{layer} is excluded: {reason}")
         elif not (root / d / f"{layer}.npy").is_file():
             problems.append(f"missing {root / d / f'{layer}.npy'}")
         elif samples[-1] >= m["layers"][layer][1]:
@@ -202,12 +211,25 @@ def check_bench(spec):
             problems.append(f"{meta_path}: no 'n_samples' (scripts/subset_input_traces.py reads it)")
         elif shapes and m["n_samples"] not in {s[1] for s in shapes.values()}:
             problems.append(f"{meta_path}: n_samples {m['n_samples']} differs from the layers' B")
-        valid = valid_layer_names({"layers": shapes})
-        tracked = sum((wb.SCHEDULES / bench / d.name / f"{l}.json").is_file() for l in valid)
+        checked = {"layers": shapes, "layer_params": m.get("layer_params", {})}
+        for name in list(shapes):
+            try:
+                layer_params(checked, name)
+            except ValueError as e:
+                problems.append(f"{meta_path}: {e}")
+                del shapes[name]
+        valid = valid_layer_names(checked)
+        tracked = [l for l in valid if (wb.SCHEDULES / bench / d.name / f"{l}.json").is_file()]
+        stale = []
+        for l in tracked:
+            try:
+                tracegen.check_schedule_matches_trace(wb.SCHEDULES / bench / d.name / f"{l}.json", d, l)
+            except ValueError as e:
+                stale.append(f"  {e}")
         notes.append(f"{root.name}/{d.name}: {len(layers)} layers, {len(valid)} usable, "
-                     f"{tracked} with a tracked schedule")
-        if len(valid) < len(shapes):
-            notes.append("  too small for a 3x3 conv: " + ", ".join(sorted(set(shapes) - set(valid))))
+                     f"{len(tracked)} with a tracked schedule, {len(stale)} stale")
+        notes += stale
+        notes += [f"  excluded {n}: {exclusion_reason(checked, n)}" for n in shapes if n not in valid]
     return problems, notes
 
 
@@ -226,23 +248,32 @@ def can_solve():
 
 def schedules_for(bench, layers, out, record):
     """The schedule root to use: the tracked one when it has every layer, else
-    <out>/schedules, seeded with the tracked schedules and solved for the rest."""
-    if not missing_schedules(wb.SCHEDULES, bench, layers):
-        return wb.SCHEDULES
-    cache = out / "schedules"
-    if (wb.SCHEDULES / bench).is_dir():
-        shutil.copytree(wb.SCHEDULES / bench, cache / bench, dirs_exist_ok=True)
-    # solve_schedules.py skips schedules already in the cache.
-    run_all([[sys.executable, str(ROOT / "scripts/solve_schedules.py"), "--archs", bench,
-              "--trace-root", str(INPUT_TRACE / bench),
-              "--trace-dirs", *sorted({d for d, _ in layers}), "--cache-dir", str(cache)]],
-            record, 1)
-    # solve_schedules.py exits 0 even when a layer is infeasible or fails.
-    still = missing_schedules(cache, bench, layers)
-    if still:
-        sys.exit("solve_schedules.py did not write these schedules (see "
-                 f"{cache / 'summary.csv'}):\n  " + "\n  ".join(map(str, still)))
-    return cache
+    <out>/schedules, seeded with the tracked schedules and solved for the rest.
+    Exits when a schedule was solved for another workload than meta.json gives."""
+    root = wb.SCHEDULES
+    if missing_schedules(root, bench, layers):
+        root = out / "schedules"
+        if (wb.SCHEDULES / bench).is_dir():
+            shutil.copytree(wb.SCHEDULES / bench, root / bench, dirs_exist_ok=True)
+        # solve_schedules.py skips schedules already in the cache.
+        run_all([[sys.executable, str(ROOT / "scripts/solve_schedules.py"), "--archs", bench,
+                  "--trace-root", str(INPUT_TRACE / bench),
+                  "--trace-dirs", *sorted({d for d, _ in layers}), "--cache-dir", str(root)]],
+                record, 1)
+        # solve_schedules.py exits 0 even when a layer is infeasible or fails.
+        still = missing_schedules(root, bench, layers)
+        if still:
+            sys.exit("solve_schedules.py did not write these schedules (see "
+                     f"{root / 'summary.csv'}):\n  " + "\n  ".join(map(str, still)))
+    stale = []
+    for d, l in layers:
+        try:
+            tracegen.check_schedule_matches_trace(root / bench / d / f"{l}.json", INPUT_TRACE / bench / d, l)
+        except ValueError as e:
+            stale.append(str(e))
+    if stale:
+        sys.exit("\n".join(stale))
+    return root
 
 
 def load_grid(path):

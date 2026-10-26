@@ -46,12 +46,15 @@ def test_summary_is_geomean_per_config_in_first_seen_order():
     assert demo.summarize(rows) == [("c1", pytest.approx(4.0), 2), ("c0", 1.0, 1)]
 
 
-def write_bench(root, layers=(("layer_01_a", [4, 5, 8, 4, 4]),), npy=True):
-    """input_trace/<bench>/t/ under `root`: a meta.json and, if `npy`, one uint8 .npy per layer."""
+def write_bench(root, layers=(("layer_01_a", [4, 5, 8, 4, 4]),), npy=True, params=None):
+    """input_trace/<bench>/t/ under `root`: a meta.json and, if `npy`, one uint8 .npy
+    per layer. Every layer is a 3x3 stride-1 conv unless `params` says otherwise."""
     d = root / "loas" / "t"
     d.mkdir(parents=True)
+    lp = {name: {"cout": 8, "kernel": 3, "stride": 1} for name, _ in layers}
+    lp.update(params or {})
     (d / "meta.json").write_text(json.dumps(
-        {"n_samples": layers[0][1][1], "dtype": "uint8", "layers": dict(layers)}))
+        {"n_samples": layers[0][1][1], "dtype": "uint8", "layers": dict(layers), "layer_params": lp}))
     if npy:
         for name, shape in layers:
             np.save(d / f"{name}.npy", np.zeros(shape, dtype=np.uint8))
@@ -102,6 +105,21 @@ def test_check_inputs_refuses_a_missing_npy(traces):
     assert "layer_01_a.npy" in demo.check_inputs("loas", [("t", "layer_01_a")], range(1))[0]
 
 
+def test_check_inputs_refuses_an_excluded_layer_with_the_reason(traces):
+    write_bench(traces, params={"layer_01_a": {"cout": 8, "kernel": 1, "stride": 2}})
+    problems = demo.check_inputs("loas", [("t", "layer_01_a")], range(1))
+    assert len(problems) == 1 and "kernel 1" in problems[0]
+
+
+def test_check_inputs_refuses_a_layer_without_layer_params(traces):
+    d = write_bench(traces)
+    m = json.loads((d / "meta.json").read_text())
+    del m["layer_params"]
+    (d / "meta.json").write_text(json.dumps(m))
+    problems = demo.check_inputs("loas", [("t", "layer_01_a")], range(1))
+    assert len(problems) == 1 and "layer_params" in problems[0]
+
+
 def test_check_inputs_refuses_samples_beyond_the_trace(traces):
     write_bench(traces)
     problems = demo.check_inputs("loas", [("t", "layer_01_a")], range(3, 6))
@@ -141,6 +159,22 @@ def test_schedules_for_seeds_the_cache_with_tracked_schedules(tmp_path, monkeypa
     assert "layer_02_b.json" in str(e.value) and "layer_01_a.json" not in str(e.value)
 
 
+def test_schedules_for_refuses_a_tracked_schedule_solved_for_another_workload(
+        tmp_path, traces, monkeypatch, no_solver_run):
+    write_bench(traces, npy=False)
+    tracked = tmp_path / "tracked"
+    sched = tracked / "loas" / "t" / "layer_01_a.json"
+    sched.parent.mkdir(parents=True)
+    problem = {"KH": 3, "KW": 3, "CIN": 8, "COUT": 8, "HO": 4, "WO": 4, "T": 4, "shape": "snn-layer"}
+    sched.write_text(json.dumps({"workload": {"problem": problem}}))
+    monkeypatch.setattr(demo.wb, "SCHEDULES", tracked)
+    assert demo.schedules_for("loas", [("t", "layer_01_a")], tmp_path / "out", []) == tracked
+    sched.write_text(json.dumps({"workload": {"problem": {**problem, "COUT": 4}}}))
+    with pytest.raises(SystemExit, match="solve_schedules.py --force") as e:
+        demo.schedules_for("loas", [("t", "layer_01_a")], tmp_path / "out", [])
+    assert str(sched) in str(e.value) and not no_solver_run
+
+
 @pytest.mark.parametrize("args", [["--sample-count", "0"], ["--jobs", "0"], ["--sample-start", "-1"]])
 def test_main_refuses_counts_below_one(monkeypatch, capsys, args):
     monkeypatch.setattr(sys, "argv", ["demo.py", *args])
@@ -160,7 +194,7 @@ def test_demo_does_not_create_out_when_inputs_are_missing(tmp_path, traces, monk
 def test_check_bench_accepts_a_complete_bench(traces):
     write_bench(traces)
     problems, notes = demo.check_bench("loas")
-    assert problems == [] and notes == ["loas/t: 1 layers, 1 usable, 0 with a tracked schedule"]
+    assert problems == [] and notes == ["loas/t: 1 layers, 1 usable, 0 with a tracked schedule, 0 stale"]
 
 
 def test_check_bench_lists_what_an_empty_dir_lacks(tmp_path):
@@ -191,13 +225,44 @@ def test_check_bench_refuses_meta_without_layers_or_n_samples(traces):
     d.mkdir(parents=True)
     (d / "meta.json").write_text(json.dumps({"layers": {}}))
     assert "no 'layers'" in demo.check_bench("loas")[0][0]
-    (d / "meta.json").write_text(json.dumps({"layers": {"layer_01_a": [4, 5, 8, 4, 4]}}))
+    (d / "meta.json").write_text(json.dumps({"layers": {"layer_01_a": [4, 5, 8, 4, 4]},
+                                             "layer_params": {"layer_01_a": {"cout": 8, "kernel": 3, "stride": 1}}}))
     np.save(d / "layer_01_a.npy", np.zeros([4, 5, 8, 4, 4], dtype=np.uint8))
     problems, notes = demo.check_bench("loas")
     assert problems == [f"{d / 'meta.json'}: no 'n_samples' (scripts/subset_input_traces.py reads it)"]
+
+
+def test_check_bench_refuses_a_layer_without_cout_kernel_or_stride(traces):
+    write_bench(traces, layers=(("layer_01_a", [4, 5, 8, 4, 4]), ("layer_02_b", [4, 5, 8, 4, 4])),
+                params={"layer_02_b": {"cout": 8, "kernel": 3}})
+    problems, _ = demo.check_bench("loas")
+    assert len(problems) == 1 and "'layer_02_b'" in problems[0] and "stride" in problems[0]
+
+
+def test_check_bench_notes_excluded_layers_with_their_reasons(traces):
+    write_bench(traces, layers=(("layer_01_a", [4, 5, 8, 4, 4]), ("layer_02_s", [4, 5, 8, 4, 4])),
+                params={"layer_02_s": {"cout": 8, "kernel": 1, "stride": 2}})
+    problems, notes = demo.check_bench("loas")
+    assert problems == [] and notes[0].startswith("loas/t: 2 layers, 1 usable")
+    assert "layer_02_s" in notes[1] and "kernel 1" in notes[1]
 
 
 def test_check_bench_notes_layers_too_small_for_a_3x3_conv(traces):
     write_bench(traces, layers=(("layer_01_a", [4, 5, 8, 4, 4]), ("layer_02_b", [4, 5, 8, 1, 1])))
     problems, notes = demo.check_bench("loas")
     assert problems == [] and notes[0].startswith("loas/t: 2 layers, 2 usable")
+
+
+def test_check_bench_lists_a_stale_tracked_schedule_as_a_note(tmp_path, traces, monkeypatch):
+    write_bench(traces, layers=(("layer_01_a", [4, 5, 8, 4, 4]), ("layer_02_b", [4, 5, 8, 4, 4])))
+    tracked = tmp_path / "tracked"
+    (tracked / "loas" / "t").mkdir(parents=True)
+    problem = {"KH": 3, "KW": 3, "CIN": 8, "COUT": 8, "HO": 4, "WO": 4, "T": 4, "shape": "snn-layer"}
+    for name, cout in (("layer_01_a", 8), ("layer_02_b", 4)):
+        (tracked / "loas" / "t" / f"{name}.json").write_text(
+            json.dumps({"workload": {"problem": {**problem, "COUT": cout}}}))
+    monkeypatch.setattr(demo.wb, "SCHEDULES", tracked)
+    problems, notes = demo.check_bench("loas")
+    assert problems == []
+    assert notes[0] == "loas/t: 2 layers, 2 usable, 2 with a tracked schedule, 1 stale"
+    assert notes[1].startswith("  stale schedule ") and "layer_02_b.json" in notes[1]

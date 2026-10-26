@@ -58,16 +58,12 @@ def main() -> int:
                 continue
 
             meta = metas[trace_dir]
-            names = list(meta["layers"])
-            i = names.index(layer)
-            # COUT is the next layer's CIN; the last layer falls back to its own.
-            next_cin = meta["layers"][names[i + 1]][2] if i + 1 < len(names) else None
 
             t0 = time.time()
             try:
                 art = tracegen.solve_and_cache_schedule(
                     arch, arch_yaml, dataflow_yaml, trace_dir, layer,
-                    meta, next_cin, args.cache_dir,
+                    meta, args.cache_dir,
                 )
             except Exception as exc:
                 print(f"  FAIL   {arch:11s} {trace_dir}/{layer}: {type(exc).__name__}: {exc}")

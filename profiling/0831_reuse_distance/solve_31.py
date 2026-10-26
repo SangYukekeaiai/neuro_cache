@@ -6,9 +6,7 @@ four the 0823 stage-4 study used; the same call, over every layer instead.
 import json, pathlib, sys, time
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(ROOT / "profiling"))
 import tracegen
-from common import next_cin_for
 
 ARCH = "loas"
 TRACE_ROOT = ROOT / "input_trace/loas"
@@ -27,11 +25,10 @@ def main():
             out = CACHE / ARCH / td / f"{layer}.json"
             if out.exists():
                 print(f"  skip  {td}/{layer}"); skip += 1; continue
-            next_cin = next_cin_for(meta, layer)
             t0 = time.time()
             try:
                 art = tracegen.solve_and_cache_schedule(
-                    ARCH, arch_yaml, df_yaml, td, layer, meta, next_cin, CACHE)
+                    ARCH, arch_yaml, df_yaml, td, layer, meta, CACHE)
             except Exception as e:
                 print(f"  FAIL  {td}/{layer}: {type(e).__name__}: {e}"); fail += 1; continue
             has = art.result.get("has_solution")

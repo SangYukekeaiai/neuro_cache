@@ -32,8 +32,6 @@ ROOT = STAGE.parents[2]
 IN, OUT = STAGE / "inputs", STAGE / "outputs"
 
 sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(ROOT / "profiling"))
-from common import next_cin_for  # noqa: E402
 from archmodels.trace import build_workload_from_trace  # noqa: E402
 from mip_solver.modes import TrafficMode  # noqa: E402
 from mip_solver.solve import _mode_score, solve_schedule  # noqa: E402
@@ -111,11 +109,10 @@ def stage_inputs() -> dict:
     workloads = {}
     for trace_dir, layer in LAYERS:
         meta = metas[trace_dir]
-        next_cin = next_cin_for(meta, layer)
-        wl = build_workload_from_trace(meta, layer, next_cin=next_cin)
+        wl = build_workload_from_trace(meta, layer)
         p = IN / "workloads" / f"{trace_dir}__{layer}.yaml"
         p.write_text(yaml.safe_dump(wl, sort_keys=False))
-        workloads[(trace_dir, layer)] = (p, next_cin)
+        workloads[(trace_dir, layer)] = (p, wl["problem"]["COUT"])
 
     manifest = {
         "stage": "1_mip_solver",
@@ -126,7 +123,7 @@ def stage_inputs() -> dict:
         "shape_source": {
             "trace_root": str(TRACE_ROOT),
             "files": [str(TRACE_ROOT / t / "meta.json") for t in sorted(metas)],
-            "note": "meta.json supplies CIN/HO/WO/T only; COUT is the next layer's CIN. "
+            "note": "meta.json supplies CIN/HO/WO/T, and COUT from its layer_params. "
                     "No spike data is read in this stage.",
         },
         "arch_variants_num_pes": {
@@ -140,8 +137,8 @@ def stage_inputs() -> dict:
         },
         "workloads": {
             f"{t}/{l}": {"path": f"inputs/workloads/{p.name}",
-                         "next_cin_used_as_cout": nc, "sha256_16": sha(p)}
-            for (t, l), (p, nc) in workloads.items()
+                         "cout": c, "sha256_16": sha(p)}
+            for (t, l), (p, c) in workloads.items()
         },
         "canonical": {"num_pes": CANONICAL_PES, "noc_total_bytes": CANONICAL_NOC},
     }
@@ -173,7 +170,7 @@ def run_num_pes(staged) -> list:
                 art = tracegen.solve_and_cache_schedule(
                     "loas", str(staged["arch_pes"][pes]),
                     str(IN / "dataflow" / BASE_DATAFLOW.name),
-                    trace_dir, layer, meta, next_cin_for(meta, layer),
+                    trace_dir, layer, meta,
                     OUT / "schedules" / f"pe{pes}")
             except Exception as exc:
                 print(f"  pe={pes:<4d} {layer:26s}  REJECTED  {exc}", flush=True)
@@ -237,7 +234,7 @@ def run_noc_sizes(staged) -> list:
                 art = tracegen.solve_and_cache_schedule(
                     "loas", str(staged["arch_noc"][tot]),
                     str(IN / "dataflow" / BASE_DATAFLOW.name),
-                    trace_dir, layer, meta, next_cin_for(meta, layer),
+                    trace_dir, layer, meta,
                     OUT / "schedules_noc" / kb(tot))
             except Exception as exc:
                 print(f"  noc={kb(tot):>6s} {layer:26s}  INFEASIBLE", flush=True)

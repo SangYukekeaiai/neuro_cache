@@ -5,9 +5,7 @@ Checks the premise that SNN input spike density should sit near 10%, across all
 12 vgg16 and 19 resnet19 layers of the full 10,000-sample captures.
 """
 import json, pathlib, sys, numpy as np
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "src"))
-from common import next_cin_for  # noqa: E402
 from util import data_root  # noqa: E402
 
 R = data_root() / 'neuro_cache_trace/input_trace/loas'
@@ -23,7 +21,7 @@ p("Input-trace density audit, 2026-08-23")
 p(f"Source: {R}  (the full 10,000-sample captures)")
 p(f"Density measured over the first {N} images of each capture.")
 p("A layer's captured tensor is its INPUT, so CIN comes from that tensor and")
-p("COUT from the next captured layer's CIN (archmodels/trace.py:130-138).")
+p("COUT from meta.json layer_params, as archmodels/trace.py:84-105 reads it.")
 p("'always' / 'never' are the fraction of neurons firing at all T / at no T.")
 p()
 for td in ['vgg16_T4_all', 'resnet19_T4_all']:
@@ -38,8 +36,7 @@ for td in ['vgg16_T4_all', 'resnet19_T4_all']:
     for i, ln in enumerate(names):
         a = np.load(R / td / f'{ln}.npy', mmap_mode='r')
         T, _B, cin, hin, _win = a.shape
-        nc = next_cin_for(m, ln)
-        cout = cin if nc is None else nc
+        cout = m["layer_params"][ln]["cout"]
         x = np.asarray(a[:, :N]).astype(np.uint8)
         d = float(x.mean())
         s = x.sum(axis=0)

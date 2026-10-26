@@ -1,5 +1,5 @@
-"""Pieces shared by the profiling stage drivers: the base wcache config, the
-`V<n>`/`R<n>` layer tags, and the next layer's CIN that serves as a layer's COUT.
+"""Pieces shared by the profiling stage drivers: the base wcache config and the
+`V<n>`/`R<n>` layer tags.
 
 Stages import it after `sys.path.insert(0, str(ROOT / "profiling"))`.
 """
@@ -54,10 +54,3 @@ def tags(bench="loas"):
         for layer in valid_layer_names(meta):
             out.append((f"{prefix}{int(layer.split('_')[1])}", trace_dir, layer))
     return out
-
-
-def next_cin_for(meta, layer):
-    """The next captured layer's CIN, which is this layer's COUT; None for the last layer."""
-    names = list(meta["layers"])
-    i = names.index(layer)
-    return meta["layers"][names[i + 1]][2] if i + 1 < len(names) else None

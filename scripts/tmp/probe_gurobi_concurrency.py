@@ -26,16 +26,13 @@ def solve_one(args):
     import tracegen
     with open(TRACE_ROOT / TRACE_NAME / "meta.json") as f:
         meta = json.load(f)
-    names = list(meta["layers"])
-    idx = names.index(layer_name)
-    next_cin = meta["layers"][names[idx + 1]][2] if idx + 1 < len(names) else None
     cache_dir = SCRATCH / arch
     t0 = time.time()
     try:
         tracegen.solve_and_cache_schedule(
             arch, str(REPO / f"configs/arch/multinode_sweep/{arch}_inst16.yaml"),
             str(REPO / f"configs/dataflow/{arch}.yaml"), TRACE_NAME, layer_name,
-            meta, next_cin, cache_dir,
+            meta, cache_dir,
         )
         return (arch, layer_name, "OK", time.time() - t0)
     except ValueError:
