@@ -1,5 +1,7 @@
 # 2026-08-03 LoAS hierarchical cache replay
 
+Note: the driver (`run_sweep.py`, `run_sweep.slurm`) was removed on 2026-10-26 together with cachesim (superseded by wcache); the commands below are historical.
+
 Five-sample smoke sweep for milestones 4–5 of
 `log/2026-08-03-l1-l2-cache-policy-plan.md`.
 

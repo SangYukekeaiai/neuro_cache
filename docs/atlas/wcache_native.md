@@ -855,8 +855,7 @@ Resolved by phase 2 and dropped from this list: the dead `p.l2.demand_reserve = 
 three stale "removed knob" comments around `l2_demand_reserve`; the empty `inclusion` section
 header; the stale `stamp_policy.h` file comment and the "2-bit RRPV" comment; the misplaced
 `l2_policy` / `rrip_bits` comments in `RunConfig`; the `stats.cpp` reference to `LinearMapper`
-without its location; `stream_format.h` naming `src/cachesim/native_bridge.py` as the producer;
-`u19_check.cpp`; `native_v1_archive/`; the `l2_pf_timely == l2_pf_retriggers` equality (still true,
+without its location; `u19_check.cpp`; `native_v1_archive/`; the `l2_pf_timely == l2_pf_retriggers` equality (still true,
 now stated in `engine.h:254-255,265-267` and `stats.cpp:361-363`); hazard H1 (header vs truncating
 `--out`); hazard H3 (non-COUT anchor decode); the header-default drift between the two apps; most of
 the mapper helper duplication.

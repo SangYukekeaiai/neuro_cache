@@ -63,9 +63,6 @@ src/archmodels/loas/loasgen
 src/archmodels/prosperity/prosperitygen
 src/archmodels/ptb/ptbgen
 src/archmodels/spinalflow/spinalflowgen
-src/cachesim/cache_replay
-src/cachesim/cache_replay_hierarchical
-src/cachesim/cache_sweep_hierarchical
 dump/profiling/*/native/cache_sweep*
 !dump/profiling/*/native/*.cpp
 

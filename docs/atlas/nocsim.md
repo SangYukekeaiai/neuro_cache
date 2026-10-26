@@ -1,4 +1,4 @@
-# Code atlas: src/nocsim (and src/cachesim)
+# Code atlas: src/nocsim
 
 Built from code only, at commit 39efd64 (branch wcache-rebuild-phase-a). No
 .md/.txt/log/dump/debug file was read. Line numbers come from `grep -n` and
@@ -7,8 +7,7 @@ Built from code only, at commit 39efd64 (branch wcache-rebuild-phase-a). No
 WCTS: nocsim does not read WCTS streams. Its only trace input is one
 weight-trace `sample_NNNNN.json.gz`, read by `tracegen.load_step_cycles`
 with `json.load` (src/nocsim/sim.py:335-337, src/tracegen.py:432, :448);
-`grep -i wcts src/nocsim` finds nothing. cachesim does not read WCTS either
-(it reads the same JSON samples, src/cachesim/native_bridge.py:33).
+`grep -i wcts src/nocsim` finds nothing.
 
 ---
 
@@ -288,93 +287,12 @@ used only in the CSV comment line.
 - tests/test_eventsim_deps.py: hand-written CSVs check that deps delay successors across actors, fan-in takes the max, chains add up. Skips if the binary is missing (lines 91-92).
 - tests/test_weight_resend.py: `StepInfo.weight_changes` sends equal the reloads the schedule calls for (campaign schedules), plus a synthetic nest.
 - The four script-style tests above now document their run line as `conda run -n ${CONDA_ENV:-cosa_snn}` (e.g. tests/test_step_cycles.py:19), matching the default in scripts/env.sh:4.
-- No tests target src/cachesim.
 
 ---
 
-## 3. src/cachesim: verdict and atlas
+## 3. src/cachesim (removed)
 
-### 3.1 Verdict: predecessor of wcache, sibling of nocsim
-
-- **Not related to nocsim in code.** cachesim imports nothing from nocsim and
-  nocsim nothing from cachesim. Both consume the tracegen weight trace;
-  nocsim models NoC traffic and time, cachesim models weight-cache hit rates.
-- **Predecessor of wcache.** Evidence: (a) wcache's archived v1 header cited a
-  "cachesim-redesign-plan" (line 2 of `include/wcache/types.h` in
-  `src/wcache/native_v1_archive/` at 8fa0916; the whole archive was deleted
-  in f17278d);
-  (b) at 8fa0916 the wcache wire format named cachesim's bridge as the
-  producer it matched (`stream_format.h:9-10` at that commit); at HEAD it
-  names src/tracegen.py instead (src/wcache/native/include/wcache/stream_format.h:11);
-  (c) wcache has no import of cachesim; (d) git history: last functional
-  cachesim commit 2026-08-04 (3648cc7; 39efd64 only edits comments); wcache
-  rebuild starts 2026-08-18 (aff9b42);
-  (e) the Python reference modules `cache.py, layout.py, policy.py,
-  sweep.py` were deleted from src/cachesim in 2811a66 and the file headers now
-  point at `dump/python_reference/cachesim/` (e.g. src/cachesim/cache.h:2,
-  src/cachesim/policy.h:2, src/cachesim/hierarchy.h:18).
-- **Live callers:** only `profiling/0803_l1_l2_cache/run_sweep.py:19-20`
-  (`DIMS`, `native_hierarchical_sweep`), launched by
-  `profiling/0803_l1_l2_cache/run_sweep.slurm:15`. Scripts under debug/
-  also import it (seen in grep output only, not read).
-
-### 3.2 Purpose and flow
-
-Replays one weight-trace sample's weight addresses through LRU caches and
-counts hits. Three binaries, each fed binary data on stdin by
-`native_bridge.py`:
-
-1. `cache_replay` (src/cachesim/main.cpp:48): one cache, old flat schema
-   (`tile["weight_addresses"]`). Prints `hits total rate`.
-2. `cache_replay_hierarchical` (src/cachesim/main_hierarchical.cpp:131): one
-   private L1 per core + shared L2, nested schema (tiles -> ticks -> cores ->
-   weight_addresses), hybrid layout only. Prints counts per core and totals.
-3. `cache_sweep_hierarchical` (src/cachesim/main_hierarchical_sweep.cpp:98):
-   fixed 24-point grid (3 structures x 2 L1 sizes x 4 L2 sizes), prefetch and
-   pinning both on.
-
-Event -> elements (`for_each_element`) -> line `Tag` (inner_dim or hybrid
-4x4 cin x cout block) -> packed int64 (`TagPacker`) -> `Cache.access`.
-Within one event, repeated consecutive tags are counted once.
-
-Build: `make` in src/cachesim (g++ -O3 -std=c++17, src/cachesim/Makefile:1-2).
-All three binaries are present on disk in this worktree (built 2026-10-25
-21:50) and all are gitignored (.gitignore:66-68).
-
-### 3.3 Bottom-up
-
-**config.py**
-- `DIMS = ("kh","kw","cin","cout")` (src/cachesim/config.py:24), `CACHE_TYPES` :25, `POLICIES` :32 (only `lru` is real), `LAYOUTS` :42, `CIN_BLOCK = COUT_BLOCK = 4` :49-50, `_DIM_KEYS` :56.
-- `class CacheConfig` (frozen, src/cachesim/config.py:60): `__post_init__` :86 checks positivity, associativity only with set_associative, hybrid needs all four shape bounds and `line_size_bytes == cin_block*cout_block` (1 byte per weight), non-hybrid must not have bounds, capacity divisible by ways. `capacity_lines` :155 = `max(1, size // line)`.
-- `load_cache_config(path)` (src/cachesim/config.py:164): YAML with top-level `cache:`; does not read shape bounds, so `layout: hybrid` in YAML always fails validation. No live caller.
-- `hybrid_config_from_dims(workload_dims, cache_size_bytes, cache_type, associativity=None)` (src/cachesim/config.py:200): builds a hybrid config from `KH/KW/CIN/COUT`; no live caller.
-
-**stats.py**
-- `class HierarchyStats` (src/cachesim/stats.py:20): `per_core_l1` tuples, `l1_hits/accesses`, `l2_hits/accesses` (`l2_accesses == l1_accesses - l1_hits`). Rates: `per_core_l1_hit_rates` :33, `l1_hit_rate` :37, `l2_hit_rate` :42 (over L1 misses), `overall_hit_rate` :47 (`(l1_hits+l2_hits)/l1_accesses`).
-- `class HierarchySweepResult` (src/cachesim/stats.py:54).
-
-**native_bridge.py**
-- `_NATIVE_BIN`, `_NATIVE_HIERARCHICAL_BIN`, `_NATIVE_HIERARCHICAL_SWEEP_BIN` (src/cachesim/native_bridge.py:28-30): binaries next to the module.
-- `load_sample(sample_path)` (src/cachesim/native_bridge.py:33): gzip JSON.
-- `_write_events(path, sample_path)` :43: `<I n` then `<iiiii` per event.
-- `_run_replay(trace_path, config, order)` :55: 13 positional args; temp dir via `tempfile.TemporaryDirectory` (:82).
-- `native_sample_hit_rate(...) -> float` :93 (6 decimals only) and `native_sample_hit_counts(...) -> (int,int)` :107. No live caller.
-- `_write_tick_data(path, data)` :113: cores sorted by core_id per tick; `_write_ticks` :138.
-- `native_hierarchical_stats(trace_path, l1_config, l2_config, order, *, l2_prefetch, same_tick_pinning)` :142: no live caller.
-- `native_hierarchical_sweep(trace_path, order)` :210: parses 9-field rows (:250), rejects trailing output.
-
-**C++ headers**
-- `enum Dim`, `dim_from_name`, `parse_order` (src/cachesim/dims.h:10, :12, :23): order must be a permutation of the 4 dims; last entry is the ranged dim.
-- `CacheType`, `Layout`, `struct CacheConfig`, `capacity_lines` (src/cachesim/config.h:18, :29, :37, :50): no validation in C++; `associativity 0` = not set.
-- `num_sets_and_ways` (src/cachesim/cache.h:16); `class Cache` (:36) with `access`, `access_pinned`, `contains`, `stamp`; `set_index` (:66) = `packed_tag mod num_sets`.
-- `PinStamps` (src/cachesim/policy.h:23); `class LRUPolicy` (:28): one set; `contains` (:48) has no side effects; `stamp` (:58) is a per-set clock; `choose_victim` (:101): least recent unpinned line, else the pinned line with the smallest start-of-tick stamp; `require_policy_implemented` (:125) throws for anything but `lru`.
-- `Element`, `Tag` (src/cachesim/layout.h:25, :29); `for_each_element` (:37): range is `[v3, v4)`; `tag_for_element_hybrid` (:58); `tag_for_element` (:64); `TagPacker` (:95, `pack` :101, cout is the innermost radix); `hybrid_cout_lines` (:113); `hybrid_packer` (:124, ceil division by block).
-- `CoreRequest`, `CoreL1Stats`, `class TwoLevelHierarchy` (src/cachesim/hierarchy.h:36, :41, :47); `run_tick` (:66): lookup phase uses L2 as it was at tick start (`contains`, :98), pins L2 hits (:105), queues prefetch of the next cout block on an L2 miss (:115); fill phase (:140) applies L2 fills in ascending core order. L1 is filled at once by `access`. `prefetch_target` (:193) returns -1 at the last cout block.
-
-**C++ mains**
-- src/cachesim/main.cpp:48 `main`: needs `argc == 14` (:49); policy always `lru` (:62); for inner_dim, radices come from this sample's observed maxima plus 1 (:96-118), so set indices depend on the sample; dedup loop (:129-144).
-- src/cachesim/main_hierarchical.cpp: `WireCore` :71, `read_pod` :77, `read_ticks` :83, `packed_tags` :105, `parse_flag` :122, `main` :131 (17 args, `argc != 18` :132; hybrid only :163).
-- src/cachesim/main_hierarchical_sweep.cpp: `read_pod` :24, `read_packed_events` :31, `read_ticks` :51, `Structure`/`STRUCTURES` :74/:80 (fully assoc, 32-way, 4-way), `L1_SIZES` :85 (16, 32 KiB), `L2_SIZES` :86 (128 KiB-1 MiB), `config_for` :88, `main` :98; line 16 B and 4x4 blocks hardcoded (:108, :114-115); prefetch and pinning hardcoded on (:134).
+cachesim was removed on 2026-10-26 (superseded by wcache; last used by profiling/0803).
 
 ---
 
@@ -395,7 +313,6 @@ the stale tiles.py, dram.py, compute.py, vmem.py and steps.py docstrings
 2. `sim.run` and `decode()` (src/nocsim/sim.py:79, src/nocsim/schedule/decode.py:112): the Gurobi path has no caller in the tree; `y` arg is unused (src/nocsim/sim.py:84).
 3. `encode_core_id` (src/nocsim/schedule/tiles.py:62): no caller outside debug/.
 4. `combine`'s `compute_model`/`trace` parameters (src/nocsim/combine.py:127-128): no caller passes them (the CLI never does).
-5. cachesim: `load_cache_config`, `hybrid_config_from_dims`, `native_sample_hit_rate/counts`, `native_hierarchical_stats` (src/cachesim/config.py:164, :200; src/cachesim/native_bridge.py:93, :107, :142) have no live caller; `cache_replay` and `cache_replay_hierarchical` are reachable only through them.
 
 **Duplicated logic**
 6. Dim-totals helper in three places: src/nocsim/combine.py:95, src/nocsim/schedule/tiles.py:86, src/nocsim/schedule/steps.py:250 (plus inline at src/nocsim/schedule/decode.py:288-290 and in src/archmodels/dense.py).
@@ -403,17 +320,13 @@ the stale tiles.py, dram.py, compute.py, vmem.py and steps.py docstrings
 8. `_K_DIMS` in src/nocsim/schedule/steps.py:50 (frozenset) and src/nocsim/schedule/buf_spatial.py:57 (tuple); Way-2 order in buf_spatial.py:54 and tiles.py:59.
 9. psum.py and vmem.py builders are the same three shapes (load/chain/store); `mac_count` and `lif_count` have identical bodies (src/nocsim/transactions/compute.py:26, :61); `load_from_dram`/`store_to_dram` differ only in direction (src/nocsim/transactions/dram.py:44, :82).
 10. Values still kept equal by hand across languages or modules: XY routing (src/nocsim/core/noc.py:111 vs src/nocsim/eventsim/NoC.h:34); default `dram_latency=0.25` (src/nocsim/core/generator.py:53 vs src/parsers/bitwidths.py:35).
-11. cachesim: `read_pod` twice (src/cachesim/main_hierarchical.cpp:77, src/cachesim/main_hierarchical_sweep.cpp:24); per-event dedup three times (src/cachesim/main.cpp:129-144, main_hierarchical.cpp:105, main_hierarchical_sweep.cpp:31); hybrid argument checks twice (main.cpp:75-80, main_hierarchical.cpp:169-172).
 
 **Config values written as literals**
 12. `outputs/tc.csv` default relative to cwd (src/nocsim/sim.py:255). Flit width 64 bits (src/nocsim/core/transaction.py:36). Port placement formulas (src/nocsim/core/noc.py:74-82).
-13. cachesim sweep grid, 16 B line, 4x4 block, prefetch/pinning on (src/cachesim/main_hierarchical_sweep.cpp:80-86, :108, :114-115, :134). Policy forced to `lru` (src/cachesim/main.cpp:62, main_hierarchical.cpp:159).
 14. Callers: `N_NODES = 16` (profiling/0831_all_layer_streams/run_compare.py:56, profiling/0823_stagewise_verify/stage3_nocsim/run_stage3.py:46) instead of reading X*Y.
-15. profiling/0803_l1_l2_cache/run_sweep.slurm:13 hardcodes `cd /u/yyu9/projects/neuro_cache` and runs a bare `python` (:15) without scripts/env.sh or `CONDA_ENV`; the sibling profiling/0820_phaseD_spad_vs_cache/run_sweep.slurm:39 already sources env.sh but still has the same hardcoded `cd` (:27; wcache scope).
 
 **Comments and docstrings that no longer match the code**
 16. combine.py cites `tracegen.py:282` (src/nocsim/combine.py:212); it still matches today, but line-number citations break silently.
-17. cachesim file headers now point at `dump/python_reference/cachesim/`, but body comments still name the deleted modules as if they were siblings: src/cachesim/layout.h:2, src/cachesim/dims.h:20, src/cachesim/main.cpp:10, src/cachesim/policy.h:26-27, :123, src/cachesim/cache.h:65.
 18. Code comments point at design docs outside the code (src/nocsim/sim.py:155, :209; src/nocsim/combine.py:143, :193, :214; src/nocsim/core/generator.py:12; src/nocsim/eventsim/EventSim.h:3) and at an external CoSA backend not in the repo (src/nocsim/core/noc.py:19-30).
 
 **Inconsistent conventions**
@@ -422,20 +335,20 @@ the stale tiles.py, dram.py, compute.py, vmem.py and steps.py docstrings
 21. `import math` placed after a relative import (src/nocsim/core/generator.py:32-33).
 
 **Build products and data in git**
-22. No `__pycache__` or compiled binary is tracked (`git ls-files` clean); `src/nocsim/eventsim/eventsim` and the three cachesim binaries are gitignored (.gitignore:60, :66-68).
+22. No `__pycache__` or compiled binary is tracked (`git ls-files` clean); `src/nocsim/eventsim/eventsim` is gitignored (.gitignore:60).
 
 ---
 
 ## 5. Reproducibility gaps (fresh machine, e.g. NCSA Delta)
 
 - **Python.** Syntax needs Python 3.7+ (`from __future__ import annotations`, no newer features seen); this shell has system 3.12.3 and no `conda` on PATH, while callers and tests document `conda run -n ${CONDA_ENV:-cosa_snn}` (e.g. profiling/0831_all_layer_streams/run_compare.py:25; default also in scripts/env.sh:4). `requirements.txt` is tracked but was not read (rule); no pyproject/setup.py. tests/test_flits_per_packet.py needs pytest.
-- **Packages imported.** nocsim: `numpy` (src/nocsim/sim.py:41), PyYAML through `parsers` (src/parsers/layer.py:30); `tracegen` (for `--weight-trace`) also uses numpy via `archmodels.trace`. cachesim: PyYAML (src/cachesim/config.py:22). No gurobipy is needed for the JSON path (src/mip_solver/constants.py:16 says so); producing schedules upstream needs Gurobi.
+- **Packages imported.** nocsim: `numpy` (src/nocsim/sim.py:41), PyYAML through `parsers` (src/parsers/layer.py:30); `tracegen` (for `--weight-trace`) also uses numpy via `archmodels.trace`. No gurobipy is needed for the JSON path (src/mip_solver/constants.py:16 says so); producing schedules upstream needs Gurobi.
 - **Import path.** Nothing is installable; every caller sets `PYTHONPATH=<repo>/src` and `cwd=<repo>` (profiling/0831_all_layer_streams/run_compare.py:138-140).
 - **Source files read at run time.** `import nocsim.core.transaction` reads src/nocsim/eventsim/constants.h (src/nocsim/core/transaction.py:24, :37), so a copy of the Python package without the eventsim directory fails at import.
-- **External binaries.** `src/nocsim/eventsim/eventsim` (g++ with C++17, make) for `--simulate`; `src/cachesim/cache_*` (g++ -O3 C++17). No script in scripts/ or profiling/ builds them; both fail with FileNotFoundError until `make` is run (src/nocsim/sim.py:232-236, src/cachesim/native_bridge.py:58-59).
+- **External binaries.** `src/nocsim/eventsim/eventsim` (g++ with C++17, make) for `--simulate`. No script in scripts/ or profiling/ builds it; it fails with FileNotFoundError until `make` is run (src/nocsim/sim.py:232-236).
 - **Missing inputs.** The 31-layer comparison reads `profiling/0831_all_layer_streams/schedules/` and `weight_traces/` (run_compare.py:51, :53), which are not tracked. Tests need `profiling/0823_stagewise_verify/stage2_weight_trace/outputs/weight_traces/` and `outputs/schedules/loas/vgg16_T4_n5/` (tests/test_combine_cycles_table.py:45-52), absent here. Tracked inputs are 4 multi-node schedules (stage2_weight_trace/inputs/schedules), 4 single-node schedules and 4 layer YAMLs under profiling/0823_stagewise_verify/stage3_nocsim/inputs/, plus 33 tracked files under `input_trace/loas/` (31 `.npy` spike traces and their meta.json) used upstream by tracegen. The Stage 3 `outputs/tc/` and `outputs/weight_traces_single_node/` are now untracked (.gitignore:128-129) and must be regenerated.
-- **Data root.** `src/util.py` `data_root()` ($NEURO_CACHE_DATA, default `<repo>/data`) is not used by nocsim; in this atlas's scope only the cachesim caller uses it (profiling/0803_l1_l2_cache/run_sweep.py:24, trace root `neuro_cache_outputs/weight_traces/loas`).
-- **Hardcoded paths.** None absolute inside nocsim or cachesim. Relative-to-cwd default output (src/nocsim/sim.py:255). Callers fix one arch YAML and the node count (run_compare.py:50, :56). The cachesim batch script `cd`s to `/u/yyu9/projects/neuro_cache` (profiling/0803_l1_l2_cache/run_sweep.slurm:13).
+- **Data root.** `src/util.py` `data_root()` ($NEURO_CACHE_DATA, default `<repo>/data`) is not used by nocsim.
+- **Hardcoded paths.** None absolute inside nocsim. Relative-to-cwd default output (src/nocsim/sim.py:255). Callers fix one arch YAML and the node count (run_compare.py:50, :56).
 - **Determinism.** nocsim and eventsim are deterministic (sorted groups; tc_id tie-break). Inputs from tracegen use sampling (`import random` at src/tracegen.py:29); seeds were not checked here.
 
 ---
@@ -448,6 +361,5 @@ the stale tiles.py, dram.py, compute.py, vmem.py and steps.py docstrings
 4. Should `store_to_dram` (actor `gb_port`) block GB->PE sends in eventsim, as it does now?
 5. Is the GB/DRAM port placement, matched to an external CoSA `testbench.cpp`, still needed now that eventsim takes `dram_port` explicitly?
 6. Is `N_NODES = 16` in callers always equal to X*Y of the arch used, or should it come from the schedule?
-7. Should `src/cachesim` be moved to dump/ now that wcache supersedes it, given the only live caller is the 0803 profiling sweep?
 8. Which Python/conda environment produced the tracked baselines (no version is recorded in the code)?
 9. Is the `spad_nocsim` arm in wcache filled from nocsim's `total_cycles`, and by which script?

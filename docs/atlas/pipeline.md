@@ -25,7 +25,7 @@ Scope: `src/tracegen.py`, `src/util.py`, `src/parsers/`, `src/archmodels/`,
 `src/mip_solver/`, `scripts/` (incl. `env.sh`), `tests/` (Python and shell,
 not nocsim internals), `configs/`, `input_trace/`, `profiling/` (13 stages
 plus `profiling/common.py`), and how `dump/` and `debug/` touch the pipeline.
-`src/wcache`, `src/nocsim`, `src/cachesim` internals are covered elsewhere
+`src/wcache`, `src/nocsim` internals are covered elsewhere
 (`docs/atlas/wcache_native.md`, `docs/atlas/nocsim.md`); here only how the
 pipeline calls them.
 
@@ -58,7 +58,7 @@ the CSV rows into tables and HTML pages.
 | `python -m mip_solver` (`src/mip_solver/__main__.py` -> `cli.main` :27) | Stand-alone solver CLI, `solve` / `enumerate` subcommands | `--layer` (`configs/workloads/sample_snn_layer.yaml`), `--arch` (`configs/arch/spinalflow.yaml`), `--dataflow` (`configs/dataflow/spinalflow.yaml`), `--mapspace` (`configs/mapspace/mapspace.yaml`), `--out` (`outputs/schedule.json` / `outputs/enumeration.json`), `--time-limit`, `--mip-gap`, `--solver-log`, enumerate only: `--w-u 0.1 --w-tr 1.0 --w-dl 10.0`. Defaults are cwd-relative (`src/mip_solver/cli.py:20-24`) |
 | `profiling/*/run_sweep.py`, `run.py`, `run_*.py` | One experiment each; see 1.7 | mostly positional `[workers]` |
 | Native: `src/archmodels/<arch>/<arch>gen` | `<bin> <trace.bin> <task.bin> <out.bin or ->` | built by each arch's `Makefile` |
-| Downstream (not in scope): `src/wcache/native/build/{release,fixture}/wcache_run`, `wcache_sweep`; `python -m nocsim.sim`; `src/cachesim/cache_sweep_hierarchical` | invoked by profiling drivers | see 1.4 |
+| Downstream (not in scope): `src/wcache/native/build/{release,fixture}/wcache_run`, `wcache_sweep`; `python -m nocsim.sim` | invoked by profiling drivers | see 1.4 |
 
 Settings read from the environment (phase 2, commit `d2a9de8`):
 `NEURO_CACHE_DATA` (data kept outside git; Python reads it only through
@@ -83,7 +83,6 @@ list[NodeTileSpec]  (dram_i, noc_i, core_id, node_bound{dim}, tile_offset{dim})
    v
 LayerWeightTrace (one per sample)
    |-- save_weight_trace -> sample_NNNNN.json.gz ----> python -m nocsim.sim --weight-trace ... --simulate
-   |                                            \---> src/cachesim (0803 only)
    '-- stream_weight_trace -> WCTS v2 bytes (stdout or --dump-trace file) ----> wcache_run / wcache_sweep
                                                                               |
                                                one CSV row per config  <------'
@@ -194,9 +193,7 @@ Invocations of downstream code made by in-scope code, and the reverse:
   `layout`), so drivers split grids per mapper
   (`profiling/0820_phaseD_spad_vs_cache/run_sweep.py:115-131`,
   `profiling/0907_linesize/run_sweep.py:87-96`).
-- cachesim (0803 only): `cachesim.native_bridge.native_hierarchical_sweep(path, DIMS)`
-  (`profiling/0803_l1_l2_cache/run_sweep.py:124`), binary
-  `src/cachesim/cache_sweep_hierarchical`.
+- cachesim was removed on 2026-10-26 (superseded by wcache; last used by profiling/0803).
 
 ### 1.5 One run, step by step (the stream path used by 0820 and every later stage)
 
@@ -250,7 +247,7 @@ export NEURO_CACHE_DATA=<repo>/data CONDA_ENV=cosa_snn
 # build (once per machine)
 make -C src/archmodels/loas            # also ptb, spinalflow, prosperity, gustavsnn
 make -C src/wcache/native MODE=release lib apps      # per comment at 0820 run_sweep.py:34
-make -C src/nocsim/eventsim ; make -C src/cachesim
+make -C src/nocsim/eventsim
 
 # Stage 1 (Gurobi)
 python scripts/solve_schedules.py --archs loas
@@ -311,7 +308,7 @@ nine stage directories also insert `ROOT/profiling` and import
 | Stage | Driver(s) | Inputs | Simulator invoked | Swept parameters | Outputs |
 |---|---|---|---|---|---|
 | `0728_status_replay` | `build_artifact.py` `main` :58 | tracked `loas_cout_only.csv`, `loas_cin_cout_2d.csv` | none in this dir; CSV producer not in the stage | validation expects 31 layers x 4 sizes x 3 structures x 3 line sizes per layout, 2 layouts, n=5 (:35-53) | `artifact/data.js` (tracked) |
-| `0803_l1_l2_cache` | `run_sweep.py` `main` :219 (`--run`, `--workers`, `--unit-index`, `--merge-only`), `build_artifact.py` :164; `run_sweep.slurm` (not read) | `sample_0000{0..4}.json.gz` under `$NEURO_CACHE_DATA/neuro_cache_outputs/weight_traces/loas/<arch_config>/<wl>_T4_all/<layer>/` (:24); `outputs/schedules/multinode_sweep/classification.csv` (build) | `cachesim.native_bridge.native_hierarchical_sweep` | 4 arch configs (inst16/inst1024 x noc512kb/noc4096kb, node32kb) x 31 layers x 5 samples = 124 units; per sample 24 configs = {FA, 32-way, 4-way} x L1 {16,32} KB x L2 {128,256,512,1024} KB (:35-47) | `results/*.csv`, `per_core/*.csv.gz`, `hierarchical_cache_results.csv` (absent), `artifact/` (tracked) |
+| `0803_l1_l2_cache` | `run_sweep.py` `main` :219 (`--run`, `--workers`, `--unit-index`, `--merge-only`), `build_artifact.py` :164; `run_sweep.slurm` (not read) | `sample_0000{0..4}.json.gz` under `$NEURO_CACHE_DATA/neuro_cache_outputs/weight_traces/loas/<arch_config>/<wl>_T4_all/<layer>/` (:24); `outputs/schedules/multinode_sweep/classification.csv` (build) | cachesim (removed 2026-10-26 with this stage's `run_sweep.py`/`.slurm`) | 4 arch configs (inst16/inst1024 x noc512kb/noc4096kb, node32kb) x 31 layers x 5 samples = 124 units; per sample 24 configs = {FA, 32-way, 4-way} x L1 {16,32} KB x L2 {128,256,512,1024} KB (:35-47) | `results/*.csv`, `per_core/*.csv.gz`, `hierarchical_cache_results.csv` (absent), `artifact/` (tracked) |
 | `0820_phaseD_spad_vs_cache` | `run_sweep.py` `main` :339 (`--grid`, `--run`, `--tier`, `--workers`, `--unit-index`, `--merge-only`, `--dry-run-units`, `--trace-root`, `--results-dir`, `--out`); `tests/*.sh` | `grids/*.json`; units name `*_T4_all` trace dirs and `schedule_cache` (e.g. `outputs/schedules/inst16`); fixtures from `src/wcache/examples/` | `generate_weight_traces.py --stream` piped into `wcache_sweep --trace -` | `tier0`/`tier3_full`: 180 = L1 {2,4,8,16,32} KB x cin_block {1,2,4} x L2 {256K,512K,1M} x prefetch {none, next_burst 2/4/8}; `cache16`: 36 (L1 8 KB; cin_block x L2 x prefetch), 3 archs x 4 layers x 5 samples; `cache16_l1_16k` 12; `cache16_lat` 12 (l2_latency 5, miss 50); `tier2_ridge` 15; `tier4_latency` 5; `tier1_spad` 1 (arm `spad_wcache`); `demo` 4; `duplicate_check` 4 | `results/<tier>/<unit>.csv`, merged `--out` (default `spad_vs_cache.csv`); tracked `cache16*_results.csv` |
 | `0823_stagewise_verify` | stage1 `run_stage1.py`; stage2 `run_stage2.py`, `verify_reconstruction.py`, `wcts_excerpt.py`; stage3 `run_stage3.py`, `run_armS_stage12.py`; stage4 `inputs/gen_streams.sh`, `oracle_gate.py`, `run_w5.py`, `run_khkw_sweep.py`, `run_l2_capacity_probe.py`, `run_layout_control.py`, `analyze_khkw_sweep.py`, `build_artifact.py`; `input_trace_audit/audit_density.py` | 4 layers (vgg16 layer_08/09, resnet19 layer_09/16); stage1 reads `_all` `meta.json` under `data_root()` (`run_stage1.py:46`) and `configs/arch/multinode_sweep/loas_inst16_node32kb_noc4096kb.yaml`; stage2+ read `input_trace/loas/*_n5` | Gurobi (stage1); generator + `loasgen` (stage2); `nocsim.sim --simulate` (stage3); `wcache_run`, `wcache_sweep` (stage4) | stage1: num_pes {4,16,64,256}; all 13 TrafficModes; NoC totals {8 KiB..4 MiB} split 30:1:1. stage4: configs C2-C6 x layouts {block_pack, split_cin}; khkw_split line {16,32,64} B x l2_banks {1,2,4,8} x prefetch distance {0,1,2,4} (48 x 20 = 960 rows); L2 {512K..16M}; 3 layouts at the best point | per-stage `inputs/` + `outputs/`; 196 tracked files (about 1.9 MB). Since `9012d22` the 40 bulk stage-3 outputs are untracked and ignored (3.7) |
 | `0831_all_layer_streams` | `solve_all_layers.py [--check]`, `gen_streams.py [--check] [--workers]`, `gen_weight_traces.py`, `run_compare.py --workers` | arch/dataflow from 0823 stage1 inputs (`noc2MiB_pe16`); `_all` meta under `data_root()` (solve, :52); `input_trace/loas/*_n5` | Gurobi; generator via `sys.executable` (`gen_streams.py:41`); `wcache_sweep` (one config `BEST`); `nocsim.sim --simulate` | none: 31 layers x 5 samples at one config | `schedules_all/`, `schedules/`, `streams/` (155 files, 16 GB, untracked, WCTS v1), `weight_traces/`, `outputs/{wcache_rows.csv, nocsim_rows.json, all_layers_vs_nocsim.csv}` (absent) |
@@ -400,7 +397,7 @@ l2_prefetch none`. Drivers take subsets or overrides through
   Layout documented at :18-23: `neuro_cache_trace/input_trace/loas/<capture>/`
   for full captures, `neuro_cache_outputs/weight_traces/` for generated
   traces. Callers: `scripts/subset_input_traces.py:45`,
-  `profiling/0803_l1_l2_cache/run_sweep.py:24`, `build_artifact.py:22`,
+  `profiling/0803_l1_l2_cache/build_artifact.py:22` (its `run_sweep.py` was removed 2026-10-26),
   `profiling/0823_stagewise_verify/stage1_mip_solver/run_stage1.py:46`,
   `.../input_trace_audit/audit_density.py:13`,
   `profiling/0831_all_layer_streams/solve_all_layers.py:52`, three
@@ -619,9 +616,8 @@ Unchanged in phase 2 (`git diff --stat 8fa0916..HEAD -- configs/` is empty).
   All `DRAM_LATENCY: 0.25`.
 - `dataflow/<arch>.yaml` x5: `node_dim_capacity` per dim (e.g. loas KH/KW/CIN/T
   `full`, COUT `{spatial: 4}` at `configs/dataflow/loas.yaml:9`).
-- `cache/cache_config{,_tiny}.yaml`: old cachesim configs (32 KB FA, 32 B line,
-  `inner_dim cin`); read only by `cachesim.config.load_cache_config`
-  (`src/cachesim/config.py:164`), which no pipeline code calls.
+- `cache/cache_config{,_tiny}.yaml`: old cache configs (32 KB FA, 32 B line,
+  `inner_dim cin`); no live reader (their only reader, cachesim, was removed on 2026-10-26).
 - `mapspace/mapspace.yaml`: `spatial_dims` = all 7; default for the CLI only.
 - `workloads/sample_snn_layer.yaml`: 3x3, CIN 64, COUT 128, 56x56, T 4; CLI default.
 
@@ -692,7 +688,7 @@ Diffs: `0903_l1_8k/run_sweep.py` (`one` :38, `geomean` :56,
 #### 2.9.3 Per file (functions with lines; one phrase each where the name is not enough)
 
 - `0728_status_replay/build_artifact.py`: `read_rows` :15, `validate` :35, `main` :58.
-- `0803_l1_l2_cache/run_sweep.py`: `DEFAULT_TRACE_ROOT` :24 (`data_root()`),
+- `0803_l1_l2_cache/run_sweep.py` (removed 2026-10-26 with cachesim; described as of `39efd64`): `DEFAULT_TRACE_ROOT` :24 (`data_root()`),
   `discover_units` :60 (requires exactly 124 units, 5 samples each),
   `print_preview` :86, `_rate` :103, `run_unit` :107 (asserts L2 accesses ==
   L1 misses), `merge_results` :176, `main` :219.
@@ -888,8 +884,8 @@ tracked 0823 stage-3 outputs.
   does not implement `format_input_batch`. nocsim still types against it
   (`src/nocsim/combine.py:74`).
 - `lif_cycles` is always `None` in generated traces (`src/tracegen.py:282`).
-- `configs/cache/*.yaml`: only `cachesim.config.load_cache_config`
-  (`src/cachesim/config.py:164`) reads them, and no pipeline code calls it.
+- `configs/cache/*.yaml`: no code reads them (their only reader, cachesim,
+  was removed on 2026-10-26).
 - `mip_solver.analysis` is used only by `scripts/tmp/`.
 - `stream_weight_trace` has a `burst_dim` parameter (`src/tracegen.py:643`)
   whose only legal value is its default 3 (:660).
@@ -1072,7 +1068,7 @@ What a fresh machine needs:
 - A Gurobi license (`GRB_LICENSE_FILE`; Delta token server path in
   `solve_all_layers.py:21`) for any solve. Not needed to reuse cached schedules.
 - g++ with C++17 and `make` for: 5 arch generators (`src/archmodels/<arch>/Makefile`),
-  `src/nocsim/eventsim`, `src/cachesim` (3 binaries), `src/wcache/native`
+  `src/nocsim/eventsim`, `src/wcache/native`
   (`MODE=release lib apps` for `build/release/`, which every 0823+ driver hardcodes).
   `reuse_tool` has no build file.
 - `NEURO_CACHE_DATA` pointing at a directory with
@@ -1127,7 +1123,7 @@ license path in a docstring, `~/miniconda3`). Data paths now go through
 2. ResNet `*_shortcut_0` layers are given KH=KW=3, PAD=1 (`src/archmodels/trace.py:24-26`);
    are they really 3x3 in the captured model, and is "next layer's CIN" the
    right COUT around shortcut layers (e.g. `layer_02 conv2` -> `layer_03 shortcut`)?
-3. What do `run_sweep.slurm` (0803, 0820), `requirements.txt` and
+3. What do `run_sweep.slurm` (0820; the 0803 one was removed 2026-10-26), `requirements.txt` and
    `profiling/0823_stagewise_verify/UNTRACKED_OUTPUTS.md` contain (not read)?
 4. How is `profiling/0831_reuse_distance/reuse_tool` built?
 5. Is the mapspace YAML meant to constrain the MIP, or should it be removed

@@ -43,8 +43,7 @@ from parsers.layer import SNNProb
 # mip_solver is imported lazily, inside solve_and_cache_schedule only:
 # mip_solver.solve pulls in gurobipy at module load, and everything else
 # in this module (loading/reconstructing an already-cached schedule) has
-# no need for Gurobi at all -- see dump/python_reference/cachesim/sweep.py's
-# own deferred-import comment for the same reasoning applied elsewhere.
+# no need for Gurobi at all.
 
 @dataclass
 class ScheduleArtifact:
@@ -331,8 +330,7 @@ def save_weight_trace(trace: LayerWeightTrace, path: pathlib.Path) -> None:
     caller reading it back with gzip.open -- only a direct `open()`/`cat`
     of the file needs to know it's gzipped. (The read-side counterpart,
     load_weight_trace, moved to dump/python_reference/tracegen_reconstruct.py
-    since nothing in the live pipeline reads a trace back this way --
-    src/cachesim/native_bridge.py reads the raw JSON directly instead.)
+    since nothing in the live pipeline reads a trace back this way.)
 
     Writes to a sibling temp file and os.replace()s it into place, so a
     process killed mid-write (OOM, SLURM time limit, etc.) can never leave
