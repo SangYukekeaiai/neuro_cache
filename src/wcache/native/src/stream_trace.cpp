@@ -270,7 +270,7 @@ bool StreamingTileTrace::advance() {
             const std::int32_t kh        = stream::read_le<std::int32_t>(rec + 8);
             const std::int32_t kw        = stream::read_le<std::int32_t>(rec + 12);
             const std::int32_t cin       = stream::read_le<std::int32_t>(rec + 16);
-            const std::int32_t run_start = stream::read_le<std::int32_t>(rec + 20);
+            const std::int32_t cout      = stream::read_le<std::int32_t>(rec + 20);
             const std::int32_t run_end   = stream::read_le<std::int32_t>(rec + 24);
 
             if (tick < 0) {
@@ -285,22 +285,22 @@ bool StreamingTileTrace::advance() {
                                          std::to_string(tick) + " does not ascend past " +
                                          std::to_string(prev_tick));
             }
+            // The v2 record is [kh, kw, cin, cout, run_end]: the full anchor of
+            // a run that walks `burst_dim`, so the run starts at the anchor's
+            // coordinate on that axis.
+            const Coord anchor{kh, kw, cin, cout};
+            const std::int32_t run_start = coord_on(anchor, axis);
             if (run_end <= run_start) {
                 throw std::runtime_error("WCTS frame " + std::to_string(tile_index) + ": core " +
                                          std::to_string(core_id) + " burst " +
                                          std::to_string(i) + " runs [" +
                                          std::to_string(run_start) + ", " +
-                                         std::to_string(run_end) + "), which is empty");
+                                         std::to_string(run_end) + ") along " +
+                                         std::string(axis_name(axis)) + ", which is empty");
             }
             prev_tick = tick;
             if (tick > max_tick) max_tick = tick;
 
-            // The address record is [kh, kw, cin, run_start, run_end] and the
-            // run walks `burst_dim`, so the anchor's coordinate along that axis
-            // is run_start. For v1's COUT bursts this is Coord{kh, kw, cin,
-            // run_start}, which is what the format section states.
-            const Coord anchor =
-                with_coord_on(Coord{kh, kw, cin, run_start}, axis, run_start);
             ticks_.push_back(tick);
             bursts_.push_back(Burst{anchor, axis, run_end - run_start, stride});
         }

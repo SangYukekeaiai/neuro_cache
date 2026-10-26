@@ -20,8 +20,8 @@ namespace fx {
 
 class StreamBuilder {
 public:
-    StreamBuilder(std::int32_t n_tiles, std::int32_t n_cores)
-        : n_tiles_(n_tiles), n_cores_(n_cores) {
+    StreamBuilder(std::int32_t n_tiles, std::int32_t n_cores, std::int32_t burst_dim = 3)
+        : n_tiles_(n_tiles), n_cores_(n_cores), burst_dim_(burst_dim) {
         write_header();
     }
 
@@ -42,12 +42,12 @@ public:
     }
 
     void add_burst(std::int64_t tick, std::int32_t kh, std::int32_t kw, std::int32_t cin,
-                   std::int32_t run_start, std::int32_t run_end) {
+                   std::int32_t cout, std::int32_t run_end) {
         put64(core_burst_bytes_, static_cast<std::uint64_t>(tick));
         put32(core_burst_bytes_, kh);
         put32(core_burst_bytes_, kw);
         put32(core_burst_bytes_, cin);
-        put32(core_burst_bytes_, run_start);
+        put32(core_burst_bytes_, cout);
         put32(core_burst_bytes_, run_end);
         ++core_n_bursts_;
         ++total_bursts_;
@@ -101,12 +101,12 @@ private:
         const std::int32_t identity_bytes = static_cast<std::int32_t>(identity.size());
         const char magic[8] = {'W', 'C', 'T', 'R', 'A', 'C', 'E', '1'};
         for (char c : magic) buf_.push_back(static_cast<unsigned char>(c));
-        put32(buf_, 1);                                // format_version
+        put32(buf_, 2);                                // format_version
         put32(buf_, 56 + 4 * 5 + 8 * 1 + 8 * 7 + identity_bytes);  // header_bytes
         put32(buf_, n_tiles_);
         put32(buf_, n_cores_);
         put32(buf_, 1);   // weight_bytes
-        put32(buf_, 3);   // burst_dim, COUT
+        put32(buf_, burst_dim_);
         put32(buf_, 1);   // burst_stride
         put32(buf_, 16);  // burst_span
         put32(buf_, 5);   // n_addr_fields
@@ -126,6 +126,7 @@ private:
 
     std::int32_t n_tiles_;
     std::int32_t n_cores_;
+    std::int32_t burst_dim_;
     std::vector<unsigned char> buf_;
     std::vector<unsigned char> payload_;
     std::vector<unsigned char> core_burst_bytes_;

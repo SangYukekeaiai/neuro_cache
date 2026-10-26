@@ -66,7 +66,7 @@ public:
     // tuple count is a property of the trace alone. It is also the quantity
     // §1.3's survey measured (24 addresses per core per tile), so it is the one
     // comparable to it. Two burst records are the same address when the whole
-    // on-disk 5-tuple matches: [kh, kw, cin, run_start, run_end]. The axis and
+    // on-disk 5-tuple matches: [kh, kw, cin, cout, run_end]. The axis and
     // the stride are header-wide and cannot tell two records of one stream
     // apart, so they are not part of the key.
     //

@@ -222,6 +222,45 @@ void test_empty_run_throws() {
     CHECK_THROWS(std::runtime_error, tr.advance());
 }
 
+void test_every_burst_axis_round_trips() {
+    check::group("5d: a burst on each of the four axes decodes to its full anchor");
+    // extents (stream_builder.h): KH 3, KW 3, CIN 64, COUT 64
+    struct Case { std::int32_t dim; Axis axis; std::int32_t kh, kw, cin, cout, run_end, count; };
+    const Case cases[] = {
+        {0, Axis::KH,   0, 2, 5,  7,  3, 3},
+        {1, Axis::KW,   1, 0, 5,  7,  2, 2},
+        {2, Axis::CIN,  1, 2, 8,  7, 24, 16},
+        {3, Axis::COUT, 1, 2, 5, 16, 32, 16},
+    };
+    for (const Case& c : cases) {
+        StreamBuilder b(1, 1, c.dim);
+        b.begin_tile(0, 4); b.begin_core(0);
+        b.add_burst(0, c.kh, c.kw, c.cin, c.cout, c.run_end);
+        b.end_tile();
+        const std::vector<unsigned char> bytes = b.finish();
+        MemByteSource src(bytes);
+        StreamingTileTrace tr(src);
+        CHECK_TRUE(tr.header().burst_dim == c.axis);
+        CHECK_TRUE(tr.advance());
+        const Burst& got = tr.burst(CoreId{0}, 0, BurstIndex{0});
+        CHECK_TRUE(got.axis == c.axis);
+        CHECK_EQ(got.anchor.kh, c.kh);   CHECK_EQ(got.anchor.kw, c.kw);
+        CHECK_EQ(got.anchor.cin, c.cin); CHECK_EQ(got.anchor.cout, c.cout);
+        CHECK_EQ(got.count, c.count);    CHECK_EQ(got.stride, 1);
+    }
+}
+
+void test_empty_run_on_a_non_cout_axis_throws() {
+    check::group("5d: run_end must pass the anchor's coordinate on burst_dim");
+    StreamBuilder b(1, 1, 2);  // CIN
+    // cin 8 == run_end 8: empty on CIN, though field 3 (cout 0) < run_end.
+    b.begin_tile(0, 4); b.begin_core(0); b.add_burst(0, 0, 0, 8, 0, 8); b.end_tile();
+    const std::vector<unsigned char> bytes = b.finish();
+    MemByteSource src(bytes);
+    StreamingTileTrace tr(src);
+    CHECK_THROWS(std::runtime_error, tr.advance());
+}
+
 void test_tile_tail_below_one_throws() {
     check::group("Task 3 rejection 6: tile_tail >= 1 is checked, not assumed (Q10)");
     StreamBuilder b(1, 2);
@@ -431,6 +470,8 @@ int main() {
     test_descending_core_id_throws();
     test_non_ascending_local_tick_throws();
     test_empty_run_throws();
+    test_every_burst_axis_round_trips();
+    test_empty_run_on_a_non_cout_axis_throws();
     test_tile_tail_below_one_throws();
     test_wrong_end_magic_in_the_trailer_throws();
     test_wrong_total_bursts_in_the_trailer_throws();

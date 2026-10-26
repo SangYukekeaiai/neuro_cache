@@ -481,7 +481,7 @@ def load_step_cycles(path: pathlib.Path) -> StepCycles:
 
 
 # ----------------------------------------------------------------------
-# WCTS (weight cache trace stream), version 1
+# WCTS (weight cache trace stream), version 2
 #
 # The in-flight sibling of save_weight_trace: the same data as a stream
 # instead of a document, so a producer can feed the cache simulator down a
@@ -502,19 +502,21 @@ def load_step_cycles(path: pathlib.Path) -> StepCycles:
 #   24  4  i32 weight_bytes        48  4  i32 n_dims
 #                                  52  4  i32 identity_bytes
 # then n_addr_fields i32 field codes, n_spatial (dim_id, factor) pairs,
-# n_dims (dim_id, extent) pairs, and the identity block.
+# n_dims (dim_id, extent) pairs, and the identity block. Each burst record is
+# <q5i: local_tick, then the run's full anchor kh, kw, cin, cout, then run_end.
+# The run walks burst_dim from the anchor's coordinate on that axis to run_end.
 # ----------------------------------------------------------------------
 
 WCTS_MAGIC = b"WCTRACE1"
-WCTS_VERSION = 1
+WCTS_VERSION = 2
 WCTS_FIXED_HEADER_BYTES = 56
 WCTS_END_MAGIC = -1
 
 # Wire codes, deliberately independent of any enum elsewhere so a
 # renumbering there cannot silently change the format.
 WCTS_DIM_CODES = {"KH": 0, "KW": 1, "CIN": 2, "COUT": 3, "HO": 4, "WO": 5, "T": 6}
-# 0=KH 1=KW 2=CIN 3=RUN_START 4=RUN_END, i.e. the [kh, kw, cin, cout_start,
-# cout_end] address record every arch already emits.
+# 0=KH 1=KW 2=CIN 3=COUT 4=RUN_END. For a COUT burst this is the
+# [kh, kw, cin, cout_start, cout_end] address record every arch already emits.
 WCTS_ADDR_FIELDS = (0, 1, 2, 3, 4)
 _WCTS_BURST_BYTES = 8 + 4 * len(WCTS_ADDR_FIELDS)
 
@@ -526,7 +528,10 @@ def write_stream_header(fh, *, n_tiles, n_cores, weight_bytes, burst_dim,
     {dim_id: value} mappings using the wire codes 0=KH 1=KW 2=CIN 3=COUT
     4=HO 5=WO 6=T. `burst_dim` is one of those codes. Raises ValueError when
     prod(spatial_factors.values()) != n_cores, which is U25's check on the
-    producer side, and when `dims` is not exactly the seven codes."""
+    producer side, when `dims` is not exactly the seven codes, and when
+    `burst_dim` is not one of KH, KW, CIN, COUT (0..3)."""
+    if burst_dim not in (0, 1, 2, 3):
+        raise ValueError(f"write_stream_header: burst_dim {burst_dim} is not one of 0=KH 1=KW 2=CIN 3=COUT")
     product = 1
     for factor in spatial_factors.values():
         product *= factor
@@ -558,11 +563,13 @@ def write_stream_header(fh, *, n_tiles, n_cores, weight_bytes, burst_dim,
     fh.write(identity)
 
 
-def write_tile_frame(fh, *, tile_index, mac_cycles, cores) -> int:
+def write_tile_frame(fh, *, tile_index, mac_cycles, cores, burst_dim) -> int:
     """Writes one tile frame and returns the number of burst records written.
-    `cores` is [(core_id, [(local_tick, (kh, kw, cin, run_start, run_end)), ...]),
+    `cores` is [(core_id, [(local_tick, (kh, kw, cin, cout, run_end)), ...]),
     ...], which MUST be sorted by core_id and, inside each core, by local_tick.
-    A core with no bursts must be omitted, never passed as an empty list."""
+    A core with no bursts must be omitted, never passed as an empty list.
+    Raises ValueError when a run is empty along `burst_dim`, i.e. run_end is
+    not past the anchor's coordinate on that axis."""
     payload_bytes = sum(8 + _WCTS_BURST_BYTES * len(bursts) for _cid, bursts in cores)
     fh.write(struct.pack("<iiqQ", tile_index, len(cores), mac_cycles, payload_bytes))
 
@@ -581,6 +588,11 @@ def write_tile_frame(fh, *, tile_index, mac_cycles, cores) -> int:
                 raise ValueError(
                     f"write_tile_frame: local_tick {local_tick} not strictly ascending in "
                     f"core {core_id} of tile {tile_index} (previous {prev_tick})"
+                )
+            if addr[4] <= addr[burst_dim]:
+                raise ValueError(
+                    f"write_tile_frame: empty run [{addr[burst_dim]}, {addr[4]}) along "
+                    f"burst_dim {burst_dim} in core {core_id} of tile {tile_index}"
                 )
             prev_tick = local_tick
             fh.write(struct.pack("<q5i", local_tick, *addr))
@@ -613,15 +625,15 @@ def _wcts_tile_frames(tiles, n_cores):
                         f"(n_cores={n_cores})"
                     )
                 for addr in core.weight_addresses:
-                    kh, kw, cin, run_start, run_end = addr
-                    if run_end <= run_start:
+                    kh, kw, cin, cout_start, cout_end = addr
+                    if cout_end <= cout_start:
                         raise ValueError(
-                            f"stream_weight_trace: empty run [{run_start}, {run_end}) "
+                            f"stream_weight_trace: empty run [{cout_start}, {cout_end}) "
                             f"on core {core.core_id}"
                         )
-                    max_span = max(max_span, run_end - run_start)
+                    max_span = max(max_span, cout_end - cout_start)
                     by_core.setdefault(core.core_id, []).append(
-                        (entry.tick, (kh, kw, cin, run_start, run_end))
+                        (entry.tick, (kh, kw, cin, cout_start, cout_end))
                     )
         frames.append((tile.mac_cycles, [(cid, by_core[cid]) for cid in sorted(by_core)]))
 
@@ -644,8 +656,16 @@ def stream_weight_trace(trace: LayerWeightTrace, fh, *, n_cores, spatial_factors
     from a caller, because ruling R1 puts the burst axis and its geometry on
     this side of the pipe; the reader is not asked to supply any of it. It is
     the maximum burst span in this layer, used to size l1_demand_reserve; each
-    burst's actual extent is derivable from its own run_start and run_end, so a
-    ragged final run is emitted normally."""
+    burst's actual extent is derivable from its own cout_start and cout_end, so
+    a ragged final run is emitted normally. The addresses are COUT runs, which
+    are exactly v2 records [kh, kw, cin, cout, run_end] with burst_dim 3, so any
+    other `burst_dim` is refused rather than mislabelled."""
+    if burst_dim != 3:
+        raise ValueError(
+            "stream_weight_trace: LayerWeightTrace addresses are [kh, kw, cin, cout_start, "
+            "cout_end] COUT runs, so burst_dim must be 3; write a non-COUT stream with "
+            "write_stream_header and write_tile_frame"
+        )
     tiles = trace.tiles if max_tiles is None else trace.tiles[:max_tiles]
     # max_tiles is applied before the header, because n_tiles is a header field.
     frames, burst_span = _wcts_tile_frames(tiles, n_cores)
@@ -662,7 +682,7 @@ def stream_weight_trace(trace: LayerWeightTrace, fh, *, n_cores, spatial_factors
     total_bursts = 0
     for tile_index, (mac_cycles, cores) in enumerate(frames):
         total_bursts += write_tile_frame(fh, tile_index=tile_index,
-                                         mac_cycles=mac_cycles, cores=cores)
+                                         mac_cycles=mac_cycles, cores=cores, burst_dim=3)
     write_stream_trailer(fh, total_bursts)
     return total_bursts
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Decode a WCTS v1 dump into a readable excerpt.
+"""Decode a WCTS v2 dump into a readable excerpt.
 
-Layout is src/tracegen.py's writer: write_stream_header:397, write_tile_frame:436,
-write_stream_trailer:466. Wire dim codes are 0=KH 1=KW 2=CIN 3=COUT 4=HO 5=WO 6=T.
+Layout is src/tracegen.py's writer: write_stream_header:524, write_tile_frame:566,
+write_stream_trailer:603. Wire dim codes are 0=KH 1=KW 2=CIN 3=COUT 4=HO 5=WO 6=T.
 """
 import struct, sys
 
 DIM = {0: "KH", 1: "KW", 2: "CIN", 3: "COUT", 4: "HO", 5: "WO", 6: "T"}
-FIELD = {0: "kh", 1: "kw", 2: "cin", 3: "run_start", 4: "run_end"}
+FIELD = {0: "kh", 1: "kw", 2: "cin", 3: "cout", 4: "run_end"}
 
 
 def main(path, max_tiles=2, max_cores=2, max_bursts=6):
@@ -16,6 +16,12 @@ def main(path, max_tiles=2, max_cores=2, max_bursts=6):
     assert b[:8] == b"WCTRACE1", b[:8]
     (ver, hdr_bytes, n_tiles, n_cores, wbytes, burst_dim, burst_stride,
      burst_span, n_addr, n_spatial, n_dims, ident_bytes) = struct.unpack_from("<IIiiiiiiiiii", b, 8)
+    if ver != 2:
+        raise ValueError(f"{path}: WCTS header: format_version is {ver}, this reader speaks only 2; "
+                         f"version 1 streams store [kh, kw, cin, run_start, run_end] records that cannot hold "
+                         f"a non-COUT anchor, so regenerate the stream with the current src/tracegen.py")
+    if burst_dim != 3:
+        raise ValueError(f"{path}: burst_dim {burst_dim} is not COUT; this script reads COUT runs only")
     off = 56
     fields = struct.unpack_from(f"<{n_addr}i", b, off); off += 4 * n_addr
     spatial = {}

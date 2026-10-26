@@ -46,7 +46,7 @@ def test_header_and_frames():
     data = buf.getvalue()
     assert data[:8] == b"WCTRACE1"
     version, header_bytes = struct.unpack_from("<II", data, 8)
-    assert version == 1
+    assert version == 2
     n_tiles, n_cores, weight_bytes, burst_dim, burst_stride, burst_span = struct.unpack_from(
         "<iiiiii", data, 16)
     assert (n_tiles, n_cores, weight_bytes) == (2, 4, 1)
@@ -237,6 +237,75 @@ def test_round_trip_a_real_fixture():
     assert flat_in == flat_out
 
 
+def _write_one_burst_stream(buf, burst_dim, addr):
+    from tracegen import write_stream_header, write_tile_frame, write_stream_trailer
+    write_stream_header(buf, n_tiles=1, n_cores=1, weight_bytes=1, burst_dim=burst_dim,
+                        burst_stride=1, burst_span=addr[4] - addr[burst_dim],
+                        spatial_factors={3: 1},
+                        dims={0: 3, 1: 3, 2: 64, 3: 64, 4: 32, 5: 32, 6: 4},
+                        arch="loas", workload="w", layer="l", sample_idx=0)
+    n = write_tile_frame(buf, tile_index=0, mac_cycles=4, cores=[(0, [(0, addr)])],
+                         burst_dim=burst_dim)
+    write_stream_trailer(buf, n)
+
+
+def test_each_burst_axis_round_trips():
+    cases = {0: (0, 2, 5, 7, 3), 1: (1, 0, 5, 7, 2), 2: (1, 2, 8, 7, 24), 3: (1, 2, 5, 16, 32)}
+    for burst_dim, addr in cases.items():
+        buf = io.BytesIO()
+        _write_one_burst_stream(buf, burst_dim, addr)
+        h, tiles, total = decode_stream(buf.getvalue())
+        assert (h["format_version"], h["burst_dim"], total) == (2, burst_dim, 1)
+        (_ti, _mac, [(_cid, [(_tick, got)])]), = tiles
+        assert got == addr                    # full anchor plus run_end, no loss
+        assert got[burst_dim] < got[4]        # run_start is the anchor's coordinate on the axis
+
+
+def test_write_tile_frame_refuses_an_empty_run_on_the_burst_axis():
+    # cin=8, run_end=8 on CIN: empty, though field 3 (cout=0) < run_end
+    try:
+        _write_one_burst_stream(io.BytesIO(), 2, (0, 0, 8, 0, 8))
+    except ValueError:
+        return
+    raise AssertionError("an empty CIN run was written")
+
+
+def test_stream_weight_trace_refuses_a_non_cout_burst_dim():
+    for bd in (0, 1, 2):
+        try:
+            stream_weight_trace(tiny_trace(), io.BytesIO(), n_cores=4, spatial_factors={3: 4},
+                                burst_dim=bd)
+        except ValueError as e:
+            assert "burst_dim must be 3" in str(e)
+            continue
+        raise AssertionError(f"burst_dim={bd} accepted")
+
+
+def test_write_stream_header_refuses_burst_dim_outside_0_to_3():
+    from tracegen import write_stream_header
+    for bd in (-1, 4, 6):
+        buf = io.BytesIO()
+        try:
+            write_stream_header(buf, n_tiles=0, n_cores=1, weight_bytes=1, burst_dim=bd,
+                                burst_stride=1, burst_span=1, spatial_factors={3: 1},
+                                dims={i: 1 for i in range(7)}, arch="a", workload="w",
+                                layer="l", sample_idx=0)
+        except ValueError:
+            assert buf.getvalue() == b"", "bytes written before the refusal"
+            continue
+        raise AssertionError(f"burst_dim={bd} accepted")
+
+
+def test_write_tile_frame_requires_burst_dim():
+    from tracegen import write_tile_frame
+    try:
+        write_tile_frame(io.BytesIO(), tile_index=0, mac_cycles=4,
+                         cores=[(0, [(0, (0, 0, 0, 0, 16))])])
+    except TypeError:
+        return
+    raise AssertionError("write_tile_frame ran without a burst_dim")
+
+
 if __name__ == "__main__":
     test_header_and_frames()
     test_spatial_product_must_match_n_cores()
@@ -247,4 +316,9 @@ if __name__ == "__main__":
     test_empty_run_is_rejected()
     test_ragged_final_run_carries_the_maximum_span()
     test_round_trip_a_real_fixture()
+    test_each_burst_axis_round_trips()
+    test_write_tile_frame_refuses_an_empty_run_on_the_burst_axis()
+    test_stream_weight_trace_refuses_a_non_cout_burst_dim()
+    test_write_stream_header_refuses_burst_dim_outside_0_to_3()
+    test_write_tile_frame_requires_burst_dim()
     print("test_stream_writer: OK")

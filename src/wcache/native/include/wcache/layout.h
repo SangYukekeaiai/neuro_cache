@@ -107,8 +107,8 @@ public:
     // A burst along ANY axis. `b.axis` and `b.stride` come from the stream
     // header's `burst_dim` and `burst_stride`, which the trace generator emits
     // (ruling R1 of 2026-08-20, closing U27), and
-    // every burst in today's corpus is COUT with stride 1, but a trace written
-    // as [kh, kw, cout, cin_start, cin_end] bursts along CIN and is the same
+    // every burst in today's corpus is COUT with stride 1, but a WCTS v2 trace
+    // with burst_dim CIN stores [kh, kw, cin, cout, cin_end] and is the same
     // struct. An implementation therefore reads the walked axis out of the
     // burst; it may not assume COUT, and it may not assume that the walked
     // axis is one it blocks. A burst along KH is legal and, under a

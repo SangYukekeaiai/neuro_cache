@@ -32,7 +32,7 @@ StreamHeader good_header() {
     h.burst_stride = 1;
     h.burst_span   = 16;
     h.addr_fields  = {FieldCode::KH, FieldCode::KW, FieldCode::CIN,
-                      FieldCode::RunStart, FieldCode::RunEnd};
+                      FieldCode::COUT, FieldCode::RunEnd};
     h.spatial_factors = {{DimCode::COUT, 8}};
     h.dims = {{DimCode::KH, 3},    {DimCode::KW, 3},  {DimCode::CIN, 64},
               {DimCode::COUT, 64}, {DimCode::HO, 32}, {DimCode::WO, 32},
@@ -110,11 +110,19 @@ void test_bad_magic_throws() {
     CHECK_THROWS(std::invalid_argument, stream::decode_header(buf.data(), buf.size()));
 }
 
-void test_bad_version_throws() {
-    check::group("Task 1: a format_version other than 1 throws");
-    std::vector<unsigned char> buf = encoded(good_header());
-    stream::write_le<std::uint32_t>(buf.data() + 8, 2u);
-    CHECK_THROWS(std::invalid_argument, stream::decode_header(buf.data(), buf.size()));
+void test_v1_header_is_refused_with_the_regenerate_message() {
+    check::group("5d: format_version other than 2 is refused, naming the fix");
+    for (std::uint32_t v : {1u, 3u}) {
+        std::vector<unsigned char> buf = encoded(good_header());
+        stream::write_le<std::uint32_t>(buf.data() + 8, v);
+        std::string msg;
+        try { (void)stream::decode_header(buf.data(), buf.size()); }
+        catch (const std::invalid_argument& e) { msg = e.what(); }
+        CHECK_TRUE(msg.find("format_version is " + std::to_string(v)) != std::string::npos);
+        CHECK_TRUE(msg.find("speaks only 2") != std::string::npos);
+        CHECK_TRUE(msg.find("regenerate the stream with the current src/tracegen.py") !=
+                   std::string::npos);
+    }
 }
 
 void test_short_buffer_throws() {
@@ -150,7 +158,7 @@ void test_addr_field_order_is_pinned() {
     check::group("Task 1: v1 address field order must be exactly {0,1,2,3,4} (U28)");
     StreamHeader h = good_header();
     h.addr_fields = {FieldCode::KW, FieldCode::KH, FieldCode::CIN,
-                     FieldCode::RunStart, FieldCode::RunEnd};
+                     FieldCode::COUT, FieldCode::RunEnd};
     const std::vector<unsigned char> buf = encoded(h);
     CHECK_THROWS(std::invalid_argument, stream::decode_header(buf.data(), buf.size()));
 }
@@ -245,7 +253,7 @@ int main() {
     test_spatial_product_must_equal_n_cores();
     test_spatial_dims_must_ascend();
     test_bad_magic_throws();
-    test_bad_version_throws();
+    test_v1_header_is_refused_with_the_regenerate_message();
     test_short_buffer_throws();
     test_burst_span_must_be_positive();
     test_burst_stride_must_be_positive();

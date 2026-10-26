@@ -268,10 +268,10 @@ struct Coord {
 };
 
 // A run of weight elements fetched together, in the canonical form every
-// module uses. The trace's on-disk 5-tuple is a different shape: today it is
-// [kh, kw, cin, cout_start, cout_end], which TraceReader (A3) decodes into
-// {anchor = {kh, kw, cin, cout_start}, axis = COUT,
-//  count = cout_end - cout_start, stride = 1}.
+// module uses. The trace's on-disk 5-tuple (WCTS v2) is a different shape:
+// [kh, kw, cin, cout, run_end], which StreamingTileTrace decodes into
+// {anchor = {kh, kw, cin, cout}, axis = burst_dim,
+//  count = run_end - coord_on(anchor, burst_dim), stride = burst_stride}.
 // The axis and the stride arrive in the stream header: the WCTS format's
 // `burst_dim` and `burst_stride` (stream_format.h), emitted by the trace
 // generator, which knows both. That is ruling R1 of 2026-08-20, which closed

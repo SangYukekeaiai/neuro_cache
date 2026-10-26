@@ -1,4 +1,6 @@
-// WCTS, the weight cache trace stream, version 1: the wire format as data.
+// WCTS, the weight cache trace stream, version 2: the wire format as data.
+// Each burst record is [kh, kw, cin, cout, run_end]: the run's full anchor
+// plus the end of the run along `burst_dim`.
 //
 // Plan D Task 1. This header is the format and nothing else: the magic, the
 // field codes, the little-endian byte helpers, and the stream header's encode
@@ -37,7 +39,7 @@
 namespace wcache::stream {
 
 inline constexpr char          kMagic[8]        = {'W', 'C', 'T', 'R', 'A', 'C', 'E', '1'};
-inline constexpr std::uint32_t kFormatVersion   = 1;
+inline constexpr std::uint32_t kFormatVersion   = 2;
 
 // magic, version, header_bytes, n_tiles, n_cores, weight_bytes, burst_dim,
 // burst_stride, burst_span, n_addr_fields, n_spatial, n_dims, identity_bytes.
@@ -49,7 +51,7 @@ inline constexpr std::int32_t  kDims             = 7;
 // Wire codes. Deliberately NOT the same enum as `Axis`, so a renumbering of
 // `Axis` cannot silently change the format (U28's whole point).
 enum class DimCode : std::int32_t { KH = 0, KW = 1, CIN = 2, COUT = 3, HO = 4, WO = 5, T = 6 };
-enum class FieldCode : std::int32_t { KH = 0, KW = 1, CIN = 2, RunStart = 3, RunEnd = 4 };
+enum class FieldCode : std::int32_t { KH = 0, KW = 1, CIN = 2, COUT = 3, RunEnd = 4 };
 
 inline constexpr bool kHostIsLittleEndian = (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__);
 
@@ -104,10 +106,11 @@ struct StreamHeader {
     Axis         burst_dim    = Axis::COUT;
     std::int32_t burst_stride = 1;
     // Maximum burst span in this layer, used to size l1_demand_reserve; each
-    // burst's actual extent is derivable from its own run_start and run_end.
-    // Ruling Q-D: D1's `l1_demand_reserve` default is
-    // `lines_per_burst = burst_span / cout_block` and validation runs before any
-    // burst has been decoded.
+    // burst's actual extent is run_end minus its anchor's coordinate on
+    // burst_dim. Ruling Q-D: D1's `l1_demand_reserve` default is
+    // `lines_per_burst`, the line count of a `burst_span` burst along burst_dim
+    // (apps/app_support.h), and validation runs before any burst has been
+    // decoded.
     std::int32_t burst_span   = 1;
     std::vector<FieldCode>                        addr_fields;
     std::vector<std::pair<DimCode, std::int32_t>> spatial_factors;
@@ -216,9 +219,12 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
     (void)cur.take<std::uint64_t>("magic");
     const std::uint32_t version = cur.take<std::uint32_t>("format_version");
     if (version != kFormatVersion) {
-        throw std::invalid_argument("WCTS header: format_version is " +
-                                    std::to_string(version) + ", this reader speaks " +
-                                    std::to_string(kFormatVersion));
+        throw std::invalid_argument(
+            "WCTS header: format_version is " + std::to_string(version) +
+            ", this reader speaks only " + std::to_string(kFormatVersion) +
+            "; version 1 streams store [kh, kw, cin, run_start, run_end] records that "
+            "cannot hold a non-COUT anchor, so regenerate the stream with the current "
+            "src/tracegen.py");
     }
     const std::uint32_t header_bytes = cur.take<std::uint32_t>("header_bytes");
     if (header_bytes != len) {
@@ -261,7 +267,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
     const std::int32_t identity_bytes = cur.take<std::int32_t>("identity_bytes");
     if (n_addr_fields != kAddrFields) {
         throw std::invalid_argument("WCTS header: n_addr_fields is " +
-                                    std::to_string(n_addr_fields) + ", v1 requires " +
+                                    std::to_string(n_addr_fields) + ", v2 requires " +
                                     std::to_string(kAddrFields));
     }
     if (n_spatial < 0) {
@@ -270,7 +276,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
     }
     if (n_dims != kDims) {
         throw std::invalid_argument("WCTS header: n_dims is " + std::to_string(n_dims) +
-                                    ", v1 requires " + std::to_string(kDims));
+                                    ", v2 requires " + std::to_string(kDims));
     }
     if (identity_bytes < 0) {
         throw std::invalid_argument("WCTS header: identity_bytes is " +
@@ -292,7 +298,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
         if (code != i) {
             throw std::invalid_argument("WCTS header: addr_field_id[" + std::to_string(i) +
                                         "] is " + std::to_string(code) +
-                                        ", v1 requires the order {0,1,2,3,4}");
+                                        ", v2 requires the order {0,1,2,3,4}");
         }
         h.addr_fields.push_back(static_cast<FieldCode>(code));
     }
@@ -333,7 +339,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
         if (dim != i) {
             throw std::invalid_argument("WCTS header: workload dim_id[" + std::to_string(i) +
                                         "] is " + std::to_string(dim) +
-                                        ", v1 requires the ids 0..6 in order");
+                                        ", v2 requires the ids 0..6 in order");
         }
         h.dims.emplace_back(static_cast<DimCode>(dim), extent);
     }
@@ -354,7 +360,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
     if (fields.size() != 4 || !current.empty()) {
         throw std::invalid_argument("WCTS header: the identity block holds " +
                                     std::to_string(fields.size()) +
-                                    " NUL-terminated fields, v1 requires exactly 4");
+                                    " NUL-terminated fields, v2 requires exactly 4");
     }
     h.arch     = fields[0];
     h.workload = fields[1];

@@ -37,6 +37,12 @@ def read_stream(path):
     assert b[:8] == b"WCTRACE1", b[:8]
     (ver, hdr_bytes, n_tiles, n_cores, wbytes, burst_dim, burst_stride,
      burst_span, n_addr, n_spatial, n_dims, ident_bytes) = struct.unpack_from("<IIiiiiiiiiii", b, 8)
+    if ver != 2:
+        raise ValueError(f"{path}: WCTS header: format_version is {ver}, this reader speaks only 2; "
+                         f"version 1 streams store [kh, kw, cin, run_start, run_end] records that cannot hold "
+                         f"a non-COUT anchor, so regenerate the stream with the current src/tracegen.py")
+    if burst_dim != 3:
+        raise ValueError(f"{path}: burst_dim {burst_dim} is not COUT; this script reads COUT runs only")
     off = 56 + 4 * n_addr + 8 * n_spatial
     dims = {}
     for _ in range(n_dims):

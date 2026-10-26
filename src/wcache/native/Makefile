@@ -6,7 +6,7 @@
 #   make            fixture build, -O0 -g, asserts LIVE
 #   make test       build and run every tests/test_*.cpp, one binary each,
 #                   then the compile-fail driver
-#   make test-cli   build apps/ and run the three end-to-end CLI scripts,
+#   make test-cli   build apps/ and run the four end-to-end CLI scripts,
 #                   including v1_pipe.sh, the V1 gate. Needs python3 and the
 #                   checked-in examples/ fixtures, so it is NOT part of `test`
 #   make release    sweep build,   -O2 -DNDEBUG, asserts compiled out
@@ -149,14 +149,14 @@ endif
 	  echo "      make test-cli   [needs python3 and the examples/ fixtures]"; \
 	  exit $$rc
 
-# The three end-to-end CLI scripts, which drive the built programs over a
+# The four end-to-end CLI scripts, which drive the built programs over a
 # checked-in fixture slice. v1_pipe.sh is invariant V1's gate, and it is
 # non-vacuous: it also points the same check at two deliberately broken runs and
 # requires it to go red.
 #
 # This is a SEPARATE target and deliberately not a prerequisite of `test`.
 # `test` compiles and runs C++ only, so it is green wherever a compiler is, and
-# that is the property worth keeping: these three scripts need python3 on PATH,
+# that is the property worth keeping: these four scripts need python3 on PATH,
 # an importable `tracegen`, and the checked-in examples/ fixtures, none of which
 # `test` needs today. Folding them in would trade a gate that always runs for a
 # gate that runs where the environment happens to suit it, and a V1 check that
@@ -168,6 +168,7 @@ test-cli: apps
 	@tests/run_cli.sh
 	@tests/sweep_cli.sh
 	@tests/v1_pipe.sh
+	@tests/cout_golden.sh
 
 # The C++ suites only, without the compile-fail driver. `make test` is still
 # both, and the gate is still `make test`.
