@@ -157,7 +157,7 @@ def combine(
                    single_node schedules get a per-dram_i live model
                    call -- see below).
         cycles_by_step: Optional {(dram_i, noc_i): ComputeCycles} read from
-                   a saved weight trace (tracegen.load_step_cycles). When
+                   a saved per-step cycles file (tracegen.load_step_cycles). When
                    given it is the cycle source and both compute_model and
                    trace are ignored, for either arch -- see below. Ruling
                    U31: read the number the trace already stores rather

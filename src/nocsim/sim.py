@@ -110,8 +110,8 @@ def run(
                    combine(). None (default) behaves exactly as before this
                    parameter existed.
         cycles_by_step: Optional ``{(dram_i, noc_i): ComputeCycles}`` table
-                   read from the weight trace this schedule was solved for
-                   (``tracegen.load_step_cycles(...).by_step``), passed
+                   read from the per-step cycles file (sample_NNNNN.json.gz)
+                   of this schedule (``tracegen.load_step_cycles(...).by_step``), passed
                    straight through to combine(). When given it is the cycle
                    source for every step and both compute_model and trace are
                    ignored (ruling U31). None (default) behaves exactly as
@@ -291,7 +291,8 @@ def _build_parser() -> argparse.ArgumentParser:
         "--weight-trace",
         metavar="JSON_GZ",
         help=(
-            "path to ONE saved weight-trace sample (sample_NNNNN.json.gz). "
+            "path to ONE sample's per-step cycles file (sample_NNNNN.json.gz, "
+            "written by scripts/generate_weight_traces.py). "
             "Charges every schedule step the per-tile mac_cycles stored in "
             "that file instead of a static formula. One file is one sample, "
             "so there is no --sample flag"

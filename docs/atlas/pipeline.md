@@ -83,7 +83,7 @@ list[NodeTileSpec]  (dram_i, noc_i, core_id, node_bound{dim}, tile_offset{dim})
    | tracegen.assemble_layer_traces (group by (dram_i,noc_i), merge cores per tick, mac=max over cores)
    v
 LayerWeightTrace (one per sample)
-   |-- save_weight_trace -> sample_NNNNN.json.gz ----> python -m nocsim.sim --weight-trace ... --simulate
+   |-- save_step_cycles -> sample_NNNNN.json.gz (per-step cycles) ----> python -m nocsim.sim --weight-trace ... --simulate
    '-- stream_weight_trace -> WCTS v2 bytes (stdout or --dump-trace file) ----> wcache_run / wcache_sweep
                                                                               |
                                                one CSV row per config  <------'
@@ -125,13 +125,16 @@ Formats crossing each boundary:
    `tile_idx, sample_idx, mac_cycles, num_ticks`, then per tick
    `tick, n_addr`, then `n_addr` x `(kh,kw,cin,cout_start,cout_end)`
    (`src/archmodels/tick_output.h:35`).
-5. **Weight-trace JSON.gz** (`tracegen.LayerWeightTrace` :211 via `asdict`):
-   `{arch, trace_dir, layer_name, sample_idx, workload_dims (the inner
-   "problem" dict, includes "shape"), dram_num_steps, noc_num_steps, tiles:[{dram_i,
-   noc_i, mac_cycles, lif_cycles (always null), ticks:[{tick, cores:[{core_id,
-   weight_addresses:[[kh,kw,cin,cout_start,cout_end],...]}]}]}]}`. Path:
+5. **Per-step cycles JSON.gz** (`tracegen.save_step_cycles`, `src/tracegen.py:356`):
+   `{format: "step_cycles_v1" (:353), arch, trace_dir, layer_name, sample_idx,
+   workload_dims (the inner "problem" dict, includes "shape"), dram_num_steps,
+   noc_num_steps, tiles:[{dram_i, noc_i, mac_cycles, lif_cycles (always null)}]}`.
+   No weight addresses; those leave only as the WCTS stream (item 6). Path:
    `<out-dir>/<arch>/[<combo-tag>/]<trace_dir>/<layer>/sample_<5 digits>.json.gz`
-   (`scripts/generate_weight_traces.py:111-114`).
+   (`scripts/generate_weight_traces.py:113-117`). `load_step_cycles` (:471) also
+   reads the older full form (no `format` key, each tile also carrying
+   `ticks:[{tick, cores:[{core_id, weight_addresses}]}]`, ignored) and raises
+   `ValueError` on any other `format` (:490-493).
 6. **WCTS v2 stream** (`src/tracegen.py:479-684`): 56-byte fixed header
    (magic `WCTRACE1`, version 2 (:508), header_bytes, n_tiles, n_cores,
    weight_bytes=1, burst_dim, burst_stride=1, burst_span=max run length in the
@@ -187,7 +190,7 @@ Invocations of downstream code made by in-scope code, and the reverse:
   `archmodels.dense` imports `nocsim.schedule.decode.Schedule`
   (`src/archmodels/dense.py:18`). In the other direction nocsim imports
   `archmodels` (`src/nocsim/combine.py:74-76`, `src/nocsim/schedule/tiles.py:40`)
-  and `tracegen.load_step_cycles` (`src/nocsim/sim.py:335`). The Python
+  and `tracegen.load_step_cycles` (`src/nocsim/sim.py:336-338`). The Python
   packages are therefore mutually dependent; only the binaries are one-way.
 - nocsim: `python -m nocsim.sim --schedule S.json --layer L.yaml --arch A.yaml
   --weight-trace sample_NNNNN.json.gz --out tc.csv --simulate` with
@@ -377,14 +380,16 @@ l2_prefetch none`. Drivers take subsets or overrides through
   `mac_cycles = max` over cores (:280); `lif_cycles=None` always (:282).
 - `reconstruct_samples(arch_name, trace, tiles, sample_indices, trace_dir_name, layer_name, workload_dims, dram_num_steps)` :294:
   the single dispatcher to `ARCH_NATIVE_BRIDGES` (`KeyError` for an unknown arch).
-- `save_weight_trace(trace, path)` :326: gzip JSON written to a temp file then
-  `os.replace` (:348; no partial files).
-- `StepCycles` :355 + `check_against(artifact, schedule)` :384: read-back of
+- `save_step_cycles(trace, path)` :356: the per-step cycles part of `trace`
+  (item 5 above) as gzip JSON, written to a temp file then `os.replace` (:390;
+  no partial files).
+- `StepCycles` :397 + `check_against(artifact, schedule)` :423: read-back of
   per-(dram_i, noc_i) `ComputeCycles` with six identity checks; compares
   `artifact.workload["problem"]` to `workload_dims`.
-- `load_step_cycles(path)` :432: accepts `.json` or `.json.gz`; rejects duplicate
-  tiles (:454) or tile count != `dram_num_steps*noc_num_steps`. Used by nocsim
-  (`src/nocsim/sim.py:335`).
+- `load_step_cycles(path)` :471: accepts `.json` or `.json.gz`, the
+  `step_cycles_v1` form or the older full form; rejects an unknown `format`
+  (:490), duplicate tiles (:499) or tile count != `dram_num_steps*noc_num_steps` (:505).
+  Used by nocsim (`src/nocsim/sim.py:336-338`).
 - WCTS v2 (changed in phase 2, commit `725474f`). Constants :507-518
   (`WCTS_VERSION = 2` :508, field codes `0=KH 1=KW 2=CIN 3=COUT 4=RUN_END`
   :515-517, `_WCTS_BURST_BYTES` = 28 :518).

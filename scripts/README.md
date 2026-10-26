@@ -13,6 +13,7 @@ Stage 1 (Gurobi, low concurrency)     Stage 2 (no Gurobi, embarrassingly paralle
 solve_schedules.py               -->  generate_weight_traces.py
 outputs/schedules/<arch>/<trace_dir>/<layer>.json
                                        outputs/weight_traces/<arch>/<trace_dir>/<layer>/sample_NNNNN.json.gz
+                                       (per-step cycles for nocsim; addresses go out via --stream)
 ```
 
 ## Stage 1: `solve_schedules.py`
@@ -47,7 +48,9 @@ only for reference, not meant to run against the current pipeline.
 
 Loads a Stage-1-cached schedule (no re-solving) and reconstructs samples
 against it through the arch's native C++ bridge (dispatched via
-`tracegen.reconstruct_samples`), one `.json.gz` per sample. Skip-existing
+`tracegen.reconstruct_samples`), one `.json.gz` per sample holding its
+per-step cycle counts (`tracegen.save_step_cycles`, src/tracegen.py:356; no
+weight addresses, which `--stream` emits as WCTS instead). Skip-existing
 is on by default (`--force` to override). Two modes:
 
 One explicit `(arch, trace_dir, layer)` combo, parallelized by chunking

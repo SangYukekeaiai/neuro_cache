@@ -5,8 +5,9 @@ Built from code only, at commit 39efd64 (branch wcache-rebuild-phase-a). No
 `sed -n`. All paths are relative to the repo root.
 
 WCTS: nocsim does not read WCTS streams. Its only trace input is one
-weight-trace `sample_NNNNN.json.gz`, read by `tracegen.load_step_cycles`
-with `json.load` (src/nocsim/sim.py:335-337, src/tracegen.py:432, :448);
+per-step cycles `sample_NNNNN.json.gz` (per tile: dram_i, noc_i, mac_cycles,
+lif_cycles; no weight addresses), read by `tracegen.load_step_cycles`
+with `json.load` (src/nocsim/sim.py:336-338, src/tracegen.py:471, :489);
 `grep -i wcts src/nocsim` finds nothing.
 
 ---
@@ -36,7 +37,7 @@ is compared against** (`speedup_vs_nocsim` in profiling/). nocsim's
 | `--layer YAML` (required) | src/nocsim/sim.py:272 | Read by `parsers.layer.SNNProb`. Must match the layer used when solving. |
 | `--arch YAML` (required) | src/nocsim/sim.py:278 | Read twice: `SNNArch` (for `single_node`) and `SNNBitwidths` (bit widths, `DRAM_LATENCY`). |
 | `--out CSV` (default `outputs/tc.csv`, relative to cwd) | src/nocsim/sim.py:255, :284 | Suffix `.csv` or `.json` (src/nocsim/core/generator.py:179). |
-| `--weight-trace JSON_GZ` (optional) | src/nocsim/sim.py:290 | One `sample_NNNNN.json.gz`; loaded by `tracegen.load_step_cycles` (src/tracegen.py:432), giving per-step MAC cycles. |
+| `--weight-trace JSON_GZ` (optional) | src/nocsim/sim.py:291 | One per-step cycles `sample_NNNNN.json.gz` (written by `tracegen.save_step_cycles`, src/tracegen.py:356); loaded by `tracegen.load_step_cycles` (src/tracegen.py:471), giving per-step MAC cycles. |
 | `--simulate` (flag) | src/nocsim/sim.py:300 | After writing the CSV, runs `src/nocsim/eventsim/eventsim` and prints its 5 counters. |
 | `run(x, prob, bitwidths, out_file, ...)` | src/nocsim/sim.py:79 | Gurobi-variable path (`decode()`); no caller in src/, scripts/, profiling/ or tests/. |
 | `run_from_json(schedule_path, ...)` | src/nocsim/sim.py:137 | JSON path used by the CLI. |

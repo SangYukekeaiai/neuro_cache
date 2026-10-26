@@ -1,6 +1,8 @@
 """tracegen.check_schedule_matches_trace: a tracked schedule solved for a
 different workload than meta.json now gives is refused."""
 import argparse
+import dataclasses
+import gzip
 import json
 import pathlib
 import sys
@@ -96,3 +98,47 @@ def test_all_layers_refuses_a_stale_schedule_even_when_outputs_exist(tmp_path, s
     cache, out = stale_with_outputs
     with pytest.raises(ValueError, match="stale schedule"):
         gwt._regenerate_layer("loas", tmp_path, cache, out, "t", "b", [0])
+
+
+def small_trace():
+    tick = tracegen.TickEntry(tick=0, cores=[tracegen.CoreEntry(core_id=0, weight_addresses=[[0, 0, 0, 0, 4]])])
+    return tracegen.LayerWeightTrace(
+        arch="loas", trace_dir="t", layer_name="b", sample_idx=3, workload_dims=PROBLEM,
+        dram_num_steps=1, noc_num_steps=2,
+        tiles=[tracegen.TileWeightTrace(dram_i=0, noc_i=n, mac_cycles=10 + n, lif_cycles=None, ticks=[tick])
+               for n in range(2)])
+
+
+def read_gz(path):
+    with gzip.open(path, "rt") as fh:
+        return json.load(fh)
+
+
+def test_save_step_cycles_writes_only_what_nocsim_reads(tmp_path):
+    path = tmp_path / "sample_00003.json.gz"
+    tracegen.save_step_cycles(small_trace(), path)
+    doc = read_gz(path)
+    assert set(doc) == {"format", "arch", "trace_dir", "layer_name", "sample_idx", "workload_dims",
+                        "dram_num_steps", "noc_num_steps", "tiles"}
+    assert doc["format"] == "step_cycles_v1"
+    assert doc["tiles"] == [{"dram_i": 0, "noc_i": 0, "mac_cycles": 10, "lif_cycles": None},
+                            {"dram_i": 0, "noc_i": 1, "mac_cycles": 11, "lif_cycles": None}]
+
+
+def test_load_step_cycles_reads_the_slim_and_the_old_full_form_the_same(tmp_path):
+    slim = tmp_path / "slim.json.gz"
+    tracegen.save_step_cycles(small_trace(), slim)
+    full = tmp_path / "full.json.gz"
+    with gzip.open(full, "wt") as fh:
+        json.dump(dataclasses.asdict(small_trace()), fh)
+    assert tracegen.load_step_cycles(slim) == tracegen.load_step_cycles(full)
+    assert tracegen.load_step_cycles(slim).by_step == {
+        (0, 0): tracegen.ComputeCycles(mac_cycles=10, lif_cycles=None),
+        (0, 1): tracegen.ComputeCycles(mac_cycles=11, lif_cycles=None)}
+
+
+def test_load_step_cycles_rejects_an_unknown_format(tmp_path):
+    path = tmp_path / "x.json"
+    path.write_text(json.dumps({"format": "step_cycles_v2"}))
+    with pytest.raises(ValueError, match="step_cycles_v2"):
+        tracegen.load_step_cycles(path)

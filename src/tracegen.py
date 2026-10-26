@@ -15,8 +15,10 @@ Two independent artifacts, matching the two-stage design
                        (archmodels/trace.py's build_workload_from_trace
                        never reads B at all).
   LayerWeightTrace  -- one sample's per-tile weight-address stream +
-                       cycle counts, persisted once per
-                       (arch, trace_dir, layer, sample).
+                       cycle counts, (arch, trace_dir, layer, sample).
+                       Only its per-step cycle counts are persisted
+                       (save_step_cycles); its addresses leave as a
+                       WCTS stream (stream_weight_trace).
 """
 
 from __future__ import annotations
@@ -348,27 +350,43 @@ def reconstruct_samples(
     )
 
 
-def save_weight_trace(trace: LayerWeightTrace, path: pathlib.Path) -> None:
-    """Writes gzip-compressed JSON -- verified 19.5x smaller on real
-    generated data (9.64MB -> 0.49MB), which is what makes the full sweep's
-    storage footprint (otherwise ~510GB at 1000 samples/layer) fit in any
-    reasonable quota. `path` should end in .json.gz; transparent to any
-    caller reading it back with gzip.open -- only a direct `open()`/`cat`
-    of the file needs to know it's gzipped. (The read-side counterpart,
-    load_weight_trace, moved to dump/python_reference/tracegen_reconstruct.py
-    since nothing in the live pipeline reads a trace back this way.)
+STEP_CYCLES_FORMAT = "step_cycles_v1"
+
+
+def save_step_cycles(trace: LayerWeightTrace, path: pathlib.Path) -> None:
+    """Writes the part of `trace` nocsim reads (load_step_cycles): the
+    identity fields, the step counts, and each tile's dram_i, noc_i,
+    mac_cycles and lif_cycles, as gzip-compressed JSON tagged
+    `format: "step_cycles_v1"`. The weight addresses (each tile's `ticks`)
+    are left out; they reach the cache simulator through the WCTS stream
+    (stream_weight_trace) instead. `path` should end in .json.gz.
 
     Writes to a sibling temp file and os.replace()s it into place, so a
     process killed mid-write (OOM, SLURM time limit, etc.) can never leave
     a truncated file sitting at `path` -- skip-existing checks (this
     module's callers, generate_weight_traces.py) only ever see either the
     complete prior file or nothing, never a corrupted partial one."""
+    doc = {
+        "format": STEP_CYCLES_FORMAT,
+        "arch": trace.arch,
+        "trace_dir": trace.trace_dir,
+        "layer_name": trace.layer_name,
+        "sample_idx": trace.sample_idx,
+        "workload_dims": trace.workload_dims,
+        "dram_num_steps": trace.dram_num_steps,
+        "noc_num_steps": trace.noc_num_steps,
+        "tiles": [
+            {"dram_i": t.dram_i, "noc_i": t.noc_i,
+             "mac_cycles": t.mac_cycles, "lif_cycles": t.lif_cycles}
+            for t in trace.tiles
+        ],
+    }
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
     os.close(fd)
     try:
         with gzip.open(tmp_name, "wt") as fh:
-            json.dump(asdict(trace), fh)
+            json.dump(doc, fh)
         os.replace(tmp_name, path)
     except BaseException:
         os.unlink(tmp_name)
@@ -378,16 +396,13 @@ def save_weight_trace(trace: LayerWeightTrace, path: pathlib.Path) -> None:
 @dataclass(frozen=True)
 class StepCycles:
     """One sample's per-(dram_i, noc_i) cycle counts, read back out of a
-    saved weight trace, plus the identity fields needed to prove they
+    saved step-cycles file, plus the identity fields needed to prove they
     belong to a given schedule.
 
-    This is the narrow read-side counterpart of save_weight_trace, for the
-    one consumer that wants the cycle counts and none of the addresses:
-    nocsim charges each schedule step its own MAC time, and per ruling U31
+    This is the read-side counterpart of save_step_cycles. nocsim charges
+    each schedule step its own MAC time, and per ruling U31
     (src/wcache/PROGRESS.md) it READS that number here rather than
-    recomputing it from a live archmodel. The full read-back
-    (load_weight_trace, addresses included) lives in
-    dump/python_reference/tracegen_reconstruct.py and is not what this is.
+    recomputing it from a live archmodel.
 
     by_step's values are already the max over that tile's cores -- the
     reduction assemble_layer_traces applies before writing (see its
@@ -454,22 +469,29 @@ class StepCycles:
 
 
 def load_step_cycles(path: pathlib.Path) -> StepCycles:
-    """Read the per-tile cycle counts out of one sample_NNNNN.json.gz,
-    ignoring the weight addresses entirely.
+    """Read the per-tile cycle counts out of one sample_NNNNN.json.gz.
 
-    Accepts a plain .json as well as .json.gz, so a hand-written fixture
-    needs no compression step.
+    Accepts both forms of that file: the step-cycles form save_step_cycles
+    writes (`format: "step_cycles_v1"`), and the older full weight-trace
+    form (no `format` key, each tile also carrying `ticks`, which is
+    ignored). Both give the same StepCycles. Accepts a plain .json as well
+    as .json.gz, so a hand-written fixture needs no compression step.
 
-    Raises ValueError on a duplicate (dram_i, noc_i), or on a tile count
-    that disagrees with the file's own dram_num_steps * noc_num_steps.
-    Both mean the producer and this reader disagree about the format,
-    which is worth failing on at load time rather than surfacing later as
-    a KeyError from deep inside combine()'s NoC loop.
+    Raises ValueError on an unknown `format`, on a duplicate (dram_i,
+    noc_i), or on a tile count that disagrees with the file's own
+    dram_num_steps * noc_num_steps. All three mean the producer and this
+    reader disagree about the format, which is worth failing on at load
+    time rather than surfacing later as a KeyError from deep inside
+    combine()'s NoC loop.
     """
     path = pathlib.Path(path)
     opener = gzip.open if path.suffix == ".gz" else open
     with opener(path, "rt") as fh:
         doc = json.load(fh)
+    if doc.get("format", STEP_CYCLES_FORMAT) != STEP_CYCLES_FORMAT:
+        raise ValueError(
+            f"{path}: unknown format {doc['format']!r} (expected {STEP_CYCLES_FORMAT!r} or none)"
+        )
 
     by_step: Dict[Tuple[int, int], ComputeCycles] = {}
     for tile in doc["tiles"]:
@@ -503,8 +525,8 @@ def load_step_cycles(path: pathlib.Path) -> StepCycles:
 # ----------------------------------------------------------------------
 # WCTS (weight cache trace stream), version 2
 #
-# The in-flight sibling of save_weight_trace: the same data as a stream
-# instead of a document, so a producer can feed the cache simulator down a
+# The in-flight sibling of save_step_cycles: it carries the weight
+# addresses that file leaves out, as a stream, so a producer can feed the cache simulator down a
 # pipe with nothing materialized in between (Phase D campaign plan, 10).
 # The format is normative in log/2026-08-20-phaseD-implementation-plan.md,
 # "The wire format, in full"; the C++ reader
@@ -668,8 +690,8 @@ def stream_weight_trace(trace: LayerWeightTrace, fh, *, n_cores, spatial_factors
                         max_tiles=None) -> int:
     """Writes one whole LayerWeightTrace as a WCTS stream to the binary file
     object `fh`, header first, and returns the total burst count. The sibling to
-    save_weight_trace: same data, a stream instead of a document, and no
-    intermediate storage. `max_tiles` truncates the stream after that many tile
+    save_step_cycles: it carries the weight addresses that file leaves out,
+    with no intermediate storage. `max_tiles` truncates the stream after that many tile
     frames, which is what --dump-trace-tiles uses to produce a valid short
     stream. Does not close `fh`.
 

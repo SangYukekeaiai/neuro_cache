@@ -103,7 +103,7 @@ is tracked; what Delta holds and this repo does not is data, expected at these r
 | 5-sample subsets | `input_trace/<bench>/<network>_T4_n5/` (cut locally from the captures) |
 | Solved schedules | `outputs/schedules/<bench>/<trace_dir>/<layer>.json` (plus `summary.csv`) |
 | 16-core schedules | `outputs/schedules/inst16/<bench>/<trace_dir>/<layer>.json` (scripts/solve_inst16_subset.py) |
-| Weight traces | `$NEURO_CACHE_DATA/neuro_cache_outputs/weight_traces/<bench>/[<combo>/]<trace_dir>/<layer>/sample_NNNNN.json.gz` |
+| Per-step cycles (nocsim `--weight-trace` input; no weight addresses) | `$NEURO_CACHE_DATA/neuro_cache_outputs/weight_traces/<bench>/[<combo>/]<trace_dir>/<layer>/sample_NNNNN.json.gz` |
 
 The loas captures are the only ones any tracked schedule or profiling stage refers to; the four
 other archmodels have never been run in this checkout, so their first run also needs the

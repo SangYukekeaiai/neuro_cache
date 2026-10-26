@@ -3,6 +3,8 @@
 schedule (no re-solving, no Gurobi) and reconstruct real captured samples
 against it through the arch's native C++ bridge, persisting one JSON per
 sample to outputs/weight_traces/<arch>/<trace_dir>/<layer_name>/sample_<i5>.json.gz.
+That file holds the sample's per-step cycle counts only (what nocsim reads);
+the weight addresses reach the cache simulator through --stream instead.
 
 Two modes:
 
@@ -25,7 +27,7 @@ Two modes:
 
 Neither mode contains any native-bridge dispatch of its own -- both call
 tracegen.reconstruct_samples, the single consolidated dispatcher, and
-tracegen.save_weight_trace for persistence. This script owns only CLI
+tracegen.save_step_cycles for persistence. This script owns only CLI
 parsing, which combos/samples to iterate, and worker-pool setup.
 
 See dump/docs/superpowers/specs/2026-07-18-weight-trace-generation-design.md.
@@ -112,7 +114,7 @@ def _process_chunk(sample_indices: Sequence[int]) -> int:
             _STATE["out_dir"] / _STATE["arch_name"] / _STATE["combo_tag"] / _STATE["trace_dir_name"]
             / _STATE["layer_name"] / f"sample_{lt.sample_idx:05d}.json.gz"
         )
-        tracegen.save_weight_trace(lt, out_path)
+        tracegen.save_step_cycles(lt, out_path)
     return len(layer_traces)
 
 
@@ -219,7 +221,7 @@ def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir
             artifact.workload["problem"], artifact.dram_num_steps,
         )
         for t in traces:
-            tracegen.save_weight_trace(t, out_dir / f"sample_{t.sample_idx:05d}.json.gz")
+            tracegen.save_step_cycles(t, out_dir / f"sample_{t.sample_idx:05d}.json.gz")
     return len(missing), time.time() - t0
 
 
@@ -376,8 +378,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--workers", type=int, default=1)
     p.add_argument("--force", action="store_true", help="Regenerate samples even if already present.")
     p.add_argument("--stream", action="store_true",
-                   help="Emit one WCTS stream on stdout instead of writing sample_NNNNN.json.gz "
-                        "files. Requires exactly one (arch, trace-dir, layer, sample) to be "
+                   help="Emit one WCTS stream (the weight addresses) on stdout instead of writing "
+                        "sample_NNNNN.json.gz per-step cycle files. Requires exactly one (arch, trace-dir, layer, sample) to be "
                         "selected; every log line goes to stderr.")
     p.add_argument("--dump-trace", metavar="PATH",
                    help="With --stream: also write the stream to PATH, byte-identical to what the "
