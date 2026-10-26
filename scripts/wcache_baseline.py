@@ -54,15 +54,26 @@ def run(jobs):
     print(f"generating {len(work)} streams -> {streams}", flush=True)
     with cf.ThreadPoolExecutor(max_workers=jobs) as pool:
         list(pool.map(lambda w: gen_stream(*w), work))
+    # run_khkw_sweep.main() reads its paths and job count from module globals
+    # and sys.argv, so they are set for the call and put back after it.
+    saved = sweep.STRM, sweep.OUT, sweep.GRID, sys.argv
     sweep.STRM, sweep.OUT, sweep.GRID = streams, out, out / "_khkw_grid"
     sys.argv = [sys.argv[0], str(jobs)]
-    return sweep.main()
+    try:
+        return sweep.main()
+    finally:
+        sweep.STRM, sweep.OUT, sweep.GRID, sys.argv = saved
 
 
 def compare(ref_path, new_path):
     """Number of differences between two sweep CSVs, printing each one."""
-    ref = list(csv.reader(open(ref_path, newline="")))
-    new = list(csv.reader(open(new_path, newline="")))
+    with open(ref_path, newline="") as f:
+        ref = list(csv.reader(f))
+    with open(new_path, newline="") as f:
+        new = list(csv.reader(f))
+    if not ref or not new:
+        print(f"empty CSV: ref {len(ref)} lines, new {len(new)} lines")
+        return 1
     if ref[0] != new[0]:
         print(f"header differs:\n  ref {ref[0]}\n  new {new[0]}")
         return 1
@@ -74,6 +85,10 @@ def compare(ref_path, new_path):
     dropped = [f"{i + 1}:{header[i]}" for i in range(len(header)) if i not in keep]
     bad = 0
     for r, (a, b) in enumerate(zip(ref[1:], new[1:]), start=1):
+        if len(a) != len(header) or len(b) != len(header):
+            bad += 1
+            print(f"  row {r}: {len(a)} ref / {len(b)} new cells, header has {len(header)}")
+            continue
         for i in keep:
             if a[i] != b[i]:
                 bad += 1

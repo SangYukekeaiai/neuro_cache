@@ -1,0 +1,316 @@
+#!/usr/bin/env python3
+"""One-command demo: nocsim and wcache on the same layers and samples of one
+benchmark, joined into one table.
+
+Steps: check the inputs under input_trace/<bench>/; take the tracked schedules
+(or solve them when gurobipy imports); build the native tools; generate the
+nocsim weight traces and the version-2 WCTS streams; run nocsim
+(`python -m nocsim.sim --simulate`) and wcache_sweep over a config grid; write
+<out>/results.csv (one row per layer, sample and config) and <out>/summary.md
+(geomean speedup per config, and every command run).
+
+The default grid is the 0823 stage 4 khkw grid (run_khkw_sweep.grid_for).
+--grid takes a JSON array of wcache configs instead.
+
+  python scripts/demo.py [--bench loas] [--layers V8 R9 ...] [--jobs N]
+  python scripts/demo.py --verify-baseline [DIR]   check <out>/results.csv
+                                                   against DIR (.baseline/after)
+"""
+import argparse
+import concurrent.futures as cf
+import csv
+import json
+import math
+import os
+import pathlib
+import subprocess
+import sys
+import time
+
+import yaml
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "profiling/0823_stagewise_verify/stage3_nocsim")]
+import wcache_baseline as wb  # noqa: E402  (puts src/, profiling/ and stage4 on sys.path)
+from wcache_baseline import sweep  # noqa: E402
+import run_stage3  # noqa: E402
+from archmodels.trace import valid_layer_names  # noqa: E402
+from common import tags  # noqa: E402
+from util import data_root  # noqa: E402
+
+# The nocsim arch each benchmark is simulated on; only loas has one in the repo.
+NOCSIM_ARCH = {"loas": run_stage3.ARCH_YAML}
+# Config columns of the wcache output copied into results.csv.
+KEY_FIELDS = ("layout", "line_size_bytes", "l2_size_bytes", "l2_banks",
+              "prefetch_policy", "prefetch_distance")
+ENV = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
+
+
+def speedup(nocsim_cycles, wcache_cycles):
+    return nocsim_cycles / wcache_cycles
+
+
+def geomean(xs):
+    return math.exp(sum(math.log(x) for x in xs) / len(xs))
+
+
+def join_results(nocsim, wcache_rows):
+    """One results row per wcache row; `nocsim` maps (trace_dir, layer, sample)
+    to total_cycles, and a wcache row without a nocsim run is a KeyError."""
+    out = []
+    for w in wcache_rows:
+        r = {k: v for k, v in w.items() if k != "total_cycles"}
+        n = nocsim[(w["trace_dir"], w["layer"], w["sample"])]
+        r["nocsim_total_cycles"] = n
+        r["wcache_total_cycles"] = int(w["total_cycles"])
+        r["speedup_vs_nocsim"] = speedup(n, r["wcache_total_cycles"])
+        out.append(r)
+    return out
+
+
+def summarize(rows):
+    """[(config, geomean speedup, row count)] in first-seen config order."""
+    by = {}
+    for r in rows:
+        by.setdefault(r["config"], []).append(r["speedup_vs_nocsim"])
+    return [(c, geomean(xs), len(xs)) for c, xs in by.items()]
+
+
+def run(cmd, capture=False):
+    r = subprocess.run(cmd, cwd=ROOT, env=ENV, text=True,
+                       stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
+                       stderr=subprocess.PIPE)
+    if r.returncode != 0:
+        sys.exit(f"command failed (rc {r.returncode}): {cmd}\n{r.stderr[-3000:]}")
+    return r.stdout
+
+
+def run_all(cmds, record, jobs, capture=False):
+    record.extend(cmds)
+    with cf.ThreadPoolExecutor(max_workers=jobs) as pool:
+        return list(pool.map(lambda c: run(c, capture), cmds))
+
+
+def resolve_layers(specs):
+    """(trace_dir, layer) for each spec: `trace_dir/layer`, or a LoAS tag such as V8."""
+    known = None
+    out = []
+    for s in specs:
+        if "/" in s:
+            out.append(tuple(s.split("/", 1)))
+            continue
+        if known is None:
+            known = {t: (d, l) for t, d, l in tags()}
+        if s not in known:
+            sys.exit(f"unknown layer {s!r}: give trace_dir/layer or one of {sorted(known)}")
+        out.append(known[s])
+    return out
+
+
+def check_inputs(bench, layers):
+    """Problems with the inputs for (bench, layers); empty when all are present."""
+    root = ROOT / "input_trace" / bench
+    if not root.is_dir():
+        return [f"no input traces: {root} does not exist"]
+    problems = []
+    if bench not in NOCSIM_ARCH:
+        problems.append(f"no nocsim arch for bench {bench!r} (known: {sorted(NOCSIM_ARCH)})")
+    for d, layer in layers:
+        meta = root / d / "meta.json"
+        if not meta.is_file():
+            problems.append(f"missing {meta}")
+        elif layer not in valid_layer_names(json.loads(meta.read_text())):
+            problems.append(f"{layer} is not a valid layer in {meta}")
+        elif not (root / d / f"{layer}.npy").is_file():
+            problems.append(f"missing {root / d / f'{layer}.npy'}")
+    return problems
+
+
+def schedules_for(bench, layers, out, record):
+    """The schedule root to use: the tracked one, else one solved into <out>/schedules."""
+    missing = [wb.SCHEDULES / bench / d / f"{l}.json" for d, l in layers
+               if not (wb.SCHEDULES / bench / d / f"{l}.json").is_file()]
+    if not missing:
+        return wb.SCHEDULES
+    try:
+        import gurobipy  # noqa: F401
+    except ImportError:
+        sys.exit("missing schedules and gurobipy does not import, so they cannot be solved:\n  "
+                 + "\n  ".join(map(str, missing)))
+    cache = out / "schedules"
+    run_all([[sys.executable, str(ROOT / "scripts/solve_schedules.py"), "--archs", bench,
+              "--trace-root", str(ROOT / "input_trace" / bench),
+              "--trace-dirs", *sorted({d for d, _ in layers}), "--cache-dir", str(cache)]],
+            record, 1)
+    return cache
+
+
+def load_grid(path):
+    """(grid name, list of wcache configs)."""
+    if path is None:
+        return "khkw", [p for lb in sweep.LINE_BYTES for p in sweep.grid_for(lb)]
+    path = pathlib.Path(path)
+    return path.stem, json.loads(path.read_text())
+
+
+def out_dir(a):
+    return pathlib.Path(a.out or data_root() / "demo" / a.bench).resolve()
+
+
+def demo(a):
+    t0 = time.time()
+    out = out_dir(a)
+    layers = resolve_layers(a.layers)
+    problems = check_inputs(a.bench, layers)
+    if problems:
+        sys.exit("cannot run the demo:\n  " + "\n  ".join(problems))
+    samples = range(a.sample_start, a.sample_start + a.sample_count)
+    grid_name, grid = load_grid(a.grid)
+    out.mkdir(parents=True, exist_ok=True)
+    cmds = []
+    sched_root = schedules_for(a.bench, layers, out, cmds)
+
+    builds = [["make", "-C", str(ROOT / "src/wcache/native"), "MODE=release", "apps"],
+              ["make", "-C", str(ROOT / "src/nocsim/eventsim")]]
+    if (ROOT / "src/archmodels" / a.bench / "Makefile").is_file():
+        builds.append(["make", "-C", str(ROOT / "src/archmodels" / a.bench)])
+    run_all(builds, cmds, 1)
+
+    gen = [sys.executable, str(ROOT / "scripts/generate_weight_traces.py"), "--arch", a.bench,
+           "--trace-root", str(ROOT / "input_trace" / a.bench),
+           "--schedule-cache", str(sched_root), "--workers", "1"]
+    streams = {(d, l, s): out / "streams" / d / f"{l}_s{s:05d}.wcts"
+               for d, l in layers for s in samples}
+    for p in streams.values():
+        p.parent.mkdir(parents=True, exist_ok=True)
+    run_all([gen + ["--trace-dir", d, "--layer", l, "--out-dir", str(out / "weight_traces"),
+                    "--sample-start", str(a.sample_start), "--sample-count", str(a.sample_count),
+                    "--force"] for d, l in layers]
+            + [gen + ["--trace-dir", d, "--layer", l, "--stream", "--sample-start", str(s),
+                      "--sample-count", "1", "--dump-trace", str(p)]
+               for (d, l, s), p in streams.items()], cmds, a.jobs)
+
+    nocsim_cmds = []
+    for d, l in layers:
+        sched = sched_root / a.bench / d / f"{l}.json"
+        lyaml = out / "layers" / d / f"{l}.yaml"
+        lyaml.parent.mkdir(parents=True, exist_ok=True)
+        lyaml.write_text(yaml.safe_dump(json.loads(sched.read_text())["workload"], sort_keys=False))
+        for s in samples:
+            tc = out / "nocsim" / d / f"{l}_s{s:05d}.csv"
+            tc.parent.mkdir(parents=True, exist_ok=True)
+            nocsim_cmds.append(
+                [sys.executable, "-m", "nocsim.sim", "--schedule", str(sched),
+                 "--layer", str(lyaml), "--arch", str(NOCSIM_ARCH[a.bench]),
+                 "--weight-trace", str(out / "weight_traces" / a.bench / d / l / f"sample_{s:05d}.json.gz"),
+                 "--out", str(tc), "--simulate"])
+
+    # wcache_sweep gives one mapper to a whole grid, so points that differ in
+    # cin_block go to separate invocations (run_khkw_sweep.py does the same).
+    groups = {}
+    for i, p in enumerate(grid):
+        groups.setdefault(p.get("cin_block"), []).append((f"{grid_name}_{i:02d}", p))
+    grid_files = []
+    for k, pts in enumerate(groups.values()):
+        g = out / "grid" / f"{grid_name}_{k}.json"
+        g.parent.mkdir(parents=True, exist_ok=True)
+        g.write_text(json.dumps([p for _, p in pts], indent=1))
+        grid_files.append((g, [c for c, _ in pts]))
+    wc_work = [(d, l, s, g, names) for (d, l, s) in streams for g, names in grid_files]
+    wc_cmds = [[str(sweep.BIN), "--config-grid", str(g), "--trace", str(streams[(d, l, s)]),
+                "--arm", "cache", "--tier", grid_name, "--run-id", f"demo-{l}-s{s}-{g.stem}", "--header"]
+               for d, l, s, g, _ in wc_work]
+
+    nocsim = {}
+    for (d, l, s), stdout in zip(list(streams), run_all(nocsim_cmds, cmds, a.jobs, capture=True)):
+        got = [ln for ln in stdout.splitlines() if ln.startswith("total_cycles")]
+        if not got:
+            sys.exit(f"nocsim printed no total_cycles for {d}/{l} s{s}:\n{stdout[-2000:]}")
+        nocsim[(d, l, s)] = int(got[0].split(":")[1])
+
+    wcache_rows = []
+    for (d, l, s, _, names), stdout in zip(wc_work, run_all(wc_cmds, cmds, a.jobs, capture=True)):
+        got = list(csv.DictReader(stdout.splitlines()))
+        if len(got) != len(names):
+            sys.exit(f"wcache_sweep gave {len(got)} rows for {len(names)} configs ({d}/{l} s{s})")
+        for name, w in zip(names, got):
+            wcache_rows.append({"trace_dir": d, "layer": l, "sample": s, "config": name,
+                                **{k: w[k] for k in KEY_FIELDS}, "total_cycles": w["total_cycles"]})
+
+    rows = join_results(nocsim, wcache_rows)
+    with open(out / "results.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    write_summary(out / "summary.md", a, layers, grid_name, rows, cmds, time.time() - t0)
+    print(f"{len(rows)} rows -> {out / 'results.csv'}  ({time.time() - t0:.0f}s)")
+    return 0
+
+
+def write_summary(path, a, layers, grid_name, rows, cmds, seconds):
+    keys = {r["config"]: " ".join(f"{k}={r[k]}" for k in KEY_FIELDS) for r in rows}
+    lines = [f"# Demo: {a.bench}", "",
+             f"Layers: {', '.join(f'{d}/{l}' for d, l in layers)}; samples "
+             f"{a.sample_start}..{a.sample_start + a.sample_count - 1}; grid {grid_name} "
+             f"({len(keys)} configs); {len(rows)} rows; {seconds:.0f} s.", "",
+             "speedup_vs_nocsim = nocsim total_cycles / wcache total_cycles; "
+             "geomean over every (layer, sample) of the config.", "",
+             "| config | geomean speedup | rows | key fields |", "|---|---|---|---|"]
+    lines += [f"| {c} | {g:.4f} | {n} | {keys[c]} |" for c, g, n in summarize(rows)]
+    lines += ["", "## Commands", "",
+              f"Run as: {json.dumps([sys.executable, *sys.argv])}. Every command below ran "
+              f"with cwd {ROOT} and PYTHONPATH={ENV['PYTHONPATH']}, in this order "
+              "(commands in one group ran in parallel).", "", "```"]
+    lines += [json.dumps(c) for c in cmds] + ["```", ""]
+    path.write_text("\n".join(lines))
+
+
+def verify(results_path, base):
+    """Mismatches between results.csv and the reference wcache sweep and nocsim CSVs."""
+    with open(base / "wcache/khkw_sweep.csv", newline="") as f:
+        ref_w = {(r["workload"], r["layer"], r["sample_idx"], r["line_size_bytes"], r["l2_banks"],
+                  r["prefetch_policy"], r["prefetch_distance"]): r["total_cycles"]
+                 for r in csv.DictReader(f)}
+    with open(base / "nocsim/stage3_results.csv", newline="") as f:
+        ref_n = {(r["trace_dir"], r["layer"], r["sample"]): r["total_cycles"] for r in csv.DictReader(f)}
+    with open(results_path, newline="") as f:
+        rows = list(csv.DictReader(f))
+    bad = missing = 0
+    for r in rows:
+        kw = (r["trace_dir"], r["layer"], r["sample"], r["line_size_bytes"], r["l2_banks"],
+              r["prefetch_policy"], r["prefetch_distance"])
+        for name, ref, key, col in (("wcache", ref_w, kw, "wcache_total_cycles"),
+                                    ("nocsim", ref_n, kw[:3], "nocsim_total_cycles")):
+            if key not in ref:
+                missing += 1
+                print(f"  {name} not in reference: {key}")
+            elif ref[key] != r[col]:
+                bad += 1
+                print(f"  {name} mismatch {key}: ref {ref[key]} demo {r[col]}")
+    pairs = {(r["trace_dir"], r["layer"], r["sample"]) for r in rows}
+    print(f"{results_path}: {len(rows)} rows; wcache compared {len(rows)} against {len(ref_w)} "
+          f"reference rows, nocsim compared {len(rows)} ({len(pairs)} distinct layer-samples) "
+          f"against {len(ref_n)}; mismatches {bad}, not in reference {missing}")
+    return 1 if bad or missing or not rows else 0
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    p.add_argument("--bench", default="loas")
+    p.add_argument("--layers", nargs="+", default=list(sweep.TAGS),
+                   help="trace_dir/layer or a LoAS tag (default: the 4 tracked, %(default)s)")
+    p.add_argument("--sample-start", type=int, default=0)
+    p.add_argument("--sample-count", type=int, default=5)
+    p.add_argument("--out", help="default $NEURO_CACHE_DATA/demo/<bench>")
+    p.add_argument("--grid", help="JSON array of wcache configs (default: the 0823 khkw grid)")
+    p.add_argument("--jobs", type=int, default=os.cpu_count())
+    p.add_argument("--verify-baseline", nargs="?", const=str(ROOT / ".baseline/after"),
+                   metavar="DIR", help="only compare <out>/results.csv with DIR's reference CSVs")
+    a = p.parse_args()
+    if a.verify_baseline:
+        return verify(out_dir(a) / "results.csv", pathlib.Path(a.verify_baseline))
+    return demo(a)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
