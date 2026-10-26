@@ -20,8 +20,8 @@ Two things this script will not do, both learned the hard way:
 byte-identical to the files Stage 4 has been replaying. It runs on its own, and
 also automatically after a full generation.
 
-    conda run -n base python profiling/0831_all_layer_streams/gen_streams.py --check
-    conda run -n base python profiling/0831_all_layer_streams/gen_streams.py --workers 16
+    conda run -n ${CONDA_ENV:-cosa_snn} python profiling/0831_all_layer_streams/gen_streams.py --check
+    conda run -n ${CONDA_ENV:-cosa_snn} python profiling/0831_all_layer_streams/gen_streams.py --workers 16
 """
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ ROOT = STAGE.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from archmodels.trace import valid_layer_names  # noqa: E402
 
-PYTHON = "/u/yyu9/miniconda3/bin/python"
+PYTHON = sys.executable
 GENERATOR = ROOT / "scripts/generate_weight_traces.py"
 ARCH = "loas"
 TRACE_ROOT = ROOT / "input_trace/loas"

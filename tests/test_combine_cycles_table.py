@@ -18,7 +18,7 @@ before and after) are diffs against baselines captured before the edit, so
 they are not reproducible from this file alone and are recorded in
 EXPLAIN.md instead.
 
-Run: PYTHONPATH=src conda run -n base python tests/test_combine_cycles_table.py
+Run: PYTHONPATH=src conda run -n ${CONDA_ENV:-cosa_snn} python tests/test_combine_cycles_table.py
 """
 import gzip
 import json

@@ -13,7 +13,7 @@ Everything this stage reads is copied into inputs/ first, and everything it
 produces lands in outputs/. Nothing else is written, and no later stage's
 inputs are prepared here.
 
-    conda run -n base python profiling/0823_stagewise_verify/stage1_mip_solver/run_stage1.py
+    conda run -n ${CONDA_ENV:-cosa_snn} python profiling/0823_stagewise_verify/stage1_mip_solver/run_stage1.py
 """
 from __future__ import annotations
 
@@ -38,11 +38,12 @@ from archmodels.trace import build_workload_from_trace  # noqa: E402
 from mip_solver.modes import TrafficMode  # noqa: E402
 from mip_solver.solve import _mode_score, solve_schedule  # noqa: E402
 import tracegen  # noqa: E402
+from util import data_root  # noqa: E402
 
 # --- what this stage reads -------------------------------------------------
 BASE_ARCH = ROOT / "configs/arch/multinode_sweep/loas_inst16_node32kb_noc4096kb.yaml"
 BASE_DATAFLOW = ROOT / "configs/dataflow/loas.yaml"
-TRACE_ROOT = pathlib.Path("/work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas")
+TRACE_ROOT = data_root() / "neuro_cache_trace/input_trace/loas"
 # Four layers, two density regimes. The 0823 run used only the two dense ones;
 # the 0823 survey (HANDOFF-ANSWER.md) placed them above the published band and
 # added a representative layer per workload. Both regimes stay in the sweep so

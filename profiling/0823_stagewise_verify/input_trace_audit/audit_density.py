@@ -6,9 +6,11 @@ Checks the premise that SNN input spike density should sit near 10%, across all
 """
 import json, pathlib, sys, numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "src"))
 from common import next_cin_for  # noqa: E402
+from util import data_root  # noqa: E402
 
-R = pathlib.Path('/work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas')
+R = data_root() / 'neuro_cache_trace/input_trace/loas'
 OUT = pathlib.Path(__file__).resolve().parent
 N = 200
 

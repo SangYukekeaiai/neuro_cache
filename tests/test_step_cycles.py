@@ -16,7 +16,7 @@ Plus two format-contract checks the loader promises: a duplicate tile key
 and a tile count that disagrees with the file's own step counts are both
 load-time failures, not KeyErrors from inside combine()'s NoC loop later.
 
-Run: PYTHONPATH=src conda run -n base python tests/test_step_cycles.py
+Run: PYTHONPATH=src conda run -n ${CONDA_ENV:-cosa_snn} python tests/test_step_cycles.py
 
 Checks 1 and 3 need the 0823 Stage 2 corpus. Absent, they skip rather than
 fail, so the file stays runnable on a fresh clone.

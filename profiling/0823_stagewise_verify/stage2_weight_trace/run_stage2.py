@@ -8,7 +8,7 @@ reports what the input spikes and the emitted weight trace actually contain.
 Everything this stage reads is copied into inputs/ first, and everything it
 produces lands in outputs/. Stage 3's inputs are not prepared here.
 
-    conda run -n base python profiling/0823_stagewise_verify/stage2_weight_trace/run_stage2.py
+    conda run -n ${CONDA_ENV:-cosa_snn} python profiling/0823_stagewise_verify/stage2_weight_trace/run_stage2.py
 """
 from __future__ import annotations
 

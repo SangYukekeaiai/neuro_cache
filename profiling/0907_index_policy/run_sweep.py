@@ -18,7 +18,7 @@ which doubles the work of every job and puts a scratch file beside it. The bound
 belongs in a stage of its own, run once the three online policies have been
 compared and it is clear how much room is left to bound.
 
-Usage: conda run -n base python run_sweep.py [workers]
+Usage: conda run -n ${CONDA_ENV:-cosa_snn} python run_sweep.py [workers]
 """
 from __future__ import annotations
 

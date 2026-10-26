@@ -5,7 +5,7 @@ One grid, two arms. Everything except `l1_size_bytes` is the 0903_l1_pf_fix BASE
 so the `off_16k` arm must reproduce that stage's `off` row -- it is the control,
 not a second result.
 
-Usage: conda run -n base python run_sweep.py [workers]
+Usage: conda run -n ${CONDA_ENV:-cosa_snn} python run_sweep.py [workers]
 """
 from __future__ import annotations
 

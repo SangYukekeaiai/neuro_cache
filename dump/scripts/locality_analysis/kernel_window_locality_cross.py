@@ -34,8 +34,9 @@ from typing import Any, Dict, List, Optional, Tuple
 sys.path.insert(0, "src")
 
 import tracegen
+from util import data_root
 
-TRACE_ROOT = pathlib.Path("/work/hdd/bebv/yyu9/neuro_cache_outputs/weight_traces")
+TRACE_ROOT = data_root() / "neuro_cache_outputs/weight_traces"
 SCHEDULE_DIR = pathlib.Path("outputs/schedules")
 TRACE_DIRS = ["resnet19_T4_all", "vgg16_T4_all"]
 FIG_DIR = pathlib.Path("outputs/figures/locality")

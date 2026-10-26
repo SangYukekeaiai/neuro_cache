@@ -118,7 +118,7 @@ if __name__ == "__main__":
         raise SystemExit(
             "usage: cin_locality_diagnostic.py <trace_glob> [num_samples] [out_dir]\n"
             "example: cin_locality_diagnostic.py "
-            "'/projects/bebv/yyu9/neuro_cache_outputs/weight_traces/loas/resnet19_T4_all/"
+            "'$NEURO_CACHE_DATA/neuro_cache_outputs/weight_traces/loas/resnet19_T4_all/"
             "layer_01_layer1_0_conv1/sample_*.json.gz'"
         )
 

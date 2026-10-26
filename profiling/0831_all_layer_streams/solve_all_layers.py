@@ -7,13 +7,13 @@ so the 31-layer set is directly comparable to the four layers Stage 4 already
 replays. That is one solve per layer, not 0823's 27, because the num_pes /
 TrafficMode / NoC-size sweeps were answered there and are not re-asked here.
 
-Shapes come from the `_all` meta.json on /work; no spike data is read. The
+Shapes come from the `_all` meta.json under NEURO_CACHE_DATA; no spike data is read. The
 schedule is shape-derived, so each artifact is written twice: once under the
 `_all` name it was solved from, and once with `trace_dir` rewritten to the
 committed `_n5` subset, which is what Stage 2 reconstructs against. This is the
 same rewrite `stage2_weight_trace/run_stage2.py:stage_inputs` performs.
 
-Licensing: the personal WLS key in /u/yyu9/gurobi.lic is the default. It had
+Licensing: the personal WLS key in $HOME/gurobi.lic is the default. It had
 expired when this ran on 2026-08-31 and was extended mid-run, so the fallback
 that unblocked it is recorded here rather than hardcoded -- NCSA runs a Gurobi
 token server, and
@@ -24,8 +24,8 @@ is all it takes to use it. Both licenses were checked to give the same answer:
 --check re-solves the four 0823 layers and diffs them against that run's
 artifacts, and it passed on the token server before the 31-layer solve.
 
-    conda run -n base python profiling/0831_all_layer_streams/solve_all_layers.py --check
-    conda run -n base python profiling/0831_all_layer_streams/solve_all_layers.py
+    conda run -n ${CONDA_ENV:-cosa_snn} python profiling/0831_all_layer_streams/solve_all_layers.py --check
+    conda run -n ${CONDA_ENV:-cosa_snn} python profiling/0831_all_layer_streams/solve_all_layers.py
 """
 from __future__ import annotations
 
@@ -44,11 +44,12 @@ from archmodels.trace import valid_layer_names  # noqa: E402
 sys.path.insert(0, str(ROOT / "profiling"))
 from common import next_cin_for  # noqa: E402
 import tracegen  # noqa: E402
+from util import data_root  # noqa: E402
 
 ARCH = "loas"
 ARCH_YAML = STAGE1_0823 / "inputs/arch/loas_inst16_node32kb_noc2MiB_pe16.yaml"
 DATAFLOW_YAML = STAGE1_0823 / "inputs/dataflow/loas.yaml"
-TRACE_ROOT = pathlib.Path("/work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas")
+TRACE_ROOT = data_root() / "neuro_cache_trace/input_trace/loas"
 PAIRS = [("vgg16_T4_all", "vgg16_T4_n5"), ("resnet19_T4_all", "resnet19_T4_n5")]
 
 OUT_ALL = STAGE / "schedules_all"          # solved artifacts, `_all` trace_dir

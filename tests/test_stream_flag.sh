@@ -6,9 +6,11 @@
 # contract from a checked-in fixture, with no corpus.
 set -e
 cd "$(dirname "$0")/.."
+root=$(pwd)
+. "$root/scripts/env.sh"
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
-conda run -n cosa_snn python scripts/generate_weight_traces.py \
+conda run -n "$CONDA_ENV" python scripts/generate_weight_traces.py \
     --stream --arch loas --trace-dir vgg16_T4_all \
     --layer layer_01_features_3 --sample-start 0 --sample-count 1 \
     --dump-trace "$tmp/dump.bin" --dump-trace-tiles 2 \
@@ -17,7 +19,7 @@ conda run -n cosa_snn python scripts/generate_weight_traces.py \
 # 1. stdout starts with the magic.
 head -c 8 "$tmp/stream.bin" | grep -q 'WCTRACE1'
 # 2. the tee is a byte-identical PREFIX of what the consumer saw, up to 2 tiles.
-conda run -n cosa_snn python - "$tmp/stream.bin" "$tmp/dump.bin" <<'PY'
+conda run -n "$CONDA_ENV" python - "$tmp/stream.bin" "$tmp/dump.bin" <<'PY'
 import struct, sys
 full = open(sys.argv[1], "rb").read()
 dump = open(sys.argv[2], "rb").read()

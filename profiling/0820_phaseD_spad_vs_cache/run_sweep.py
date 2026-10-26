@@ -248,7 +248,7 @@ def run_unit(task: dict) -> str:
                         "--trace", "-", "--out", str(tmp),
                         "--arm", task["arm"], "--tier", task["tier"],
                         "--git-commit", task["git_commit"]]
-            producer = subprocess.Popen(producer_argv(task), stdout=subprocess.PIPE)
+            producer = subprocess.Popen(producer_argv(task), stdout=subprocess.PIPE, cwd=ROOT)
             try:
                 sweep = subprocess.Popen(consumer, stdin=producer.stdout)
             finally:

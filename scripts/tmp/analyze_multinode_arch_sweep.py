@@ -29,11 +29,11 @@ import pathlib
 import sys
 from collections import Counter
 
-sys.path.insert(0, "src")
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from mip_solver.analysis.dram_permutation import classify_permutation, SUPER_DIM
 
-REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 SUMMARY_PATH = REPO_ROOT / "outputs" / "schedules" / "multinode_sweep" / "summary.csv"
 SCHEDULE_ROOT = REPO_ROOT / "outputs" / "schedules" / "multinode_sweep"
 OUT_CSV = REPO_ROOT / "outputs" / "schedules" / "multinode_sweep" / "classification.csv"

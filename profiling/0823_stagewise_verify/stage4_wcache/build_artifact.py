@@ -2,7 +2,7 @@
 """Emit the sweep artifact HTML. Every number is read from the CSVs, never retyped."""
 import csv, json, math, pathlib, statistics, collections, html, sys
 
-D = pathlib.Path("/u/yyu9/projects/neuro_cache/profiling/0823_stagewise_verify")
+D = pathlib.Path(__file__).resolve().parents[1]
 S4 = D / "stage4_wcache/outputs"
 OUT = pathlib.Path(sys.argv[1])
 COMMIT = __import__("subprocess").run(

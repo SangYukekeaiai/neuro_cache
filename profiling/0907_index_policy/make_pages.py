@@ -5,7 +5,7 @@ One generator and not two hand-written files, because the pages differ only in
 which six of the twelve arms they read: a fact edited into one and not the other
 is exactly the kind of divergence a reader cannot see.
 
-Usage: conda run -n base python make_pages.py
+Usage: conda run -n ${CONDA_ENV:-cosa_snn} python make_pages.py
 Writes: outputs/page_16k.html, outputs/page_8k.html
 """
 from __future__ import annotations

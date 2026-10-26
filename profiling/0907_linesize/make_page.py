@@ -4,7 +4,7 @@
 CSS is imported from the 0907_index_policy generator rather than copied, so the
 four pages of this campaign stay one visual family.
 
-Usage: conda run -n base python make_page.py   ->  outputs/page_linesize.html
+Usage: conda run -n ${CONDA_ENV:-cosa_snn} python make_page.py   ->  outputs/page_linesize.html
 """
 from __future__ import annotations
 

@@ -8,7 +8,8 @@ import json
 import pathlib
 import sys
 
-sys.path.insert(0, "src")
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
 
 import matplotlib
 
@@ -22,8 +23,8 @@ from mip_solver.analysis import classify_permutation
 
 ARCHS = ("loas", "spinalflow", "ptb", "gustavsnn", "prosperity")
 TRACE_DIRS = ("resnet19_T4_all", "vgg16_T4_all")
-SCHEDULE_DIR = pathlib.Path("outputs/schedules/multinode")
-OUT_DIR = pathlib.Path("outputs/figures")
+SCHEDULE_DIR = ROOT / "outputs/schedules/multinode"
+OUT_DIR = ROOT / "outputs/figures"
 SUPER_DIM = {
     "HO": "M",
     "WO": "M",

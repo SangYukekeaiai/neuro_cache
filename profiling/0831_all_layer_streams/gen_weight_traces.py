@@ -15,7 +15,7 @@ One sample per subprocess, as in gen_streams.py: the native call holds a
 sample's whole per-tile weight-address list in memory at once, and asking for
 five at a time multiplies that by five for no gain.
 
-    conda run -n base python profiling/0831_all_layer_streams/gen_weight_traces.py --workers 16
+    conda run -n ${CONDA_ENV:-cosa_snn} python profiling/0831_all_layer_streams/gen_weight_traces.py --workers 16
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ ROOT = STAGE.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from archmodels.trace import valid_layer_names  # noqa: E402
 
-PYTHON = "/u/yyu9/miniconda3/bin/python"
+PYTHON = sys.executable
 GENERATOR = ROOT / "scripts/generate_weight_traces.py"
 ARCH = "loas"
 COMBO_TAG = "noc2MiB_node32kb"

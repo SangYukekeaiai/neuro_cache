@@ -14,9 +14,10 @@ from multiprocessing import Pool
 
 REPO = pathlib.Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO / "src"))
+from util import data_root  # noqa: E402
 
-SCRATCH = pathlib.Path("/u/yyu9/projects/neuro_cache/scripts/tmp/_conc_probe_out")
-TRACE_ROOT = pathlib.Path("/u/yyu9/neuro_cache_trace/input_trace/loas")
+SCRATCH = REPO / "scripts/tmp/_conc_probe_out"
+TRACE_ROOT = data_root() / "neuro_cache_trace/input_trace/loas"
 TRACE_NAME = "vgg16_T4_all"
 
 

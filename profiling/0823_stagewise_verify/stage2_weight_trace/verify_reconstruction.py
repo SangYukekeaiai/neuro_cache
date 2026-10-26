@@ -15,7 +15,7 @@ hin = ho + kh - (KH-1)//2 and positions outside the input plane are padding and
 emit nothing. COUT never enters the test, so every core at one pixel emits the
 same row count.
 
-    conda run -n base python profiling/0823_stagewise_verify/stage2_weight_trace/verify_reconstruction.py
+    conda run -n ${CONDA_ENV:-cosa_snn} python profiling/0823_stagewise_verify/stage2_weight_trace/verify_reconstruction.py
 """
 from __future__ import annotations
 

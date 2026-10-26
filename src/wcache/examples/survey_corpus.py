@@ -25,7 +25,7 @@ per line to stdout as it goes, since a full pass parses tens of GB and takes
 minutes.
 
 Run from the repo root:
-    OUT=/tmp/survey.json conda run -n base python src/wcache/examples/survey_corpus.py
+    OUT=/tmp/survey.json conda run -n ${CONDA_ENV:-cosa_snn} python src/wcache/examples/survey_corpus.py
 """
 
 import json, gzip, glob, os, sys

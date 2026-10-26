@@ -9,7 +9,7 @@ backend over the resulting transaction list.
 Everything read is listed in inputs/MANIFEST_stage3.json with its sha; every
 number produced lands in outputs/stage3_results.json.
 
-    conda run -n base python profiling/0823_stagewise_verify/stage3_nocsim/run_stage3.py
+    conda run -n ${CONDA_ENV:-cosa_snn} python profiling/0823_stagewise_verify/stage3_nocsim/run_stage3.py
 """
 from __future__ import annotations
 

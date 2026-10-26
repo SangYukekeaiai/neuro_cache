@@ -64,18 +64,19 @@ import time
 import traceback
 from collections import Counter
 
-sys.path.insert(0, "src")
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from archmodels.trace import valid_layer_names
+from util import data_root
 
-REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 ARCHS = ("loas", "spinalflow", "ptb", "gustavsnn", "prosperity")
 INSTANCE_COUNTS = (16, 64, 256, 1024)
 KB, MB = 1024, 1024 * 1024
 NODE_SIZES = (2 * KB, 4 * KB, 8 * KB, 16 * KB, 32 * KB)
 NOC_SIZES = (512 * KB, 1 * MB, 2 * MB, 4 * MB)
 TRACE_DIRS = ("vgg16_T4_all", "resnet19_T4_all")
-DEFAULT_TRACE_ROOT = pathlib.Path("/u/yyu9/neuro_cache_trace/input_trace/loas")
+DEFAULT_TRACE_ROOT = data_root() / "neuro_cache_trace/input_trace/loas"
 ARCH_YAML_DIR = REPO_ROOT / "configs" / "arch" / "multinode_sweep"
 
 
@@ -86,7 +87,7 @@ def _size_tag(n: int) -> str:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--trace-root", default=str(DEFAULT_TRACE_ROOT))
-    parser.add_argument("--cache-dir", default="outputs/schedules/multinode_sweep")
+    parser.add_argument("--cache-dir", default=str(REPO_ROOT / "outputs/schedules/multinode_sweep"))
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--workers", type=int, default=64)
     parser.add_argument(
@@ -208,7 +209,7 @@ def _solve_one(combo: dict) -> dict:
         return row
 
     arch_yaml = ARCH_YAML_DIR / f"{arch}_inst{instances}_node{node_tag}_noc{noc_tag}.yaml"
-    dataflow_yaml = f"configs/dataflow/{arch}.yaml"
+    dataflow_yaml = str(REPO_ROOT / f"configs/dataflow/{arch}.yaml")
     t0 = time.time()
     try:
         artifact = tracegen.solve_and_cache_schedule(

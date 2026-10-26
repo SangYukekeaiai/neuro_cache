@@ -20,26 +20,26 @@ import pathlib
 import sys
 import traceback
 
-sys.path.insert(0, "src")
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
 import tracegen
 from archmodels.trace import valid_layer_names
 
-# The sibling capture repo this used to point at, /u/yyu9/neuro_cache_trace,
-# was deleted between the 2026-08-11 and 2026-08-12 home snapshots. The
-# in-repo traces are a 5-sample subset of the same capture, cut by
-# scripts/subset_input_traces.py; pass --trace-root to use a full capture.
-DEFAULT_TRACE_ROOT = pathlib.Path("input_trace/loas")
+# The in-repo traces are a 5-sample subset of the full capture, cut by
+# scripts/subset_input_traces.py; pass --trace-root to use a full capture
+# (kept under $NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas).
+DEFAULT_TRACE_ROOT = ROOT / "input_trace/loas"
 DEFAULT_TRACE_DIRS = ["vgg16_T4_n5", "resnet19_T4_n5"]
 DEFAULT_ARCH_YAML = {
-    "loas": "configs/arch/loas.yaml",
-    "spinalflow": "configs/arch/spinalflow.yaml",
-    "ptb": "configs/arch/ptb.yaml",
-    "gustavsnn": "configs/arch/gustavsnn.yaml",
-    "prosperity": "configs/arch/prosperity.yaml",
+    "loas": str(ROOT / "configs/arch/loas.yaml"),
+    "spinalflow": str(ROOT / "configs/arch/spinalflow.yaml"),
+    "ptb": str(ROOT / "configs/arch/ptb.yaml"),
+    "gustavsnn": str(ROOT / "configs/arch/gustavsnn.yaml"),
+    "prosperity": str(ROOT / "configs/arch/prosperity.yaml"),
 }
 DEFAULT_DATAFLOW_YAML = {
-    name: f"configs/dataflow/{name}.yaml"
+    name: str(ROOT / f"configs/dataflow/{name}.yaml")
     for name in DEFAULT_ARCH_YAML
 }
 
@@ -49,7 +49,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--trace-root", default=str(DEFAULT_TRACE_ROOT))
     p.add_argument("--trace-dirs", nargs="+", default=DEFAULT_TRACE_DIRS)
     p.add_argument("--archs", nargs="+", default=list(DEFAULT_ARCH_YAML))
-    p.add_argument("--cache-dir", default="outputs/schedules")
+    p.add_argument("--cache-dir", default=str(ROOT / "outputs/schedules"))
     p.add_argument(
         "--force", action="store_true",
         help="Re-solve and overwrite even if a cached schedule already exists.",

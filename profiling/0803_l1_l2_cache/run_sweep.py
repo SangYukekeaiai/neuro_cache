@@ -18,9 +18,10 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from cachesim.config import DIMS  # noqa: E402
 from cachesim.native_bridge import native_hierarchical_sweep  # noqa: E402
+from util import data_root  # noqa: E402
 
 
-DEFAULT_TRACE_ROOT = pathlib.Path("/work/hdd/bebv/yyu9/neuro_cache_outputs/weight_traces/loas")
+DEFAULT_TRACE_ROOT = data_root() / "neuro_cache_outputs/weight_traces/loas"
 HERE = pathlib.Path(__file__).resolve().parent
 ARCH_CONFIGS = (
     "inst16_node32kb_noc512kb",

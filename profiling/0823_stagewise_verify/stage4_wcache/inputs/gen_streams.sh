@@ -11,7 +11,7 @@
 # 10 to 40 seconds, well inside the login node's per-process CPU cap.
 set -e
 root=$(cd "$(dirname "$0")/../../../.." && pwd)
-py=${PYTHON:-/u/yyu9/miniconda3/bin/python}
+py=${PYTHON:-python3}
 stage2=$root/profiling/0823_stagewise_verify/stage2_weight_trace
 out=$root/profiling/0823_stagewise_verify/stage4_wcache/inputs/streams
 mkdir -p "$out"

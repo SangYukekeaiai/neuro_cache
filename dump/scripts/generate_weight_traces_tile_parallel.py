@@ -30,8 +30,9 @@ sys.path.insert(0, "src")
 
 import tracegen
 from archmodels.trace import load_layer_trace
+from util import data_root
 
-DEFAULT_TRACE_ROOT = pathlib.Path("/u/yyu9/neuro_cache_trace/input_trace/loas")
+DEFAULT_TRACE_ROOT = data_root() / "neuro_cache_trace/input_trace/loas"
 
 _STATE = {}
 

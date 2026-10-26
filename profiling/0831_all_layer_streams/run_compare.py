@@ -22,7 +22,7 @@ Samples are 5 draws of one layer under one schedule, so their spread belongs to
 the input trace rather than to the cache; it is carried as a column rather than
 averaged away.
 
-    conda run -n base python profiling/0831_all_layer_streams/run_compare.py --workers 16
+    conda run -n ${CONDA_ENV:-cosa_snn} python profiling/0831_all_layer_streams/run_compare.py --workers 16
 """
 from __future__ import annotations
 

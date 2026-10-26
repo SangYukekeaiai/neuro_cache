@@ -147,3 +147,6 @@ profiling/0728_status_replay/site_source/
 uploaded_sceenshots/
 # local baseline outputs for the cleanup sprint (not tracked)
 .baseline/
+
+# Default NEURO_CACHE_DATA (src/util.py data_root): data kept outside git
+/data/

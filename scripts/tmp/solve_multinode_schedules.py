@@ -10,24 +10,24 @@ import pathlib
 import sys
 import traceback
 
-sys.path.insert(0, "src")
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
 
 import tracegen
 from archmodels.trace import valid_layer_names
+from util import data_root
 
 
 ARCHS = ("loas", "spinalflow", "ptb", "gustavsnn", "prosperity")
 TRACE_DIRS = ("vgg16_T4_all", "resnet19_T4_all")
-DEFAULT_TRACE_ROOT = pathlib.Path(
-    "/u/yyu9/neuro_cache_trace/input_trace/loas"
-)
+DEFAULT_TRACE_ROOT = data_root() / "neuro_cache_trace/input_trace/loas"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--trace-root", default=str(DEFAULT_TRACE_ROOT))
     parser.add_argument(
-        "--cache-dir", default="outputs/schedules/multinode"
+        "--cache-dir", default=str(ROOT / "outputs/schedules/multinode")
     )
     parser.add_argument("--force", action="store_true")
     return parser.parse_args()
@@ -58,8 +58,8 @@ def main() -> int:
     for trace_name in TRACE_DIRS:
         layers = list(iter_layers(trace_root, trace_name))
         for arch in ARCHS:
-            arch_yaml = f"configs/arch/{arch}_multinode.yaml"
-            dataflow_yaml = f"configs/dataflow/{arch}.yaml"
+            arch_yaml = str(ROOT / f"configs/arch/{arch}_multinode.yaml")
+            dataflow_yaml = str(ROOT / f"configs/dataflow/{arch}.yaml")
             for layer_name, meta, next_cin in layers:
                 out_path = cache_dir / arch / trace_name / f"{layer_name}.json"
                 row = {

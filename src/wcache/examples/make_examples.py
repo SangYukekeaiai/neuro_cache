@@ -26,7 +26,7 @@ The one number a slice cannot preserve by truncation is `mac_cycles`, since
 is carried across exactly; `manifest.json` records the original value. Every
 other field is copied verbatim.
 
-Run from the repo root:  conda run -n base python src/wcache/examples/make_examples.py
+Run from the repo root:  conda run -n ${CONDA_ENV:-cosa_snn} python src/wcache/examples/make_examples.py
 """
 
 from __future__ import annotations

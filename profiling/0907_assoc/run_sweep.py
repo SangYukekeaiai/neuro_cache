@@ -29,7 +29,7 @@ themselves (see EXPLAIN.md):
   * RRIP tracks LRU at every point, since 0907_index_policy measured them
     identical on all 31 layers at 8-way.
 
-Usage: conda run -n base python run_sweep.py [workers]
+Usage: conda run -n ${CONDA_ENV:-cosa_snn} python run_sweep.py [workers]
 """
 from __future__ import annotations
 

@@ -1,11 +1,9 @@
 """Cut an N-sample subset out of a captured LoAS input trace.
 
 The full captures are 10,000 CIFAR-10 samples per layer and 25.8 GB across
-both workloads, which is why they lived outside the repo in the sibling
-capture repo `/u/yyu9/neuro_cache_trace/`. That folder was deleted between
-the 2026-08-11 and 2026-08-12 home snapshots; the data is recoverable from
-`/u/yyu9/.snapshot/snapshot-daily-_2026-08-11_17_00_00_UTC/neuro_cache_trace/`
-until that snapshot rolls off, roughly 30 days after it was taken.
+both workloads, which is why they live outside the repo, under
+`$NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas/` (see `data_root` in
+src/util.py).
 
 This script is the fold: it takes N samples chosen by a seeded RNG and writes
 them into the repo, where 5 samples is 13.6 MB rather than 25.8 GB.
@@ -26,8 +24,8 @@ kind of trap that reads as a result later. The seed and the chosen indices go
 into `meta.json` so the subset can be reproduced or extended.
 
 Usage:
-    conda run -n base python scripts/subset_input_traces.py \
-        --src  /u/yyu9/.snapshot/snapshot-daily-_2026-08-11_17_00_00_UTC/neuro_cache_trace/input_trace/loas \
+    conda run -n ${CONDA_ENV:-cosa_snn} python scripts/subset_input_traces.py \
+        --src  $NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas \
         --dest input_trace/loas --n 5 --seed 0
 """
 
@@ -40,11 +38,12 @@ import sys
 
 import numpy as np
 
-DEFAULT_SRC = pathlib.Path(
-    "/u/yyu9/.snapshot/snapshot-daily-_2026-08-11_17_00_00_UTC"
-    "/neuro_cache_trace/input_trace/loas"
-)
-DEFAULT_DEST = pathlib.Path("input_trace/loas")
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+from util import data_root  # noqa: E402
+
+DEFAULT_SRC = data_root() / "neuro_cache_trace/input_trace/loas"
+DEFAULT_DEST = ROOT / "input_trace/loas"
 DEFAULT_CAPTURES = ["vgg16_T4_all", "resnet19_T4_all"]
 
 
@@ -99,7 +98,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--src", type=pathlib.Path, default=DEFAULT_SRC,
-                    help="directory holding the full captures (default: the 2026-08-11 snapshot)")
+                    help="directory holding the full captures "
+                         "(default: $NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas)")
     ap.add_argument("--dest", type=pathlib.Path, default=DEFAULT_DEST,
                     help="where the subsets are written (default: input_trace/loas)")
     ap.add_argument("--captures", nargs="+", default=DEFAULT_CAPTURES,
@@ -110,8 +110,8 @@ def main() -> int:
 
     if not args.src.is_dir():
         print(f"source not found: {args.src}", file=sys.stderr)
-        print("If the snapshot has rolled off, list what is left with: "
-              "ls /u/yyu9/.snapshot/", file=sys.stderr)
+        print("Pass --src, or set NEURO_CACHE_DATA to the directory holding "
+              "neuro_cache_trace/", file=sys.stderr)
         return 1
 
     total = 0

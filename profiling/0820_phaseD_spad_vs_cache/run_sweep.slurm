@@ -35,7 +35,8 @@ HERE=profiling/0820_phaseD_spad_vs_cache
 # `python`; it is not the precedent to follow here. Checked rather than assumed,
 # because `conda run` failing to resolve would otherwise surface as a python that
 # cannot import the generator's dependencies, several minutes in.
-CONDA_ENV="${CONDA_ENV:-cosa_snn}"
+root=$PWD
+. "$root/scripts/env.sh"
 command -v conda >/dev/null || {
     echo "conda is not on PATH in this batch shell; submit with --export=ALL from a" >&2
     echo "shell where it is, or set CONDA_ENV and load the module first." >&2

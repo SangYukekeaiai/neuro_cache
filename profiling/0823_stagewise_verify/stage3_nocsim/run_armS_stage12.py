@@ -12,7 +12,7 @@ This produces arm S's, and only arm S's:
            against the trace generated from them.
   Stage 2  the same generator arm M used, pointed at those schedules.
 
-    conda run -n base python profiling/0823_stagewise_verify/stage3_nocsim/run_armS_stage12.py [--stage1-only]
+    conda run -n ${CONDA_ENV:-cosa_snn} python profiling/0823_stagewise_verify/stage3_nocsim/run_armS_stage12.py [--stage1-only]
 """
 from __future__ import annotations
 

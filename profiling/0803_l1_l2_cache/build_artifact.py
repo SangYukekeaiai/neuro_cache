@@ -6,6 +6,7 @@ from __future__ import annotations
 import csv
 import gzip
 import json
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -14,8 +15,11 @@ ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "hierarchical_cache_results.csv"
 OUT = ROOT / "artifact"
 REPO_ROOT = ROOT.parents[1]
+sys.path.insert(0, str(REPO_ROOT / "src"))
+from util import data_root  # noqa: E402
+
 SCHEDULE_SOURCE = REPO_ROOT / "outputs" / "schedules" / "multinode_sweep" / "classification.csv"
-TRACE_ROOT = Path("/work/hdd/bebv/yyu9/neuro_cache_outputs/weight_traces/loas")
+TRACE_ROOT = data_root() / "neuro_cache_outputs/weight_traces/loas"
 COUNT_FIELDS = ("l1_hits", "l1_accesses", "l2_hits", "l2_accesses")
 EXPECTED_ARCHS = {
     "inst16_node32kb_noc512kb", "inst16_node32kb_noc4096kb",

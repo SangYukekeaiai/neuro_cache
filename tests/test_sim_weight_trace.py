@@ -21,7 +21,7 @@ user-facing invocation reaches it. Six checks:
   J  --simulate accepts an artifact too (the second place that unwrapped
      "result"), and eventsim's count_cycles moves with the flag.
 
-Run: PYTHONPATH=src conda run -n base python tests/test_sim_weight_trace.py
+Run: PYTHONPATH=src conda run -n ${CONDA_ENV:-cosa_snn} python tests/test_sim_weight_trace.py
 """
 import gzip
 import json

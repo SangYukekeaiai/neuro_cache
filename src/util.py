@@ -1,13 +1,28 @@
 #!/usr/bin/env python3
-"""Shared output-formatting utilities."""
+"""Shared utilities: output formatting and the data-root setting."""
 
 from __future__ import annotations
 
+import os
+import pathlib
 from typing import Any, Dict, List
 
 
 REGIONS = ("NodeLevel", "NoCLevel", "OffChip")
 KINDS = ("temporal", "spatial")
+
+
+def data_root() -> pathlib.Path:
+    """Root of the data kept outside git, from $NEURO_CACHE_DATA.
+
+    Default when unset or empty: <repo>/data. Layout under it:
+    neuro_cache_trace/input_trace/loas/<capture>/ holds the full input
+    captures (e.g. vgg16_T4_all), neuro_cache_outputs/weight_traces/ the
+    generated weight traces. scripts/env.sh gives shell scripts the same
+    default.
+    """
+    return pathlib.Path(os.environ.get("NEURO_CACHE_DATA")
+                        or pathlib.Path(__file__).resolve().parents[1] / "data")
 
 
 def build_strategy(levels: List[Dict[str, Any]]) -> Dict[str, Any]:

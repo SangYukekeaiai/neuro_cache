@@ -77,7 +77,7 @@ if __name__ == "__main__":
         raise SystemExit(
             "usage: input_spike_locality.py <layer.npy> [num_samples] [out_csv]\n"
             "example: input_spike_locality.py "
-            "/u/yyu9/neuro_cache_trace/input_trace/loas/resnet19_T4_all/layer_01_layer1_0_conv1.npy"
+            "$NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas/resnet19_T4_all/layer_01_layer1_0_conv1.npy"
         )
 
     npy_path = sys.argv[1]

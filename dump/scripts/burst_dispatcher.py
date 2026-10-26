@@ -44,14 +44,18 @@ from __future__ import annotations
 import csv
 import pathlib
 import subprocess
+import sys
 import time
 
-PROJECT_ROOT = pathlib.Path("/u/yyu9/projects/neuro_cache")
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+from util import data_root  # noqa: E402
+
 JOBS_FILE = PROJECT_ROOT / "outputs/schedules/jobs.txt"
 COMPLETE_FILE = PROJECT_ROOT / "outputs/schedules/burst_complete.txt"
 JOBS_STATE_FILE = PROJECT_ROOT / "outputs/schedules/burst_jobs.csv"
 BURST_SCRIPT = "scripts/slurm/run_burst_interactive.slurm"
-OUT_DIR = pathlib.Path("/work/hdd/bebv/yyu9/neuro_cache_outputs/weight_traces")
+OUT_DIR = data_root() / "neuro_cache_outputs/weight_traces"
 TARGET_SAMPLES = 10000
 
 # Already running via the very first manual burst, before this script's

@@ -45,7 +45,7 @@ Geometry at each point (capacity / line = lines, lines / ways = sets):
      8 KB, 32 B,  64-way ->  256 lines,  4 sets
      8 KB, 16 B, 128-way ->  512 lines,  4 sets
 
-Usage: conda run -n base python run_sweep.py [workers]
+Usage: conda run -n ${CONDA_ENV:-cosa_snn} python run_sweep.py [workers]
 """
 from __future__ import annotations
 

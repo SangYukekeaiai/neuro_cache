@@ -6,7 +6,7 @@ the pages are read as one family and a divergence in the palette or the chart
 metrics would read as a difference in the data. That import is the only coupling
 between the two stages.
 
-Usage: conda run -n base python make_page.py   ->  outputs/page_assoc.html
+Usage: conda run -n ${CONDA_ENV:-cosa_snn} python make_page.py   ->  outputs/page_assoc.html
 """
 from __future__ import annotations
 

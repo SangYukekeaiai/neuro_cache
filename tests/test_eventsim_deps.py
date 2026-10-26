@@ -17,7 +17,7 @@ tests the shipped artifact rather than a reimplementation of its rules.
 Row format (see Transaction.h): tc_id,actor,op,size,srcs,dests,deps
 op 2 is COUNT, whose `size` IS its cycle count.
 
-Run: conda run -n base python tests/test_eventsim_deps.py
+Run: conda run -n ${CONDA_ENV:-cosa_snn} python tests/test_eventsim_deps.py
 """
 import json
 import pathlib

@@ -4,9 +4,8 @@
 name -> YAML map, which is 93 solves here and uses the wrong arch files. This
 solves the 12 the study actually uses, against configs/arch/<arch>_inst16.yaml.
 
-Run from the repo root:
-    conda run -n base python scripts/solve_inst16_subset.py \
-        --trace-root /work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas
+    conda run -n ${CONDA_ENV:-cosa_snn} python scripts/solve_inst16_subset.py \
+        --trace-root $NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas
 """
 from __future__ import annotations
 
@@ -16,7 +15,8 @@ import pathlib
 import sys
 import time
 
-sys.path.insert(0, "src")
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 import tracegen
 
 ARCHS = ["loas", "ptb", "spinalflow"]
@@ -34,7 +34,7 @@ LAYERS = [
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--trace-root", required=True, type=pathlib.Path)
-    ap.add_argument("--cache-dir", default="outputs/schedules/inst16", type=pathlib.Path)
+    ap.add_argument("--cache-dir", default=ROOT / "outputs/schedules/inst16", type=pathlib.Path)
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
 
@@ -45,8 +45,8 @@ def main() -> int:
 
     ok = fail = skip = 0
     for arch in ARCHS:
-        arch_yaml = f"configs/arch/{arch}_inst16.yaml"
-        dataflow_yaml = f"configs/dataflow/{arch}.yaml"
+        arch_yaml = str(ROOT / f"configs/arch/{arch}_inst16.yaml")
+        dataflow_yaml = str(ROOT / f"configs/dataflow/{arch}.yaml")
         if not pathlib.Path(arch_yaml).exists():
             print(f"missing {arch_yaml}", file=sys.stderr)
             return 1
