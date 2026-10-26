@@ -35,15 +35,17 @@
 #
 # Usage: sbatch run_burst_interactive.slurm <arch> <trace_dir> <layer> [attempt]
 set -uo pipefail
-cd /u/yyu9/projects/neuro_cache
+cd "${SLURM_SUBMIT_DIR:-.}"  # sbatch from the repo root
+root=$PWD
+. "$root/scripts/env.sh"
 
-source /u/yyu9/miniconda3/etc/profile.d/conda.sh
+source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate base
 export PYTHONPATH=src
 WORKERS="$SLURM_CPUS_PER_TASK"
 SAMPLES=10000
 MAX_ATTEMPTS=40
-OUT_DIR=/work/hdd/bebv/yyu9/neuro_cache_outputs/weight_traces
+OUT_DIR="$NEURO_CACHE_DATA/neuro_cache_outputs/weight_traces"
 
 ARCH="${1:?usage: sbatch run_burst_interactive.slurm <arch> <trace_dir> <layer> [attempt]}"
 TRACE_DIR="${2:?usage: sbatch run_burst_interactive.slurm <arch> <trace_dir> <layer> [attempt]}"

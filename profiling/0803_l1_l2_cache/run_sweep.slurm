@@ -10,6 +10,8 @@
 #SBATCH --error=logs/l1_l2_loas_%j.err
 
 set -uo pipefail
-cd /u/yyu9/projects/neuro_cache || exit 1
+cd "${SLURM_SUBMIT_DIR:-.}" || exit 1  # sbatch from the repo root
+root=$PWD
+. "$root/scripts/env.sh"
 export PYTHONPATH=src
 python profiling/0803_l1_l2_cache/run_sweep.py --run --workers "$SLURM_CPUS_PER_TASK"

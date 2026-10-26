@@ -28,8 +28,10 @@
 # work (see run_full_sweep_array.slurm's identical precedent).
 
 set -uo pipefail
-cd /u/yyu9/projects/neuro_cache
-source /u/yyu9/miniconda3/etc/profile.d/conda.sh
+cd "${SLURM_SUBMIT_DIR:-.}"  # sbatch from the repo root
+root=$PWD
+. "$root/scripts/env.sh"
+source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate gurobi
 export PYTHONPATH=src
 

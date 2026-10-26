@@ -24,7 +24,7 @@
 # campaign needs a GPU (see README.md).
 
 set -uo pipefail
-cd /u/yyu9/projects/neuro_cache || exit 1
+cd "${SLURM_SUBMIT_DIR:-.}" || exit 1  # sbatch from the repo root
 export PYTHONPATH=src
 
 TIER="${TIER:-tier0}"

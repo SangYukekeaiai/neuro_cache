@@ -116,3 +116,11 @@ gen_streams.py reads only input_trace/loas/*_n5 and the stage's schedules/, so w
 schedules in place it needs neither the captures nor Gurobi. The streams are 16 GB and the
 directory is gitignored (on Delta it was a symlink into scratch), so point it at
 `$NEURO_CACHE_DATA` first.
+
+## Per-layer profiling on Delta
+
+scripts/profile_all_layers.py runs one layer per Slurm array task (scripts/slurm/profile_all_layers.slurm)
+and writes `$NEURO_CACHE_DATA/profiling/<bench>/layers/<trace_dir>/<layer>.csv`, then `--merge`
+joins them. The Slurm file has not been submitted on Delta yet: it is verified only by
+`--dry-run` and by one array task run locally on the 5-sample loas subset; its header lists the
+fields to confirm at the first submission.
