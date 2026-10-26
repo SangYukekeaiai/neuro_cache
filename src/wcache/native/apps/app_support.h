@@ -279,10 +279,6 @@ private:
     bool owned_ = false;
 };
 
-inline bool path_exists(const std::string& path) {
-    return ::access(path.c_str(), F_OK) == 0;
-}
-
 inline void write_out(const std::string& out_path, const std::string& text) {
     if (out_path == "-") {
         std::cout << text;

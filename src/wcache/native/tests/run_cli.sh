@@ -200,6 +200,25 @@ print(f"belady: l1_hits {lru['l1_hits']} -> {bel['l1_hits']}, "
       f"l2_hits {lru['l2_hits']} -> {bel['l2_hits']}")
 BELPY
 
+# 11. --out writes the header by default, whether the file is new or is being
+#     overwritten, and --no-header turns it off. The file is truncated, so a
+#     second run leaves exactly one header and one row.
+"$bin" --config "$tmp/cfg.json" --trace "$tmp/fixture.wcts" --run-id fixed \
+       --out "$tmp/out.csv"
+test "$(wc -l < "$tmp/out.csv")" -eq 2
+head -n 1 "$tmp/out.csv" | grep -q '^run_id,' \
+    || { echo "expected a header on a fresh --out file"; exit 1; }
+"$bin" --config "$tmp/cfg.json" --trace "$tmp/fixture.wcts" --run-id fixed \
+       --out "$tmp/out.csv"
+test "$(wc -l < "$tmp/out.csv")" -eq 2
+head -n 1 "$tmp/out.csv" | grep -q '^run_id,' \
+    || { echo "expected a header on an overwritten --out file"; exit 1; }
+"$bin" --config "$tmp/cfg.json" --trace "$tmp/fixture.wcts" --run-id fixed \
+       --out "$tmp/out.csv" --no-header
+test "$(wc -l < "$tmp/out.csv")" -eq 1
+head -n 1 "$tmp/out.csv" | grep -q '^fixed,' \
+    || { echo "expected no header with --no-header"; exit 1; }
+
 # 10. The same config with no oracle is refused rather than run. A silent
 #     fallback would report an every-slot-looks-dead policy as Belady's bound.
 if "$bin" --config "$tmp/tight_belady.json" --trace "$tmp/reuse.wcts" \

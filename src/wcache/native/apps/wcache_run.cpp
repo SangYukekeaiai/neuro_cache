@@ -43,8 +43,7 @@ const char* const kUsage =
     "  --trace PATH           required. A WCTS stream. `-` means stdin, `fd:N`\n"
     "                         an already-open file descriptor N.\n"
     "  --out PATH             where the CSV goes. Default `-` (stdout).\n"
-    "  --header               emit the CSV header line before the row. Default on\n"
-    "                         when --out is a path that does not exist, off otherwise.\n"
+    "  --header               emit the CSV header line before the row. Default on.\n"
     "  --no-header            never emit the header line.\n"
     "  --arm NAME             the `arm` column: spad_oracle | spad_wcache |\n"
     "                         spad_nocsim | cache. Default `cache`.\n"
@@ -139,8 +138,7 @@ struct Options {
     std::int64_t trace_limit = -1;
 
     RowIdentity id;
-    bool header      = false;
-    bool header_set  = false;
+    bool header      = true;
     bool oracle_only = false;
 };
 
@@ -183,8 +181,8 @@ bool parse_args(int argc, char** argv, Options& opt) {
         else if (flag == "--tier")       opt.id.tier        = value_of(argc, argv, i);
         else if (flag == "--run-id")     opt.id.run_id      = value_of(argc, argv, i);
         else if (flag == "--git-commit") opt.id.git_commit  = value_of(argc, argv, i);
-        else if (flag == "--header")     { opt.header = true;  opt.header_set = true; }
-        else if (flag == "--no-header")  { opt.header = false; opt.header_set = true; }
+        else if (flag == "--header")     opt.header = true;
+        else if (flag == "--no-header")  opt.header = false;
         else if (flag == "--oracle-only") opt.oracle_only = true;
         else throw UsageError("unknown option " + flag);
     }
@@ -249,7 +247,6 @@ void run(Options& opt) {
     }
 
     if (opt.id.run_id.empty()) opt.id.run_id = uuid4();
-    if (!opt.header_set) opt.header = opt.out_path != "-" && !path_exists(opt.out_path);
 
     DistinctAddressHistogram hist(hdr);
     std::string row;
