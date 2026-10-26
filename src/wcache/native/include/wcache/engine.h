@@ -241,16 +241,18 @@ struct EngineStats {
 
     // --- the L2 prefetcher's outcomes (plan 0831-l2-cin-neighbour) -----------
     //
-    // Same shape as the L1 block above and the same identity: every prefetch
-    // this policy issues ends in exactly one of the outcomes or one of the
-    // drops, so they sum to `l2_pf_issued`.
+    // Same shape as the L1 block above. Every prefetch this policy issues ends
+    // in at most one of the outcomes or one of the drops, so they sum to at
+    // most `l2_pf_issued`: L2 lines still tagged at end of run are not charged
+    // (see `close_out_prefetch_stats` in engine.cpp).
     //
     // `up` and `down` are split because the plan PREDICTS they behave
     // differently -- the measured lead is +16 lines one way and -16 the other --
     // and a single total would average the prediction away rather than test it.
     std::int64_t l2_pf_issued = 0;
     std::int64_t l2_pf_issued_up = 0, l2_pf_issued_down = 0;
-    std::int64_t l2_pf_timely = 0;   // a demand hit the line this prefetch put there
+    std::int64_t l2_pf_timely = 0;   // a demand hit the line this prefetch put there;
+                                     // always equal to `l2_pf_retriggers` (see below)
     std::int64_t l2_pf_late   = 0;   // a demand merged onto the entry before it filled
     std::int64_t l2_pf_wasted = 0;   // evicted still tagged, so never used
     std::int64_t l2_pf_dropped_array_hit = 0;
@@ -259,6 +261,10 @@ struct EngineStats {
     std::int64_t l2_pf_dropped_reserve   = 0;
     // Fired from a demand hit on a tagged line rather than from a miss. The
     // difference between this and zero is what U4 bought.
+    //
+    // Always equal to `l2_pf_timely`: engine.cpp increments both at one site,
+    // the demand L2 hit that finds and clears the tag, and that hit always
+    // calls the trigger. Both are kept as separate CSV columns.
     std::int64_t l2_pf_retriggers = 0;
     std::int64_t dram_accesses = 0;
 

@@ -337,7 +337,9 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
     r.i64("pf_budget_exhausted", es.pf_budget_exhausted);
     r.i64("pf_pollution_evictions", es.pf_pollution_evictions);
     // The L2 policy (plan 0831-l2-cin-neighbour). Config first so a row is
-    // self-describing, then the outcomes, which sum to `l2_pf_issued`.
+    // self-describing, then the outcomes, which sum to at most `l2_pf_issued`
+    // (L2 lines still tagged at end of run are not charged; see
+    // `close_out_prefetch_stats` in engine.cpp).
     r.str("l2_prefetch_policy", cfg.l2_prefetch_policy == L2PrefetchKind::None ? "none" : "neighbour");
     r.str("l2_prefetch_axis", axis_name(cfg.l2_prefetch_axis));
     r.i64("l2_prefetch_distance", cfg.l2_prefetch_distance);
@@ -355,7 +357,9 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
     r.i64("l2_pf_dropped_entry", es.l2_pf_dropped_entry);
     r.i64("l2_pf_dropped_no_slot", es.l2_pf_dropped_no_slot);
     r.i64("l2_pf_dropped_reserve", es.l2_pf_dropped_reserve);
-    // What fraction of the demand references this policy turned into hits.
+    // Demand L2 hits on a still-tagged prefetched line over demand L2 accesses.
+    // `l2_pf_timely` always equals `l2_pf_retriggers` (engine.h), so this is
+    // also the retrigger ratio. Late prefetches are not counted.
     r.ratio("l2_pf_coverage", static_cast<double>(es.l2_pf_timely),
             static_cast<double>(es.l2_accesses));
 

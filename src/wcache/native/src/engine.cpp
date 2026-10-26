@@ -669,6 +669,9 @@ void Engine::close_out_prefetch_stats() {
         stats_.pf_wasted += static_cast<std::int64_t>(resident.size());
         resident.clear();
     }
+    // Only the L1 prefetcher is closed out here. L2 lines still tagged in
+    // `l2_prefetched_` when the run ends are not charged to `l2_pf_wasted`, so
+    // the L2 outcomes plus drops can sum to less than `l2_pf_issued`.
 }
 
 // --- inclusion (C4, 4.4, N8) -------------------------------------------------
