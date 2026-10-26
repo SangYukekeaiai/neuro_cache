@@ -124,7 +124,7 @@ def main() -> int:
     n_bad = len(rows) - n_ok - n_skip
     print(f"\n{n_ok} solved, {n_skip} skipped (already cached), {n_bad} infeasible/error "
           f"-> {summary_path}")
-    return 0
+    return 1 if n_bad else 0
 
 
 if __name__ == "__main__":

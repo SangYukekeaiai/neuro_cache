@@ -7,6 +7,8 @@ import json
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+# One directory per benchmark: input_trace/<bench>/<trace_dir>/{meta.json,<layer>.npy}.
+INPUT_TRACE = ROOT / "input_trace"
 
 # The khkw_split point every wcache stage from 0823 stage 4 on starts from:
 # 64 B lines (cin_block 16 x cout_block 4 x 1 B), 16 KB 8-way L1, 512 KB 16-way L2.
@@ -39,12 +41,16 @@ def base_config(keys=None, drop=(), **extra):
 WORKLOADS = [("V", "vgg16_T4_n5"), ("R", "resnet19_T4_n5")]
 
 
-def tags():
-    """(tag, trace_dir, layer) for every valid layer of both `_n5` workloads."""
+def tags(bench="loas"):
+    """(tag, trace_dir, layer) for every valid layer of the `_n5` workloads
+    present under input_trace/<bench>/."""
     from archmodels.trace import valid_layer_names  # needs ROOT/src on sys.path
     out = []
     for prefix, trace_dir in WORKLOADS:
-        meta = json.loads((ROOT / "input_trace/loas" / trace_dir / "meta.json").read_text())
+        path = INPUT_TRACE / bench / trace_dir / "meta.json"
+        if not path.is_file():
+            continue
+        meta = json.loads(path.read_text())
         for layer in valid_layer_names(meta):
             out.append((f"{prefix}{int(layer.split('_')[1])}", trace_dir, layer))
     return out

@@ -15,6 +15,9 @@ The default grid is the 0823 stage 4 khkw grid (run_khkw_sweep.grid_for).
   python scripts/demo.py [--bench loas] [--layers V8 R9 ...] [--jobs N]
   python scripts/demo.py --verify-baseline [DIR]   check <out>/results.csv
                                                    against DIR (.baseline/after)
+  python scripts/demo.py --check-bench BENCH       check input_trace/BENCH (or a
+                                                   directory) against the input
+                                                   contract in docs/REPRODUCE.md
 """
 import argparse
 import concurrent.futures as cf
@@ -23,6 +26,7 @@ import json
 import math
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import time
@@ -34,8 +38,9 @@ sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "profiling/0823_stagewise_veri
 import wcache_baseline as wb  # noqa: E402  (puts src/, profiling/ and stage4 on sys.path)
 from wcache_baseline import sweep  # noqa: E402
 import run_stage3  # noqa: E402
+from archmodels import ARCH_NATIVE_BRIDGES  # noqa: E402
 from archmodels.trace import valid_layer_names  # noqa: E402
-from common import tags  # noqa: E402
+from common import INPUT_TRACE, tags  # noqa: E402
 from util import data_root  # noqa: E402
 
 # The nocsim arch each benchmark is simulated on; only loas has one in the repo.
@@ -43,7 +48,11 @@ NOCSIM_ARCH = {"loas": run_stage3.ARCH_YAML}
 # Config columns of the wcache output copied into results.csv.
 KEY_FIELDS = ("layout", "line_size_bytes", "l2_size_bytes", "l2_banks",
               "prefetch_policy", "prefetch_distance")
-ENV = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
+ENV = {**os.environ, "PYTHONPATH": os.pathsep.join(
+    p for p in (str(ROOT / "src"), os.environ.get("PYTHONPATH")) if p)}
+# Commands run in parallel can each hold several GB (in make demo the largest
+# single command peaked at 14 GB RSS), so the default stays below the core count.
+DEFAULT_JOBS = min(8, os.cpu_count() or 1)
 
 
 def speedup(nocsim_cycles, wcache_cycles):
@@ -91,8 +100,9 @@ def run_all(cmds, record, jobs, capture=False):
         return list(pool.map(lambda c: run(c, capture), cmds))
 
 
-def resolve_layers(specs):
-    """(trace_dir, layer) for each spec: `trace_dir/layer`, or a LoAS tag such as V8."""
+def resolve_layers(bench, specs):
+    """(trace_dir, layer) for each spec: `trace_dir/layer`, or a tag such as V8
+    of a workload under input_trace/<bench>/."""
     known = None
     out = []
     for s in specs:
@@ -100,16 +110,17 @@ def resolve_layers(specs):
             out.append(tuple(s.split("/", 1)))
             continue
         if known is None:
-            known = {t: (d, l) for t, d, l in tags()}
+            known = {t: (d, l) for t, d, l in tags(bench)}
         if s not in known:
-            sys.exit(f"unknown layer {s!r}: give trace_dir/layer or one of {sorted(known)}")
+            sys.exit(f"unknown layer {s!r} for bench {bench!r}: give trace_dir/layer "
+                     f"or one of {sorted(known)}")
         out.append(known[s])
     return out
 
 
-def check_inputs(bench, layers):
-    """Problems with the inputs for (bench, layers); empty when all are present."""
-    root = ROOT / "input_trace" / bench
+def check_inputs(bench, layers, samples):
+    """Problems with the inputs for (bench, layers, samples); empty when all are present."""
+    root = INPUT_TRACE / bench
     if not root.is_dir():
         return [f"no input traces: {root} does not exist"]
     problems = []
@@ -119,29 +130,118 @@ def check_inputs(bench, layers):
         meta = root / d / "meta.json"
         if not meta.is_file():
             problems.append(f"missing {meta}")
-        elif layer not in valid_layer_names(json.loads(meta.read_text())):
+            continue
+        m = json.loads(meta.read_text())
+        if layer not in valid_layer_names(m):
             problems.append(f"{layer} is not a valid layer in {meta}")
         elif not (root / d / f"{layer}.npy").is_file():
             problems.append(f"missing {root / d / f'{layer}.npy'}")
+        elif samples[-1] >= m["layers"][layer][1]:
+            problems.append(f"samples {samples[0]}..{samples[-1]} out of range: {d}/{layer} "
+                            f"has {m['layers'][layer][1]} samples")
     return problems
 
 
-def schedules_for(bench, layers, out, record):
-    """The schedule root to use: the tracked one, else one solved into <out>/schedules."""
-    missing = [wb.SCHEDULES / bench / d / f"{l}.json" for d, l in layers
-               if not (wb.SCHEDULES / bench / d / f"{l}.json").is_file()]
-    if not missing:
-        return wb.SCHEDULES
+def check_bench(spec):
+    """(problems, notes) for a benchmark directory against the input-trace
+    contract (docs/REPRODUCE.md): `spec` is a name under input_trace/ or a
+    directory path. Empty problems means every trace dir, meta.json and .npy
+    is complete and the code knows the benchmark."""
+    import numpy as np
+    root = pathlib.Path(spec) if os.sep in spec or pathlib.Path(spec).is_dir() else INPUT_TRACE / spec
+    bench = root.name
+    problems, notes = [], []
+    for what, path in (("arch config", ROOT / "configs/arch" / f"{bench}.yaml"),
+                       ("dataflow config", ROOT / "configs/dataflow" / f"{bench}.yaml"),
+                       ("native model", ROOT / "src/archmodels" / bench / "Makefile")):
+        if not path.is_file():
+            problems.append(f"no {what} for bench {bench!r}: missing {path.relative_to(ROOT)}")
+    if bench not in ARCH_NATIVE_BRIDGES:
+        problems.append(f"bench {bench!r} is not in archmodels.ARCH_NATIVE_BRIDGES "
+                        f"(known: {sorted(ARCH_NATIVE_BRIDGES)})")
+    if bench not in NOCSIM_ARCH:
+        problems.append(f"no nocsim arch for bench {bench!r} in demo.NOCSIM_ARCH (known: {sorted(NOCSIM_ARCH)})")
+    if not root.is_dir():
+        return problems + [f"no input traces: {root} does not exist"], notes
+    metas = sorted(root.glob("*/meta.json"))
+    if not metas:
+        return problems + [f"no trace dirs: {root} has no <trace_dir>/meta.json"], notes
+    for meta_path in metas:
+        d = meta_path.parent
+        try:
+            m = json.loads(meta_path.read_text())
+        except ValueError as e:
+            problems.append(f"{meta_path}: not JSON ({e})")
+            continue
+        layers = m.get("layers")
+        if not isinstance(layers, dict) or not layers:
+            problems.append(f"{meta_path}: no 'layers' dict (layer name -> [T, B, Cin, Hin, Win])")
+            continue
+        if m.get("dtype", "uint8") != "uint8":
+            problems.append(f"{meta_path}: dtype {m['dtype']!r}, the loaders take uint8")
+        shapes = {}
+        for name, shape in layers.items():
+            if not (isinstance(shape, list) and len(shape) == 5
+                    and all(isinstance(x, int) and x > 0 for x in shape)):
+                problems.append(f"{meta_path}: layer {name}: {shape!r} is not [T, B, Cin, Hin, Win]")
+                continue
+            shapes[name] = shape
+            npy = d / f"{name}.npy"
+            if not npy.is_file():
+                problems.append(f"missing {npy}")
+                continue
+            arr = np.load(npy, mmap_mode="r")
+            if arr.dtype != np.uint8:
+                problems.append(f"{npy}: dtype {arr.dtype}, want uint8")
+            if list(arr.shape) != shape:
+                problems.append(f"{npy}: shape {tuple(arr.shape)}, meta.json says {tuple(shape)}")
+        if len({s[1] for s in shapes.values()}) > 1:
+            problems.append(f"{meta_path}: layers disagree on B (the sample count): "
+                            + ", ".join(f"{n}={s[1]}" for n, s in shapes.items()))
+        if "n_samples" not in m:
+            problems.append(f"{meta_path}: no 'n_samples' (scripts/subset_input_traces.py reads it)")
+        elif shapes and m["n_samples"] not in {s[1] for s in shapes.values()}:
+            problems.append(f"{meta_path}: n_samples {m['n_samples']} differs from the layers' B")
+        valid = valid_layer_names({"layers": shapes})
+        tracked = sum((wb.SCHEDULES / bench / d.name / f"{l}.json").is_file() for l in valid)
+        notes.append(f"{root.name}/{d.name}: {len(layers)} layers, {len(valid)} usable, "
+                     f"{tracked} with a tracked schedule")
+        if len(valid) < len(shapes):
+            notes.append("  too small for a 3x3 conv: " + ", ".join(sorted(set(shapes) - set(valid))))
+    return problems, notes
+
+
+def missing_schedules(root, bench, layers):
+    return [root / bench / d / f"{l}.json" for d, l in layers
+            if not (root / bench / d / f"{l}.json").is_file()]
+
+
+def can_solve():
     try:
         import gurobipy  # noqa: F401
     except ImportError:
-        sys.exit("missing schedules and gurobipy does not import, so they cannot be solved:\n  "
-                 + "\n  ".join(map(str, missing)))
+        return False
+    return True
+
+
+def schedules_for(bench, layers, out, record):
+    """The schedule root to use: the tracked one when it has every layer, else
+    <out>/schedules, seeded with the tracked schedules and solved for the rest."""
+    if not missing_schedules(wb.SCHEDULES, bench, layers):
+        return wb.SCHEDULES
     cache = out / "schedules"
+    if (wb.SCHEDULES / bench).is_dir():
+        shutil.copytree(wb.SCHEDULES / bench, cache / bench, dirs_exist_ok=True)
+    # solve_schedules.py skips schedules already in the cache.
     run_all([[sys.executable, str(ROOT / "scripts/solve_schedules.py"), "--archs", bench,
-              "--trace-root", str(ROOT / "input_trace" / bench),
+              "--trace-root", str(INPUT_TRACE / bench),
               "--trace-dirs", *sorted({d for d, _ in layers}), "--cache-dir", str(cache)]],
             record, 1)
+    # solve_schedules.py exits 0 even when a layer is infeasible or fails.
+    still = missing_schedules(cache, bench, layers)
+    if still:
+        sys.exit("solve_schedules.py did not write these schedules (see "
+                 f"{cache / 'summary.csv'}):\n  " + "\n  ".join(map(str, still)))
     return cache
 
 
@@ -150,7 +250,10 @@ def load_grid(path):
     if path is None:
         return "khkw", [p for lb in sweep.LINE_BYTES for p in sweep.grid_for(lb)]
     path = pathlib.Path(path)
-    return path.stem, json.loads(path.read_text())
+    grid = json.loads(path.read_text())
+    if not isinstance(grid, list) or not grid:
+        sys.exit(f"--grid {path}: no configs (want a non-empty JSON array of wcache configs)")
+    return path.stem, grid
 
 
 def out_dir(a):
@@ -160,11 +263,15 @@ def out_dir(a):
 def demo(a):
     t0 = time.time()
     out = out_dir(a)
-    layers = resolve_layers(a.layers)
-    problems = check_inputs(a.bench, layers)
+    layers = resolve_layers(a.bench, a.layers)
+    samples = range(a.sample_start, a.sample_start + a.sample_count)
+    problems = check_inputs(a.bench, layers, samples)
+    missing = missing_schedules(wb.SCHEDULES, a.bench, layers)
+    if missing and not can_solve():
+        problems += ["gurobipy does not import, so this schedule cannot be solved: "
+                     f"{p}" for p in missing]
     if problems:
         sys.exit("cannot run the demo:\n  " + "\n  ".join(problems))
-    samples = range(a.sample_start, a.sample_start + a.sample_count)
     grid_name, grid = load_grid(a.grid)
     out.mkdir(parents=True, exist_ok=True)
     cmds = []
@@ -177,7 +284,7 @@ def demo(a):
     run_all(builds, cmds, 1)
 
     gen = [sys.executable, str(ROOT / "scripts/generate_weight_traces.py"), "--arch", a.bench,
-           "--trace-root", str(ROOT / "input_trace" / a.bench),
+           "--trace-root", str(INPUT_TRACE / a.bench),
            "--schedule-cache", str(sched_root), "--workers", "1"]
     streams = {(d, l, s): out / "streams" / d / f"{l}_s{s:05d}.wcts"
                for d, l in layers for s in samples}
@@ -298,15 +405,27 @@ def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--bench", default="loas")
     p.add_argument("--layers", nargs="+", default=list(sweep.TAGS),
-                   help="trace_dir/layer or a LoAS tag (default: the 4 tracked, %(default)s)")
+                   help="trace_dir/layer or a tag such as V8 (default: the 4 tracked, %(default)s)")
     p.add_argument("--sample-start", type=int, default=0)
     p.add_argument("--sample-count", type=int, default=5)
     p.add_argument("--out", help="default $NEURO_CACHE_DATA/demo/<bench>")
     p.add_argument("--grid", help="JSON array of wcache configs (default: the 0823 khkw grid)")
-    p.add_argument("--jobs", type=int, default=os.cpu_count())
+    p.add_argument("--jobs", type=int, default=DEFAULT_JOBS,
+                   help="parallel commands (default %(default)s; each can use several GB)")
     p.add_argument("--verify-baseline", nargs="?", const=str(ROOT / ".baseline/after"),
                    metavar="DIR", help="only compare <out>/results.csv with DIR's reference CSVs")
+    p.add_argument("--check-bench", metavar="BENCH",
+                   help="only check input_trace/BENCH (or the directory BENCH) against the input contract")
     a = p.parse_args()
+    if a.check_bench:
+        problems, notes = check_bench(a.check_bench)
+        print("\n".join(notes + [f"{a.check_bench}: {len(problems)} problems"] + problems))
+        return 1 if problems else 0
+    for name in ("sample_count", "jobs"):
+        if getattr(a, name) < 1:
+            p.error(f"--{name.replace('_', '-')} must be at least 1")
+    if a.sample_start < 0:
+        p.error("--sample-start must be at least 0")
     if a.verify_baseline:
         return verify(out_dir(a) / "results.csv", pathlib.Path(a.verify_baseline))
     return demo(a)
