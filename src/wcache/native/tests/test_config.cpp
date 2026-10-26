@@ -201,6 +201,30 @@ void test_l2_demand_reserve_is_rejected_by_name() {
     CHECK_THROWS(std::invalid_argument, validate(bad, 8, warns));
 }
 
+void test_the_l2_mshr_floor_holds_a_burst_with_one_to_spare() {
+    check::group("l2_mshrs = 20 holds a 19-line burst and refuses a 20-line one");
+    // The floor is deliberate and holds whatever the L2 prefetch policy is:
+    // unset, l2_demand_reserve is lines_per_burst and must stay under l2_mshrs.
+    // l1_mshrs is raised only so the L1 rules do not refuse these bursts first.
+    CHECK_EQ(parse_config("{}").l2_mshrs, 20);
+    std::vector<Warning> w;
+
+    RunConfig ok = parse_config(R"({"l1_mshrs": 32})");
+    validate(ok, 19, w);
+    CHECK_EQ(ok.l2_demand_reserve, 19);
+
+    RunConfig bad = parse_config(R"({"l1_mshrs": 32})");
+    std::string msg;
+    try {
+        validate(bad, 20, w);
+    } catch (const std::invalid_argument& e) {
+        msg = e.what();
+    }
+    CHECK_TRUE(msg.find("l2_demand_reserve = 20") != std::string::npos);
+    CHECK_TRUE(msg.find("must leave at least one L2 MSHR free") != std::string::npos);
+    CHECK_TRUE(msg.find("prefetch") == std::string::npos);
+}
+
 void test_fewer_than_one_set_is_rejected_at_l1() {
     check::group("Task 10: l1_size < l1_assoc * line_size is rejected");
     RunConfig c = parse_config(
@@ -680,6 +704,7 @@ int main() {
     test_malformed_json_is_refused();
 
     test_l2_demand_reserve_is_rejected_by_name();
+    test_the_l2_mshr_floor_holds_a_burst_with_one_to_spare();
     test_fewer_than_one_set_is_rejected_at_l1();
     test_fewer_than_one_set_is_rejected_at_l2();
     test_a_partial_line_is_rejected_at_l1();

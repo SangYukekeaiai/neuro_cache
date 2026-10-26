@@ -634,7 +634,8 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
     if (cfg.l2_demand_reserve >= cfg.l2_mshrs) {
         reject("l2_demand_reserve = " + std::to_string(cfg.l2_demand_reserve) +
                " is at or above l2_mshrs = " + std::to_string(cfg.l2_mshrs) +
-               ", which would make L2 prefetching unreachable while claiming to be on");
+               "; the reserve (lines_per_burst when unset) must leave at least one L2 "
+               "MSHR free");
     }
 
     if (cfg.prefetch_policy == PrefetchKind::NextBurst && cfg.prefetch_distance == 0) {
