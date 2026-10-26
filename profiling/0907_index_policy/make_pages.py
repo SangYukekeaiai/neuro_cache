@@ -2,7 +2,7 @@
 """Build the two review pages, one per L1 geometry, from the sweep's own CSVs.
 
 One generator and not two hand-written files, because the pages differ only in
-which six of the twelve arms they read: a fact edited into one and not the other
+which three of the six arms they read: a fact edited into one and not the other
 is exactly the kind of divergence a reader cannot see.
 
 Usage: conda run -n ${CONDA_ENV:-cosa_snn} python make_pages.py

@@ -195,8 +195,9 @@ def producer_argv(task: dict) -> list[str]:
 
 
 def emit_fixture_stream(name: str) -> None:
-    """One examples/ slice as a WCTS stream on stdout, as tests/sweep_cli.sh
-    writes it. tracegen's stream writers need only `struct`; the module's
+    """One examples/ slice as a WCTS stream on stdout, as
+    src/wcache/native/tests/sweep_cli.sh writes it. tracegen's stream
+    writers need only `struct`; the module's
     top-level archmodels.trace import drags in numpy, which the wire format has
     no part in, so it is stubbed."""
     import types
@@ -223,7 +224,7 @@ def emit_fixture_stream(name: str) -> None:
         dram_num_steps=doc["dram_num_steps"], noc_num_steps=doc["noc_num_steps"],
         tiles=tiles)
     # Dim 3 is the one spatial factor every checked-in slice unrolls over,
-    # matching tests/sweep_cli.sh.
+    # matching src/wcache/native/tests/sweep_cli.sh.
     stream_weight_trace(trace, sys.stdout.buffer, n_cores=n_cores,
                         spatial_factors={3: n_cores})
 

@@ -5,12 +5,12 @@ weight-trace generation time is pure Python object/tuple construction in
 those three functions, not the numpy gather (see
 log/2026-07-26-workflow-optimization-plan.md's "Speedup methodology").
 
-Drop-in alternative to tracegen.reconstruct_samples_for_schedule for
-GustavSNN specifically: same signature shape, same LayerWeightTrace
-output, but does ONE subprocess call for the whole (schedule, sample
-batch) instead of one Python format_input_batch call per tile -- see
-main.cpp's task/output binary format docstring for the wire
-format.
+Drop-in alternative to reconstruct_samples_for_schedule
+(dump/python_reference/tracegen_reconstruct.py) for GustavSNN
+specifically: same signature shape, same LayerWeightTrace output, but
+does ONE subprocess call for the whole (schedule, sample batch) instead
+of one Python format_input_batch call per tile -- see main.cpp's
+task/output binary format docstring for the wire format.
 """
 
 from __future__ import annotations
@@ -91,10 +91,12 @@ def reconstruct_samples_native(
     workload_dims: Dict[str, Any],
     dram_num_steps: int,
 ):
-    """Native-C++ equivalent of tracegen.reconstruct_samples_for_schedule,
+    """Native-C++ equivalent of reconstruct_samples_for_schedule in
+    dump/python_reference/tracegen_reconstruct.py,
     specialized to GustavSNN. Returns the same List[LayerWeightTrace]
-    shape so callers (generate_weight_traces_canonical100.py etc.) can
-    swap this in without changing anything downstream of the call site.
+    shape so callers (tracegen.reconstruct_samples, via
+    archmodels.ARCH_NATIVE_BRIDGES) can swap this in without changing
+    anything downstream of the call site.
 
     Requires gustavgen to be built first (make in this directory).
 
@@ -104,10 +106,9 @@ def reconstruct_samples_native(
     tracegen.assemble_layer_traces owns grouping the flat per-tile results
     back into (dram_i, noc_i)-keyed, cross-core-merged LayerWeightTraces.
     """
-    # Imported here, not at module top, to avoid tracegen<->this module
-    # import-order issues (tracegen imports archmodels.gustavsnn.model,
-    # which does not import this bridge -- only callers that explicitly
-    # want the native path do).
+    # Imported here, not at module top, so importing this bridge does not
+    # import tracegen; tracegen itself loads this bridge only at call time,
+    # by its path string in archmodels.ARCH_NATIVE_BRIDGES.
     from tracegen import assemble_layer_traces
 
     if not _BINARY.exists():

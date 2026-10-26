@@ -79,7 +79,8 @@ def reconstruct_samples_native(
     workload_dims: Dict[str, Any],
     dram_num_steps: int,
 ):
-    """Native-C++ equivalent of tracegen.reconstruct_samples_for_schedule,
+    """Native-C++ equivalent of reconstruct_samples_for_schedule in
+    dump/python_reference/tracegen_reconstruct.py,
     specialized to PTB. Same LayerWeightTrace output shape as the Python
     path. Requires ptbgen to be built first (make in this directory).
 

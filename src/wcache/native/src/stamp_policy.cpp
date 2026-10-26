@@ -223,7 +223,8 @@ SlotId LfuPolicy::pick_victim(const std::vector<Candidate>& candidates) {
 
 namespace {
 
-// A 2-bit RRPV, so the maximum is 3 and it is the value that names a victim.
+// An M-bit RRPV (M = rrip_bits), so the maximum is 2^M - 1 and it is the value
+// that names a victim.
 // The widest M the uint8 store admits. Checked rather than assumed: at M = 9 the
 // maximum would be 511, the assignment would wrap to 255, and the aging step
 // would turn the oldest line into a middling one with no diagnostic.

@@ -291,7 +291,8 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
     r.i64("dram_bytes", es.dram_accesses * cfg.line_size_bytes());
 
     // `stall_l1_line` is unreachable through a mapper that expands a burst to
-    // one line per burst, which LinearMapper does and which the corpus's own
+    // one line per burst, which the test fixture LinearMapper
+    // (tests/engine_fixture.h) does and which the corpus's own
     // layout does at cout_block == burst_span. It is pinned at whatever the
     // engine reports, which is 0 there, and it is a column because §9.2 names
     // it: a missing column and a zero column are different answers.

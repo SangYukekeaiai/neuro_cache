@@ -79,7 +79,8 @@ def lif_count(
         lif_cycles:   Cycles for one LIF step at a single PE node.
         deps:         TC ids that must complete first: k_chain tail tc_ids,
                       vmem load tc_ids (if any), and the double-buffer LIF dep
-                      from step noc_i-2 (all combined by combine.py).
+                      from two vmem-steps back (lif_ring[-2]; all combined by
+                      combine.py).
         label_prefix: Step identifier, e.g. ``"lif_0_2"`` (dram_i=0, noc_i=2).
 
     Returns:

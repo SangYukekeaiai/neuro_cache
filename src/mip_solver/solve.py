@@ -265,8 +265,7 @@ def _safe_attr(obj: Any, name: str) -> Optional[float]:
         return None
 
 
-# CoSA's original default weights (w_u, w_tr, w_dl), matching
-# sweep_weights.py's COSA_REF_WEIGHTS -- no calibrated
+# CoSA's original default weights (w_u, w_tr, w_dl) -- no calibrated
 # outputs/weight_sweep/weight_results.json exists in this checkout, so
 # every winner-selection in this pipeline uses this same reference triple.
 _SCORE_W_U, _SCORE_W_TR, _SCORE_W_DL = 0.1, 1.0, 10.0
@@ -285,7 +284,7 @@ def solve_best_schedule(
     dataflow_path: pathlib.Path | str,
 ) -> tuple[TrafficMode, Dict[str, Any]]:
     """Solve layer_path across every TrafficMode, keep the winner by the
-    same score sweep_weights.py/run_full_sweep.py use (lower is better),
+    CoSA reference score (lower is better),
     and return (winning_mode, winning_result).
 
     BASE is always feasible (unconstrained) but is not special-cased --

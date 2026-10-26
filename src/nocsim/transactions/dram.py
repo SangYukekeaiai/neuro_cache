@@ -8,11 +8,13 @@ that has traffic at that step:
 
 Skip conditions are evaluated by combine.py and passed as a boolean:
 
-  weight load : no skip  (always transfers at every DRAM step)
-  psum   load : skip if is_first_K_dram  OR  is_psum_dram_free
-  psum   store: skip if is_last_K_dram   OR  is_psum_dram_free
-  vmem   load : skip if is_first_T_dram  OR  is_vmem_dram_free
-  vmem   store: skip if is_last_T_dram   OR  is_vmem_dram_free
+  weight load : skip only if single_node
+  psum   load : skip if single_node  OR  is_first_K_dram  OR  is_psum_dram_free
+  psum   store: skip if single_node  OR  is_last_K_dram   OR  is_psum_dram_free
+  vmem   load : skip if single_node  OR  not is_last_K_dram  OR  is_first_T_dram
+                     OR  is_vmem_dram_free
+  vmem   store: skip if single_node  OR  not is_last_K_dram  OR  is_last_T_dram
+                     OR  is_vmem_dram_free
 
 Data sizing
 -----------

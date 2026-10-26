@@ -2,9 +2,10 @@
 ArchComputeModel plugin -- pilot.
 
 Reconstructs LoAS's per-row silent-neuron-compressed input line sequence
-from a real trace (reconstruct.py), then derives the pipeline cycle count
-(cycles.py) and the ordered weight-address stream / weight_access_count
-(address.py) from it. Standalone-verified against a real captured LoAS
+from a real trace, then derives the pipeline cycle count and the ordered
+weight-address stream / weight_access_count from it, in LoASGen.h (a port
+of dump/python_reference/archmodels/loas/{reconstruct,cycles,address}.py).
+Standalone-verified against a real captured LoAS
 trace (input_trace/loas/) and against hand-built examples reproducing the
 paper's own Fig. 8 compression walkthrough.
 

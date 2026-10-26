@@ -1,7 +1,8 @@
 """Subprocess bridge to cache_replay -- the C++ port of
-sweep.sample_hit_rate's logic (expand_events + tag_for_element + Cache
-replay), for one CacheConfig against one persisted trace sample. Same
-convention as src/archmodels/*/native_bridge.py: a standalone compiled
+dump/python_reference/cachesim/sweep.py's sample_hit_rate logic
+(expand_events + tag_for_element + Cache replay), for one CacheConfig
+against one persisted trace sample. Same convention as
+src/archmodels/*/native_bridge.py: a standalone compiled
 binary, invoked once per call, custom binary I/O instead of JSON.
 
 Only exists because the pure-Python path is ~110x slower per (sample,
@@ -90,10 +91,11 @@ def _run_replay(trace_path: pathlib.Path, config: CacheConfig, order: Sequence[s
 
 
 def native_sample_hit_rate(trace_path: pathlib.Path, config: CacheConfig, order: Sequence[str]) -> float:
-    """Native equivalent of sweep.sample_hit_rate(trace_path, config,
-    order) -- same inputs, same semantics, ~110x faster per call. Reads
-    the sample's raw JSON directly (not tracegen.load_weight_trace), same
-    as profiling/0726/cache_sweep.py, to avoid pulling in gurobipy just
+    """Native equivalent of dump/python_reference/cachesim/sweep.py's
+    sample_hit_rate(trace_path, config, order) -- same inputs, same
+    semantics, ~110x faster per call. Reads the sample's raw JSON directly
+    (not tracegen.load_weight_trace), same as
+    dump/profiling/0726/cache_sweep.py, to avoid pulling in gurobipy just
     to flatten weight_addresses.
 
     The rate comes back through a "%.6f" text field, so 6 decimals is all

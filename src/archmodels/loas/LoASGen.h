@@ -1,5 +1,6 @@
 // LoASGen.h -- C++ port of LoAS's per-tile weight-address/tick
-// reconstruction (src/archmodels/loas/{reconstruct,address,cycles}.py).
+// reconstruction
+// (dump/python_reference/archmodels/loas/{reconstruct,address,cycles}.py).
 //
 // One tile = one fixed (ho, wo) output pixel's full reduction row. A
 // "line" is one (kh, kw, cin) position that fires at least once across

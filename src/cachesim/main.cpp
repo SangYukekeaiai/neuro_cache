@@ -1,7 +1,8 @@
-// cache_replay: native port of src/cachesim's four reviewed Python
-// modules, split the same way -- config.h/layout.h/policy.h/cache.h
-// mirror config.py/layout.py/policy.py/cache.py one-to-one; this file is
-// the orchestration layer, mirroring sweep.py's sample_hit_rate: load
+// cache_replay: native port of four reviewed Python modules, split the
+// same way -- config.h/layout.h/policy.h/cache.h mirror src/cachesim/config.py
+// and dump/python_reference/cachesim/{layout,policy,cache}.py one-to-one;
+// this file is the orchestration layer, mirroring
+// dump/python_reference/cachesim/sweep.py's sample_hit_rate: load
 // one sample's events, expand + tag + replay through one Cache, report
 // the hit rate. Same subprocess-bridge pattern as src/archmodels/*/native
 // and src/nocsim/eventsim.

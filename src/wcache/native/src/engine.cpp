@@ -674,8 +674,6 @@ void Engine::close_out_prefetch_stats() {
     // the L2 outcomes plus drops can sum to less than `l2_pf_issued`.
 }
 
-// --- inclusion (C4, 4.4, N8) -------------------------------------------------
-
 // --- feeding the two instruments ---------------------------------------------
 
 std::int32_t Engine::current_tile() const {
@@ -729,6 +727,8 @@ void Engine::note_hit(Level level, CoreId core, LineId line, bool demand) {
     if (line_trace_ == nullptr) return;
     line_trace_->on_hit(level, level == Level::L1 ? core.get() : -1, line, demand);
 }
+
+// --- inclusion (C4, 4.4, N8) -------------------------------------------------
 
 void Engine::back_invalidate(LineId line, SimTime now) {
     // The scan covers ALL cores because the L2 is shared, so a core's fill can

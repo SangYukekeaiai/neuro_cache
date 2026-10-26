@@ -1,4 +1,5 @@
-// LruPolicy and FifoPolicy: the two ReplacementPolicy implementations A5 builds.
+// Stamp-based LRU and FIFO plus the Belady, LFU and RRIP ReplacementPolicy
+// implementations.
 //
 // Plan v3 Part 7, unit A5: "`ReplacementPolicy` + LRU and FIFO. Random is a
 // placeholder: it stays in the enum, is rejected at config load, and is not

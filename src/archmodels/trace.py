@@ -3,17 +3,14 @@ dicts directly from their metadata.
 
 input_trace/loas/<workload>/ holds one meta.json (layer name -> real
 input-tensor shape [T, B, Cin, Hin, Win]) plus one <layer_name>.npy per
-captured layer, binary float32. No such loader existed before this -- the
-5 arch pilots' own verification scripts each called np.load ad hoc.
+captured layer, binary uint8 (0/1 spikes). No such loader existed before
+this -- the 5 arch pilots' own verification scripts each called np.load ad hoc.
 
-The pre-existing configs/workloads/generated/{vgg16,resnet19}/T4/*.yaml
-workloads do NOT match these captured layers' real shapes (checked
-directly: vgg16's generated YAMLs are ImageNet-scale 224x224/CIN-from-3,
-while the captured trace is CIFAR-scale 32x32/CIN-from-64, matching the
-source paper's own "VGG 9" figure caption, not full VGG16; resnet19's
-generated YAMLs use a different channel-width base than the trace too).
-build_workload_from_trace() replaces resolving against that directory --
-it derives a fresh, trace-matching workload directly from meta.json.
+Generic per-network workload YAMLs do NOT match these captured layers'
+real shapes: the captured vgg16 trace is CIFAR-scale 32x32/CIN-from-64,
+matching the source paper's own "VGG 9" figure caption, not ImageNet-scale
+224x224/CIN-from-3 VGG16. build_workload_from_trace() therefore derives a
+trace-matching workload directly from meta.json.
 """
 
 from __future__ import annotations
@@ -50,7 +47,7 @@ def load_layer_trace(trace_dir: pathlib.Path, layer_name: str, mmap: bool = Fals
               multiprocessing workers -- see generate_weight_traces.py.
 
     Returns:
-        Binary float32 array, shape [T, B, Cin, Hin, Win] (per meta.json).
+        Binary uint8 array, shape [T, B, Cin, Hin, Win] (per meta.json).
 
     Raises:
         FileNotFoundError: if meta.json or the .npy file is missing.

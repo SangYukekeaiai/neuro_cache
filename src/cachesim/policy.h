@@ -1,6 +1,7 @@
 #pragma once
-// Port of policy.py: per-set replacement-policy implementations. Only
-// LRUPolicy is real, matching policy.py exactly -- the other names in
+// Port of dump/python_reference/cachesim/policy.py: per-set
+// replacement-policy implementations. Only LRUPolicy is real, matching
+// policy.py exactly -- the other names in
 // config.POLICIES (fifo, lfu, random, input_activity) are declared but
 // raise immediately on construction there, so require_policy_implemented
 // raises the same way here, at Cache-construction time (cache.h), not on

@@ -5,8 +5,8 @@ The 0823 run described this check in outputs/RESULTS.md but never committed the
 code, so the strongest result in that stage could not be re-run. This is that
 check, written to stand on its own: it reads only the input .npy and the Stage 1
 schedule, reimplements the emission rule from
-src/archmodels/loas/LoASGen.h:66-119, and compares against what the generator
-wrote. Nothing here imports the generator or the native bridge.
+src/archmodels/loas/LoASGen.h:64-108 (reconstruct_sample), and compares against
+what the generator wrote. Nothing here imports the generator or the native bridge.
 
 The rule, restated: a tile is one (ho, wo) output pixel for one COUT block. Its
 core walks (kh, kw, cin) and emits one AddressRow per position whose input site

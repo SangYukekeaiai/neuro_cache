@@ -2,8 +2,9 @@
 """Spatial traffic objective expressions for SNN scheduling.
 
 Spatial tiling at NoCLevel distributes work across NodeLevel PEs.
-Only the NoCLevel perm region carries spatial assignments (S[1] = 1024);
-NodeLevel and OffChip are constrained to S = 1 by constraints_spatial.py.
+Only the NoCLevel perm region carries spatial assignments (S[1] = the arch's
+inter-node fanout); NodeLevel and OffChip are constrained to S = 1 by
+constraints/spatial.py.
 
 For each variable v, the spatial traffic cost is:
 

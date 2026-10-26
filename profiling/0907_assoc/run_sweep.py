@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""L1 associativity: 32-way against 16-way, under LRU and RRIP, at both L1 sizes.
+"""L1 associativity: 32-way, 16-way and fully associative, under LRU and RRIP,
+at both L1 sizes.
 
-A grid over `l1_assoc` x `policy` x `l1_size_bytes`: {32, 16} x {lru, rrip} x
-{16 KB, 8 KB}, eight points. Everything else is the 0903_l1_8k BASE, the same
+A grid over `l1_assoc` x `policy` x `l1_size_bytes`: {32, 16, fa} x {lru, rrip} x
+{16 KB, 8 KB}, twelve points. Everything else is the 0903_l1_8k BASE, the same
 one the 0907_index_policy stage uses, so the two stages are comparable row for
 row.
 

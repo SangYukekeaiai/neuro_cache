@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""The L2 cin-neighbour prefetcher over all 31 layers, three arms.
+"""The L2 cin-neighbour prefetcher over all 31 layers, four arms.
 
-One wcache_sweep invocation per stream carries all three configs, so the stream
-is parsed once for three engines rather than three times. They share `cin_block`,
+One wcache_sweep invocation per stream carries all four configs, so the stream
+is parsed once for four engines rather than four times. They share `cin_block`,
 which BroadcastSweep requires of one grid.
 
   off    the 0831 baseline, l2_prefetch_policy none. Its rows must reproduce

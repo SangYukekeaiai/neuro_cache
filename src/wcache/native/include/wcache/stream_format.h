@@ -8,10 +8,10 @@
 // semantics (that is stream_trace.h).
 //
 // Endianness and alignment. Every multi-byte field is little-endian on the
-// wire whatever the host is, matching the existing Python producer in
-// src/cachesim/native_bridge.py, which writes `<i` and `<I`. The stream has no
-// alignment guarantee, so every load goes through memcpy and never through a
-// pointer cast into the buffer.
+// wire whatever the host is, matching the Python producer in src/tracegen.py
+// (write_stream_header and friends), which packs every field with `<`. The
+// stream has no alignment guarantee, so every load goes through memcpy and
+// never through a pointer cast into the buffer.
 //
 // The header carries the burst axis, the burst stride and the burst span. That
 // is ruling R1 of 2026-08-20 (U27) plus ruling Q-D: the generator knows all

@@ -1,4 +1,6 @@
-"""Derives one real NodeTileSpec per dram_i from a solved Schedule.
+"""Derives one real NodeTileSpec per (dram_i, noc_i, core_id) from a solved
+Schedule, with node_bound[dim] = total[dim] // (dram_temporal[dim] *
+noc_temporal[dim] * spatial_factors[dim]) (see iter_node_tiles).
 
 For a single_node arch, NoCLevel is empty/irrelevant and every node visit
 is fully resident at NodeLevel EXCEPT whatever the MIP pushed to DRAM --

@@ -10,7 +10,7 @@ These flags drive skip conditions in combine.py:
     is_first_K → skip psum load from GB   (no prior psum to accumulate)
     is_last_K  → fire LIF + T-chain        (all reduction done)
     is_first_T → skip vmem load from GB   (no prior vmem to carry)
-    is_last_T  → skip vmem store to GB    (result is not the final vmem yet)
+    is_last_T  → skip vmem store to GB    (final vmem; no later T step reloads it)
 
 Dimension groups
 -----------------

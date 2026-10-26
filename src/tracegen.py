@@ -1,11 +1,9 @@
 """Shared solve/reconstruct/persist core for weight-trace generation.
 
-Extracts what scripts/sweep_archmodel_layers.py used to do entirely
-inline (solve -> iterate tiles -> format_input -> compute_cycles /
-weight_addresses) into reusable pieces, so that script and the
-generate-once pipeline (scripts/solve_schedules.py,
-scripts/generate_weight_traces.py) share one implementation instead of
-two copies that could quietly drift apart.
+Splits solve -> iterate tiles -> format_input -> compute_cycles /
+weight_addresses into reusable pieces, so the generate-once pipeline
+(scripts/solve_schedules.py, scripts/generate_weight_traces.py) shares
+one implementation instead of copies that could quietly drift apart.
 
 Two independent artifacts, matching the two-stage design
 (dump/docs/superpowers/specs/2026-07-18-weight-trace-generation-design.md):
@@ -82,7 +80,7 @@ def solve_and_cache_schedule(
     cache_dir: pathlib.Path,
 ) -> ScheduleArtifact:
     """Solve one (arch, layer)'s schedule across every TrafficMode, keep the
-    winner by the same score sweep_weights.py/run_full_sweep.py use
+    winner by the CoSA reference score
     (w_u*util_sum + w_tr*tr_sum + w_dl*delay, lower is better), and persist
     it to cache_dir/<arch>/<trace_dir>/<layer_name>.json. Always re-solves --
     callers wanting skip-existing behavior should check for that file
@@ -304,10 +302,8 @@ def reconstruct_samples(
     dram_num_steps: int,
 ) -> List[LayerWeightTrace]:
     """One LayerWeightTrace per requested sample, dispatching to arch_name's
-    native C++ bridge (archmodels.ARCH_NATIVE_BRIDGES). Single consolidated
-    entry point for what used to be two copy-pasted dispatch blocks in
-    scripts/generate_weight_traces.py and
-    scripts/generate_weight_traces_canonical100.py -- callers own the
+    native C++ bridge (archmodels.ARCH_NATIVE_BRIDGES). The single dispatch
+    entry point for scripts/generate_weight_traces.py -- callers own the
     trace/worker-pool setup around this, this function owns only the
     dispatch. `trace` should already be loaded (e.g. via
     archmodels.trace.load_layer_trace(..., mmap=True)); this function
@@ -487,8 +483,9 @@ def load_step_cycles(path: pathlib.Path) -> StepCycles:
 # instead of a document, so a producer can feed the cache simulator down a
 # pipe with nothing materialized in between (Phase D campaign plan, 10).
 # The format is normative in log/2026-08-20-phaseD-implementation-plan.md,
-# "The wire format, in full"; the C++ reader (wcache/stream_format.h)
-# decodes exactly these bytes. `burst_span` sits beside burst_dim and
+# "The wire format, in full"; the C++ reader
+# (src/wcache/native/include/wcache/stream_format.h) decodes exactly these
+# bytes. `burst_span` sits beside burst_dim and
 # burst_stride per coordinator ruling Q-D, which the normative table there
 # predates -- that is the one field to check first if the two sides
 # disagree.

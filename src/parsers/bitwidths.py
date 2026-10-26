@@ -58,7 +58,7 @@ class SNNBitwidths:
     Attributes:
         bw_weight (int): Bits per weight element.   Default 8.
         bw_psum   (int): Bits per partial-sum element. Default 32.
-        bw_vmem   (int): Bits per membrane-potential element. Default 16.
+        bw_vmem   (int): Bits per membrane-potential element. Default 32.
         dram_latency (float): Cycles the DRAM port is OCCUPIED per 256-bit
             (32-byte) packet, used by the NoC simulator.
 

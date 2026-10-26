@@ -116,7 +116,7 @@ def t_chain(
         bs:           BufSpatial (provides t_chain_groups, K_max row only).
         data_size:    GB tile element counts.
         bw_vmem:      Bits per vmem element.
-        deps:         LIF COUNT tc_ids for this step (all K_max-row PEs).
+        deps:         LIF COUNT tc_ids for this step (all PEs).
         label_prefix: Step identifier string.
 
     Returns:

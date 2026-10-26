@@ -1,5 +1,6 @@
 #pragma once
-// Port of cache.py: reduces all 3 declared cache types to (num_sets,
+// Port of dump/python_reference/cachesim/cache.py: reduces all 3 declared
+// cache types to (num_sets,
 // ways), same formulas as _num_sets_and_ways, and composes num_sets
 // independent LRUPolicy instances the same way the Cache class does --
 // cache_type (structural) and policy (eviction) stay independent axes

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Belady on the L2: five arms, the fixpoint iteration, and the checks.
+"""Belady on the L2: six arms, the fixpoint iteration, and the checks.
 
 Plan unit W4 of log/2026-08-31-belady-l2-plan.md.
 

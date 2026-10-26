@@ -50,19 +50,19 @@ struct RunConfig {
     std::int32_t l2_assoc      = 16;
     PolicyKind   policy        = PolicyKind::LRU;
 
-    // The L2's policy, when it differs from `policy`. Defaults to a sentinel
-    // meaning "same as `policy`", so every existing config is unchanged and no
-    // committed result moves. Split from `policy` for Belady, which is an
-    // offline bound worth measuring at one level while the other stays real
-    // (plan 0831-belady section 4).
     // M for RRIP, the RRPV width, shared by both levels. 2 is SRRIP as
     // published and reproduces every result taken before the knob existed; 5
     // gives an RRPV of 0..31, which a 32-way set can use as a full priority
     // order over its occupants (plan 0907-linesize).
     std::int32_t rrip_bits = 2;
 
+    // The L2's policy, when it differs from `policy`. Defaults to a sentinel
+    // meaning "same as `policy`", so every existing config is unchanged and no
+    // committed result moves. Split from `policy` for Belady, which is an
+    // offline bound worth measuring at one level while the other stays real
+    // (plan 0831-belady section 4).
     PolicyKind l2_policy   = PolicyKind::RANDOM;  // RANDOM = "unset, follow `policy`"
-    bool       l2_policy_set = false;   // one knob, both levels
+    bool       l2_policy_set = false;   // true when l2_policy was given explicitly
     Inclusion    inclusion     = Inclusion::NonInclusive;
 
     // --- concurrency

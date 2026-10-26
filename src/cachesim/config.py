@@ -4,8 +4,9 @@ weight trace + cache config -> CacheSim -> analytical results), read from
 a YAML file under configs/cache/, mirroring how src/parsers/arch.py reads
 each arch's configs/arch/<name>.yaml.
 
-Lives in its own module (not inside cache.py or layout.py) because both
-of those need this type: layout.py's tag formation needs `inner_dim`/
+Lives in its own module (not inside the reference cache.py or layout.py
+under dump/python_reference/cachesim/) because both of those need this
+type: layout.py's tag formation needs `inner_dim`/
 `line_size_bytes`, cache.py's cache classes need `cache_size_bytes`/
 `line_size_bytes`/`cache_type`/`associativity`. Putting CacheConfig in
 either of those two would make the other import it sideways for no
@@ -22,7 +23,7 @@ import yaml
 
 DIMS = ("kh", "kw", "cin", "cout")
 CACHE_TYPES = ("fully_associative", "set_associative", "direct_mapped")
-# "lru" is the only one with a real implementation (policy.py). The rest
+# "lru" is the only one with a real implementation (policy.h). The rest
 # are declared here so CacheConfig/the sweep harness can name and
 # validate against them before they're built -- "input_activity" is the
 # 2026-07-22 plan's actual hypothesis (eviction informed by spike-input

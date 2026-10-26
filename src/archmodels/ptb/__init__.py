@@ -1,9 +1,10 @@
 """PTB (Parallel Time Batching) ArchComputeModel plugin -- pilot.
 
 Reconstructs PTB's per-tile stSAP-compressed line sequence from a real
-trace (reconstruct.py), then derives the pipeline cycle count (cycles.py)
-and the ordered weight-address stream / weight_access_count (address.py)
-from it. Standalone-verified against a real captured LoAS trace
+trace, then derives the pipeline cycle count and the ordered weight-address
+stream / weight_access_count from it, in PTBGen.h (a port of
+dump/python_reference/archmodels/ptb/{reconstruct,cycles,address}.py).
+Standalone-verified against a real captured LoAS trace
 (input_trace/loas/) used purely as sample spike data, and against hand-
 built examples for the stSAP compression and pipeline-latency formulas
 that the (currently T=4) real trace is too short to exercise fully.
