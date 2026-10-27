@@ -25,7 +25,7 @@ import run_khkw_sweep as sweep  # noqa: E402
 from common import tags  # noqa: E402
 from util import data_root  # noqa: E402
 
-SCHEDULES = ROOT / "profiling/0823_stagewise_verify/stage2_weight_trace/inputs/schedules"
+SCHEDULES = ROOT / "configs/schedules"
 # Run metadata, not results: the commit hash and the wall-clock time of each run.
 IGNORED_COLUMNS = ("git_commit", "sim_wall_seconds")
 

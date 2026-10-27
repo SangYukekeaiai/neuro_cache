@@ -135,7 +135,7 @@ def test_load_grid_refuses_an_empty_grid(tmp_path):
 
 @pytest.fixture
 def no_solver_run(monkeypatch):
-    """schedules_for with solve_schedules.py replaced by a no-op that records its commands."""
+    """schedules_for with the solve-trace run replaced by a no-op that records its commands."""
     calls = []
     monkeypatch.setattr(demo, "run_all", lambda cmds, record, jobs: calls.extend(cmds))
     return calls
@@ -170,7 +170,7 @@ def test_schedules_for_refuses_a_tracked_schedule_solved_for_another_workload(
     monkeypatch.setattr(demo.wb, "SCHEDULES", tracked)
     assert demo.schedules_for("loas", [("t", "layer_01_a")], tmp_path / "out", []) == tracked
     sched.write_text(json.dumps({"workload": {"problem": {**problem, "COUT": 4}}}))
-    with pytest.raises(SystemExit, match="solve_schedules.py --force") as e:
+    with pytest.raises(SystemExit, match="solve-trace --force") as e:
         demo.schedules_for("loas", [("t", "layer_01_a")], tmp_path / "out", [])
     assert str(sched) in str(e.value) and not no_solver_run
 

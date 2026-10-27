@@ -6,7 +6,7 @@ multiprocessing.Pool.
 
 Per log/2026-07-30-tracegen-refactor-and-multinode-sweep-plan.md Part B.1.
 Reuses snn_scheduler.artifact.solve_and_cache_schedule (the same solve/cache path as
-solve_schedules.py and scripts/tmp/solve_multinode_schedules.py), pointed
+snn_scheduler solve-trace and scripts/tmp/solve_multinode_schedules.py), pointed
 at each swept arch YAML. Writes to outputs/schedules/multinode_sweep/ (a
 new tree, separate from outputs/schedules/multinode/'s existing
 128-baseline results).

@@ -42,11 +42,10 @@ from parsers.layer import SNNProb  # noqa: E402
 from nocsim.step_cycles import load_step_cycles  # noqa: E402
 
 VERIFY = REPO / "profiling" / "0823_stagewise_verify"
-MULTI_SCHED = VERIFY / "stage2_weight_trace" / "inputs" / "schedules" / "loas"
+MULTI_SCHED = REPO / "configs" / "schedules" / "loas"
 MULTI_TRACE = (VERIFY / "stage2_weight_trace" / "outputs" / "weight_traces"
                / "loas" / "noc2MiB_node32kb")
-MULTI_ARCH = (VERIFY / "stage1_mip_solver" / "inputs" / "arch"
-              / "loas_inst16_node32kb_noc2MiB_pe16.yaml")
+MULTI_ARCH = REPO / "configs" / "arch" / "loas_inst16_node32kb.yaml"
 SINGLE_SCHED = REPO / "outputs" / "schedules" / "loas" / "vgg16_T4_n5"
 SINGLE_ARCH = REPO / "configs" / "arch" / "loas.yaml"
 

@@ -3,7 +3,7 @@ arch:
     BW_WEIGHT: 8
     BW_PSUM: 16
     BW_VMEM: 32
-    DRAM_LATENCY: 17
+    DRAM_LATENCY: 0.25  # read only by nocsim (per-packet DRAM occupancy, 64 GB/s at 500 MHz); the scheduler ignores it
   single_node: false
   storage:
   - name: NodeLevel

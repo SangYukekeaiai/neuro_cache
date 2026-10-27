@@ -1,2 +1,2 @@
 from snn_scheduler.cli import main
-main()
+raise SystemExit(main())

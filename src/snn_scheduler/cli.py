@@ -5,18 +5,20 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import csv
 import io
 import json
 import pathlib
 import sys
+import traceback
 from typing import Any, Dict, List, Optional
 
-from gurobipy import GurobiError
+from weight_trace_gen import ARCH_NATIVE_BRIDGES
 
-from snn_scheduler.enumerator import enumerate_modes
-from snn_scheduler.solve import solve_schedule
+# gurobipy is imported only inside the handlers that solve, so --help and the
+# skip-cached path of solve-trace run without a Gurobi license.
 
-
+ROOT = pathlib.Path(__file__).resolve().parents[2]
 DEFAULT_LAYER = "configs/workloads/sample_snn_layer.yaml"
 DEFAULT_ARCH = "configs/arch/spinalflow.yaml"
 DEFAULT_DATAFLOW = "configs/node_mapspace/spinalflow.yaml"
@@ -32,6 +34,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return _run_solve(args)
     if args.command == "enumerate":
         return _run_enumerate(args)
+    if args.command == "solve-trace":
+        return _run_solve_trace(args)
 
     parser.print_help()
     return 1
@@ -92,10 +96,42 @@ def _build_parser() -> argparse.ArgumentParser:
         help="weight for compute-latency delay term (default: 10.0)",
     )
 
+    st = subparsers.add_parser(
+        "solve-trace",
+        help="solve and cache the schedule of every layer of captured trace dirs",
+    )
+    st.add_argument("--arch", required=True, choices=sorted(ARCH_NATIVE_BRIDGES))
+    st.add_argument(
+        "--arch-yaml", default=None,
+        help="hardware configuration (default: configs/arch/loas_inst16_node32kb.yaml "
+             "for loas, else configs/arch/<arch>.yaml)",
+    )
+    st.add_argument(
+        "--node-mapspace", default=None,
+        help="node mapspace YAML (default: configs/node_mapspace/<arch>.yaml)",
+    )
+    # The in-repo traces are a 5-sample subset of the full capture, cut by
+    # scripts/subset_input_traces.py; pass --trace-root to use a full capture
+    # (kept under $NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas).
+    st.add_argument("--trace-root", default=str(ROOT / "input_trace/loas"))
+    st.add_argument("--trace-dirs", nargs="+", default=["vgg16_T4_n5", "resnet19_T4_n5"])
+    st.add_argument(
+        "--layers", nargs="+", default=None,
+        help="layers to solve in each trace dir (default: every valid layer in meta.json)",
+    )
+    st.add_argument("--cache-dir", default=str(ROOT / "outputs/schedules"))
+    st.add_argument(
+        "--force", action="store_true",
+        help="re-solve and overwrite even if a cached schedule already exists",
+    )
+
     return parser
 
 
 def _run_solve(args: argparse.Namespace) -> int:
+    from gurobipy import GurobiError
+    from snn_scheduler.solve import solve_schedule
+
     try:
         result = solve_schedule(
             layer_path=args.layer,
@@ -116,6 +152,9 @@ def _run_solve(args: argparse.Namespace) -> int:
 
 
 def _run_enumerate(args: argparse.Namespace) -> int:
+    from gurobipy import GurobiError
+    from snn_scheduler.enumerator import enumerate_modes
+
     try:
         result = enumerate_modes(
             layer_path=args.layer,
@@ -138,6 +177,69 @@ def _run_enumerate(args: argparse.Namespace) -> int:
     sys.stdout.write(summary)
     out_path.with_suffix(".txt").write_text(summary)
     return 0 if result["best_mode"] else 3
+
+
+def _default_arch_yaml(args: argparse.Namespace) -> pathlib.Path:
+    if args.arch_yaml:
+        return pathlib.Path(args.arch_yaml)
+    # The 16-node loas arch the tracked schedules were solved with;
+    # configs/arch/loas.yaml is the single-node one.
+    name = "loas_inst16_node32kb" if args.arch == "loas" else args.arch
+    return ROOT / "configs/arch" / f"{name}.yaml"
+
+
+def _run_solve_trace(args: argparse.Namespace) -> int:
+    from snn_scheduler.artifact import solve_and_cache_schedule
+    from weight_trace_gen.trace import valid_layer_names
+
+    arch = args.arch
+    arch_yaml = str(_default_arch_yaml(args))
+    node_mapspace = args.node_mapspace or str(ROOT / f"configs/node_mapspace/{arch}.yaml")
+    trace_root = pathlib.Path(args.trace_root)
+    cache_dir = pathlib.Path(args.cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    rows = []
+    for trace_dir_name in args.trace_dirs:
+        with open(trace_root / trace_dir_name / "meta.json") as fh:
+            meta = json.load(fh)
+        for layer_name in args.layers or valid_layer_names(meta):
+            out_path = cache_dir / arch / trace_dir_name / f"{layer_name}.json"
+            row = {"arch": arch, "trace_dir": trace_dir_name, "layer": layer_name}
+            if out_path.exists() and not args.force:
+                print(f"  skip (exists): {arch}/{trace_dir_name}/{layer_name}")
+                rows.append({**row, "status": "SKIPPED"})
+                continue
+            print(f"  solve: {arch}/{trace_dir_name}/{layer_name} ...")
+            try:
+                artifact = solve_and_cache_schedule(
+                    arch, arch_yaml, node_mapspace, trace_dir_name, layer_name, meta, cache_dir,
+                )
+                row["status"] = "OK"
+                row["dram_num_steps"] = artifact.dram_num_steps
+            except ValueError as exc:
+                row["status"] = "INFEASIBLE"
+                row["error"] = str(exc)
+            except Exception as exc:  # noqa: BLE001 -- sweep: record, don't abort
+                row["status"] = "ERROR"
+                row["error"] = f"{type(exc).__name__}: {exc}"
+                traceback.print_exc()
+            rows.append(row)
+
+    summary_path = cache_dir / "summary.csv"
+    fieldnames = ["arch", "trace_dir", "layer", "status", "dram_num_steps", "error"]
+    with open(summary_path, "w", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({k: row.get(k, "") for k in fieldnames})
+
+    n_ok = sum(1 for r in rows if r["status"] == "OK")
+    n_skip = sum(1 for r in rows if r["status"] == "SKIPPED")
+    n_bad = len(rows) - n_ok - n_skip
+    print(f"\n{n_ok} solved, {n_skip} skipped (already cached), {n_bad} infeasible/error "
+          f"-> {summary_path}")
+    return 1 if n_bad else 0
 
 
 def _write_json(result: Dict[str, Any], out_path: pathlib.Path) -> None:

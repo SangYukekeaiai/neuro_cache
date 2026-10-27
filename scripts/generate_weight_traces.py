@@ -132,7 +132,7 @@ def run_one_combo(args: argparse.Namespace) -> int:
     trace_root = pathlib.Path(args.trace_root)
     schedule_path = pathlib.Path(args.schedule_cache) / args.arch / args.trace_dir / f"{args.layer}.json"
     if not schedule_path.exists():
-        print(f"ERROR: no cached schedule at {schedule_path} -- run solve_schedules.py first")
+        print(f"ERROR: no cached schedule at {schedule_path} -- run python -m snn_scheduler solve-trace first")
         return 1
     try:
         check_schedule_matches_trace(schedule_path, trace_root / args.trace_dir, args.layer)
@@ -313,7 +313,7 @@ def run_stream(args: argparse.Namespace) -> int:
 
     schedule_path = pathlib.Path(args.schedule_cache) / args.arch / args.trace_dir / f"{args.layer}.json"
     if not schedule_path.exists():
-        print(f"ERROR: no cached schedule at {schedule_path} -- run solve_schedules.py first",
+        print(f"ERROR: no cached schedule at {schedule_path} -- run python -m snn_scheduler solve-trace first",
               file=sys.stderr)
         return 1
     try:

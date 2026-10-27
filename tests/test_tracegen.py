@@ -50,7 +50,7 @@ def test_a_schedule_solved_for_another_cout_is_refused_by_path(tmp_path, trace_d
         check_schedule_matches_trace(path, trace_dir, "b")
     msg = str(e.value)
     assert str(path) in msg and "COUT" in msg and "Gurobi" in msg
-    assert "solve_all_layers.py" in msg and "solve_schedules.py --force" in msg
+    assert "solve-trace --force" in msg
 
 
 def test_the_refusal_names_the_arch_the_schedule_was_solved_with(tmp_path, trace_dir):

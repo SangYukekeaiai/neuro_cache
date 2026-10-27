@@ -10,28 +10,30 @@ for the full design:
 
 ```
 Stage 1 (Gurobi, low concurrency)     Stage 2 (no Gurobi, embarrassingly parallel)
-solve_schedules.py               -->  generate_weight_traces.py
+snn_scheduler solve-trace       -->  generate_weight_traces.py
 outputs/schedules/<arch>/<trace_dir>/<layer>.json
                                        outputs/weight_traces/<arch>/<trace_dir>/<layer>/sample_NNNNN.json.gz
                                        (per-step cycles for nocsim; addresses go out via --stream)
 ```
 
-## Stage 1: `solve_schedules.py`
+## Stage 1: `python -m snn_scheduler solve-trace`
 
-Solves every `(arch, trace_dir, layer)` schedule once via full 13-mode
+Solves every `(trace_dir, layer)` schedule of one arch once via full 13-mode
 traffic enumeration (`snn_scheduler.enumerator`/`TrafficMode`), keeps the
-winning mode, and persists it plus a `summary.csv`. Each named architecture
-is paired with `configs/node_mapspace/<arch>.yaml`.
+winning mode, and persists it plus a `summary.csv`. The arch YAML defaults to
+`configs/arch/loas_inst16_node32kb.yaml` for loas and `configs/arch/<arch>.yaml`
+otherwise (`--arch-yaml`); the node mapspace to `configs/node_mapspace/<arch>.yaml`
+(`--node-mapspace`). `--layers` limits it to the named layers.
 
 ```bash
-python scripts/solve_schedules.py \
+python -m snn_scheduler solve-trace --arch loas \
   --trace-root /u/yyu9/neuro_cache_trace/input_trace/loas \
   --trace-dirs vgg16_T4_all resnet19_T4_all \
-  --archs loas gustavsnn prosperity ptb \
   --cache-dir outputs/schedules
 ```
 
-`--force` re-solves and overwrites even if a cached schedule exists.
+`--force` re-solves and overwrites even if a cached schedule exists. It exits 1
+when any layer is infeasible or fails.
 
 The temporary multi-node equivalents are
 `scripts/tmp/solve_multinode_schedules.py` and

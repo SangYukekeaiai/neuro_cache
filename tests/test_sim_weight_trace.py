@@ -35,15 +35,13 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 SRC = REPO / "src"
 
 VERIFY = REPO / "profiling" / "0823_stagewise_verify"
-ARTIFACT = (VERIFY / "stage2_weight_trace" / "inputs" / "schedules" / "loas"
-            / "vgg16_T4_n5" / "layer_08_features_27.json")
+ARTIFACT = REPO / "configs" / "schedules" / "loas" / "vgg16_T4_n5" / "layer_08_features_27.json"
 TRACE = (VERIFY / "stage2_weight_trace" / "outputs" / "weight_traces" / "loas"
          / "noc2MiB_node32kb" / "vgg16_T4_n5" / "layer_08_features_27"
          / "sample_00000.json.gz")
 LAYER = (VERIFY / "stage1_mip_solver" / "inputs" / "workloads"
          / "vgg16_T4_all__layer_08_features_27.yaml")
-ARCH = (VERIFY / "stage1_mip_solver" / "inputs" / "arch"
-        / "loas_inst16_node32kb_noc2MiB_pe16.yaml")
+ARCH = REPO / "configs" / "arch" / "loas_inst16_node32kb.yaml"
 
 # "# mac_<dram_i>_<noc_i>__count_<node>: COUNT <node> for <N> cycles  dep=[...]"
 MAC_LINE = re.compile(

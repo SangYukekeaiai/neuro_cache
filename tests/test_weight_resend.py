@@ -31,7 +31,7 @@ from nocsim.schedule.steps import StepInfo
 from parsers.layer import SNNProb
 
 CAMPAIGN = ROOT / "profiling/0823_stagewise_verify"
-SCHED = CAMPAIGN / "stage2_weight_trace/inputs/schedules/loas"
+SCHED = ROOT / "configs/schedules/loas"
 LAYERS = CAMPAIGN / "stage3_nocsim/inputs/layers"
 
 CASES = [

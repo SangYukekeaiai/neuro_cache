@@ -132,8 +132,6 @@ def check_schedule_matches_trace(
         raise ValueError(
             f"stale schedule {schedule_path}: solved for {diff}. It must be re-solved with "
             f"Gurobi against {arch} (result.configs.arch) and written back to its own "
-            f"directory: snn_scheduler.artifact.solve_and_cache_schedule with that arch, as "
-            f"profiling/0831_all_layer_streams/solve_all_layers.py does for the inst16/pe16 "
-            f"arch; scripts/solve_schedules.py --force --cache-dir <schedule root> solves "
-            f"only against configs/arch/<arch>.yaml"
+            f"directory: python -m snn_scheduler solve-trace --force --arch-yaml <that arch> "
+            f"--cache-dir <schedule root>"
         )

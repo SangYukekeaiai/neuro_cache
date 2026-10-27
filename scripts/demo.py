@@ -255,15 +255,16 @@ def schedules_for(bench, layers, out, record):
         root = out / "schedules"
         if (wb.SCHEDULES / bench).is_dir():
             shutil.copytree(wb.SCHEDULES / bench, root / bench, dirs_exist_ok=True)
-        # solve_schedules.py skips schedules already in the cache.
-        run_all([[sys.executable, str(ROOT / "scripts/solve_schedules.py"), "--archs", bench,
+        # solve-trace skips schedules already in the cache.
+        run_all([[sys.executable, "-m", "snn_scheduler", "solve-trace", "--arch", bench,
                   "--trace-root", str(INPUT_TRACE / bench),
                   "--trace-dirs", *sorted({d for d, _ in layers}), "--cache-dir", str(root)]],
                 record, 1)
-        # solve_schedules.py exits 0 even when a layer is infeasible or fails.
+        # solve-trace exits 1, which stops run(), when a layer is infeasible or fails;
+        # this catches a requested layer it did not try (not a valid layer in meta.json).
         still = missing_schedules(root, bench, layers)
         if still:
-            sys.exit("solve_schedules.py did not write these schedules (see "
+            sys.exit("solve-trace did not write these schedules (see "
                      f"{root / 'summary.csv'}):\n  " + "\n  ".join(map(str, still)))
     stale = []
     for d, l in layers:

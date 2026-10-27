@@ -32,8 +32,8 @@ ARCH = "loas"
 COMBO_TAG = "noc2MiB_node32kb"
 # DRAM_LATENCY 0.25 = 64 GB/s at 500 MHz. Stage 1's copy is left at its
 # recorded sha; this is the Stage 3 arch.
-ARCH_YAML = IN / "arch" / "loas_inst16_node32kb_noc2MiB_pe16.yaml"
-SCHEDULES = STAGE2 / "inputs" / "schedules" / ARCH
+ARCH_YAML = ROOT / "configs" / "arch" / "loas_inst16_node32kb.yaml"
+SCHEDULES = ROOT / "configs" / "schedules" / ARCH
 TRACES = STAGE2 / "outputs" / "weight_traces" / ARCH / COMBO_TAG
 
 COMBOS = [

@@ -37,7 +37,7 @@ from nocsim.schedule.decode import schedule_from_strategy  # noqa: E402
 from parsers.layer import SNNProb  # noqa: E402
 
 STAGE2 = REPO / "profiling" / "0823_stagewise_verify" / "stage2_weight_trace"
-SCHEDULES = STAGE2 / "inputs" / "schedules" / "loas"
+SCHEDULES = REPO / "configs" / "schedules" / "loas"
 TRACES = STAGE2 / "outputs" / "weight_traces" / "loas" / "noc2MiB_node32kb"
 
 # (label, trace_dir, layer). R9 and V8 are the two representative layers.
