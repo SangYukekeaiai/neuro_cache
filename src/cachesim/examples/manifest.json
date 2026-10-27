@@ -1,5 +1,5 @@
 {
- "generated_by": "src/cachesim/examples/make_examples.py",
+ "generated_by": "a one-off slicing script (not in the repo)",
  "corpus_root": "outputs/weight_traces",
  "slice": {
   "n_tiles": 2,

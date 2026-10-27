@@ -117,7 +117,8 @@ def _build_parser() -> argparse.ArgumentParser:
     st.add_argument("--trace-dirs", nargs="+", default=["vgg16_T4_n5", "resnet19_T4_n5"])
     st.add_argument(
         "--layers", nargs="+", default=None,
-        help="layers to solve in each trace dir (default: every valid layer in meta.json)",
+        help="layers to solve; each applies to the trace dirs whose meta.json has it "
+             "(default: every valid layer in meta.json)",
     )
     st.add_argument("--cache-dir", required=True)
     st.add_argument(
@@ -199,11 +200,23 @@ def _run_solve_trace(args: argparse.Namespace) -> int:
     cache_dir = pathlib.Path(args.cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    rows = []
+    metas = {}
     for trace_dir_name in args.trace_dirs:
         with open(trace_root / trace_dir_name / "meta.json") as fh:
-            meta = json.load(fh)
-        for layer_name in args.layers or valid_layer_names(meta):
+            metas[trace_dir_name] = json.load(fh)
+    if args.layers:
+        unknown = [l for l in args.layers if not any(l in m["layers"] for m in metas.values())]
+        if unknown:
+            print(f"snn_scheduler solve-trace: no trace dir has layers {unknown}", file=sys.stderr)
+            return 2
+
+    rows = []
+    for trace_dir_name, meta in metas.items():
+        if args.layers:
+            layer_names = [l for l in args.layers if l in meta["layers"]]
+        else:
+            layer_names = valid_layer_names(meta)
+        for layer_name in layer_names:
             out_path = cache_dir / arch / trace_dir_name / f"{layer_name}.json"
             row = {"arch": arch, "trace_dir": trace_dir_name, "layer": layer_name}
             if out_path.exists() and not args.force:

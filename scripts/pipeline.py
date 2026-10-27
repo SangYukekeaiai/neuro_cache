@@ -273,13 +273,13 @@ def schedules_for(bench, layers, out, record):
         root = out / "schedules"
         if (SCHEDULES / bench).is_dir():
             shutil.copytree(SCHEDULES / bench, root / bench, dirs_exist_ok=True)
-        by_dir = {}
-        for p in missing:
-            by_dir.setdefault(p.parent.name, []).append(p.stem)
-        # solve-trace skips schedules already in the cache.
+        dirs = list(dict.fromkeys(p.parent.name for p in missing))
+        names = list(dict.fromkeys(p.stem for p in missing))
+        # One call so summary.csv holds every row; solve-trace applies each layer
+        # name only to the dirs whose meta.json has it and skips cached schedules.
         run_all([[sys.executable, "-m", "snn_scheduler", "solve-trace", "--arch", bench,
-                  "--trace-root", str(INPUT_TRACE / bench), "--trace-dirs", d,
-                  "--layers", *ls, "--cache-dir", str(root)] for d, ls in by_dir.items()],
+                  "--trace-root", str(INPUT_TRACE / bench), "--trace-dirs", *dirs,
+                  "--layers", *names, "--cache-dir", str(root)]],
                 record, 1)
         # solve-trace exits 1, which stops run(), when a layer is infeasible or fails;
         # this catches a requested layer it did not try (not a valid layer in meta.json).

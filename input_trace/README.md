@@ -3,8 +3,8 @@
 `loas/<workload>/` holds one `meta.json` (layer name -> input-tensor shape
 `[T, B, Cin, Hin, Win]`) plus one `<layer_name>.npy` per captured layer, binary
 `uint8` spikes over CIFAR-10. Read them through
-`archmodels.trace.load_layer_trace`, which validates each array against the
-shape `meta.json` declares.
+`weight_trace_gen.trace.load_layer_trace` (`src/weight_trace_gen/trace.py:39`),
+which validates each array against the shape `meta.json` declares.
 
 ## What is committed here, and what is not
 
@@ -47,13 +47,13 @@ conda run -n base python scripts/subset_input_traces.py --n 20 --seed 0
 needs), `tests/`, and the original `README.md` and slurm script, so a re-capture
 is possible without the snapshot.
 
-To run the pipeline on the full 10,000 samples instead of the committed five,
-point `--trace-root` at that path:
+To solve schedules for the full 10,000 samples instead of the committed five,
+point `--trace-root` of `python -m snn_scheduler solve-trace` at that path:
 
 ```
-conda run -n base python scripts/solve_schedules.py \
+python -m snn_scheduler solve-trace --arch loas \
     --trace-root /work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas \
-    --trace-dirs vgg16_T4_all resnet19_T4_all
+    --trace-dirs vgg16_T4_all resnet19_T4_all --cache-dir data/schedules
 ```
 
 `scripts/subset_input_traces.py --src <that path>` cuts a wider subset from the

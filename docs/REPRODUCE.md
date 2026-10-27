@@ -1,134 +1,263 @@
-# Reproducing the demo and adding a benchmark
+# Reproducing results
 
-Everything here is what the code reads; the atlas in docs/atlas/ explains the code.
+Every command runs from the repo root with the venv active. Each claim cites the code
+it comes from; `docs/atlas/README.md` explains the code itself.
 
 ## Environment
 
-- Python 3.12 with the pins in requirements.txt (numpy, PyYAML; gurobipy and matplotlib
-  are optional). Either a venv (`python3 -m venv .venv && .venv/bin/pip install numpy PyYAML pytest`)
-  or the conda env `$CONDA_ENV` (default `cosa_snn`). Shell scripts take the settings from
-  `root=<repo>; . "$root/scripts/env.sh"`, which exports `NEURO_CACHE_DATA` (data kept outside
-  git, default `<repo>/data`; Python reads it through `util.data_root()`) and `CONDA_ENV`.
-- Gurobi (gurobipy 13.0.2 plus a license, `GRB_LICENSE_FILE` for a token server) is needed only
-  to solve a schedule: scripts/solve_schedules.py, scripts/solve_inst16_subset.py,
-  profiling/0831_all_layer_streams/solve_all_layers.py and `python -m mip_solver`. The demo and
-  scripts/profile_all_layers.py solve only layers that have no tracked schedule; the four demo
-  layers (V8, V9, R9, R16) are tracked under
-  profiling/0823_stagewise_verify/stage2_weight_trace/inputs/schedules/, so they need no Gurobi.
-- Builds (GNU make, C++17, no third-party libraries):
-  `make -C src/wcache/native MODE=release apps` (wcache_run, wcache_sweep),
-  `make -C src/wcache/native test` (316 compile cases, 22 test binaries),
-  `make -C src/nocsim/eventsim` (eventsim), `make -C src/archmodels/<bench>` (the `<bench>gen`
-  replay binary; the demo runs these three makes itself).
+```
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+pip install -e .
+make build
+```
 
-## make demo
+- `pip install -e .` installs the packages under `src/` and `src/util.py`, so
+  `python -m <module>` works from any directory (`pyproject.toml:10-15`).
+- `make build` compiles `cachesim_run` and `cachesim_sweep`, the NoC event simulator
+  `src/nocsim/eventsim/eventsim`, and the loas replay binary (`Makefile:5-8`).
+  `scripts/pipeline.py` runs the same makes itself, for the benchmark it runs
+  (`scripts/pipeline.py:333-337`), and `python -m cachesim sweep|run` builds the cache
+  simulator when its binary is missing (`src/cachesim/cli.py:20-25`).
+- Gurobi (`gurobipy` in `requirements.txt:1`) is needed only to solve a schedule. Set
+  `GRB_LICENSE_FILE` to the path of your license file; never copy the file into the repo.
+  `solve-trace` imports gurobipy only when it has a layer to solve
+  (`src/snn_scheduler/cli.py:18-19`) and skips schedules already in `--cache-dir`
+  (`src/snn_scheduler/cli.py:222-225`). The pipeline needs it only when a requested layer
+  has no schedule in `configs/schedules/` (`scripts/pipeline.py:322-325`).
+- `NEURO_CACHE_DATA` is the root for data kept outside git, default `data/`
+  (`src/util.py:15-24`): the pipeline writes to `$NEURO_CACHE_DATA/demo/<bench>` by
+  default (`scripts/pipeline.py:312-313`), and the full captures for
+  `scripts/subset_input_traces.py` live under it (`scripts/subset_input_traces.py:44`).
 
-`make demo` (or `python scripts/demo.py [--bench loas] [--layers V8 R9 ...] [--jobs N]`) checks
-the inputs, builds, generates the weight traces and WCTS v2 streams of 4 layers x 5 samples, runs
-`python -m nocsim.sim --simulate` and `wcache_sweep` over the 48-config 0823 khkw grid, and
-writes under `$NEURO_CACHE_DATA/demo/<bench>/` (minutes; the largest single command peaks near
-14 GB RSS, so --jobs stays at min(8, cpu_count) by default):
+## Input contract
 
-- results.csv, 960 rows, columns `trace_dir, layer, sample, config, layout, line_size_bytes,
-  l2_size_bytes, l2_banks, prefetch_policy, prefetch_distance, nocsim_total_cycles,
-  wcache_total_cycles, speedup_vs_nocsim` (nocsim cycles / wcache cycles).
-- summary.md: geomean speedup per config and the argv of every command that ran.
-- streams/, weight_traces/, nocsim/, layers/, grid/: the intermediate files.
+One directory per benchmark and capture: `input_trace/<bench>/<trace_dir>/meta.json` plus
+one `<layer>.npy` per layer (`scripts/pipeline.py:40-41`), e.g.
+`input_trace/loas/resnet19_T4_n5/`.
 
-`python scripts/demo.py --verify-baseline` compares results.csv with .baseline/after (mismatches
-must be 0). `python scripts/wcache_baseline.py run` then `compare .baseline/after/wcache/khkw_sweep.csv
-$NEURO_CACHE_DATA/neuro_cache_outputs/wcache_baseline/khkw_sweep.csv` checks the wcache side alone.
+- `meta.json` `layers`: layer name to the input shape `[T, B, Cin, Hin, Win]`, five
+  positive ints (`scripts/pipeline.py:201-213`).
+- `meta.json` `layer_params`: the same layer names to `{"cout", "kernel", "stride"}`,
+  positive ints, required for every layer (`src/weight_trace_gen/trace.py:84-105`).
+- `meta.json` `n_samples`, equal to B, and `dtype`, `"uint8"`
+  (`scripts/pipeline.py:205-206`, `scripts/pipeline.py:223-229`).
+- `<layer>.npy`: uint8 0/1 spikes whose shape is exactly the declared
+  `[T, B, Cin, Hin, Win]` (`src/weight_trace_gen/trace.py:74-80`,
+  `scripts/pipeline.py:218-222`).
+- Only 3x3 stride-1 layers whose output is at least 1x1 with padding 1 can be replayed;
+  every other layer is left out (`src/weight_trace_gen/trace.py:108-129`). The workload a
+  schedule is solved for is KH=KW=3, CIN=Cin, COUT=`cout`, HO=Hin, WO=Win, T=T
+  (`src/weight_trace_gen/trace.py:152-162`).
+- A tracked schedule must have been solved for that workload, or the pipeline stops and
+  names it (`src/snn_scheduler/artifact.py:115-137`, `scripts/pipeline.py:290-297`).
+- Tags: layer `layer_NN_*` of `vgg16_T4_n5` is `V<NN>` and of `resnet19_T4_n5` is
+  `R<NN>` (`scripts/pipeline.py:49`, `scripts/pipeline.py:105-114`).
 
-## Input-trace contract
+`python scripts/pipeline.py --check-bench loas` checks all of this for one benchmark (a
+name under `input_trace/` or a directory path), lists the excluded layers with the reason,
+and exits 0 when it finds no problem (`scripts/pipeline.py:170-249`,
+`scripts/pipeline.py:468-471`).
 
-`python scripts/demo.py --check-bench <bench>` (or a directory path) checks all of this and lists
-what is missing; exit 0 means complete.
+A subset of N samples is cut from a full capture with the same sample indices for every
+layer, into `<capture minus _all>_n<N>/`, with B and `n_samples` rewritten
+(`scripts/subset_input_traces.py:49-93`, `scripts/subset_input_traces.py:119`):
 
-- Layout: `input_trace/<bench>/<trace_dir>/meta.json` plus one `<layer>.npy` per layer, e.g.
-  input_trace/loas/vgg16_T4_n5/. `<bench>` is the archmodel name (loas, ptb, spinalflow,
-  prosperity, gustavsnn); `<trace_dir>` is `<network>_T<T>_n<N>` for an N-sample subset and
-  `<network>_T<T>_all` for a full capture.
-- meta.json fields the code reads: `layers`, an ordered dict layer name -> `[T, B, Cin, Hin, Win]`;
-  `layer_params`, a dict with the same layer names -> `{"cout", "kernel", "stride"}` (output
-  channels, square kernel size, stride; positive ints, every layer needs all three;
-  `archmodels.trace.layer_params`, and `build_workload_from_trace` takes COUT from it); `n_samples`, equal to B
-  (scripts/subset_input_traces.py); `dtype`, "uint8". Provenance fields (`arch`, `timestep`,
-  `batch_size`, `dataset`, `captured_at`, and `subset` with `of`, `n`, `seed`, `sample_indices`)
-  are written by the capture and the subset script and not read by the pipeline.
-- `<layer>.npy`: uint8 0/1 spikes, shape exactly `[T, B, Cin, Hin, Win]` as meta.json declares
-  (`archmodels.trace.load_layer_trace` refuses any other shape). The arch models replay only
-  3x3 stride-1 PAD=1 convolutions, so `archmodels.trace.valid_layer_names` leaves out every
-  layer whose `kernel` is not 3, whose `stride` is not 1, or whose Hin or Win is below 1, and
-  `exclusion_reason` says why; `--check-bench` lists each excluded layer with its reason. In
-  input_trace/loas/resnet19_T4_n5 that excludes the stride-2 `layerS_0_conv1` and the 1x1
-  stride-2 `layerS_0_shortcut_0` layers (6 of 19).
-- Tracked schedules: `tracegen.check_schedule_matches_trace` refuses a schedule whose
-  `workload.problem` differs from the one meta.json now gives (scripts/generate_weight_traces.py
-  and scripts/demo.py call it); re-solve such a schedule with `scripts/solve_schedules.py --force`.
-- Layer names: `layer_NN_<anything>`; the `V<n>`/`R<n>` tags of profiling/common.py take n from
-  `NN`, and the V/R prefix from the trace dir names in `common.WORKLOADS`.
-- Subset: `python scripts/subset_input_traces.py --src $NEURO_CACHE_DATA/neuro_cache_trace/input_trace/<bench>
-  --dest input_trace/<bench> --captures <network>_T4_all ... --n 5 --seed 0` picks the same N
-  sample indices for every layer of a capture, writes `<network>_T4_n5/`, and rewrites B and
-  `n_samples`. A 500-sample subset is the same command with `--n 500` (5 samples of loas are
-  13.6 MB, so expect about 1.4 GB; keep it under `$NEURO_CACHE_DATA`, since .gitignore tracks
-  only input_trace/loas/) and schedules solved for the `_n500` trace dir name, or copies of the
-  `_n5` ones with `trace_dir` rewritten (the schedule depends on the shape only).
+```
+python scripts/subset_input_traces.py --src <captures dir> --dest <dir> --captures <network>_T4_all --n 5 --seed 0
+```
+
+## The four modules, each alone
+
+Running example R9: `resnet19_T4_n5/layer_09_layer2_0_conv2`, sample 0, benchmark loas.
+`OUT` is any directory; `data/demo/loas` is the pipeline's default output. First:
+
+```
+OUT=data/demo/loas; mkdir -p $OUT/streams/resnet19_T4_n5 $OUT/layers/resnet19_T4_n5 $OUT/cachesim
+```
+
+### 1. SNN scheduler: `python -m snn_scheduler solve-trace`
+
+```
+python -m snn_scheduler solve-trace --arch loas --trace-root input_trace/loas --trace-dirs resnet19_T4_n5 --layers layer_09_layer2_0_conv2 --cache-dir $OUT/schedules
+```
+
+- Inputs: `input_trace/loas/resnet19_T4_n5/meta.json` (`src/snn_scheduler/cli.py:203-206`);
+  the hardware config, default `configs/arch/loas_inst16_node32kb.yaml` for loas and
+  `configs/arch/<arch>.yaml` otherwise (`src/snn_scheduler/cli.py:183-189`); the node
+  mapspace, default `configs/node_mapspace/<arch>.yaml` (`src/snn_scheduler/cli.py:198`);
+  Gurobi.
+- Outputs: `$OUT/schedules/loas/resnet19_T4_n5/layer_09_layer2_0_conv2.json` with keys
+  `arch, trace_dir, layer_name, workload, result, dram_num_steps, mode`
+  (`src/snn_scheduler/artifact.py:26-36`, `src/snn_scheduler/artifact.py:101-104`), and
+  `$OUT/schedules/summary.csv` with `arch, trace_dir, layer, status, dram_num_steps, error`
+  (`src/snn_scheduler/cli.py:242-248`).
+- Without `--layers` it solves every replayable layer; each `--layers` name applies to the
+  trace dirs whose `meta.json` has it, and a name in none of them exits 2
+  (`src/snn_scheduler/cli.py:207-218`). Any infeasible or failed layer exits 1
+  (`src/snn_scheduler/cli.py:250-255`).
+- `solve` and `enumerate` solve one hand-written layer YAML instead, default
+  `configs/workloads/sample_snn_layer.yaml` (`src/snn_scheduler/cli.py:22-25`).
+
+### 2. Weight-trace generator: `python -m weight_trace_gen gen`
+
+```
+python -m weight_trace_gen gen --arch loas --trace-root input_trace/loas --trace-dir resnet19_T4_n5 --layer layer_09_layer2_0_conv2 --schedule-cache configs/schedules --sample-start 0 --sample-count 1 --out-dir $OUT/weight_traces
+python -m weight_trace_gen gen --arch loas --trace-root input_trace/loas --trace-dir resnet19_T4_n5 --layer layer_09_layer2_0_conv2 --schedule-cache configs/schedules --sample-start 0 --sample-count 1 --stream > $OUT/streams/resnet19_T4_n5/layer_09_layer2_0_conv2_s00000.wcts
+```
+
+- Inputs: the schedule `<schedule-cache>/<arch>/<trace_dir>/<layer>.json`
+  (`src/weight_trace_gen/cli.py:130`), `meta.json` and `<layer>.npy`, and the native replay
+  binary built from `src/weight_trace_gen/loas/` through the bridge named in
+  `src/weight_trace_gen/__init__.py:30-36`.
+- Outputs: the per-step cycle counts
+  `$OUT/weight_traces/loas/resnet19_T4_n5/layer_09_layer2_0_conv2/sample_00000.json.gz`
+  (`src/weight_trace_gen/cli.py:140-142`), and with `--stream` one WCTS stream (magic
+  `WCTRACE1`, `src/cachesim/stream.py:42`) on stdout for exactly one sample
+  (`src/weight_trace_gen/cli.py:301-309`). `--dump-trace PATH` writes the same stream to a
+  file, which is how the pipeline calls it (`scripts/pipeline.py:349-350`).
+
+### 3. NoC simulator: `python -m nocsim`
+
+nocsim reads the layer as YAML; the pipeline writes it from the schedule's `workload` block
+(`scripts/pipeline.py:356-358`). By hand:
+
+```
+python -c 'import json, sys, yaml; yaml.safe_dump(json.load(open(sys.argv[1]))["workload"], open(sys.argv[2], "w"), sort_keys=False)' configs/schedules/loas/resnet19_T4_n5/layer_09_layer2_0_conv2.json $OUT/layers/resnet19_T4_n5/layer_09_layer2_0_conv2.yaml
+python -m nocsim --schedule configs/schedules/loas/resnet19_T4_n5/layer_09_layer2_0_conv2.json --layer $OUT/layers/resnet19_T4_n5/layer_09_layer2_0_conv2.yaml --arch configs/arch/loas_inst16_node32kb.yaml --weight-trace $OUT/weight_traces/loas/resnet19_T4_n5/layer_09_layer2_0_conv2/sample_00000.json.gz --out $OUT/nocsim/resnet19_T4_n5/layer_09_layer2_0_conv2_s00000.csv --simulate
+```
+
+- Inputs: schedule JSON, layer YAML, arch YAML, one sample's step cycles
+  (`src/nocsim/sim.py:266-310`), and with `--simulate` the binary
+  `src/nocsim/eventsim/eventsim` (`src/nocsim/sim.py:195`).
+- Outputs: the transaction CSV at `--out` (`src/nocsim/sim.py:342-346`) and, on stdout,
+  `total_cycles`, `unicast_cycles`, `multicast_cycles`, `count_cycles`
+  (`src/nocsim/sim.py:392-396`). The pipeline reads `total_cycles`
+  (`scripts/pipeline.py:378-383`).
+
+### 4. Cache simulator: `python -m cachesim grid | sweep | run`
+
+```
+python -m cachesim grid --out $OUT/grid
+python -m cachesim sweep --config-grid $OUT/grid/khkw_0.json --trace $OUT/streams/resnet19_T4_n5/layer_09_layer2_0_conv2_s00000.wcts --out $OUT/cachesim/R9_s0_khkw_0.csv
+```
+
+- `grid` crosses `configs/cache/base.json` with the axes in `configs/cache/khkw_sweep.json`
+  (line size x L2 banks x prefetch, 3 x 4 x 4 = 48 configs,
+  `configs/cache/khkw_sweep.json:2-4`, `src/cachesim/grid.py:20-36`). It writes one file
+  per `cin_block` = line bytes / (`cout_block` x `weight_bytes`), because one sweep uses
+  one mapper: `khkw_0.json`, `khkw_1.json`, `khkw_2.json` for 16, 32 and 64-byte lines
+  (`src/cachesim/grid.py:26`, `src/cachesim/grid.py:39-53`). `--base` and `--sweep` take
+  other files (`src/cachesim/cli.py:38-46`).
+- `sweep` and `run` pass every later argument to the native `cachesim_sweep` /
+  `cachesim_run` (`src/cachesim/cli.py:15-33`); `python -m cachesim sweep --help` prints
+  the native usage. The `--out` directory must exist.
+- Output: a CSV with one row per config, including `total_cycles`, `l1_hits`, `l2_hits`,
+  `dram_bytes` (`src/cachesim/native/src/stats.cpp:215-217`).
+
+## End to end: `scripts/pipeline.py`
+
+For one benchmark it checks the inputs, takes the schedules from `configs/schedules/` and
+solves the missing ones into `<out>/schedules/` with one `solve-trace` call, builds the
+native tools, generates step cycles and streams, then runs nocsim and the cache sweep per
+(layer, sample) and joins them (`scripts/pipeline.py:316-401`). Steps run in parallel
+across commands under `--jobs` (`scripts/pipeline.py:99-102`).
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--bench` | `loas` | benchmark under `input_trace/` (`scripts/pipeline.py:453`) |
+| `--layers` | `V8 V9 R9 R16` | tags, `trace_dir/layer`, or `all` for every replayable layer of `vgg16_T4_n5` and `resnet19_T4_n5` (`scripts/pipeline.py:47`, `scripts/pipeline.py:117-135`) |
+| `--sample-start`, `--sample-count` | `0`, `5` | samples run per layer (`scripts/pipeline.py:457-458`) |
+| `--out` | `$NEURO_CACHE_DATA/demo/<bench>` | output directory (`scripts/pipeline.py:312-313`) |
+| `--grid` | the 48-config khkw grid | a JSON array of cache configs (`scripts/pipeline.py:301-309`) |
+| `--jobs` | `min(8, cpu count)` | parallel commands (`scripts/pipeline.py:57`) |
+| `--verify-baseline [DIR]` | `.baseline/after` | only compare `<out>/results.csv` with DIR (`scripts/pipeline.py:463-464`) |
+| `--check-bench BENCH` | | only check the input contract (`scripts/pipeline.py:465-471`) |
+
+```
+make demo
+python scripts/pipeline.py --layers R9 --sample-count 1 --out data/demo/R9
+python scripts/pipeline.py --layers all --sample-count 1 --out data/demo/all_s1
+python scripts/pipeline.py --verify-baseline --out data/demo/R9
+```
+
+- `make demo` is `python scripts/pipeline.py` with the defaults above (`Makefile:10-11`).
+- `--layers all` needs Gurobi for every layer without a tracked schedule.
+- `--verify-baseline` compares `wcache_total_cycles` with `DIR/wcache/khkw_sweep.csv` and
+  `nocsim_total_cycles` with `DIR/nocsim/stage3_results.csv`, prints each mismatch, and
+  exits 0 only when every row is in the reference and matches
+  (`scripts/pipeline.py:422-448`).
+
+Outputs under `<out>`: `results.csv`, `summary.md` (geomean speedup per config and every
+command run, `scripts/pipeline.py:404-419`), and the intermediate `schedules/` (only when
+it solved), `weight_traces/`, `streams/`, `layers/`, `nocsim/`, `grid/`
+(`scripts/pipeline.py:273`, `scripts/pipeline.py:342-371`).
+
+`results.csv` has one row per (layer, sample, config) (`scripts/pipeline.py:385-398`):
+`trace_dir, layer, sample, config, layout, line_size_bytes, l2_size_bytes, l2_banks,
+prefetch_policy, prefetch_distance, nocsim_total_cycles, wcache_total_cycles,
+speedup_vs_nocsim`, where `speedup_vs_nocsim` is nocsim cycles / cache-simulator cycles
+(`scripts/pipeline.py:51-52`, `scripts/pipeline.py:60-79`).
 
 ## Adding a benchmark
 
-1. Capture the traces into `$NEURO_CACHE_DATA/neuro_cache_trace/input_trace/<bench>/<network>_T4_all/`
-   in the layout above, then cut the subset with scripts/subset_input_traces.py.
-2. Make sure the code knows `<bench>`: `archmodels.ARCH_NATIVE_BRIDGES` names its native bridge,
-   src/archmodels/<bench>/ holds main.cpp, the generator header, native_bridge.py and a Makefile,
-   and configs/arch/<bench>.yaml and configs/dataflow/<bench>.yaml exist (scripts/solve_schedules.py
-   DEFAULT_ARCH_YAML / DEFAULT_DATAFLOW_YAML). configs/workloads/ holds only the stand-alone
-   solver CLI's sample layer; layer shapes come from meta.json.
-3. `python scripts/demo.py --check-bench <bench>` until it reports 0 problems.
-4. Solve the schedules (Gurobi): `python scripts/solve_schedules.py --archs <bench>
-   --trace-root input_trace/<bench> --trace-dirs <network>_T4_n5 --cache-dir outputs/schedules`.
-   The demo does this itself when gurobipy imports and stops naming the missing files otherwise.
-5. For the nocsim side, add the benchmark's nocsim arch YAML to `NOCSIM_ARCH` in scripts/demo.py
-   (only loas has one, profiling/0823_stagewise_verify/stage3_nocsim/inputs/arch/).
-6. `python scripts/demo.py --bench <bench> --layers <trace_dir>/<layer> ...`.
+1. Native replay model: `src/weight_trace_gen/<bench>/` with `main.cpp`, the generator
+   header, `native_bridge.py` and a `Makefile`, as for the five existing ones (loas, ptb,
+   spinalflow, prosperity, gustavsnn), and an entry in `ARCH_NATIVE_BRIDGES`
+   (`src/weight_trace_gen/__init__.py:30-36`), which also sets the `--arch` choices
+   (`src/snn_scheduler/cli.py:103`).
+2. `configs/arch/<bench>.yaml` and `configs/node_mapspace/<bench>.yaml`
+   (`scripts/pipeline.py:179-183`, `src/snn_scheduler/cli.py:188-198`).
+3. The nocsim arch: an entry in `NOCSIM_ARCH`; only loas has one
+   (`scripts/pipeline.py:45`).
+4. Traces under `input_trace/<bench>/<trace_dir>/` as in the input contract, then
+   `python scripts/pipeline.py --check-bench <bench>` until it reports 0 problems.
+5. Run it: `python scripts/pipeline.py --bench <bench> --layers <trace_dir>/<layer> --out <dir>`.
+   Tags (`V8`, `R9`) exist only for `vgg16_T4_n5` and `resnet19_T4_n5`
+   (`scripts/pipeline.py:49`). Missing schedules are solved into `<out>/schedules/`
+   (`scripts/pipeline.py:270-289`); copy them to `configs/schedules/<bench>/<trace_dir>/`
+   to track them (`scripts/pipeline.py:42-43`).
 
-## Files to copy from Delta for the other benchmarks
+## Writing a sweep script
 
-The code in src/archmodels/{gustavsnn,prosperity,ptb,spinalflow} and configs/{arch,dataflow}/
-is tracked; what Delta holds and this repo does not is data, expected at these relative paths:
+Another cache grid needs no new code: pass a JSON array of configs with `--grid`; configs
+with different `cin_block` run as separate sweeps (`scripts/pipeline.py:368-371`). For
+example, only the 64-byte lines of the khkw grid:
 
-| What | Expected path |
-|---|---|
-| Full captures (10,000 samples) | `$NEURO_CACHE_DATA/neuro_cache_trace/input_trace/<bench>/<network>_T4_all/{meta.json,layer_*.npy}` |
-| 5-sample subsets | `input_trace/<bench>/<network>_T4_n5/` (cut locally from the captures) |
-| Solved schedules | `outputs/schedules/<bench>/<trace_dir>/<layer>.json` (plus `summary.csv`) |
-| 16-core schedules | `outputs/schedules/inst16/<bench>/<trace_dir>/<layer>.json` (scripts/solve_inst16_subset.py) |
-| Per-step cycles (nocsim `--weight-trace` input; no weight addresses) | `$NEURO_CACHE_DATA/neuro_cache_outputs/weight_traces/<bench>/[<combo>/]<trace_dir>/<layer>/sample_NNNNN.json.gz` |
+```
+python scripts/pipeline.py --layers R9 --sample-count 1 --grid data/demo/R9/grid/khkw_2.json --out data/demo/R9_64B
+```
 
-The loas captures are the only ones any tracked schedule or profiling stage refers to; the four
-other archmodels have never been run in this checkout, so their first run also needs the
-schedules solved (step 4 above).
+Anything else (other layers, archs, or axes) is a new file under `scripts/`. Run as
+`python scripts/<name>.py`, it can `import pipeline` and reuse `run_all`, `join_results`,
+`load_grid` and `resolve_layers` (`scripts/pipeline.py:68-135`, `scripts/pipeline.py:301-309`),
+or call the four CLIs directly. A minimal one, sweeping the L2 size on one stream:
 
-## Regenerating the 0831 all-layer streams
+```python
+import json, pathlib, sys
+from cachesim.grid import load_base
+from pipeline import run_all
 
-profiling/0831_all_layer_streams/streams/ (31 layers x 5 samples of WCTS) was written in version
-1, which every reader now refuses, and its schedules/ directory is untracked. Once the full loas
-captures are under `$NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas/` (the solver reads
-their meta.json for the shapes; no spike data):
+trace, out = pathlib.Path(sys.argv[1]).resolve(), pathlib.Path(sys.argv[2]).resolve()
+out.mkdir(parents=True, exist_ok=True)
+grid = [dict(load_base(), l2_size_bytes=kb * 1024) for kb in (256, 512, 1024)]
+(out / "grid.json").write_text(json.dumps(grid))
+run_all([[sys.executable, "-m", "cachesim", "sweep", "--config-grid", str(out / "grid.json"),
+          "--trace", str(trace), "--out", str(out / "l2_size.csv")]], [], 1)
+```
 
-    python profiling/0831_all_layer_streams/solve_all_layers.py --check   # Gurobi; 4-layer gate
-    python profiling/0831_all_layer_streams/solve_all_layers.py           # 31 schedules
-    python profiling/0831_all_layer_streams/gen_streams.py --workers 16   # v2 streams + byte gate
+`run_all` runs each command from the repo root and exits on the first failure, so pass
+absolute paths (`scripts/pipeline.py:90-102`).
 
-gen_streams.py reads only input_trace/loas/*_n5 and the stage's schedules/, so with the
-schedules in place it needs neither the captures nor Gurobi. The streams are 16 GB and the
-directory is gitignored (on Delta it was a symlink into scratch), so point it at
-`$NEURO_CACHE_DATA` first.
+## Regenerating schedules
 
-## Per-layer profiling on Delta
+The tracked schedules are `configs/schedules/loas/<trace_dir>/<layer>.json` for V8, V9,
+R9 and R16. To re-solve them (Gurobi), solve into a scratch directory with `--force`, then
+copy the files into `configs/schedules/loas/<trace_dir>/`:
 
-scripts/profile_all_layers.py runs one layer per Slurm array task (scripts/slurm/profile_all_layers.slurm)
-and writes `$NEURO_CACHE_DATA/profiling/<bench>/layers/<trace_dir>/<layer>.csv`, then `--merge`
-joins them. The Slurm file has not been submitted on Delta yet: it is verified only by
-`--dry-run` and by one array task run locally on the 5-sample loas subset; its header lists the
-fields to confirm at the first submission.
+```
+python -m snn_scheduler solve-trace --arch loas --trace-root input_trace/loas --trace-dirs vgg16_T4_n5 resnet19_T4_n5 --layers layer_08_features_27 layer_09_features_30 layer_09_layer2_0_conv2 layer_16_layer3_0_conv2 --cache-dir data/schedules --force
+```
+
+A schedule whose workload no longer matches `meta.json` is reported with the command to
+re-solve it (`src/snn_scheduler/artifact.py:131-137`).
