@@ -39,7 +39,7 @@ from nocsim.schedule.steps import StepInfo  # noqa: E402
 from parsers.arch import SNNArch  # noqa: E402
 from parsers.bitwidths import SNNBitwidths  # noqa: E402
 from parsers.layer import SNNProb  # noqa: E402
-from tracegen import load_step_cycles  # noqa: E402
+from nocsim.step_cycles import load_step_cycles  # noqa: E402
 
 VERIFY = REPO / "profiling" / "0823_stagewise_verify"
 MULTI_SCHED = VERIFY / "stage2_weight_trace" / "inputs" / "schedules" / "loas"

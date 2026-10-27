@@ -47,7 +47,7 @@ def _unpack_output(data: bytes, num_tiles: int, sample_indices: Sequence[int]):
     (src/weight_trace_gen/tick_output.h): per (tile, sample), tick_value +
     num_addresses_at_tick pairs, addresses without a per-address tick field
     (the tick value is the group key). Yields ticks already in the
-    [{"tick": j, "weight_addresses": [...]}] shape tracegen.assemble_layer_traces
+    [{"tick": j, "weight_addresses": [...]}] shape weight_trace_gen.weight_trace.assemble_layer_traces
     expects -- no further adaptation needed for loas."""
     off = 0
     n = len(data)
@@ -89,10 +89,10 @@ def reconstruct_samples_native(
     subprocess call handles the whole flat list either way, since
     reconstruct_sample/TileSpec already take arbitrary per-tile offsets/
     bounds generically (see log/2026-08-02-multinode-core-driven-weight-trace-plan.md).
-    tracegen.assemble_layer_traces owns grouping the flat per-tile results
+    weight_trace_gen.weight_trace.assemble_layer_traces owns grouping the flat per-tile results
     back into (dram_i, noc_i)-keyed, cross-core-merged LayerWeightTraces.
     """
-    from tracegen import assemble_layer_traces
+    from weight_trace_gen.weight_trace import assemble_layer_traces
 
     if not _BINARY.exists():
         raise FileNotFoundError(

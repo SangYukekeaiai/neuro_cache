@@ -16,7 +16,7 @@ pointed at an example is exercising the same decode path it will run on a
 Two on-disk shapes exist in the corpus and both get an example:
 
   v2  tiles[] -> ticks[] -> cores[] -> weight_addresses[]   (tick and core_id
-      present; what the engine needs, and what `src/tracegen.py` writes today)
+      present; what the engine needs, and the shape `src/weight_trace_gen/weight_trace.py` defines)
   v1  tiles[] -> weight_addresses[]                          (flat, no tick, no
       core; a stale generation still on disk for gustavsnn)
 
@@ -110,8 +110,8 @@ def slice_v2(doc):
             cores = [c for c in entry["cores"] if c["core_id"] < N_CORES]
             # A tick every kept core sat out is dropped rather than written as
             # an empty `cores` list: the corpus omits absent cores, never pads
-            # them (tracegen.TickEntry), and an example must not invent a shape
-            # the reader will never see.
+            # them (weight_trace_gen.weight_trace.TickEntry), and an example
+            # must not invent a shape the reader will never see.
             if cores:
                 ticks.append({"tick": entry["tick"], "cores": cores})
         if not ticks:

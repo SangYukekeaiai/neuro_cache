@@ -157,7 +157,7 @@ endif
 # This is a SEPARATE target and deliberately not a prerequisite of `test`.
 # `test` compiles and runs C++ only, so it is green wherever a compiler is, and
 # that is the property worth keeping: these four scripts need python3 on PATH,
-# an importable `tracegen`, and the checked-in examples/ fixtures, none of which
+# an importable `cachesim.stream`, and the checked-in examples/ fixtures, none of which
 # `test` needs today. Folding them in would trade a gate that always runs for a
 # gate that runs where the environment happens to suit it, and a V1 check that
 # is skipped on a bare machine is worse than one that is named and run. It also

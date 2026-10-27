@@ -2,7 +2,7 @@
 """The locally runnable wcache case: the 0823 stage 4 khkw sweep (48 configs x
 4 LoAS layers x 5 samples = 960 rows) from tracked inputs only, no Gurobi.
 
-  run      regenerate the 20 WCTS streams with src/tracegen.py into
+  run      regenerate the 20 WCTS streams with src/cachesim/stream.py into
            $NEURO_CACHE_DATA/neuro_cache_outputs/wcache_baseline/streams and run
            the sweep on them -> .../wcache_baseline/khkw_sweep.csv
   compare  compare two sweep CSVs cell by cell, in row order, ignoring the

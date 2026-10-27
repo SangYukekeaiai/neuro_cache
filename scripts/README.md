@@ -48,8 +48,8 @@ only for reference, not meant to run against the current pipeline.
 
 Loads a Stage-1-cached schedule (no re-solving) and reconstructs samples
 against it through the arch's native C++ bridge (dispatched via
-`tracegen.reconstruct_samples`), one `.json.gz` per sample holding its
-per-step cycle counts (`tracegen.save_step_cycles`, src/tracegen.py:356; no
+`weight_trace_gen.weight_trace.reconstruct_samples`), one `.json.gz` per sample holding its
+per-step cycle counts (`nocsim.step_cycles.save_step_cycles`, src/nocsim/step_cycles.py:27; no
 weight addresses, which `--stream` emits as WCTS instead). Skip-existing
 is on by default (`--force` to override). Two modes:
 
@@ -72,7 +72,7 @@ python scripts/generate_weight_traces.py --arch loas --all-layers --n-samples 10
 ```
 
 `--n-samples 100` (the default) is the fixed, reproducible canonical
-subset (`tracegen.sample_indices`, seed 0) -- computed live from the
+subset (`weight_trace_gen.weight_trace.sample_indices`, seed 0) -- computed live from the
 seed, not read from a stored file. Pass `--sample-start`/`--sample-count`
 instead for an arbitrary range (single-combo mode only).
 

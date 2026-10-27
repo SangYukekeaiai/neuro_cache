@@ -26,9 +26,10 @@ Two modes:
   data showed 2-5s/sample per (arch, layer).
 
 Neither mode contains any native-bridge dispatch of its own -- both call
-tracegen.reconstruct_samples, the single consolidated dispatcher, and
-tracegen.save_step_cycles for persistence. This script owns only CLI
-parsing, which combos/samples to iterate, and worker-pool setup.
+weight_trace_gen.weight_trace.reconstruct_samples, the single consolidated
+dispatcher, and nocsim.step_cycles.save_step_cycles for persistence. This
+script owns only CLI parsing, which combos/samples to iterate, and worker-pool
+setup.
 
 See dump/docs/superpowers/specs/2026-07-18-weight-trace-generation-design.md.
 """
@@ -47,7 +48,10 @@ from typing import List, Sequence
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
-import tracegen
+from cachesim.stream import stream_weight_trace
+from nocsim.step_cycles import save_step_cycles
+from snn_scheduler.artifact import check_schedule_matches_trace
+from weight_trace_gen.weight_trace import load_schedule, reconstruct_samples, sample_indices
 from weight_trace_gen import ARCH_NATIVE_BRIDGES
 from weight_trace_gen.trace import load_layer_trace, valid_layer_names
 from nocsim.schedule.decode import schedule_from_strategy
@@ -75,7 +79,7 @@ FIRST_PASS_SAMPLES = 10
 def _resolve_samples(args: argparse.Namespace) -> List[int]:
     if args.sample_count is not None:
         return list(range(args.sample_start, args.sample_start + args.sample_count))
-    return tracegen.sample_indices(n=args.n_samples, seed=args.seed)
+    return sample_indices(n=args.n_samples, seed=args.seed)
 
 
 # ----------------------------------------------------------------------
@@ -103,7 +107,7 @@ def _init_worker(trace, tiles, arch_name, trace_dir_name, layer_name, workload_d
 
 
 def _process_chunk(sample_indices: Sequence[int]) -> int:
-    layer_traces = tracegen.reconstruct_samples(
+    layer_traces = reconstruct_samples(
         _STATE["arch_name"], _STATE["trace"], _STATE["tiles"], sample_indices,
         _STATE["trace_dir_name"], _STATE["layer_name"],
         _STATE["workload_dims"], _STATE["dram_num_steps"],
@@ -113,7 +117,7 @@ def _process_chunk(sample_indices: Sequence[int]) -> int:
             _STATE["out_dir"] / _STATE["arch_name"] / _STATE["combo_tag"] / _STATE["trace_dir_name"]
             / _STATE["layer_name"] / f"sample_{lt.sample_idx:05d}.json.gz"
         )
-        tracegen.save_step_cycles(lt, out_path)
+        save_step_cycles(lt, out_path)
     return len(layer_traces)
 
 
@@ -131,7 +135,7 @@ def run_one_combo(args: argparse.Namespace) -> int:
         print(f"ERROR: no cached schedule at {schedule_path} -- run solve_schedules.py first")
         return 1
     try:
-        tracegen.check_schedule_matches_trace(schedule_path, trace_root / args.trace_dir, args.layer)
+        check_schedule_matches_trace(schedule_path, trace_root / args.trace_dir, args.layer)
     except ValueError as e:
         print(f"ERROR: {e}")
         return 1
@@ -152,7 +156,7 @@ def run_one_combo(args: argparse.Namespace) -> int:
         print("Nothing to do.")
         return 0
 
-    artifact, prob, tiles = tracegen.load_schedule(schedule_path)
+    artifact, prob, tiles = load_schedule(schedule_path)
     trace = load_layer_trace(trace_root / args.trace_dir, args.layer, mmap=True)
 
     print(f"Reconstructing {len(todo)} sample(s) of {args.arch}/{combo_tag}/{args.trace_dir}/{args.layer} "
@@ -202,7 +206,7 @@ def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir
     """Reconstruct and save whichever of `indices` aren't already saved for
     this (arch, trace_dir, layer). Returns (num_done, seconds)."""
     sched_path = schedule_cache / arch_name / trace_dir_name / f"{layer_name}.json"
-    tracegen.check_schedule_matches_trace(sched_path, trace_root / trace_dir_name, layer_name)
+    check_schedule_matches_trace(sched_path, trace_root / trace_dir_name, layer_name)
     out_dir = out_root / arch_name / trace_dir_name / layer_name
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -211,16 +215,16 @@ def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir
         return 0, 0.0
 
     t0 = time.time()
-    artifact, prob, tiles = tracegen.load_schedule(sched_path)
+    artifact, prob, tiles = load_schedule(sched_path)
     trace = load_layer_trace(trace_root / trace_dir_name, layer_name, mmap=True)
     for chunk_start in range(0, len(missing), SAMPLE_CHUNK_SIZE):
         chunk = missing[chunk_start:chunk_start + SAMPLE_CHUNK_SIZE]
-        traces = tracegen.reconstruct_samples(
+        traces = reconstruct_samples(
             arch_name, trace, tiles, chunk, trace_dir_name, layer_name,
             artifact.workload["problem"], artifact.dram_num_steps,
         )
         for t in traces:
-            tracegen.save_step_cycles(t, out_dir / f"sample_{t.sample_idx:05d}.json.gz")
+            save_step_cycles(t, out_dir / f"sample_{t.sample_idx:05d}.json.gz")
     return len(missing), time.time() - t0
 
 
@@ -286,14 +290,14 @@ def emit_stream(trace, sink, *, n_cores, spatial_factors, dump_path=None, dump_t
     one and cannot get the trailer wrong. Its tile frames are byte-identical to
     the ones the consumer saw, which is what 10.6 actually asks for.
     """
-    total = tracegen.stream_weight_trace(trace, sink, n_cores=n_cores,
-                                         spatial_factors=spatial_factors)
+    total = stream_weight_trace(trace, sink, n_cores=n_cores,
+                                spatial_factors=spatial_factors)
     sink.flush()
     if dump_path is not None:
         with open(dump_path, "wb") as fh:
-            tracegen.stream_weight_trace(trace, fh, n_cores=n_cores,
-                                         spatial_factors=spatial_factors,
-                                         max_tiles=dump_tiles)
+            stream_weight_trace(trace, fh, n_cores=n_cores,
+                                spatial_factors=spatial_factors,
+                                max_tiles=dump_tiles)
     return total
 
 
@@ -313,13 +317,13 @@ def run_stream(args: argparse.Namespace) -> int:
               file=sys.stderr)
         return 1
     try:
-        tracegen.check_schedule_matches_trace(
+        check_schedule_matches_trace(
             schedule_path, pathlib.Path(args.trace_root) / args.trace_dir, args.layer)
     except ValueError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 1
 
-    artifact, prob, tiles = tracegen.load_schedule(schedule_path)
+    artifact, prob, tiles = load_schedule(schedule_path)
     # n_cores is the MACHINE size, so it comes from the schedule's spatial
     # unrolling rather than from max(core_id) in the data, which undercounts
     # whenever some core drew no work. schedule_from_strategy is pure, so
@@ -336,7 +340,7 @@ def run_stream(args: argparse.Namespace) -> int:
     print(f"Streaming {args.arch}/{args.trace_dir}/{args.layer} sample {requested[0]} "
           f"({len(tiles)} tiles, {n_cores} cores)", file=sys.stderr)
 
-    layer_traces = tracegen.reconstruct_samples(
+    layer_traces = reconstruct_samples(
         args.arch, trace, tiles, requested, args.trace_dir, args.layer,
         artifact.workload["problem"], artifact.dram_num_steps,
     )
@@ -371,7 +375,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--sample-count", type=int,
                    help="Explicit sample range (single-combo mode only); mutually exclusive with --n-samples.")
     p.add_argument("--n-samples", type=int, default=100,
-                   help="Fixed, reproducible n-sample subset (tracegen.sample_indices); "
+                   help="Fixed, reproducible n-sample subset (weight_trace_gen.weight_trace.sample_indices); "
                         "n=100 (the default) is the canonical subset. Default: 100.")
     p.add_argument("--seed", type=int, default=0, help="Seed for the samples beyond the canonical 100.")
     p.add_argument("--workers", type=int, default=1)

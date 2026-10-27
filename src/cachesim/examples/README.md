@@ -31,8 +31,8 @@ decode path it will run on a 1.5 GB sample.
 
 ## The on-disk shape, as it actually is
 
-Two shapes are live in `outputs/weight_traces/`. The v2 one is what
-`src/tracegen.py` writes today and is the only one the engine can use.
+Two shapes are live in `outputs/weight_traces/`. The v2 one is the shape
+`src/weight_trace_gen/weight_trace.py` defines and is the only one the engine can use.
 
 ```
 v2                                     v1 (legacy, gustavsnn only)
@@ -64,7 +64,7 @@ Burst{ Coord{kh, kw, cin, cout_start}, Axis::COUT,
 ```
 
 A tick omits a core that fetched nothing; it is never padded with an empty
-entry (`tracegen.TickEntry`). Core ids are the flat encoding of
+entry (`weight_trace_gen.weight_trace.TickEntry`). Core ids are the flat encoding of
 `nocsim.schedule.tiles.encode_core_id` and are therefore dense over the
 machine, not over the cores that happen to appear in a file.
 

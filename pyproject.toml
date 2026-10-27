@@ -9,7 +9,7 @@ requires-python = ">=3.10"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["util", "tracegen"]
+py-modules = ["util"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

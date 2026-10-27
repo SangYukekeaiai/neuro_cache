@@ -14,8 +14,9 @@ import struct
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 
-from tracegen import (CoreEntry, LayerWeightTrace, TickEntry,  # noqa: E402
-                      TileWeightTrace, stream_weight_trace)
+from cachesim.stream import stream_weight_trace  # noqa: E402
+from weight_trace_gen.weight_trace import (CoreEntry, LayerWeightTrace,  # noqa: E402
+                                           TickEntry, TileWeightTrace)
 
 FIXED_HEADER_BYTES = 56
 EXAMPLES = REPO / "src" / "cachesim" / "examples"
@@ -236,7 +237,7 @@ def test_round_trip_a_real_fixture():
 
 
 def _write_one_burst_stream(buf, burst_dim, addr):
-    from tracegen import write_stream_header, write_tile_frame, write_stream_trailer
+    from cachesim.stream import write_stream_header, write_tile_frame, write_stream_trailer
     write_stream_header(buf, n_tiles=1, n_cores=1, weight_bytes=1, burst_dim=burst_dim,
                         burst_stride=1, burst_span=addr[4] - addr[burst_dim],
                         spatial_factors={3: 1},
@@ -280,7 +281,7 @@ def test_stream_weight_trace_refuses_a_non_cout_burst_dim():
 
 
 def test_write_stream_header_refuses_burst_dim_outside_0_to_3():
-    from tracegen import write_stream_header
+    from cachesim.stream import write_stream_header
     for bd in (-1, 4, 6):
         buf = io.BytesIO()
         try:
@@ -295,7 +296,7 @@ def test_write_stream_header_refuses_burst_dim_outside_0_to_3():
 
 
 def test_write_tile_frame_requires_burst_dim():
-    from tracegen import write_tile_frame
+    from cachesim.stream import write_tile_frame
     try:
         write_tile_frame(io.BytesIO(), tile_index=0, mac_cycles=4,
                          cores=[(0, [(0, (0, 0, 0, 0, 16))])])

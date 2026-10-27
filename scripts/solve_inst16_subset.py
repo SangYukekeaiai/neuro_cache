@@ -16,7 +16,7 @@ import sys
 import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-import tracegen
+from snn_scheduler.artifact import solve_and_cache_schedule
 
 ARCHS = ["loas", "ptb", "spinalflow"]
 
@@ -60,7 +60,7 @@ def main() -> int:
 
             t0 = time.time()
             try:
-                art = tracegen.solve_and_cache_schedule(
+                art = solve_and_cache_schedule(
                     arch, arch_yaml, dataflow_yaml, trace_dir, layer,
                     meta, args.cache_dir,
                 )

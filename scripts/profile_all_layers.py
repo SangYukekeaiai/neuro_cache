@@ -73,10 +73,10 @@ def solve_schedule(bench, trace_root, trace_dir, layer, cache):
         sys.exit(f"no schedule for {trace_dir}/{layer} under {wb.SCHEDULES} or {cache}, "
                  "and gurobipy does not import, so it cannot be solved")
     import solve_schedules as ss
-    import tracegen
+    from snn_scheduler.artifact import solve_and_cache_schedule
     meta = json.loads((trace_root / trace_dir / "meta.json").read_text())
-    tracegen.solve_and_cache_schedule(bench, ss.DEFAULT_ARCH_YAML[bench], ss.DEFAULT_DATAFLOW_YAML[bench],
-                                      trace_dir, layer, meta, cache)
+    solve_and_cache_schedule(bench, ss.DEFAULT_ARCH_YAML[bench], ss.DEFAULT_DATAFLOW_YAML[bench],
+                             trace_dir, layer, meta, cache)
 
 
 def sample_commands(a, sched, trace_dir, layer, s, stream, grid_files):

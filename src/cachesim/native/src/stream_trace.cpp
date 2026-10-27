@@ -249,8 +249,9 @@ bool StreamingTileTrace::advance() {
                                      std::to_string(prev_core));
         }
         // A core with nothing to issue is omitted, never written as an empty
-        // block, which is tracegen's own rule and keeps `n_bursts == 0` a fact
-        // about the tile rather than a shape on the wire.
+        // block, which is the Python writer's own rule (src/cachesim/stream.py)
+        // and keeps `n_bursts == 0` a fact about the tile rather than a shape
+        // on the wire.
         if (n_bursts_here < 1) {
             throw std::runtime_error("WCTS frame " + std::to_string(tile_index) + ": core " +
                                      std::to_string(core_id) + " declares " +

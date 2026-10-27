@@ -5,7 +5,7 @@ scripts/tmp/generate_multinode_arch_sweep.py, in parallel via a
 multiprocessing.Pool.
 
 Per log/2026-07-30-tracegen-refactor-and-multinode-sweep-plan.md Part B.1.
-Reuses tracegen.solve_and_cache_schedule (the same solve/cache path as
+Reuses snn_scheduler.artifact.solve_and_cache_schedule (the same solve/cache path as
 solve_schedules.py and scripts/tmp/solve_multinode_schedules.py), pointed
 at each swept arch YAML. Writes to outputs/schedules/multinode_sweep/ (a
 new tree, separate from outputs/schedules/multinode/'s existing
@@ -177,7 +177,7 @@ def load_already_attempted(summary_path: pathlib.Path) -> set:
 
 def _solve_one(combo: dict) -> dict:
     """Worker entry point (top-level so it pickles for multiprocessing)."""
-    import tracegen  # imported per-worker: cheap, and keeps this module Gurobi-free at import time
+    from snn_scheduler.artifact import solve_and_cache_schedule  # imported per-worker: cheap, and keeps this module Gurobi-free at import time
 
     arch, instances = combo["arch"], combo["instances"]
     node_tag, noc_tag = _size_tag(combo["node_size"]), _size_tag(combo["noc_size"])
@@ -201,7 +201,7 @@ def _solve_one(combo: dict) -> dict:
     dataflow_yaml = str(REPO_ROOT / f"configs/node_mapspace/{arch}.yaml")
     t0 = time.time()
     try:
-        artifact = tracegen.solve_and_cache_schedule(
+        artifact = solve_and_cache_schedule(
             arch, str(arch_yaml), dataflow_yaml, trace_name, layer_name,
             combo["meta"], cache_dir,
         )

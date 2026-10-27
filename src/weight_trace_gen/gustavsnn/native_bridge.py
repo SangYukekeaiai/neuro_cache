@@ -56,7 +56,7 @@ def _unpack_output(data: bytes, num_tiles: int, sample_indices: Sequence[int]):
     (src/weight_trace_gen/tick_output.h): per (tile, sample), tick_value +
     num_addresses_at_tick pairs, addresses without a per-address tick field
     (the tick value is the group key). Yields ticks already in the
-    [{"tick": j, "weight_addresses": [...]}] shape tracegen.assemble_layer_traces
+    [{"tick": j, "weight_addresses": [...]}] shape weight_trace_gen.weight_trace.assemble_layer_traces
     expects. GustavSNN is the one arch where a tick group can genuinely
     hold more than one address (real same-cycle parallelism, see main.cpp's
     own wave_start_of[i]+j tick assignment) -- write_tick_grouped already
@@ -94,7 +94,7 @@ def reconstruct_samples_native(
     """Native-C++ equivalent of reconstruct_samples_for_schedule in
     dump/python_reference/tracegen_reconstruct.py,
     specialized to GustavSNN. Returns the same List[LayerWeightTrace]
-    shape so callers (tracegen.reconstruct_samples, via
+    shape so callers (weight_trace_gen.weight_trace.reconstruct_samples, via
     weight_trace_gen.ARCH_NATIVE_BRIDGES) can swap this in without changing
     anything downstream of the call site.
 
@@ -103,13 +103,13 @@ def reconstruct_samples_native(
     `tiles` may span multiple (dram_i, noc_i, core_id) triples (multi-node)
     or just dram_i (single-node) -- one subprocess call handles the whole
     flat list either way (see loas/native_bridge.py's docstring for why).
-    tracegen.assemble_layer_traces owns grouping the flat per-tile results
+    weight_trace_gen.weight_trace.assemble_layer_traces owns grouping the flat per-tile results
     back into (dram_i, noc_i)-keyed, cross-core-merged LayerWeightTraces.
     """
     # Imported here, not at module top, so importing this bridge does not
-    # import tracegen; tracegen itself loads this bridge only at call time,
+    # import weight_trace_gen.weight_trace; that module loads this bridge only at call time,
     # by its path string in weight_trace_gen.ARCH_NATIVE_BRIDGES.
-    from tracegen import assemble_layer_traces
+    from weight_trace_gen.weight_trace import assemble_layer_traces
 
     if not _BINARY.exists():
         raise FileNotFoundError(

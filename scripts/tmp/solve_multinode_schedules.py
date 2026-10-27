@@ -11,7 +11,7 @@ import traceback
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
-import tracegen
+from snn_scheduler.artifact import solve_and_cache_schedule
 from weight_trace_gen.trace import valid_layer_names
 from util import data_root
 
@@ -64,7 +64,7 @@ def main() -> int:
 
                 print(f"solve {arch}/{trace_name}/{layer_name}", flush=True)
                 try:
-                    artifact = tracegen.solve_and_cache_schedule(
+                    artifact = solve_and_cache_schedule(
                         arch,
                         arch_yaml,
                         dataflow_yaml,

@@ -120,7 +120,7 @@ void test_v1_header_is_refused_with_the_regenerate_message() {
         catch (const std::invalid_argument& e) { msg = e.what(); }
         CHECK_TRUE(msg.find("format_version is " + std::to_string(v)) != std::string::npos);
         CHECK_TRUE(msg.find("speaks only 2") != std::string::npos);
-        CHECK_TRUE(msg.find("regenerate the stream with the current src/tracegen.py") !=
+        CHECK_TRUE(msg.find("regenerate the stream with the current src/cachesim/stream.py") !=
                    std::string::npos);
     }
 }

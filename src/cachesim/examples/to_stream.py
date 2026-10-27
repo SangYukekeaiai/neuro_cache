@@ -16,22 +16,24 @@ import pathlib
 import sys
 import types
 
-# src/, three levels up from src/cachesim/examples/, is where tracegen lives.
+# src/, three levels up from src/cachesim/examples/, holds cachesim and weight_trace_gen.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 try:
     import weight_trace_gen.trace  # noqa: F401
 except ImportError:
-    # tracegen's WCTS writers need only `struct`, but the module's top-level
-    # `from weight_trace_gen.trace import ...` pulls in numpy, which the wire format
-    # has no part in. Where that import cannot be satisfied, a stub stands in
-    # so this helper depends on the writer and nothing else.
+    # cachesim.stream needs only `struct`, but weight_trace_gen.weight_trace's
+    # imports reach `from weight_trace_gen.trace import ...`, which pulls in
+    # numpy, which the wire format has no part in. Where that import cannot be
+    # satisfied, a stub stands in so this helper depends on the writer and
+    # nothing else.
     _stub = types.ModuleType("weight_trace_gen.trace")
     _stub.build_workload_from_trace = None
     sys.modules["weight_trace_gen.trace"] = _stub
 
-from tracegen import (CoreEntry, LayerWeightTrace, TickEntry,  # noqa: E402
-                      TileWeightTrace, stream_weight_trace)
+from cachesim.stream import stream_weight_trace  # noqa: E402
+from weight_trace_gen.weight_trace import (CoreEntry, LayerWeightTrace,  # noqa: E402
+                                           TickEntry, TileWeightTrace)
 
 N_CORES = 8
 

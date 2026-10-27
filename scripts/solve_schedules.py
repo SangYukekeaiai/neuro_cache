@@ -21,7 +21,7 @@ import traceback
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
-import tracegen
+from snn_scheduler.artifact import solve_and_cache_schedule
 from weight_trace_gen.trace import valid_layer_names
 
 # The in-repo traces are a 5-sample subset of the full capture, cut by
@@ -88,7 +88,7 @@ def main() -> int:
                 print(f"  solve: {arch_name}/{trace_dir_name}/{layer_name} ...")
                 row = {"arch": arch_name, "trace_dir": trace_dir_name, "layer": layer_name}
                 try:
-                    artifact = tracegen.solve_and_cache_schedule(
+                    artifact = solve_and_cache_schedule(
                         arch_name, arch_yaml, DEFAULT_DATAFLOW_YAML[arch_name],
                         trace_dir_name, layer_name,
                         meta, cache_dir,

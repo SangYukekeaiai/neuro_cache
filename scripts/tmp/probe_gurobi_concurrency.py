@@ -21,13 +21,13 @@ TRACE_NAME = "vgg16_T4_all"
 
 def solve_one(args):
     arch, layer_name = args
-    import tracegen
+    from snn_scheduler.artifact import solve_and_cache_schedule
     with open(TRACE_ROOT / TRACE_NAME / "meta.json") as f:
         meta = json.load(f)
     cache_dir = SCRATCH / arch
     t0 = time.time()
     try:
-        tracegen.solve_and_cache_schedule(
+        solve_and_cache_schedule(
             arch, str(REPO / f"configs/arch/multinode_sweep/{arch}_inst16.yaml"),
             str(REPO / f"configs/node_mapspace/{arch}.yaml"), TRACE_NAME, layer_name,
             meta, cache_dir,

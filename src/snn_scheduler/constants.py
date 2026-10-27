@@ -11,7 +11,7 @@ Contains four categories of constants consumed by the MIP solver:
 SNN_GB_START_LEVEL lives here rather than in snn_scheduler/schedule.py (which
 also defines the Gurobi-dependent create_schedule_vars) so that a
 decode-only consumer -- nocsim/schedule/decode.py's schedule_from_strategy,
-the function tracegen.load_schedule needs to rebuild an already-solved,
+the function weight_trace_gen.weight_trace.load_schedule needs to rebuild an already-solved,
 already-cached schedule -- can read this one constant without importing
 gurobipy at all. This module has no such dependency and never will.
 

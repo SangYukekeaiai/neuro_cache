@@ -8,7 +8,7 @@
 // semantics (that is stream_trace.h).
 //
 // Endianness and alignment. Every multi-byte field is little-endian on the
-// wire whatever the host is, matching the Python producer in src/tracegen.py
+// wire whatever the host is, matching the Python producer in src/cachesim/stream.py
 // (write_stream_header and friends), which packs every field with `<`. The
 // stream has no alignment guarantee, so every load goes through memcpy and
 // never through a pointer cast into the buffer.
@@ -224,7 +224,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
             ", this reader speaks only " + std::to_string(kFormatVersion) +
             "; version 1 streams store [kh, kw, cin, run_start, run_end] records that "
             "cannot hold a non-COUT anchor, so regenerate the stream with the current "
-            "src/tracegen.py");
+            "src/cachesim/stream.py");
     }
     const std::uint32_t header_bytes = cur.take<std::uint32_t>("header_bytes");
     if (header_bytes != len) {

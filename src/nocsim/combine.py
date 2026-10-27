@@ -157,7 +157,7 @@ def combine(
                    single_node schedules get a per-dram_i live model
                    call -- see below).
         cycles_by_step: Optional {(dram_i, noc_i): ComputeCycles} read from
-                   a saved per-step cycles file (tracegen.load_step_cycles). When
+                   a saved per-step cycles file (nocsim.step_cycles.load_step_cycles). When
                    given it is the cycle source and both compute_model and
                    trace are ignored, for either arch -- see below. Ruling
                    U31: read the number the trace already stores rather
@@ -209,13 +209,14 @@ def combine(
     #      which finishes when the slowest PE does. Measured on tile (0,0) of
     #      that layer, per-core spans run 57 / 87 / 126 (min / median / max)
     #      against a stored 127, so one core is 45-69% of the truth. This is
-    #      the same max() tracegen.py:282 applies when it writes mac_cycles
-    #      into the weight trace, which is what makes the two agree.
+    #      the same max() weight_trace_gen/weight_trace.py:151 applies when it
+    #      writes mac_cycles into the weight trace, which is what makes the two
+    #      agree.
     # cycles_by_step (ruling U31, log/2026-08-24-nocsim-per-tile-cycles-plan.md):
     # a table read from the weight trace this schedule was reconstructed
     # against. It short-circuits ahead of both other branches and for EITHER
     # arch, because it needs neither a model nor the tile list: the stored
-    # value is already the max over that tile's cores (tracegen's
+    # value is already the max over that tile's cores (weight_trace_gen.weight_trace's
     # assemble_layer_traces applies it before writing), which is exactly the
     # reduction the per-tile branch below computes. Skipping iter_node_tiles
     # here is not just an optimization -- with 16 or 128 cores per step it

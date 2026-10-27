@@ -40,7 +40,7 @@ from wcache_baseline import sweep  # noqa: E402
 import run_stage3  # noqa: E402
 from weight_trace_gen import ARCH_NATIVE_BRIDGES  # noqa: E402
 from weight_trace_gen.trace import exclusion_reason, layer_params, valid_layer_names  # noqa: E402
-import tracegen  # noqa: E402
+from snn_scheduler.artifact import check_schedule_matches_trace  # noqa: E402
 from common import INPUT_TRACE, tags  # noqa: E402
 from util import data_root  # noqa: E402
 
@@ -223,7 +223,7 @@ def check_bench(spec):
         stale = []
         for l in tracked:
             try:
-                tracegen.check_schedule_matches_trace(wb.SCHEDULES / bench / d.name / f"{l}.json", d, l)
+                check_schedule_matches_trace(wb.SCHEDULES / bench / d.name / f"{l}.json", d, l)
             except ValueError as e:
                 stale.append(f"  {e}")
         notes.append(f"{root.name}/{d.name}: {len(layers)} layers, {len(valid)} usable, "
@@ -268,7 +268,7 @@ def schedules_for(bench, layers, out, record):
     stale = []
     for d, l in layers:
         try:
-            tracegen.check_schedule_matches_trace(root / bench / d / f"{l}.json", INPUT_TRACE / bench / d, l)
+            check_schedule_matches_trace(root / bench / d / f"{l}.json", INPUT_TRACE / bench / d, l)
         except ValueError as e:
             stale.append(str(e))
     if stale:

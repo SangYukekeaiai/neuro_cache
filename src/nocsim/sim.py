@@ -64,7 +64,7 @@ def _solver_result(data: Dict) -> Dict:
 
     A raw ``snn_scheduler solve`` document IS the result: top-level ``status``,
     ``has_solution``, ``objective``, ``strategy``, ``metrics``, ``configs``
-    and no ``result`` key. A ``tracegen.ScheduleArtifact`` wraps that same
+    and no ``result`` key. A ``snn_scheduler.artifact.ScheduleArtifact`` wraps that same
     document under ``"result"`` and adds ``arch``/``trace_dir``/
     ``layer_name``/``workload``/``dram_num_steps``/``mode`` beside it.
 
@@ -111,7 +111,7 @@ def run(
                    parameter existed.
         cycles_by_step: Optional ``{(dram_i, noc_i): ComputeCycles}`` table
                    read from the per-step cycles file (sample_NNNNN.json.gz)
-                   of this schedule (``tracegen.load_step_cycles(...).by_step``), passed
+                   of this schedule (``nocsim.step_cycles.load_step_cycles(...).by_step``), passed
                    straight through to combine(). When given it is the cycle
                    source for every step and both compute_model and trace are
                    ignored (ruling U31). None (default) behaves exactly as
@@ -150,7 +150,7 @@ def run_from_json(
     is reconstructed from the ``strategy`` block in the JSON.
 
     Two JSON shapes load: a raw ``snn_scheduler solve`` document, whose top
-    level *is* the solver result, and a ``tracegen.ScheduleArtifact``, which
+    level *is* the solver result, and a ``snn_scheduler.artifact.ScheduleArtifact``, which
     nests that same result under ``"result"`` alongside its own identity
     fields (PROGRESS.md B179).
 
@@ -329,11 +329,10 @@ def main(argv=None) -> int:
 
     cycles_by_step = None
     if args.weight_trace:
-        # Imported here, not at module scope: tracegen is the trace-writing
-        # layer and itself imports nocsim.schedule, so only the CLI -- the
-        # one caller that starts from a file path rather than an in-memory
-        # table -- takes the dependency.
-        from tracegen import load_step_cycles
+        # Imported here, not at module scope: only the CLI -- the one caller
+        # that starts from a file path rather than an in-memory table --
+        # reads the step-cycles file.
+        from nocsim.step_cycles import load_step_cycles
         try:
             cycles_by_step = load_step_cycles(pathlib.Path(args.weight_trace)).by_step
         except (FileNotFoundError, KeyError, ValueError) as exc:

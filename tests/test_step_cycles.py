@@ -31,7 +31,8 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 
 import yaml  # noqa: E402
 
-from tracegen import ScheduleArtifact, load_step_cycles  # noqa: E402
+from nocsim.step_cycles import load_step_cycles  # noqa: E402
+from snn_scheduler.artifact import ScheduleArtifact  # noqa: E402
 from nocsim.schedule.decode import schedule_from_strategy  # noqa: E402
 from parsers.layer import SNNProb  # noqa: E402
 
