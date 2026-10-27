@@ -10,7 +10,7 @@ root=$(pwd)
 . "$root/scripts/env.sh"
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
-conda run -n "$CONDA_ENV" python scripts/generate_weight_traces.py \
+conda run -n "$CONDA_ENV" python -m weight_trace_gen gen \
     --stream --arch loas --trace-dir vgg16_T4_all \
     --layer layer_01_features_3 --sample-start 0 --sample-count 1 \
     --dump-trace "$tmp/dump.bin" --dump-trace-tiles 2 \

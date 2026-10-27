@@ -13,10 +13,9 @@ import sys
 import tempfile
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "scripts"))
 sys.path.insert(0, str(REPO / "tests"))
 
-from generate_weight_traces import emit_stream  # noqa: E402
+from weight_trace_gen.cli import emit_stream  # noqa: E402
 from test_stream_writer import load_fixture  # noqa: E402
 
 FIXTURE = "loas_vgg16_layer01_v2.json"

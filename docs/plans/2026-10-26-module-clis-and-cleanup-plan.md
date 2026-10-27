@@ -70,7 +70,7 @@ configs/
 
 1. A layer the tracked schedules do not cover: `solve-trace` must use `configs/arch/loas_inst16_node32kb.yaml`, the same file nocsim gets, never `configs/arch/loas.yaml`. Test in Task 3.
 2. `python -m weight_trace_gen gen --stream` to stdout must stay byte-identical to the old `generate_weight_traces.py --stream`. Test in Task 4.
-3. `nocsim` must refuse the old full weight-trace JSON and accept the slim step-cycles file exactly as before. Test in Task 5.
+3. `nocsim` must accept the slim step-cycles file and the format-less legacy JSON exactly as before, and refuse an unknown `format` value. Test in Task 5.
 4. `python -m cachesim grid` must emit the same 48 configs in the same order as `run_khkw_sweep.grid_for` for 16/32/64 B, now derived from `configs/cache/*.json`. Test in Task 6.
 5. `pipeline.py` with the default layers must write a `results.csv` byte-identical to the snapshot and pass `--verify-baseline`. Test in Task 7.
 

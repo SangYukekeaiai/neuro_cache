@@ -12,7 +12,7 @@ cd "$root" || exit 1
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate "$CONDA_ENV"
 log="scripts/tmp/logs_loas_sweep/${trace_dir}_${layer}_${combo_tag}.log"
-python scripts/generate_weight_traces.py \
+python -m weight_trace_gen gen \
   --arch loas --trace-dir "$trace_dir" --layer "$layer" \
   --schedule-cache "outputs/schedules/multinode_sweep/${combo_tag}" \
   --out-dir "$NEURO_CACHE_DATA/neuro_cache_outputs/weight_traces" \

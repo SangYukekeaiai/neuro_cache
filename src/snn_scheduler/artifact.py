@@ -61,7 +61,7 @@ def solve_and_cache_schedule(
     it to cache_dir/<arch>/<trace_dir>/<layer_name>.json. Always re-solves --
     callers wanting skip-existing behavior should check for that file
     themselves first, matching every other skip-existing check in this
-    pipeline (see generate_weight_traces.py).
+    pipeline (see weight_trace_gen/cli.py).
 
     BASE is always feasible (unconstrained) but is not special-cased --
     across all 155 real (arch, layer) pairs in this project's own trace

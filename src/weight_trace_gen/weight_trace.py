@@ -174,7 +174,7 @@ def reconstruct_samples(
 ) -> List[LayerWeightTrace]:
     """One LayerWeightTrace per requested sample, dispatching to arch_name's
     native C++ bridge (weight_trace_gen.ARCH_NATIVE_BRIDGES). The single dispatch
-    entry point for scripts/generate_weight_traces.py -- callers own the
+    entry point for weight_trace_gen/cli.py -- callers own the
     trace/worker-pool setup around this, this function owns only the
     dispatch. `trace` should already be loaded (e.g. via
     weight_trace_gen.trace.load_layer_trace(..., mmap=True)); this function

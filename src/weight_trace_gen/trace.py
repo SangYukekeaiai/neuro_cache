@@ -48,7 +48,7 @@ def load_layer_trace(trace_dir: pathlib.Path, layer_name: str, mmap: bool = Fals
               per tile, not the whole array resident at once. A memmap'd
               array also pickles cheaply (by file/offset/shape, not by
               copying its contents), which matters for handing it to
-              multiprocessing workers -- see generate_weight_traces.py.
+              multiprocessing workers -- see weight_trace_gen/cli.py.
 
     Returns:
         Binary uint8 array, shape [T, B, Cin, Hin, Win] (per meta.json).

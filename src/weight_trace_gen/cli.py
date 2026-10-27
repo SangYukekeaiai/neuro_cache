@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Stage 2 of the generate-once weight-trace pipeline: load a Stage-1-cached
 schedule (no re-solving, no Gurobi) and reconstruct real captured samples
 against it through the arch's native C++ bridge, persisting one JSON per
@@ -28,7 +27,7 @@ Two modes:
 Neither mode contains any native-bridge dispatch of its own -- both call
 weight_trace_gen.weight_trace.reconstruct_samples, the single consolidated
 dispatcher, and nocsim.step_cycles.save_step_cycles for persistence. This
-script owns only CLI parsing, which combos/samples to iterate, and worker-pool
+module owns only CLI parsing, which combos/samples to iterate, and worker-pool
 setup.
 
 See dump/docs/superpowers/specs/2026-07-18-weight-trace-generation-design.md.
@@ -44,9 +43,9 @@ import sys
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
+ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 from cachesim.stream import stream_weight_trace
 from nocsim.step_cycles import save_step_cycles
@@ -353,8 +352,11 @@ def run_stream(args: argparse.Namespace) -> int:
 
 # ----------------------------------------------------------------------
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(prog="python -m weight_trace_gen")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    p = subparsers.add_parser("gen", help="reconstruct weight traces from cached schedules",
+                              description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--arch", required=True, choices=sorted(ARCH_NATIVE_BRIDGES))
     p.add_argument("--all-layers", action="store_true",
                    help="Reconstruct every valid layer of --trace-dirs instead of one --trace-dir/--layer combo.")
@@ -363,7 +365,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--trace-dirs", nargs="+", default=DEFAULT_TRACE_DIRS,
                    help="--all-layers mode only (default: both).")
     p.add_argument("--trace-root", default=str(DEFAULT_TRACE_ROOT))
-    p.add_argument("--schedule-cache", default=str(ROOT / "outputs/schedules"))
+    p.add_argument("--schedule-cache", default=str(ROOT / "configs/schedules"))
     p.add_argument("--out-dir", default=str(ROOT / "outputs/weight_traces"))
     p.add_argument("--combo-tag", default="",
                    help="Optional path segment inserted as <out-dir>/<arch>/<combo-tag>/<trace-dir>/<layer>/ "
@@ -390,7 +392,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--dump-trace-tiles", type=int, metavar="N",
                    help="With --dump-trace: stop the dump after N tile frames and write the "
                         "trailer, so it is a valid short stream.")
-    args = p.parse_args()
+    args = parser.parse_args(argv)
 
     if args.sample_count is not None and args.n_samples != 100:
         p.error("specify --sample-count or --n-samples, not both")
@@ -418,14 +420,10 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: Optional[List[str]] = None) -> int:
+    args = parse_args(argv)
     if args.stream:
         return run_stream(args)
     if args.all_layers:
         return run_all_layers(args)
     return run_one_combo(args)
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

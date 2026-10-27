@@ -80,7 +80,7 @@ def solve_schedule(bench, trace_root, trace_dir, layer, cache):
 
 def sample_commands(a, sched, trace_dir, layer, s, stream, grid_files):
     """The stream generation command, then one cachesim_sweep command per grid file."""
-    gen = [sys.executable, str(ROOT / "scripts/generate_weight_traces.py"), "--arch", a.bench,
+    gen = [sys.executable, "-m", "weight_trace_gen", "gen", "--arch", a.bench,
            "--trace-root", str(a.trace_root), "--schedule-cache", str(sched), "--workers", "1",
            "--trace-dir", trace_dir, "--layer", layer, "--stream", "--sample-start", str(s),
            "--sample-count", "1", "--dump-trace", str(stream)]

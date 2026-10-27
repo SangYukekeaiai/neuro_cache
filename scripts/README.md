@@ -10,7 +10,7 @@ for the full design:
 
 ```
 Stage 1 (Gurobi, low concurrency)     Stage 2 (no Gurobi, embarrassingly parallel)
-snn_scheduler solve-trace       -->  generate_weight_traces.py
+snn_scheduler solve-trace       -->  weight_trace_gen gen
 outputs/schedules/<arch>/<trace_dir>/<layer>.json
                                        outputs/weight_traces/<arch>/<trace_dir>/<layer>/sample_NNNNN.json.gz
                                        (per-step cycles for nocsim; addresses go out via --stream)
@@ -46,7 +46,7 @@ The temporary multi-node equivalents are
 sweep they supported is retired, and `dump/plan_trace_shards.py` is kept
 only for reference, not meant to run against the current pipeline.
 
-## Stage 2: `generate_weight_traces.py`
+## Stage 2: `python -m weight_trace_gen gen`
 
 Loads a Stage-1-cached schedule (no re-solving) and reconstructs samples
 against it through the arch's native C++ bridge (dispatched via
@@ -59,7 +59,7 @@ One explicit `(arch, trace_dir, layer)` combo, parallelized by chunking
 samples across `--workers`:
 
 ```bash
-python scripts/generate_weight_traces.py \
+python -m weight_trace_gen gen \
   --arch loas --trace-dir vgg16_T4_all --layer layer_01_features_3 \
   --out-dir /work/hdd/bebv/yyu9/neuro_cache_outputs/weight_traces \
   --n-samples 10000 --workers 16
@@ -70,7 +70,7 @@ for one arch, parallelized by task (one `(trace_dir, layer)` per worker)
 in two passes -- broad coverage first, then depth:
 
 ```bash
-python scripts/generate_weight_traces.py --arch loas --all-layers --n-samples 100 --workers 16
+python -m weight_trace_gen gen --arch loas --all-layers --n-samples 100 --workers 16
 ```
 
 `--n-samples 100` (the default) is the fixed, reproducible canonical

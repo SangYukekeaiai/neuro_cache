@@ -1,10 +1,12 @@
-"""snn_scheduler.artifact.check_schedule_matches_trace: a tracked schedule solved for a
-different workload than meta.json now gives is refused."""
+"""python -m weight_trace_gen: the gen CLI, its schedule/trace consistency
+check, and its --stream output."""
 import argparse
 import dataclasses
 import gzip
+import hashlib
 import json
 import pathlib
+import subprocess
 import sys
 
 import pytest
@@ -14,9 +16,9 @@ from snn_scheduler.artifact import check_schedule_matches_trace  # noqa: E402
 from weight_trace_gen import ComputeCycles  # noqa: E402
 from weight_trace_gen.weight_trace import (CoreEntry, LayerWeightTrace, TickEntry,  # noqa: E402
                                            TileWeightTrace)
+import weight_trace_gen.cli as gwt  # noqa: E402
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scripts"))
-import generate_weight_traces as gwt  # noqa: E402
+REPO = pathlib.Path(__file__).resolve().parents[1]
 
 PROBLEM = {"KH": 3, "KW": 3, "CIN": 128, "COUT": 128, "HO": 4, "WO": 4, "T": 4, "shape": "snn-layer"}
 
@@ -145,3 +147,24 @@ def test_load_step_cycles_rejects_an_unknown_format(tmp_path):
     path.write_text(json.dumps({"format": "step_cycles_v2"}))
     with pytest.raises(ValueError, match="step_cycles_v2"):
         load_step_cycles(path)
+
+
+R9_SAMPLE0_STREAM_SHA256 = "2a2c582ae38d78e29ad89f45eec6df4ee2089864d2be0fa0b1ab8c01d5aa083e"
+
+
+def test_stream_is_byte_identical_to_snapshot(tmp_path):
+    """`gen --stream` on R9 sample 0 writes the same bytes as the tracked
+    stream: the hash equals `sha256sum
+    data/demo/loas/streams/resnet19_T4_n5/layer_09_layer2_0_conv2_s00000.wcts`."""
+    if not (REPO / "src/weight_trace_gen/loas/loasgen").exists():
+        pytest.skip("loasgen not built")
+    out = tmp_path / "stream.wcts"
+    with open(out, "wb") as fh:
+        r = subprocess.run(
+            [sys.executable, "-m", "weight_trace_gen", "gen", "--arch", "loas",
+             "--trace-root", "input_trace/loas", "--trace-dir", "resnet19_T4_n5",
+             "--layer", "layer_09_layer2_0_conv2", "--schedule-cache", "configs/schedules",
+             "--sample-start", "0", "--sample-count", "1", "--stream"],
+            cwd=REPO, stdout=fh, stderr=subprocess.PIPE, text=False)
+    assert r.returncode == 0, r.stderr.decode()
+    assert hashlib.sha256(out.read_bytes()).hexdigest() == R9_SAMPLE0_STREAM_SHA256

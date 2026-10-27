@@ -119,7 +119,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--layers", nargs="+", default=None,
         help="layers to solve in each trace dir (default: every valid layer in meta.json)",
     )
-    st.add_argument("--cache-dir", default=str(ROOT / "outputs/schedules"))
+    st.add_argument("--cache-dir", default=str(ROOT / "configs/schedules"))
     st.add_argument(
         "--force", action="store_true",
         help="re-solve and overwrite even if a cached schedule already exists",

@@ -257,7 +257,7 @@ _DEFAULT_OUT = "outputs/tc.csv"
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="python -m nocsim.sim",
+        prog="python -m nocsim",
         description=(
             "SNN-CoSA NoC simulator: replay a solved schedule and write "
             "the full transaction list to a CSV file."
@@ -292,7 +292,7 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="JSON_GZ",
         help=(
             "path to ONE sample's per-step cycles file (sample_NNNNN.json.gz, "
-            "written by scripts/generate_weight_traces.py). "
+            "written by python -m weight_trace_gen gen). "
             "Charges every schedule step the per-tile mac_cycles stored in "
             "that file instead of a static formula. One file is one sample, "
             "so there is no --sample flag"

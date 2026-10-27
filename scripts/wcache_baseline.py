@@ -37,7 +37,7 @@ def out_dir():
 def gen_stream(trace_dir, layer, sample, dst):
     """One sample's WCTS file, made the way stage4_wcache/inputs/gen_streams.sh makes it."""
     subprocess.run(
-        [sys.executable, str(ROOT / "scripts/generate_weight_traces.py"),
+        [sys.executable, "-m", "weight_trace_gen", "gen",
          "--arch", "loas", "--trace-dir", trace_dir, "--layer", layer,
          "--schedule-cache", str(SCHEDULES), "--workers", "1", "--stream",
          "--sample-start", str(sample), "--sample-count", "1", "--dump-trace", str(dst)],

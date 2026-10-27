@@ -14,7 +14,7 @@ cd "$root" || exit 1
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate "$CONDA_ENV"
 log="scripts/tmp/logs_baseline/${arch}_${trace_dir}_${layer}.log"
-python scripts/generate_weight_traces.py \
+python -m weight_trace_gen gen \
   --arch "$arch" --trace-dir "$trace_dir" --layer "$layer" \
   --schedule-cache outputs/schedules/multinode \
   --out-dir outputs/weight_traces \

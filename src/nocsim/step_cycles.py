@@ -35,7 +35,7 @@ def save_step_cycles(trace: LayerWeightTrace, path: pathlib.Path) -> None:
     Writes to a sibling temp file and os.replace()s it into place, so a
     process killed mid-write (OOM, SLURM time limit, etc.) can never leave
     a truncated file sitting at `path` -- skip-existing checks (this
-    module's callers, generate_weight_traces.py) only ever see either the
+    module's callers, weight_trace_gen/cli.py) only ever see either the
     complete prior file or nothing, never a corrupted partial one."""
     doc = {
         "format": STEP_CYCLES_FORMAT,

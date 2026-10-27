@@ -5,7 +5,7 @@ benchmark, joined into one table.
 Steps: check the inputs under input_trace/<bench>/; take the tracked schedules
 (or solve them when gurobipy imports); build the native tools; generate the
 nocsim weight traces and the version-2 WCTS streams; run nocsim
-(`python -m nocsim.sim --simulate`) and cachesim_sweep over a config grid; write
+(`python -m nocsim --simulate`) and cachesim_sweep over a config grid; write
 <out>/results.csv (one row per layer, sample and config) and <out>/summary.md
 (geomean speedup per config, and every command run).
 
@@ -315,7 +315,7 @@ def demo(a):
         builds.append(["make", "-C", str(ROOT / "src/weight_trace_gen" / a.bench)])
     run_all(builds, cmds, 1)
 
-    gen = [sys.executable, str(ROOT / "scripts/generate_weight_traces.py"), "--arch", a.bench,
+    gen = [sys.executable, "-m", "weight_trace_gen", "gen", "--arch", a.bench,
            "--trace-root", str(INPUT_TRACE / a.bench),
            "--schedule-cache", str(sched_root), "--workers", "1"]
     streams = {(d, l, s): out / "streams" / d / f"{l}_s{s:05d}.wcts"
@@ -339,7 +339,7 @@ def demo(a):
             tc = out / "nocsim" / d / f"{l}_s{s:05d}.csv"
             tc.parent.mkdir(parents=True, exist_ok=True)
             nocsim_cmds.append(
-                [sys.executable, "-m", "nocsim.sim", "--schedule", str(sched),
+                [sys.executable, "-m", "nocsim", "--schedule", str(sched),
                  "--layer", str(lyaml), "--arch", str(NOCSIM_ARCH[a.bench]),
                  "--weight-trace", str(out / "weight_traces" / a.bench / d / l / f"sample_{s:05d}.json.gz"),
                  "--out", str(tc), "--simulate"])
