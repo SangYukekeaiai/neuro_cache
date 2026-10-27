@@ -9,7 +9,7 @@ nocsim weight traces and the version-2 WCTS streams; run nocsim
 <out>/results.csv (one row per layer, sample and config) and <out>/summary.md
 (geomean speedup per config, and every command run).
 
-The default grid is the 0823 stage 4 khkw grid (run_khkw_sweep.grid_for).
+The default grid is the khkw grid of configs/cache/ (python -m cachesim grid).
 --grid takes a JSON array of wcache configs instead.
 
   python scripts/demo.py [--bench loas] [--layers V8 R9 ...] [--jobs N]
@@ -36,16 +36,18 @@ import yaml
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "profiling/0823_stagewise_verify/stage3_nocsim")]
 import wcache_baseline as wb  # noqa: E402  (puts profiling/ and stage4 on sys.path)
-from wcache_baseline import sweep  # noqa: E402
 import run_stage3  # noqa: E402
 from weight_trace_gen import ARCH_NATIVE_BRIDGES  # noqa: E402
 from weight_trace_gen.trace import exclusion_reason, layer_params, valid_layer_names  # noqa: E402
 from snn_scheduler.artifact import check_schedule_matches_trace  # noqa: E402
 from common import INPUT_TRACE, tags  # noqa: E402
 from util import data_root  # noqa: E402
+from cachesim.grid import full_grid, write_grid  # noqa: E402
 
 # The nocsim arch each benchmark is simulated on; only loas has one in the repo.
 NOCSIM_ARCH = {"loas": run_stage3.ARCH_YAML}
+# The layers run by default: the four of the tracked 0823 stage 4 sweep.
+TAGS = ["V8", "V9", "R9", "R16"]
 # Config columns of the wcache output copied into results.csv.
 KEY_FIELDS = ("layout", "line_size_bytes", "l2_size_bytes", "l2_banks",
               "prefetch_policy", "prefetch_distance")
@@ -280,7 +282,7 @@ def schedules_for(bench, layers, out, record):
 def load_grid(path):
     """(grid name, list of wcache configs)."""
     if path is None:
-        return "khkw", [p for lb in sweep.LINE_BYTES for p in sweep.grid_for(lb)]
+        return "khkw", full_grid()
     path = pathlib.Path(path)
     grid = json.loads(path.read_text())
     if not isinstance(grid, list) or not grid:
@@ -344,19 +346,13 @@ def demo(a):
                  "--weight-trace", str(out / "weight_traces" / a.bench / d / l / f"sample_{s:05d}.json.gz"),
                  "--out", str(tc), "--simulate"])
 
-    # cachesim_sweep gives one mapper to a whole grid, so points that differ in
-    # cin_block go to separate invocations (run_khkw_sweep.py does the same).
-    groups = {}
-    for i, p in enumerate(grid):
-        groups.setdefault(p.get("cin_block"), []).append((f"{grid_name}_{i:02d}", p))
-    grid_files = []
-    for k, pts in enumerate(groups.values()):
-        g = out / "grid" / f"{grid_name}_{k}.json"
-        g.parent.mkdir(parents=True, exist_ok=True)
-        g.write_text(json.dumps([p for _, p in pts], indent=1))
-        grid_files.append((g, [c for c, _ in pts]))
+    # cachesim_sweep gives one mapper to a whole grid, so write_grid puts points
+    # that differ in cin_block in separate files, each its own invocation.
+    grid_files = [(g, [f"{grid_name}_{i:02d}" for i, p in enumerate(grid) if p.get("cin_block") == cb])
+                  for cb, g in write_grid(out / "grid", grid, grid_name).items()]
     wc_work = [(d, l, s, g, names) for (d, l, s) in streams for g, names in grid_files]
-    wc_cmds = [[str(sweep.BIN), "--config-grid", str(g), "--trace", str(streams[(d, l, s)]),
+    wc_cmds = [[sys.executable, "-m", "cachesim", "sweep",
+                "--config-grid", str(g), "--trace", str(streams[(d, l, s)]),
                 "--arm", "cache", "--tier", grid_name, "--run-id", f"demo-{l}-s{s}-{g.stem}", "--header"]
                for d, l, s, g, _ in wc_work]
 
@@ -436,7 +432,7 @@ def verify(results_path, base):
 def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--bench", default="loas")
-    p.add_argument("--layers", nargs="+", default=list(sweep.TAGS),
+    p.add_argument("--layers", nargs="+", default=list(TAGS),
                    help="trace_dir/layer or a tag such as V8 (default: the 4 tracked, %(default)s)")
     p.add_argument("--sample-start", type=int, default=0)
     p.add_argument("--sample-count", type=int, default=5)

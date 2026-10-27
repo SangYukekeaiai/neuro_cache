@@ -1,0 +1,5 @@
+{
+  "line_bytes": [16, 32, 64],
+  "l2_banks": [1, 2, 4, 8],
+  "prefetch": [["none", 0], ["next_burst", 1], ["next_burst", 2], ["next_burst", 4]]
+}
