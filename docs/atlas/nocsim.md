@@ -254,7 +254,7 @@ Conventions that hold everywhere:
 - `iter_node_tiles(schedule, prob) -> Iterator[NodeTileSpec]` (src/nocsim/schedule/tiles.py:98): one spec per `(dram_i, noc_i, core_id)`, nested in that order. `node_bound[j] = max(total_j // (dram_t*noc_t*spatial), 1)` (:131-132). `tile_offset[j]` = spatial slice + NoC offset + DRAM offset (:154-159), only for dims that vary. Builds its own `StepInfo` (:123) for `is_last_K`. Imports the private `steps._decode_dim` (:47).
 
 **buf_spatial.py**
-- `_WAY2_ORDER` (src/nocsim/schedule/buf_spatial.py:54), `_K_DIMS` tuple (:57), `AddrGroups` (:60). This `_K_DIMS` duplicates steps.py:50.
+- `_WAY2_ORDER` (src/nocsim/schedule/buf_spatial.py:54), `_K_DIMS` tuple (:57), `AddrGroups` (:60). This `_K_DIMS` duplicates src/nocsim/schedule/steps.py:50.
 - `class BufSpatial(schedule, prob)` (src/nocsim/schedule/buf_spatial.py:63, `__init__` :76): only dims with `sf > 1` get a stride (:80); `num_pes` = their product, equal to X*Y. `weight/psum/vmem` are per-PE 7-tuples with irrelevant dims zeroed (`_make` :116).
 - `addr_groups(buf)` (static, :134): address -> sorted pe_ids.
 - `k_chain_groups()` :157: groups by psum address; ascending pe_id = ascending K (K dims are on Y). Cached.
@@ -317,7 +317,7 @@ packages on the import path.
 **Duplicated logic**
 6. Dim-totals helper in three places in nocsim: src/nocsim/combine.py:95, src/nocsim/schedule/tiles.py:85, src/nocsim/schedule/steps.py:250 (plus a fourth copy at src/weight_trace_gen/dense.py:24 and an inline one at src/nocsim/schedule/decode.py:288-290).
 7. Mesh X/Y formula in src/nocsim/combine.py:179-180 and src/nocsim/sim.py:379-380; `--simulate` also re-reads and re-decodes the JSON (src/nocsim/sim.py:375-377).
-8. `_K_DIMS` in src/nocsim/schedule/steps.py:50 (frozenset) and src/nocsim/schedule/buf_spatial.py:57 (tuple); Way-2 order in buf_spatial.py:54 and tiles.py:58.
+8. `_K_DIMS` in src/nocsim/schedule/steps.py:50 (frozenset) and src/nocsim/schedule/buf_spatial.py:57 (tuple); Way-2 order in src/nocsim/schedule/buf_spatial.py:54 and src/nocsim/schedule/tiles.py:58.
 9. psum.py and vmem.py builders are the same three shapes (load/chain/store); `mac_count` and `lif_count` have identical bodies (src/nocsim/transactions/compute.py:26, :61); `load_from_dram`/`store_to_dram` differ only in direction (src/nocsim/transactions/dram.py:44, :82).
 10. Values still kept equal by hand across languages or modules: XY routing (src/nocsim/core/noc.py:111 vs src/nocsim/eventsim/NoC.h:34); default `dram_latency=0.25` (src/nocsim/core/generator.py:53 vs src/parsers/bitwidths.py:35).
 

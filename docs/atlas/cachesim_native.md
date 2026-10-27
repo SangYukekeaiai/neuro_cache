@@ -2,8 +2,10 @@
 
 Branch `wcache-rebuild-phase-a`, commit `ef48902`. Written from code only: `.cpp`, `.h`, `.sh`,
 `.py`, `Makefile`, `.json`. No markdown, text or log file was read, so any design rationale below is
-what the code's own comments state. Every path is relative to the repo root unless a section says
-otherwise.
+what the code's own comments state. Paths that start with `src/cachesim/native/`, `src/cachesim/`,
+`configs/`, `scripts/`, `tests/` or `docs/` are relative to the repo root; every other path (such as
+`src/engine.cpp`, `include/cachesim/config.h`, `apps/app_support.h`, `tests/run_cli.sh`, `Makefile`)
+is relative to `src/cachesim/native/`.
 
 > **The reader accepts WCTS version 2 only.** `decode_header` throws `std::invalid_argument` for any
 > `format_version` other than 2 and says in the message to regenerate the stream
