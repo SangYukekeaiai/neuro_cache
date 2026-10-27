@@ -3,8 +3,7 @@
 // SampleResult's addresses by their own `.tick` field and writes the
 // tick-grouped wire format shared by every arch's weight-trace output, so
 // this logic lives in exactly one place instead of being duplicated across
-// 5 independently-verified native codebases. See
-// log/2026-08-02-multinode-core-driven-weight-trace-plan.md.
+// 5 independently-verified native codebases.
 //
 // Requires AddressRow to have public int32_t fields kh, kw, cin,
 // cout_start, cout_end, tick -- every arch's <Arch>Gen.h already declares

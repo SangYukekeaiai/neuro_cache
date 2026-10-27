@@ -212,7 +212,7 @@ def combine(
     #      the same max() weight_trace_gen/weight_trace.py:151 applies when it
     #      writes mac_cycles into the weight trace, which is what makes the two
     #      agree.
-    # cycles_by_step (ruling U31, log/2026-08-24-nocsim-per-tile-cycles-plan.md):
+    # cycles_by_step (ruling U31):
     # a table read from the weight trace this schedule was reconstructed
     # against. It short-circuits ahead of both other branches and for EITHER
     # arch, because it needs neither a model nor the tile list: the stored

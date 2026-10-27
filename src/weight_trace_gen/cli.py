@@ -29,8 +29,6 @@ weight_trace_gen.weight_trace.reconstruct_samples, the single consolidated
 dispatcher, and nocsim.step_cycles.save_step_cycles for persistence. This
 module owns only CLI parsing, which combos/samples to iterate, and worker-pool
 setup.
-
-See dump/docs/superpowers/specs/2026-07-18-weight-trace-generation-design.md.
 """
 
 from __future__ import annotations
@@ -64,7 +62,7 @@ DEFAULT_TRACE_DIRS = ["resnet19_T4_n5", "vgg16_T4_n5"]
 # --all-layers only: chunk size for regenerate_layer's inner loop (bounds
 # peak memory -- the native call holds every requested sample's full
 # per-tile weight-address list in memory at once; a dense layer at
-# chunk_size=100 OOM'd on real data, see log/2026-07-26-workflow-optimization-plan.md).
+# chunk_size=100 OOM'd on real data).
 SAMPLE_CHUNK_SIZE = 10
 # --all-layers only: samples covered in the first pass across every layer,
 # before the second pass fills in the rest of the requested samples.

@@ -19,13 +19,11 @@ if TYPE_CHECKING:
 # The in-flight sibling of save_step_cycles: it carries the weight
 # addresses that file leaves out, as a stream, so a producer can feed the cache simulator down a
 # pipe with nothing materialized in between (Phase D campaign plan, 10).
-# The format is normative in log/2026-08-20-phaseD-implementation-plan.md,
-# "The wire format, in full"; the C++ reader
-# (src/cachesim/native/include/cachesim/stream_format.h) decodes exactly these
-# bytes. `burst_span` sits beside burst_dim and
-# burst_stride per coordinator ruling Q-D, which the normative table there
-# predates -- that is the one field to check first if the two sides
-# disagree.
+# docs/atlas/cachesim_native.md section 1.7 describes the format; the C++
+# reader (src/cachesim/native/include/cachesim/stream_format.h) decodes exactly
+# these bytes. `burst_span` sits beside burst_dim and burst_stride per
+# coordinator ruling Q-D, a later addition to the format -- that is the one
+# field to check first if the two sides disagree.
 #
 # Fixed header, little-endian, no padding:
 #    0  8  magic "WCTRACE1"        28  4  i32 burst_dim

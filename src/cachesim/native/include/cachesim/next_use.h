@@ -1,7 +1,6 @@
 // NextUseOracle: when will this line next be referenced at this level.
 //
-// Plan unit W2 of log/2026-08-31-belady-l2-plan.md. It exists to feed
-// BeladyPolicy, which needs the future and cannot derive it.
+// It exists to feed BeladyPolicy, which needs the future and cannot derive it.
 //
 // WHAT IT IS BUILT FROM. An access log, the file `cachesim_run --access-log`
 // already writes. For every reference in that log the oracle records where the

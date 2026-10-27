@@ -116,10 +116,9 @@ public:
 // Belady's MIN, the optimal offline replacement policy.
 //
 // NOT a shippable policy and not offered as one: it needs the future, so it
-// exists to bound what any real policy could achieve at a given geometry. Plan
-// log/2026-08-31-belady-l2-plan.md section 1 states the question it is built to
-// answer, which is whether the L2's 0.00% at 16-way is a replacement failure or
-// a set that is genuinely over-subscribed.
+// exists to bound what any real policy could achieve at a given geometry. The
+// question it is built to answer is whether the L2's 0.00% at 16-way is a
+// replacement failure or a set that is genuinely over-subscribed.
 //
 // It is a StampPolicy with the sign flipped. `note_next_use` writes the stamp
 // instead of a counter, and `pick_victim` takes the MAXIMUM: the line whose next

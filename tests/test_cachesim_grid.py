@@ -1,13 +1,12 @@
-"""python -m cachesim grid: the khkw grid built from configs/cache/*.json is the
-0823 stage 4 grid, and the files it writes are the ones the demo writes."""
-import importlib.util
+"""python -m cachesim grid: the khkw grid built from configs/cache/*.json writes
+the files the demo writes."""
 import pathlib
 import subprocess
 import sys
 
 import pytest
 
-from cachesim.grid import grid_for, write_grid
+from cachesim.grid import write_grid
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 DEMO_GRID = REPO / "data/demo/loas/grid"
@@ -15,23 +14,6 @@ DEMO_GRID = REPO / "data/demo/loas/grid"
 BASELINE_GRID = {"khkw_0.json": "khkw_16b.json", "khkw_1.json": "khkw_32b.json",
                  "khkw_2.json": "khkw_64b.json"}
 BASELINE_DIR = REPO / ".baseline/wcache/_khkw_grid"
-
-
-def load_run_khkw_sweep(monkeypatch):
-    monkeypatch.syspath_prepend(str(REPO / "profiling"))
-    path = REPO / "profiling/0823_stagewise_verify/stage4_wcache/run_khkw_sweep.py"
-    spec = importlib.util.spec_from_file_location("run_khkw_sweep", path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-def test_grid_matches_0823_sweep(monkeypatch):
-    sweep = load_run_khkw_sweep(monkeypatch)
-    for line_bytes in (16, 32, 64):
-        ref, got = sweep.grid_for(line_bytes), grid_for(line_bytes)
-        assert got == ref, line_bytes
-        assert [list(p) for p in got] == [list(p) for p in ref], line_bytes
 
 
 def test_grid_files_equal_demo_grid(tmp_path):

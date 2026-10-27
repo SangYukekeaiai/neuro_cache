@@ -58,8 +58,7 @@ class TickEntry:
 def merge_cores_by_tick(core_results: Dict[int, Dict[str, Any]]) -> List[TickEntry]:
     """Merge N cores' own per-tile results into one tile's tick-major
     ticks list -- the canonical on-disk order is dram_i -> noc_i -> tick ->
-    core (core fastest-varying). See
-    log/2026-08-02-multinode-core-driven-weight-trace-plan.md.
+    core (core fastest-varying).
 
     core_results: {core_id: {"ticks": [{"tick": j, "weight_addresses": [...]}, ...]}},
     one entry per core that was active in this tile -- exactly what one
@@ -84,8 +83,7 @@ def merge_cores_by_tick(core_results: Dict[int, Dict[str, Any]]) -> List[TickEnt
 
 @dataclass
 class TileWeightTrace:
-    """One (dram_i, noc_i) tile's reconstructed weight fetches, tick-major
-    (see log/2026-08-02-multinode-core-driven-weight-trace-plan.md).
+    """One (dram_i, noc_i) tile's reconstructed weight fetches, tick-major.
     noc_i is always 0 and ticks always has exactly one core (core_id=0) for
     a single-node schedule -- the degenerate case of this same shape, not a
     separate format."""

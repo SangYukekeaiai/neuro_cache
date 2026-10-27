@@ -1,14 +1,8 @@
 # Example weight traces
 
-Small slices of real generated traces, committed so that plan unit A3
-(`TraceReader`) can be built and reviewed against corpus-shaped data instead of
-against `FakeTrace`, the hand-written stand-in every Phase C test drives the
-engine from today.
-
-`manifest.json` records, per file, where it was cut from and what was measured
-in it. `make_examples.py` regenerates all of them from
-`outputs/weight_traces/` and **fails** if any example has stopped carrying the
-property it was cut for.
+Small slices of real generated traces, committed as test fixtures for the cache
+simulator. `manifest.json` records, per file, where it was cut from and what
+was measured in it.
 
 ## What is here
 
@@ -29,66 +23,14 @@ originals are in `manifest.json`. Nothing is added to a trace file: an example
 is schema-identical to a corpus file, so a reader pointed at one runs the same
 decode path it will run on a 1.5 GB sample.
 
-## The on-disk shape, as it actually is
+## `to_stream.py`
 
-Two shapes are live in `outputs/weight_traces/`. The v2 one is the shape
-`src/weight_trace_gen/weight_trace.py` defines and is the only one the engine can use.
+Writes one v2 fixture out as a WCTS stream on stdout; the native CLI tests
+(`native/tests/*.sh`, run by `make test-cli`) drive the simulator from it.
 
 ```
-v2                                     v1 (legacy, gustavsnn only)
-{                                      {
- arch, trace_dir, layer_name,           arch, trace_dir, layer_name,
- sample_idx, workload_dims,             sample_idx, workload_dims,
- dram_num_steps, noc_num_steps,         dram_num_steps,
- tiles: [                               tiles: [
-  { dram_i, noc_i,                       { dram_i,
-    mac_cycles, lif_cycles,                mac_cycles, lif_cycles,
-    ticks: [                               weight_addresses: [ [5 ints], ... ]
-     { tick,                             }
-       cores: [                         ]
-        { core_id,                     }
-          weight_addresses: [ [5 ints], ... ] } ] } ] } ] }
+python3 to_stream.py <fixture.json> [max_tiles] > slice.wcts
 ```
 
-`workload_dims` carries `KH`, `KW`, `CIN`, `COUT` (plus `HO`, `WO`, `T`,
-`shape`, which the cache model does not read), and maps straight onto
-`WeightShape`.
-
-An address is five `int32`: `[kh, kw, cin, cout_start, cout_end]`, a
-half-open COUT run. Every arch emits this order and no other
-(`src/weight_trace_gen/tick_output.h`). It becomes a `Burst` as
-
-```c++
-Burst{ Coord{kh, kw, cin, cout_start}, Axis::COUT,
-       /*count=*/cout_end - cout_start, /*stride=*/1 }
-```
-
-A tick omits a core that fetched nothing; it is never padded with an empty
-entry (`weight_trace_gen.weight_trace.TickEntry`). Core ids are the flat encoding of
-`nocsim.schedule.tiles.encode_core_id` and are therefore dense over the
-machine, not over the cores that happen to appear in a file.
-
-## What the format does not say, and A3 has to get from somewhere
-
-Four things the engine needs are absent from every header on disk. They are
-listed here rather than in `manifest.json` because they are decisions, not
-measurements.
-
-1. **The machine's core count.** Nothing states it. `max(core_id) + 1` gives
-   128 on every sample measured, but that is luck: `prosperity` layer 01 has
-   only 90 distinct core ids across the whole sample and 75-85 per tile, so a
-   trace whose top core is idle everywhere would report a machine one core too
-   small, and the barrier is a countdown over exactly that number.
-2. **`spatial_factors`.** Plan unit A3's row calls for the `spatial_factors`
-   core decode, and `spatial_factors` is not in the trace. It lives in the
-   schedule artifact under `outputs/schedules/`, reachable only by decoding
-   `result.strategy` through `nocsim.schedule.decode` -- Python, and a MIP
-   strategy at that.
-3. **The burst axis and stride.** `types.h` documents `Burst::axis` as coming
-   from a "header `burst_dim`" and `Burst::stride` from a "`burst_stride`".
-   Neither field exists. Today every burst in the corpus is COUT with stride 1,
-   so hardcoding it is correct and would stay correct silently if it ever
-   stopped being true.
-4. **The address tuple's field order.** The `A2a -> A3` obligation requires the
-   tuple to be decoded "by header-declared field order, never positionally".
-   No header declares one, so it can only be decoded positionally.
+`max_tiles` truncates the stream after that many tile frames. The v1 legacy
+fixture has no `tick` or `core_id` and cannot drive the engine.

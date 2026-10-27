@@ -1,6 +1,6 @@
 // ProsperityGen.h -- C++ port of Prosperity's per-tile weight-address/tick
 // reconstruction
-// (dump/python_reference/archmodels/prosperity/{reconstruct,address,cycles}.py).
+// (a port of the former pure-Python reconstruct/address/cycles modules).
 //
 // ProSparsity compression, two parts (reconstruct.py's own docstring,
 // Wei et al. HPCA 2025):

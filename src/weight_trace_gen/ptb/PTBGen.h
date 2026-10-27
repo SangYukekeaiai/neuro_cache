@@ -1,6 +1,6 @@
 // PTBGen.h -- C++ port of PTB's per-tile weight-address/tick
 // reconstruction
-// (dump/python_reference/archmodels/ptb/{reconstruct,address,cycles}.py).
+// (a port of the former pure-Python reconstruct/address/cycles modules).
 //
 // One tile = one fixed (ho, wo) output pixel's full reduction row.
 // stSAP compression, two passes, [KH, KW, CIN] nested iteration order:

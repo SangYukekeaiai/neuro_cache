@@ -1,7 +1,6 @@
 """Task 7: the Python writer and the C++ reader must agree on the wire format.
 
-Checks the byte layout the WCTS section of
-log/2026-08-20-phaseD-implementation-plan.md defines, with `i32 burst_span`
+Checks the WCTS byte layout (docs/atlas/cachesim_native.md section 1.7), with `i32 burst_span`
 added beside burst_dim and burst_stride (coordinator ruling Q-D), which puts
 the fixed header at 56 bytes and n_addr_fields at offset 40.
 

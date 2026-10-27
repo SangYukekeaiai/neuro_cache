@@ -6,7 +6,7 @@ Two calling modes
    ``run(x, prob, bitwidths, out_file)`` — takes live Gurobi variables.
 
 2. **Standalone CLI** (called from the command line):
-   ``python -m nocsim.sim --schedule <json> --layer <yaml>
+   ``python -m nocsim --schedule <json> --layer <yaml>
        --arch <yaml> --out <csv>``
    Reconstructs the schedule from the solver JSON output (no Gurobi
    license needed at replay time) and writes a single ``tc.csv``.

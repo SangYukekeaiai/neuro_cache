@@ -81,8 +81,8 @@ def reconstruct_samples_native(
     workload_dims: Dict[str, Any],
     dram_num_steps: int,
 ):
-    """Native-C++ equivalent of reconstruct_samples_for_schedule in
-    dump/python_reference/tracegen_reconstruct.py,
+    """Native-C++ equivalent of the former pure-Python
+    reconstruct_samples_for_schedule,
     specialized to Prosperity. Same LayerWeightTrace output shape as the
     Python path. Requires prosperitygen to be built first
     (make in this directory).

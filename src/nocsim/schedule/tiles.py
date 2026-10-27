@@ -54,8 +54,7 @@ from .steps import StepInfo, _decode_dim  # _decode_dim is private to steps.py -
 # core_id mixed-radix order, inner -> outer. Deliberately matches combine.py's
 # Way-2 NoC layout (X = T*WO*HO, Y = CIN*KW*KH*COUT) so a core_id decomposes
 # directly into NoC.get_xy's pe_id = x + y*X scheme with no separate
-# translation layer, if a later stage wants NoC-hop consistency. See
-# log/2026-08-02-multinode-core-driven-weight-trace-plan.md.
+# translation layer, if a later stage wants NoC-hop consistency.
 _CORE_ID_ORDER = [DIM_T, DIM_WO, DIM_HO, DIM_CIN, DIM_KW, DIM_KH, DIM_COUT]
 
 
@@ -102,8 +101,7 @@ def iter_node_tiles(schedule: Schedule, prob: SNNProb) -> Iterator[NodeTileSpec]
     (one NodeTileSpec per dram_i, noc_i=0, core_id=0) whenever
     schedule.noc_temporal_loops is empty and schedule.spatial_factors is
     trivial (all 1) -- true for every single_node schedule, since NoCLevel
-    is empty/irrelevant there. See
-    log/2026-08-02-multinode-core-driven-weight-trace-plan.md.
+    is empty/irrelevant there.
 
     node_bound[dim] now divides out DRAM-temporal, NoC-temporal, AND spatial
     (inter-core) factors -- single-node only ever divided out DRAM-temporal,

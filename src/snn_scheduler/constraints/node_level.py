@@ -24,13 +24,11 @@ larger than the cap but not a clean multiple of it (use the largest
 divisor that still fits). When F_j already divides prob_bound[j] exactly
 (every case that passed under the old strict rule), the effective factor
 equals F_j unchanged -- this is a strict superset of previously solvable
-cases, never a behavior change for one that already worked. See
-docs/superpowers/specs/2026-07-16-v2-spatial-relaxation-design.md for the
-full derivation, including why this is always solver-feasible (any
-divisor of prob_bound[j] is expressible from that same bound's own prime
-factors) and why nothing downstream needs to change (schedule.spatial_
-factors is read back from the actually-solved Gurobi variables, never
-from the arch's nominal declared cap).
+cases, never a behavior change for one that already worked. This is
+always solver-feasible (any divisor of prob_bound[j] is expressible from
+that same bound's own prime factors), and nothing downstream needs to
+change (schedule.spatial_factors is read back from the actually-solved
+Gurobi variables, never from the arch's nominal declared cap).
 """
 
 import logging

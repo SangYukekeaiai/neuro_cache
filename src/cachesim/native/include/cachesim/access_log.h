@@ -1,11 +1,9 @@
 // AccessLog: the demand reference stream, in time order, as fixed-width binary.
 //
-// Plan unit U2 of log/2026-08-31-reuse-distance-plan.md.
-//
 // This instrument answers one question and no other: WHICH LINE was referenced,
 // at which level, by which core, and in what order. It computes nothing. The
-// reuse-distance analysis that consumes it lives entirely outside the engine, in
-// profiling/0831_reuse_distance/, and that split is deliberate: a stack-distance
+// reuse-distance analysis that consumes it lives entirely outside the engine,
+// and that split is deliberate: a stack-distance
 // tree inside the engine would put a second stateful data structure next to the
 // caches for no gain, while a dumper leaves the engine with one more write and
 // nothing to be wrong about.

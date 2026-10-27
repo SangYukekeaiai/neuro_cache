@@ -1,6 +1,6 @@
 // GustavGen.h -- C++ port of GustavSNN's per-tile weight-address/tick
 // reconstruction
-// (dump/python_reference/archmodels/gustavsnn/{reconstruct,address,cycles}.py).
+// (a port of the former pure-Python reconstruct/address/cycles modules).
 //
 // Faithful port of three Python functions, kept in lockstep with them:
 //   reconstruct_tile_sequence_batch (reconstruct.py) -- builds, per

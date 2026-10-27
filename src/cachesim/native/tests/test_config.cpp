@@ -177,9 +177,9 @@ void test_malformed_json_is_refused() {
 
 void test_l2_demand_reserve_is_rejected_by_name() {
     check::group("l2_demand_reserve is LIVE again (plan 0831-l2-cin-neighbour)");
-    // It was deleted as inert, and phaseC-EXPLAIN.md:1044 gives the reason:
-    // every request the L2 saw held an L1 entry, so `is_prefetch_at_issue` was
-    // false there and the reserve was never consulted. An L2-originated
+    // It was deleted as inert because every request the L2 saw held an L1
+    // entry, so `is_prefetch_at_issue` was false there and the reserve was
+    // never consulted. An L2-originated
     // prefetch is the first request that reaches the L2 without one, so it is
     // exactly the population the reserve was written for and the stated reason
     // for the deletion is now false. It loads, and it reaches the level.

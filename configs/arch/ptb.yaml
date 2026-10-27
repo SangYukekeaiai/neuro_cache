@@ -1,10 +1,9 @@
 arch:
   # RECONSTRUCTED 2026-07-20: the original configs/arch/ptb.yaml was lost
-  # from disk (it was always gitignore'd, never committed -- see
-  # log/2026-07-14-archmodel-ptb-pilot.md's Task 4/Step 5). Rebuilt from
-  # that same log's field-by-field documentation of every value below;
+  # from disk (it was always gitignore'd, never committed). Rebuilt from
+  # the ptb pilot log's field-by-field documentation of every value below;
   # not verified byte-identical to the original file. If a fresh solve
-  # against this file doesn't reproduce outputs/schedules/ptb/...'s
+  # against this file doesn't reproduce a cached ptb schedule's
   # currently-cached dram_num_steps, treat this reconstruction (not the
   # cached schedule) as the suspect.
   bitwidths:

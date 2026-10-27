@@ -772,7 +772,7 @@ static_assert(std::is_same<decltype(make_policy(PolicyKind::LRU, 1)),
 
 
 // ===========================================================================
-// Belady's MIN (plan log/2026-08-31-belady-l2-plan.md, unit W1)
+// Belady's MIN (unit W1)
 // ===========================================================================
 
 void test_belady_evicts_the_furthest_next_use() {
@@ -894,7 +894,7 @@ void test_make_policy_builds_belady() {
 }
 
 // ===========================================================================
-// LFU and RRIP (plan profiling/0907_index_policy/PLAN.md, increments P1-P4)
+// LFU and RRIP (increments P1-P4)
 // ===========================================================================
 
 // Neither policy exposes an accessor for its per-slot state, deliberately and

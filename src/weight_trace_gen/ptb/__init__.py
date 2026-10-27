@@ -3,7 +3,7 @@
 Reconstructs PTB's per-tile stSAP-compressed line sequence from a real
 trace, then derives the pipeline cycle count and the ordered weight-address
 stream / weight_access_count from it, in PTBGen.h (a port of
-dump/python_reference/archmodels/ptb/{reconstruct,cycles,address}.py).
+the former pure-Python reconstruct/cycles/address modules).
 Standalone-verified against a real captured LoAS trace
 (input_trace/loas/) used purely as sample spike data, and against hand-
 built examples for the stSAP compression and pipeline-latency formulas

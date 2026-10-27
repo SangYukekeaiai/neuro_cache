@@ -184,7 +184,7 @@ assert sweep[0]["padding_fraction"] == run[0]["padding_fraction"], \
 print(f"padding meter: {pad} in the sweep and in the single run alike")
 PADPY
 
-# 9. The belady arm of a grid, which is what profiling/0907_index_policy needs.
+# 9. The belady arm of a grid.
 #
 # Belady is offline, so it takes two passes over the stream: one prior run
 # writes the access log, and the sweep turns that log into one oracle per core

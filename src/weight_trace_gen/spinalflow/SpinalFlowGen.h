@@ -1,6 +1,6 @@
 // SpinalFlowGen.h -- C++ port of SpinalFlow's per-tile weight-address/tick
 // reconstruction
-// (dump/python_reference/archmodels/spinalflow/{reconstruct,address,cycles}.py).
+// (a port of the former pure-Python reconstruct/address/cycles modules).
 //
 // Much simpler than GustavSNN: one tile = one fixed (ho, wo) output pixel
 // (no per-row waves), so a "spine" is just every (t, kh, kw, cin) with a

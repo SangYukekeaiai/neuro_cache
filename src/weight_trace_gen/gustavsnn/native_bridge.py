@@ -2,12 +2,10 @@
 of reconstruct_tile_sequence_batch + event_to_address + event_to_ticks
 that replaces this project's own profiling finding: 94% of GustavSNN's
 weight-trace generation time is pure Python object/tuple construction in
-those three functions, not the numpy gather (see
-log/2026-07-26-workflow-optimization-plan.md's "Speedup methodology").
+those three functions, not the numpy gather.
 
-Drop-in alternative to reconstruct_samples_for_schedule
-(dump/python_reference/tracegen_reconstruct.py) for GustavSNN
-specifically: same signature shape, same LayerWeightTrace output, but
+Drop-in alternative to the former pure-Python
+reconstruct_samples_for_schedule for GustavSNN specifically: same signature shape, same LayerWeightTrace output, but
 does ONE subprocess call for the whole (schedule, sample batch) instead
 of one Python format_input_batch call per tile -- see main.cpp's
 task/output binary format docstring for the wire format.
@@ -91,8 +89,8 @@ def reconstruct_samples_native(
     workload_dims: Dict[str, Any],
     dram_num_steps: int,
 ):
-    """Native-C++ equivalent of reconstruct_samples_for_schedule in
-    dump/python_reference/tracegen_reconstruct.py,
+    """Native-C++ equivalent of the former pure-Python
+    reconstruct_samples_for_schedule,
     specialized to GustavSNN. Returns the same List[LayerWeightTrace]
     shape so callers (weight_trace_gen.weight_trace.reconstruct_samples, via
     weight_trace_gen.ARCH_NATIVE_BRIDGES) can swap this in without changing

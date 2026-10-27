@@ -9,11 +9,11 @@ arch:
   # `instances`: 128 -> 16. Every other modelling choice is copied deliberately,
   # in particular the ABSENCE of a NodeLevel local_buffer capacity.
   #
-  # That absence is the point. configs/arch/multinode_sweep/loas_inst16_*.yaml
-  # do impose one (weight 30720 per node), and under it spinalflow's deep layers
+  # That absence is the point. A variant with a NodeLevel local_buffer capacity
+  # (weight 30720 per node) does impose one, and under it spinalflow's deep layers
   # are infeasible: its dataflow needs CIN full and T full in one node visit, and
   # a CIN=512 layer's weight slice does not fit in 30 KB. Those two layers are
-  # missing from EVERY multinode_sweep cache as a result. Keeping the 128-node
+  # missing from EVERY such variant's cache as a result. Keeping the 128-node
   # baseline's assumptions means the core count is the only variable that moved,
   # which is what makes a 16-core result comparable to the 128-core one.
   single_node: false

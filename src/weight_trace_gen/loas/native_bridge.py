@@ -79,8 +79,8 @@ def reconstruct_samples_native(
     workload_dims: Dict[str, Any],
     dram_num_steps: int,
 ):
-    """Native-C++ equivalent of reconstruct_samples_for_schedule in
-    dump/python_reference/tracegen_reconstruct.py,
+    """Native-C++ equivalent of the former pure-Python
+    reconstruct_samples_for_schedule,
     specialized to LoAS. Same LayerWeightTrace output shape as the Python
     path. Requires loasgen to be built first (make in this directory).
 
@@ -88,7 +88,7 @@ def reconstruct_samples_native(
     or just dram_i (single-node, noc_i=core_id=0 for every tile) -- one
     subprocess call handles the whole flat list either way, since
     reconstruct_sample/TileSpec already take arbitrary per-tile offsets/
-    bounds generically (see log/2026-08-02-multinode-core-driven-weight-trace-plan.md).
+    bounds generically.
     weight_trace_gen.weight_trace.assemble_layer_traces owns grouping the flat per-tile results
     back into (dram_i, noc_i)-keyed, cross-core-merged LayerWeightTraces.
     """
