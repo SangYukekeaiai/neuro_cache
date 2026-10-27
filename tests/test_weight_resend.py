@@ -12,33 +12,36 @@ tile on every one of that dim's iterations. The over-send was the product of the
 DRAM loop's HO/WO/T factors, which is 1x on some layers and 8x on others, so it
 read as a per-layer anomaly in the results rather than as a bug in the sender.
 
-Two checks:
+Two tests:
 
-  A  the four campaign schedules: emitted sends == reloads owed, and the tile
-     count actually streamed == the layer's weight count.
-  B  a synthetic loop nest, so the property is pinned without the corpus. The
-     DRAM loop carries a weight-invariant dim on purpose: that is the case the
-     old code got wrong, and a nest without one passes either way.
+  test_campaign   the four campaign schedules: emitted sends == reloads
+                  owed, and the tile count actually streamed == the
+                  layer's weight count.
+  test_synthetic  a synthetic loop nest, so the property is pinned without
+                  the corpus. The DRAM loop carries a weight-invariant dim
+                  on purpose: that is the case the old code got wrong, and
+                  a nest without one passes either way.
 """
 import json
 import pathlib
-import sys
+
+import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 from nocsim.schedule.decode import LoopItem, Schedule, schedule_from_strategy
 from nocsim.schedule.steps import StepInfo
 from parsers.layer import SNNProb
+from weight_trace_gen.trace import build_workload_from_trace
 
-CAMPAIGN = ROOT / "profiling/0823_stagewise_verify"
 SCHED = ROOT / "configs/schedules/loas"
-LAYERS = CAMPAIGN / "stage3_nocsim/inputs/layers"
+TRACES = ROOT / "input_trace/loas"
 
 CASES = [
     ("V8",  SCHED / "vgg16_T4_n5/layer_08_features_27.json",        9 * 512 * 512),
     ("V9",  SCHED / "vgg16_T4_n5/layer_09_features_30.json",        9 * 512 * 512),
-    ("R9",  SCHED / "resnet19_T4_n5/layer_09_layer2_0_conv2.json",  9 * 256 * 128),
-    ("R16", SCHED / "resnet19_T4_n5/layer_16_layer3_0_conv2.json",  9 * 512 * 256),
+    ("R9",  SCHED / "resnet19_T4_n5/layer_09_layer2_0_conv2.json",  9 * 256 * 256),
+    ("R16", SCHED / "resnet19_T4_n5/layer_16_layer3_0_conv2.json",  9 * 512 * 512),
 ]
 
 
@@ -49,13 +52,13 @@ def sends(si, schedule):
                if si.weight_changes(d, n))
 
 
-def check_campaign():
+def test_campaign(tmp_path):
     failures = []
     for tag, path, weights in CASES:
-        if not path.exists():
-            print(f"check A  {tag}: SKIP, no schedule at {path}")
-            continue
-        prob = SNNProb(LAYERS / f"{tag}.yaml")
+        meta = json.load(open(TRACES / path.parent.name / "meta.json"))
+        layer_yaml = tmp_path / f"{tag}.yaml"
+        layer_yaml.write_text(yaml.safe_dump(build_workload_from_trace(meta, path.stem)))
+        prob = SNNProb(layer_yaml)
         res = json.load(open(path))["result"]
         schedule = schedule_from_strategy(res["strategy"], prob)
         si = StepInfo(schedule, prob)
@@ -70,15 +73,12 @@ def check_campaign():
         elif tile * got != weights:
             failures.append(f"{tag}: streamed {tile * got:,} elements for a "
                             f"{weights:,}-element layer")
-        else:
-            print(f"check A  {tag}: {got} sends, {tile:,} elements each, "
-                  f"{tile * got:,} streamed == layer weights   OK")
-    return failures
+    assert not failures, failures
 
 
 # A DRAM loop of COUT x 2 outside HO x 2 outside WO x 2. Weights change only
 # when COUT ticks, so 2 sends are owed and the old code emitted 8.
-def check_synthetic():
+def test_synthetic():
     from parsers.layer import DIM_COUT, DIM_HO, DIM_WO
 
     class FakeProb:
@@ -94,23 +94,4 @@ def check_synthetic():
     si = StepInfo(schedule, FakeProb())
 
     got = sends(si, schedule)
-    if got != 2:
-        return [f"synthetic: {got} sends for a nest owing 2"]
-    print(f"check B  synthetic COUTx2 -> HOx2 -> WOx2: "
-          f"{schedule.dram_num_steps} steps, {got} sends   OK")
-    return []
-
-
-def main():
-    failures = check_campaign() + check_synthetic()
-    if failures:
-        print("\nFAILED:")
-        for f in failures:
-            print(f"  {f}")
-        return 1
-    print("\nall checks passed")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+    assert got == 2, f"synthetic: {got} sends for a nest owing 2"
