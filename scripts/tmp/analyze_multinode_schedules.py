@@ -6,10 +6,8 @@ from __future__ import annotations
 import csv
 import json
 import pathlib
-import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "src"))
 
 import matplotlib
 
@@ -18,7 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 
-from mip_solver.analysis import classify_permutation
+from snn_scheduler.analysis import classify_permutation
 
 
 ARCHS = ("loas", "spinalflow", "ptb", "gustavsnn", "prosperity")

@@ -16,7 +16,6 @@ import sys
 import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 import tracegen
 
 ARCHS = ["loas", "ptb", "spinalflow"]
@@ -46,7 +45,7 @@ def main() -> int:
     ok = fail = skip = 0
     for arch in ARCHS:
         arch_yaml = str(ROOT / f"configs/arch/{arch}_inst16.yaml")
-        dataflow_yaml = str(ROOT / f"configs/dataflow/{arch}.yaml")
+        dataflow_yaml = str(ROOT / f"configs/node_mapspace/{arch}.yaml")
         if not pathlib.Path(arch_yaml).exists():
             print(f"missing {arch_yaml}", file=sys.stderr)
             return 1

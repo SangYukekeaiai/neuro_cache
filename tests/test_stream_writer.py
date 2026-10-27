@@ -11,16 +11,14 @@ import io
 import json
 import pathlib
 import struct
-import sys
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "src"))
 
 from tracegen import (CoreEntry, LayerWeightTrace, TickEntry,  # noqa: E402
                       TileWeightTrace, stream_weight_trace)
 
 FIXED_HEADER_BYTES = 56
-EXAMPLES = REPO / "src" / "wcache" / "examples"
+EXAMPLES = REPO / "src" / "cachesim" / "examples"
 
 
 def tiny_trace():

@@ -12,7 +12,7 @@ Two independent artifacts, matching the two-stage design
                        (arch, trace_dir, layer). Reused across every
                        sample's reconstruction, since batch never
                        participates in the workload/tiling dimensions
-                       (archmodels/trace.py's build_workload_from_trace
+                       (weight_trace_gen/trace.py's build_workload_from_trace
                        never reads B at all).
   LayerWeightTrace  -- one sample's per-tile weight-address stream +
                        cycle counts, (arch, trace_dir, layer, sample).
@@ -36,14 +36,14 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import yaml
 
-from archmodels import ARCH_NATIVE_BRIDGES, ComputeCycles, NodeTileSpec
-from archmodels.trace import build_workload_from_trace
+from weight_trace_gen import ARCH_NATIVE_BRIDGES, ComputeCycles, NodeTileSpec
+from weight_trace_gen.trace import build_workload_from_trace
 from nocsim.schedule.decode import schedule_from_strategy
 from nocsim.schedule.tiles import iter_node_tiles
 from parsers.layer import SNNProb
 
-# mip_solver is imported lazily, inside solve_and_cache_schedule only:
-# mip_solver.solve pulls in gurobipy at module load, and everything else
+# snn_scheduler is imported lazily, inside solve_and_cache_schedule only:
+# snn_scheduler.solve pulls in gurobipy at module load, and everything else
 # in this module (loading/reconstructing an already-cached schedule) has
 # no need for Gurobi at all.
 
@@ -98,7 +98,7 @@ def solve_and_cache_schedule(
     Raises ValueError if EVERY mode is infeasible (callers sweeping many
     layers should catch this and record it, not let it abort the sweep).
     """
-    from mip_solver.solve import solve_best_schedule  # lazy: see module-level comment
+    from snn_scheduler.solve import solve_best_schedule  # lazy: see module-level comment
 
     workload = build_workload_from_trace(meta, layer_name)
     layer_path = _dump_workload_path(workload)
@@ -329,11 +329,11 @@ def reconstruct_samples(
     dram_num_steps: int,
 ) -> List[LayerWeightTrace]:
     """One LayerWeightTrace per requested sample, dispatching to arch_name's
-    native C++ bridge (archmodels.ARCH_NATIVE_BRIDGES). The single dispatch
+    native C++ bridge (weight_trace_gen.ARCH_NATIVE_BRIDGES). The single dispatch
     entry point for scripts/generate_weight_traces.py -- callers own the
     trace/worker-pool setup around this, this function owns only the
     dispatch. `trace` should already be loaded (e.g. via
-    archmodels.trace.load_layer_trace(..., mmap=True)); this function
+    weight_trace_gen.trace.load_layer_trace(..., mmap=True)); this function
     doesn't load it itself so a caller running many samples across
     multiple workers can load it once per worker instead of once per call.
     """
@@ -401,7 +401,7 @@ class StepCycles:
 
     This is the read-side counterpart of save_step_cycles. nocsim charges
     each schedule step its own MAC time, and per ruling U31
-    (src/wcache/PROGRESS.md) it READS that number here rather than
+    (src/cachesim/PROGRESS.md) it READS that number here rather than
     recomputing it from a live archmodel.
 
     by_step's values are already the max over that tile's cores -- the
@@ -530,7 +530,7 @@ def load_step_cycles(path: pathlib.Path) -> StepCycles:
 # pipe with nothing materialized in between (Phase D campaign plan, 10).
 # The format is normative in log/2026-08-20-phaseD-implementation-plan.md,
 # "The wire format, in full"; the C++ reader
-# (src/wcache/native/include/wcache/stream_format.h) decodes exactly these
+# (src/cachesim/native/include/wcache/stream_format.h) decodes exactly these
 # bytes. `burst_span` sits beside burst_dim and
 # burst_stride per coordinator ruling Q-D, which the normative table there
 # predates -- that is the one field to check first if the two sides

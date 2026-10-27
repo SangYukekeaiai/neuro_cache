@@ -46,11 +46,10 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import List, Sequence
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
 import tracegen
-from archmodels import ARCH_NATIVE_BRIDGES
-from archmodels.trace import load_layer_trace, valid_layer_names
+from weight_trace_gen import ARCH_NATIVE_BRIDGES
+from weight_trace_gen.trace import load_layer_trace, valid_layer_names
 from nocsim.schedule.decode import schedule_from_strategy
 
 # The in-repo traces are a 5-sample subset of the full capture, cut by
@@ -86,7 +85,7 @@ def _resolve_samples(args: argparse.Namespace) -> List[int]:
 # Populated once per worker process by _init_worker, read by _process_chunk.
 # Passing `trace` this way (via Pool initargs, set once per worker) rather
 # than as a per-task argument matters: a memmap'd array (see
-# archmodels/trace.py's load_layer_trace(mmap=True)) pickles cheaply by
+# weight_trace_gen/trace.py's load_layer_trace(mmap=True)) pickles cheaply by
 # file/offset/shape, so this happens once per worker, not once per sample.
 _STATE = {}
 

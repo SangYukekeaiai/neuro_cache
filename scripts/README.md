@@ -19,9 +19,9 @@ outputs/schedules/<arch>/<trace_dir>/<layer>.json
 ## Stage 1: `solve_schedules.py`
 
 Solves every `(arch, trace_dir, layer)` schedule once via full 13-mode
-traffic enumeration (`mip_solver.enumerator`/`TrafficMode`), keeps the
+traffic enumeration (`snn_scheduler.enumerator`/`TrafficMode`), keeps the
 winning mode, and persists it plus a `summary.csv`. Each named architecture
-is paired with `configs/dataflow/<arch>.yaml`.
+is paired with `configs/node_mapspace/<arch>.yaml`.
 
 ```bash
 python scripts/solve_schedules.py \

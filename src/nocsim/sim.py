@@ -46,7 +46,7 @@ from parsers.layer import (
 )
 from parsers.arch import SNNArch
 from parsers.bitwidths import SNNBitwidths
-from archmodels import ArchComputeModel, ComputeCycles
+from weight_trace_gen import ArchComputeModel, ComputeCycles
 
 from .schedule.decode import decode, schedule_from_strategy
 from .schedule.buf_spatial import BufSpatial
@@ -62,7 +62,7 @@ from .core.noc import NoC
 def _solver_result(data: Dict) -> Dict:
     """Return the solver result block of a loaded schedule JSON.
 
-    A raw ``mip_solver solve`` document IS the result: top-level ``status``,
+    A raw ``snn_scheduler solve`` document IS the result: top-level ``status``,
     ``has_solution``, ``objective``, ``strategy``, ``metrics``, ``configs``
     and no ``result`` key. A ``tracegen.ScheduleArtifact`` wraps that same
     document under ``"result"`` and adds ``arch``/``trace_dir``/
@@ -149,13 +149,13 @@ def run_from_json(
     This variant requires no Gurobi installation at replay time; the schedule
     is reconstructed from the ``strategy`` block in the JSON.
 
-    Two JSON shapes load: a raw ``mip_solver solve`` document, whose top
+    Two JSON shapes load: a raw ``snn_scheduler solve`` document, whose top
     level *is* the solver result, and a ``tracegen.ScheduleArtifact``, which
     nests that same result under ``"result"`` alongside its own identity
     fields (PROGRESS.md B179).
 
     Args:
-        schedule_path: Path to the solver JSON output (``mip_solver solve``)
+        schedule_path: Path to the solver JSON output (``snn_scheduler solve``)
                        or to a persisted ScheduleArtifact.
         prob:          Parsed SNN layer.
         bitwidths:     Per-variable bit widths.
@@ -267,7 +267,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--schedule",
         required=True,
         metavar="JSON",
-        help="path to the solver JSON output (from `mip_solver solve`)",
+        help="path to the solver JSON output (from `snn_scheduler solve`)",
     )
     parser.add_argument(
         "--layer",

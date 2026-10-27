@@ -5,7 +5,7 @@ benchmark, joined into one table.
 Steps: check the inputs under input_trace/<bench>/; take the tracked schedules
 (or solve them when gurobipy imports); build the native tools; generate the
 nocsim weight traces and the version-2 WCTS streams; run nocsim
-(`python -m nocsim.sim --simulate`) and wcache_sweep over a config grid; write
+(`python -m nocsim.sim --simulate`) and cachesim_sweep over a config grid; write
 <out>/results.csv (one row per layer, sample and config) and <out>/summary.md
 (geomean speedup per config, and every command run).
 
@@ -35,11 +35,11 @@ import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "profiling/0823_stagewise_verify/stage3_nocsim")]
-import wcache_baseline as wb  # noqa: E402  (puts src/, profiling/ and stage4 on sys.path)
+import wcache_baseline as wb  # noqa: E402  (puts profiling/ and stage4 on sys.path)
 from wcache_baseline import sweep  # noqa: E402
 import run_stage3  # noqa: E402
-from archmodels import ARCH_NATIVE_BRIDGES  # noqa: E402
-from archmodels.trace import exclusion_reason, layer_params, valid_layer_names  # noqa: E402
+from weight_trace_gen import ARCH_NATIVE_BRIDGES  # noqa: E402
+from weight_trace_gen.trace import exclusion_reason, layer_params, valid_layer_names  # noqa: E402
 import tracegen  # noqa: E402
 from common import INPUT_TRACE, tags  # noqa: E402
 from util import data_root  # noqa: E402
@@ -161,12 +161,12 @@ def check_bench(spec):
     bench = root.name
     problems, notes = [], []
     for what, path in (("arch config", ROOT / "configs/arch" / f"{bench}.yaml"),
-                       ("dataflow config", ROOT / "configs/dataflow" / f"{bench}.yaml"),
-                       ("native model", ROOT / "src/archmodels" / bench / "Makefile")):
+                       ("dataflow config", ROOT / "configs/node_mapspace" / f"{bench}.yaml"),
+                       ("native model", ROOT / "src/weight_trace_gen" / bench / "Makefile")):
         if not path.is_file():
             problems.append(f"no {what} for bench {bench!r}: missing {path.relative_to(ROOT)}")
     if bench not in ARCH_NATIVE_BRIDGES:
-        problems.append(f"bench {bench!r} is not in archmodels.ARCH_NATIVE_BRIDGES "
+        problems.append(f"bench {bench!r} is not in weight_trace_gen.ARCH_NATIVE_BRIDGES "
                         f"(known: {sorted(ARCH_NATIVE_BRIDGES)})")
     if bench not in NOCSIM_ARCH:
         problems.append(f"no nocsim arch for bench {bench!r} in demo.NOCSIM_ARCH (known: {sorted(NOCSIM_ARCH)})")
@@ -308,10 +308,10 @@ def demo(a):
     cmds = []
     sched_root = schedules_for(a.bench, layers, out, cmds)
 
-    builds = [["make", "-C", str(ROOT / "src/wcache/native"), "MODE=release", "apps"],
+    builds = [["make", "-C", str(ROOT / "src/cachesim/native"), "MODE=release", "apps"],
               ["make", "-C", str(ROOT / "src/nocsim/eventsim")]]
-    if (ROOT / "src/archmodels" / a.bench / "Makefile").is_file():
-        builds.append(["make", "-C", str(ROOT / "src/archmodels" / a.bench)])
+    if (ROOT / "src/weight_trace_gen" / a.bench / "Makefile").is_file():
+        builds.append(["make", "-C", str(ROOT / "src/weight_trace_gen" / a.bench)])
     run_all(builds, cmds, 1)
 
     gen = [sys.executable, str(ROOT / "scripts/generate_weight_traces.py"), "--arch", a.bench,
@@ -343,7 +343,7 @@ def demo(a):
                  "--weight-trace", str(out / "weight_traces" / a.bench / d / l / f"sample_{s:05d}.json.gz"),
                  "--out", str(tc), "--simulate"])
 
-    # wcache_sweep gives one mapper to a whole grid, so points that differ in
+    # cachesim_sweep gives one mapper to a whole grid, so points that differ in
     # cin_block go to separate invocations (run_khkw_sweep.py does the same).
     groups = {}
     for i, p in enumerate(grid):
@@ -370,7 +370,7 @@ def demo(a):
     for (d, l, s, _, names), stdout in zip(wc_work, run_all(wc_cmds, cmds, a.jobs, capture=True)):
         got = list(csv.DictReader(stdout.splitlines()))
         if len(got) != len(names):
-            sys.exit(f"wcache_sweep gave {len(got)} rows for {len(names)} configs ({d}/{l} s{s})")
+            sys.exit(f"cachesim_sweep gave {len(got)} rows for {len(names)} configs ({d}/{l} s{s})")
         for name, w in zip(names, got):
             wcache_rows.append({"trace_dir": d, "layer": l, "sample": s, "config": name,
                                 **{k: w[k] for k in KEY_FIELDS}, "total_cycles": w["total_cycles"]})

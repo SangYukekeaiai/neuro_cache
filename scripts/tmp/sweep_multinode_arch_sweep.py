@@ -59,15 +59,13 @@ import json
 import multiprocessing as mp
 import pathlib
 import re
-import sys
 import time
 import traceback
 from collections import Counter
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from archmodels.trace import valid_layer_names
+from weight_trace_gen.trace import valid_layer_names
 from util import data_root
 
 ARCHS = ("loas", "spinalflow", "ptb", "gustavsnn", "prosperity")
@@ -200,7 +198,7 @@ def _solve_one(combo: dict) -> dict:
         return row
 
     arch_yaml = ARCH_YAML_DIR / f"{arch}_inst{instances}_node{node_tag}_noc{noc_tag}.yaml"
-    dataflow_yaml = str(REPO_ROOT / f"configs/dataflow/{arch}.yaml")
+    dataflow_yaml = str(REPO_ROOT / f"configs/node_mapspace/{arch}.yaml")
     t0 = time.time()
     try:
         artifact = tracegen.solve_and_cache_schedule(

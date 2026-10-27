@@ -10,7 +10,7 @@ entirely):
   NoC-T      -- NoCLevel temporal_permutation: super-dimension *order*.
   DRAM-T     -- DRAM temporal_permutation: super-dimension *order*.
 
-Every loop's tile SIZE is dropped in all three (mip_solver.analysis.
+Every loop's tile SIZE is dropped in all three (snn_scheduler.analysis.
 dram_permutation.classify_permutation already drops sizes; the NoC-S set
 form does the same for the unordered case). Super-dims: M={HO,WO},
 N={COUT}, K={KH,KW,CIN}, T={T}.
@@ -26,13 +26,11 @@ from __future__ import annotations
 import csv
 import json
 import pathlib
-import sys
 from collections import Counter
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from mip_solver.analysis.dram_permutation import classify_permutation, SUPER_DIM
+from snn_scheduler.analysis.dram_permutation import classify_permutation, SUPER_DIM
 
 SUMMARY_PATH = REPO_ROOT / "outputs" / "schedules" / "multinode_sweep" / "summary.csv"
 SCHEDULE_ROOT = REPO_ROOT / "outputs" / "schedules" / "multinode_sweep"

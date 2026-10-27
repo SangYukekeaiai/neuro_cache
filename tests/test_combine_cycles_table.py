@@ -28,11 +28,10 @@ import sys
 import tempfile
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "src"))
 
 import yaml  # noqa: E402
 
-from archmodels import ComputeCycles  # noqa: E402
+from weight_trace_gen import ComputeCycles  # noqa: E402
 from nocsim.combine import combine  # noqa: E402
 from nocsim.schedule.buf_spatial import BufSpatial  # noqa: E402
 from nocsim.schedule.decode import schedule_from_strategy  # noqa: E402

@@ -9,7 +9,7 @@ user-facing invocation reaches it. Six checks:
      the produced tc.csv equals that (dram_i, noc_i)'s mac_cycles from the
      trace. This is plan check 6, driven the way Stage 3 will drive it.
   F  both schedule JSON shapes load -- a ScheduleArtifact (nests the solver
-     result under "result") and a raw `mip_solver solve` document (IS the
+     result under "result") and a raw `snn_scheduler solve` document (IS the
      result) -- and produce byte-identical CSVs. The artifact half is what
      B179 blocked.
   G  the same schedule run without --weight-trace still charges the dense
@@ -242,5 +242,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.path.insert(0, str(SRC))
     sys.exit(main())

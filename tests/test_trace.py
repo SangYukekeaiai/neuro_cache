@@ -1,14 +1,12 @@
-"""src/archmodels/trace.py: the workload dict a layer's meta.json entry gives,
+"""src/weight_trace_gen/trace.py: the workload dict a layer's meta.json entry gives,
 and which layers the arch models can replay."""
 import json
 import pathlib
-import sys
 
 import pytest
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
-from archmodels.trace import (build_workload_from_trace, exclusion_reason,  # noqa: E402
-                              layer_params, valid_layer_names)
+from weight_trace_gen.trace import (build_workload_from_trace, exclusion_reason,
+                                    layer_params, valid_layer_names)
 
 INPUT_TRACE = pathlib.Path(__file__).resolve().parents[1] / "input_trace/loas"
 

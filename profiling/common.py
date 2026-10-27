@@ -44,7 +44,7 @@ WORKLOADS = [("V", "vgg16_T4_n5"), ("R", "resnet19_T4_n5")]
 def tags(bench="loas"):
     """(tag, trace_dir, layer) for every valid layer of the `_n5` workloads
     present under input_trace/<bench>/."""
-    from archmodels.trace import valid_layer_names  # needs ROOT/src on sys.path
+    from weight_trace_gen.trace import valid_layer_names
     out = []
     for prefix, trace_dir in WORKLOADS:
         path = INPUT_TRACE / bench / trace_dir / "meta.json"

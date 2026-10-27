@@ -31,13 +31,13 @@ input_trace/
 # extension rules above do not apply to it.
 !configs/**
 
-# src/wcache/examples/ holds committed example traces: small slices of the
+# src/cachesim/examples/ holds committed example traces: small slices of the
 # generated corpus, cut by make_examples.py so plan unit A3 can be built and
 # reviewed against corpus-shaped data. Source-controlled fixtures, not captured
 # data, so the *.json rule above does not apply to them either. Scoped to the
 # fixture extension rather than to `**`, which would also re-include the
 # __pycache__/ that line 2 ignores.
-!src/wcache/examples/*.json
+!src/cachesim/examples/*.json
 
 # profiling/*/grids/ holds hand-written sweep tier definitions: the files that
 # decide every sweep point. Config source, not captured data, so the *.json rule
@@ -58,11 +58,11 @@ gurobi.lic
 
 # Compiled native binaries (build with: cd <dir> && make)
 src/nocsim/eventsim/eventsim
-src/archmodels/gustavsnn/gustavgen
-src/archmodels/loas/loasgen
-src/archmodels/prosperity/prosperitygen
-src/archmodels/ptb/ptbgen
-src/archmodels/spinalflow/spinalflowgen
+src/weight_trace_gen/gustavsnn/gustavgen
+src/weight_trace_gen/loas/loasgen
+src/weight_trace_gen/prosperity/prosperitygen
+src/weight_trace_gen/ptb/ptbgen
+src/weight_trace_gen/spinalflow/spinalflowgen
 dump/profiling/*/native/cache_sweep*
 !dump/profiling/*/native/*.cpp
 
@@ -127,7 +127,7 @@ profiling/0823_stagewise_verify/stage3_nocsim/outputs/tc/
 
 # wcache debugging instruments: the cache-state log and the line trace, plus
 # the aligned text views to_txt.py renders from them. All are regenerable by
-# `wcache_run --cache-state` / `--line-trace`, and a whole layer runs to
+# `cachesim_run --cache-state` / `--line-trace`, and a whole layer runs to
 # hundreds of megabytes. The README, to_txt.py and the .json config beside them
 # are the reviewable record; the outputs are not.
 debug/wcache_instruments/*.csv

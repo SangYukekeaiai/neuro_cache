@@ -19,7 +19,7 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(ROOT / "src"), str(ROOT / "profiling"),
+sys.path[:0] = [str(ROOT / "profiling"),
                 str(ROOT / "profiling/0823_stagewise_verify/stage4_wcache")]
 import run_khkw_sweep as sweep  # noqa: E402
 from common import tags  # noqa: E402

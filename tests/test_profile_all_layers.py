@@ -58,7 +58,7 @@ def test_dry_run_of_one_task_prints_its_stream_and_sweep_commands(trace_root, tm
                        "--task-index", "1", "--dry-run")
     assert rc == 0
     gens = [ln for ln in out.splitlines() if "generate_weight_traces.py" in ln]
-    sweeps = [ln for ln in out.splitlines() if "wcache_sweep" in ln]
+    sweeps = [ln for ln in out.splitlines() if "cachesim_sweep" in ln]
     assert len(gens) == 2 and all("--layer v1" in g for g in gens)
     assert "--sample-start 0" in gens[0] and "--sample-start 1" in gens[1]
     # the default khkw grid is three cin_block groups, so three sweeps per sample

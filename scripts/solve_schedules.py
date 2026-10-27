@@ -17,14 +17,12 @@ import argparse
 import csv
 import json
 import pathlib
-import sys
 import traceback
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
 import tracegen
-from archmodels.trace import valid_layer_names
+from weight_trace_gen.trace import valid_layer_names
 
 # The in-repo traces are a 5-sample subset of the full capture, cut by
 # scripts/subset_input_traces.py; pass --trace-root to use a full capture
@@ -39,7 +37,7 @@ DEFAULT_ARCH_YAML = {
     "prosperity": str(ROOT / "configs/arch/prosperity.yaml"),
 }
 DEFAULT_DATAFLOW_YAML = {
-    name: str(ROOT / f"configs/dataflow/{name}.yaml")
+    name: str(ROOT / f"configs/node_mapspace/{name}.yaml")
     for name in DEFAULT_ARCH_YAML
 }
 

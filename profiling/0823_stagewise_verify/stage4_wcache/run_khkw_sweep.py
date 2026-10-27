@@ -23,7 +23,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 sys.path.insert(0, str(ROOT / "profiling"))
 from common import KHKW_KEYS, base_config  # noqa: E402
-BIN  = ROOT / "src/wcache/native/build/release/wcache_sweep"
+BIN  = ROOT / "src/cachesim/native/build/release/cachesim_sweep"
 STRM = HERE / "inputs/streams"
 OUT  = HERE / "outputs"
 GRID = OUT / "_khkw_grid"

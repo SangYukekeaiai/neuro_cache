@@ -7,14 +7,12 @@ import argparse
 import csv
 import json
 import pathlib
-import sys
 import traceback
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "src"))
 
 import tracegen
-from archmodels.trace import valid_layer_names
+from weight_trace_gen.trace import valid_layer_names
 from util import data_root
 
 
@@ -50,7 +48,7 @@ def main() -> int:
         layers = list(iter_layers(trace_root, trace_name))
         for arch in ARCHS:
             arch_yaml = str(ROOT / f"configs/arch/{arch}_multinode.yaml")
-            dataflow_yaml = str(ROOT / f"configs/dataflow/{arch}.yaml")
+            dataflow_yaml = str(ROOT / f"configs/node_mapspace/{arch}.yaml")
             for layer_name, meta in layers:
                 out_path = cache_dir / arch / trace_name / f"{layer_name}.json"
                 row = {

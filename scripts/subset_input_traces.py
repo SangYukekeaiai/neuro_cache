@@ -11,7 +11,7 @@ them into the repo, where 5 samples is 13.6 MB rather than 25.8 GB.
 Two things it must get right, both of which are silent if missed:
 
   1. `meta.json`'s per-layer shape is VALIDATED by
-     `archmodels.trace.load_layer_trace`, which throws when the array's shape
+     `weight_trace_gen.trace.load_layer_trace`, which throws when the array's shape
      and the declared shape disagree. So the declared `B` is rewritten to N.
   2. The SAME sample indices are used for every layer of every workload. A
      per-layer draw would mean layer 2 held different CIFAR-10 images than
@@ -39,7 +39,6 @@ import sys
 import numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 from util import data_root  # noqa: E402
 
 DEFAULT_SRC = data_root() / "neuro_cache_trace/input_trace/loas"

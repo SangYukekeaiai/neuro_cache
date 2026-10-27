@@ -11,7 +11,7 @@
 #
 # One array task = one layer of the benchmark: scripts/profile_all_layers.py
 # --task-index $SLURM_ARRAY_TASK_ID generates the stream of each of samples
-# 0..N-1 and runs wcache_sweep over the grid on it, writing
+# 0..N-1 and runs cachesim_sweep over the grid on it, writing
 # $NEURO_CACHE_DATA/profiling/<bench>/layers/<trace_dir>/<layer>.csv.
 # The array size is the number of layers, which the driver reads from the
 # captures' meta.json; submit from the repo root, with NEURO_CACHE_DATA set:
@@ -27,7 +27,7 @@
 # without Slurm. Confirm on the first Delta submission:
 #   - partition and account (#SBATCH --partition/--account/--gres above; copied
 #     from profiling/0820_phaseD_spad_vs_cache/run_sweep.slurm, GPU-only account)
-#   - module loads: none are done here; the native wcache_sweep build and a
+#   - module loads: none are done here; the native cachesim_sweep build and a
 #     conda on PATH are assumed
 #   - conda env activation: `conda run -n "$CONDA_ENV"` (scripts/env.sh), and
 #     the env needs gurobipy for layers without a tracked schedule

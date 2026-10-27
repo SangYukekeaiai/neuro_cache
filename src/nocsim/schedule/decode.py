@@ -36,7 +36,7 @@ from functools import reduce
 import operator
 from typing import Any, Dict, List
 
-from mip_solver.constants import _A, NUM_VARS, SNN_GB_START_LEVEL, VAR_NAMES
+from snn_scheduler.constants import _A, NUM_VARS, SNN_GB_START_LEVEL, VAR_NAMES
 from parsers.layer import SNNProb, _get_prime_factors
 
 

@@ -8,12 +8,10 @@ Not part of the pipeline -- run manually, then delete."""
 
 import json
 import pathlib
-import sys
 import time
 from multiprocessing import Pool
 
 REPO = pathlib.Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(REPO / "src"))
 from util import data_root  # noqa: E402
 
 SCRATCH = REPO / "scripts/tmp/_conc_probe_out"
@@ -31,7 +29,7 @@ def solve_one(args):
     try:
         tracegen.solve_and_cache_schedule(
             arch, str(REPO / f"configs/arch/multinode_sweep/{arch}_inst16.yaml"),
-            str(REPO / f"configs/dataflow/{arch}.yaml"), TRACE_NAME, layer_name,
+            str(REPO / f"configs/node_mapspace/{arch}.yaml"), TRACE_NAME, layer_name,
             meta, cache_dir,
         )
         return (arch, layer_name, "OK", time.time() - t0)

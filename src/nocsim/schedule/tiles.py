@@ -11,7 +11,7 @@ of it was pushed to DRAM-temporal:
 
     node_bound[dim] = total[dim] // dram_temporal_total[dim]
 
-This differs from archmodels.dense.DenseStaticComputeModel's node_j,
+This differs from weight_trace_gen.dense.DenseStaticComputeModel's node_j,
 which ADDITIONALLY divides out spatial_factors[dim] and any NoC-temporal
 factor -- appropriate there because spatial fanout across PEs doesn't
 cost extra MAC cycles, but wrong here: NodeTileSpec.node_bound must
@@ -37,7 +37,7 @@ import operator
 from functools import reduce
 from typing import Dict, Iterator, List
 
-from archmodels import NodeTileSpec
+from weight_trace_gen import NodeTileSpec
 from parsers.layer import (
     SNNProb,
     DIM_T, DIM_WO, DIM_HO, DIM_CIN, DIM_KW, DIM_KH, DIM_COUT,

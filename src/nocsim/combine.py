@@ -71,9 +71,9 @@ from parsers.layer import (
 )
 from parsers.arch import SNNArch
 from parsers.bitwidths import SNNBitwidths
-from archmodels import ArchComputeModel, ComputeCycles
-from archmodels.dense import DenseStaticComputeModel
-from archmodels import NodeTileSpec
+from weight_trace_gen import ArchComputeModel, ComputeCycles
+from weight_trace_gen.dense import DenseStaticComputeModel
+from weight_trace_gen import NodeTileSpec
 from nocsim.schedule.tiles import iter_node_tiles
 
 from .core.noc import NoC

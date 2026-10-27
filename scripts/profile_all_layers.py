@@ -6,7 +6,7 @@ A task is one (trace_dir, layer): every trace dir under --trace-root that has a
 meta.json, in sorted order, and every valid layer of it in meta.json order. A
 task takes the tracked schedule (or solves one into <out>/schedules when
 gurobipy imports), generates the version-2 WCTS stream of each of samples
-0..N-1, runs wcache_sweep over the config grid on it, deletes the stream, and
+0..N-1, runs cachesim_sweep over the config grid on it, deletes the stream, and
 writes <out>/layers/<trace_dir>/<layer>.csv. --merge joins the per-layer CSVs
 in task order into <out>/all_layers.csv.
 
@@ -31,11 +31,11 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-import wcache_baseline as wb  # noqa: E402  (puts src/, profiling/ and stage4 on sys.path)
+import wcache_baseline as wb  # noqa: E402  (puts profiling/ and stage4 on sys.path)
 from wcache_baseline import sweep  # noqa: E402
 from demo import DEFAULT_JOBS, load_grid  # noqa: E402
 from subset_input_traces import DEFAULT_SRC as FULL_CAPTURE  # noqa: E402
-from archmodels.trace import valid_layer_names  # noqa: E402
+from weight_trace_gen.trace import valid_layer_names  # noqa: E402
 from util import data_root  # noqa: E402
 
 
@@ -48,7 +48,7 @@ def tasks(trace_root):
 
 
 def grid_groups(grid_name, grid):
-    """[(config names, points)] per cin_block: wcache_sweep gives one mapper to a
+    """[(config names, points)] per cin_block: cachesim_sweep gives one mapper to a
     whole grid, so points that differ in cin_block go to separate invocations."""
     groups = {}
     for i, p in enumerate(grid):
@@ -80,7 +80,7 @@ def solve_schedule(bench, trace_root, trace_dir, layer, cache):
 
 
 def sample_commands(a, sched, trace_dir, layer, s, stream, grid_files):
-    """The stream generation command, then one wcache_sweep command per grid file."""
+    """The stream generation command, then one cachesim_sweep command per grid file."""
     gen = [sys.executable, str(ROOT / "scripts/generate_weight_traces.py"), "--arch", a.bench,
            "--trace-root", str(a.trace_root), "--schedule-cache", str(sched), "--workers", "1",
            "--trace-dir", trace_dir, "--layer", layer, "--stream", "--sample-start", str(s),
@@ -137,7 +137,7 @@ def run_task(a, i, all_tasks):
         for (names, _), cmd in zip(groups, sweeps):
             got = list(csv.reader(run(cmd, capture=True).splitlines()))
             if len(got) - 1 != len(names):
-                sys.exit(f"wcache_sweep gave {len(got) - 1} rows for {len(names)} configs ({d}/{l} s{s})")
+                sys.exit(f"cachesim_sweep gave {len(got) - 1} rows for {len(names)} configs ({d}/{l} s{s})")
             rows += [(name, got[0], r) for name, r in zip(names, got[1:])]
         pathlib.Path(gen[-1]).unlink()
         return sorted(rows, key=lambda r: int(r[0].rsplit("_", 1)[1]))

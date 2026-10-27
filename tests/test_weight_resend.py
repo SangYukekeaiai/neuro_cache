@@ -25,7 +25,6 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
 from nocsim.schedule.decode import LoopItem, Schedule, schedule_from_strategy
 from nocsim.schedule.steps import StepInfo

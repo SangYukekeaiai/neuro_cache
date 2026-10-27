@@ -1,0 +1,549 @@
+// Conformance checks for AddressMapper (unit A2a).
+//
+// A2a is an interface. A test that builds a Placement from two ints and reads
+// them back proves nothing, and a test that exercises one concrete mapper
+// tests that mapper, not the interface. What A2a actually asserts lives in the
+// comments on layout.h, and every one of those statements is a claim about
+// EVERY implementation. This header turns each of them into a check
+// parameterised over an `AddressMapper&`, so a concrete mapper plugs in with
+// one line:
+//
+//     conformance::run_all(mapper, conformance::make_env(shape), "BlockPackMapper");
+//
+// That is what A2d is expected to add. Nothing here knows about blocking,
+// packing, or cin_block / cout_block: the checks use only what layout.h
+// promises, so a mapper that packs nothing and a mapper that blocks two axes
+// both go through unchanged.
+//
+// Two conventions that matter for how this file is written:
+//
+//  1. No function here calls check::group(). Each is driven twice: once over a
+//     conforming mapper, where a failure is a real failure, and once over a
+//     deliberately broken one, where a failure is the expected result and the
+//     counters are detached (expect_failure in test_layout.cpp). A group
+//     header per contract would make the second pass unreadable.
+//
+//  2. Every check catches, rather than letting an exception escape. A mapper
+//     that throws where the contract says it must not is exactly the thing
+//     under test, and an escaping exception would end the run instead of
+//     reporting one failure and continuing.
+#pragma once
+
+#include <cachesim/layout.h>
+#include <cachesim/types.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <cstddef>
+#include <exception>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include "check.h"
+
+namespace conformance {
+
+using namespace cachesim;
+
+// Declaration order, which A1b's carried obligation says is the row-major
+// nesting order. Written out once so a loop over the four axes is written once.
+inline constexpr Axis kAxes[4] = {Axis::KH, Axis::KW, Axis::CIN, Axis::COUT};
+
+// The value a check seeds `out` with before calling expand. Negative on
+// purpose: real line ids are non-negative, so a mapper that treats the buffer
+// as scratch cannot overwrite the sentinel with something that still looks
+// like a sentinel.
+inline constexpr std::int64_t kSentinel = -777;
+
+// What the checks need beyond the mapper itself. The interface deliberately
+// does not expose the layer shape (locate takes num_sets as an argument for
+// the same reason), so the caller supplies it.
+// Three burst sets and not two, because layout.h's exception vocabulary has two
+// failing tiers and a single bucket cannot express both. `illegal` is the
+// out_of_range tier: a well-formed burst naming something outside THIS layer.
+// `malformed` is the invalid_argument tier: a burst that is wrong whatever
+// layer it is applied to, which is `count < 1` (B38) and `stride < 1`
+// (B49, answered by the user directly rather than by delegation). Putting a
+// zero-count burst on the illegal side would make c_throw_type_is_out_of_range
+// demand out_of_range for it, which is the opposite of what B38 requires, and
+// the two tiers would stop being tellable apart at a catch site, which is the
+// whole of B27.
+struct Env {
+    WeightShape        shape;
+    std::vector<Burst> legal;      // must be accepted
+    std::vector<Burst> illegal;    // must throw out_of_range, and append nothing
+    std::vector<Burst> malformed;  // must throw invalid_argument, and append nothing
+    std::vector<Burst> sweep;      // together, every element of the tensor
+};
+
+// Bursts derived from the shape alone, so the same Env drives any mapper.
+//
+// The legal set deliberately covers all four axes, not only COUT: the A2a ->
+// A2d carried obligation is that a burst along an axis the layout does not
+// block is legal, the corpus never produces one, and only a test announces the
+// regression.
+inline Env make_env(const WeightShape& shape) {
+    Env e;
+    e.shape = shape;
+    const Coord origin{0, 0, 0, 0};
+
+    for (Axis a : kAxes) {
+        const std::int32_t n = extent_on(shape, a);
+
+        // The degenerate burst a cout_block of 1 produces, and the one D9 says
+        // expand must still return a list for.
+        e.legal.push_back(Burst{origin, a, 1, 1});
+        // The whole axis: the widest legal run, and under a packing narrower
+        // than the axis the case where several elements share a line.
+        e.legal.push_back(Burst{origin, a, n, 1});
+        // A run that does not start at 0, so a mapper that ignores the anchor
+        // and walks from the origin is not accidentally right.
+        if (n >= 3) e.legal.push_back(Burst{with_coord_on(origin, a, 1), a, n - 1, 1});
+        // stride > 1 is a header field (format v2 burst_stride) and nothing
+        // downstream may assume it is 1.
+        if (n >= 4) e.legal.push_back(Burst{origin, a, n / 2, 2});
+        // The last element of the axis on its own: the boundary an off-by-one
+        // in the range check turns into a spurious throw.
+        e.legal.push_back(Burst{with_coord_on(origin, a, n - 1), a, 1, 1});
+
+        // Illegal, four ways. The first two are caught before the walk starts;
+        // the last two begin legal and leave the tensor part way, which is the
+        // pair that separates "checks first" from "checks as it goes".
+        e.illegal.push_back(Burst{with_coord_on(origin, a, n), a, 1, 1});
+        e.illegal.push_back(Burst{with_coord_on(origin, a, -1), a, 1, 1});
+        e.illegal.push_back(Burst{origin, a, n + 1, 1});
+        if (n >= 2) e.illegal.push_back(Burst{with_coord_on(origin, a, n - 1), a, 2, 1});
+    }
+
+    // An anchor out of range on an axis the burst does NOT walk. The range
+    // check covers all four coordinates or it covers one.
+    e.illegal.push_back(Burst{Coord{0, 0, shape.CIN, 0}, Axis::COUT, 1, 1});
+    e.illegal.push_back(Burst{Coord{shape.KH, 0, 0, 0}, Axis::COUT, 1, 1});
+    e.illegal.push_back(Burst{Coord{0, -1, 0, 0}, Axis::CIN, 1, 1});
+
+    // The malformed tier. Every anchor here is a legal coordinate and every
+    // axis is a real axis, so the ONLY thing wrong with these bursts is the
+    // count: a mapper that answered out_of_range for one of them would be
+    // reporting a coordinate failure for a burst whose coordinates are fine.
+    // Driven on all four axes because the count check must not be written
+    // inside a per-axis branch.
+    //
+    // Anchors are deliberately in range. A burst that is malformed AND names a
+    // coordinate outside the layer would ask which tier wins, and layout.h does
+    // not say; that question is in the reviewer's report rather than answered
+    // here by the order this file happens to push things in.
+    for (Axis a : kAxes) {
+        const std::int32_t n = extent_on(shape, a);
+
+        e.malformed.push_back(Burst{origin, a, 0, 1});
+        e.malformed.push_back(Burst{origin, a, -1, 1});
+
+        // The same tier, the other field. `stride < 1` is malformed too: a
+        // stride of 0 is one element asked for `count` times and a negative
+        // stride is a run walking backwards, while `burst_stride` in the format
+        // v2 header is the step to the NEXT element of the run, so neither
+        // describes a run a trace can carry. Driven on all four axes for the
+        // same reason the count is: the check must not sit in a per-axis branch.
+        e.malformed.push_back(Burst{origin, a, 4, 0});
+        // The backwards run is anchored high enough that all four of its
+        // elements stay inside the axis, for the same reason the counts above
+        // are anchored at the origin: a burst that is malformed AND leaves the
+        // layer would decide the tier question by which check the mapper
+        // happens to run first, which is not this file's to answer.
+        if (n >= 4) e.malformed.push_back(Burst{with_coord_on(origin, a, 3), a, 4, -1});
+    }
+    // The far end of the range, which is what a header decoded at the wrong
+    // offset produces, and the value whose negation overflows: a check written
+    // as `-count > 0` rather than `count < 1` would let it through.
+    e.malformed.push_back(Burst{origin, Axis::COUT, INT32_MIN, 1});
+    // The stride's own far end, at count 1 so that the run it describes is a
+    // single element and the burst is in range at both ends whatever the stride
+    // says. That is the case which pins that the stride rule is unconditional
+    // rather than something only a multi-element burst has to satisfy.
+    e.malformed.push_back(Burst{origin, Axis::COUT, 1, INT32_MIN});
+
+    // Every element of the tensor, as COUT-major bursts. num_lines()'s "one
+    // past the LARGEST id this mapper can produce" is an exact claim, and only
+    // a full sweep can check that the largest is actually reached.
+    for (std::int32_t kh = 0; kh < shape.KH; ++kh)
+        for (std::int32_t kw = 0; kw < shape.KW; ++kw)
+            for (std::int32_t cin = 0; cin < shape.CIN; ++cin)
+                e.sweep.push_back(Burst{Coord{kh, kw, cin, 0}, Axis::COUT, shape.COUT, 1});
+
+    return e;
+}
+
+// Calls expand and reports whether it threw, instead of letting the exception
+// out. Used wherever the contract says the call must succeed.
+inline bool try_expand(const AddressMapper& m, const Burst& b, std::vector<LineId>& out) {
+    try {
+        m.expand(b, out);
+        return true;
+    } catch (const std::exception&) {
+        return false;
+    } catch (...) {
+        return false;
+    }
+}
+
+// --- contract 1: expand appends, and appends the same thing every time ------
+//
+// layout.h: "Appends rather than assigns so a caller can accumulate a whole
+// tick's demand into one reused buffer." A mapper that assigns satisfies every
+// other check in this file, so this is the only thing that announces it. The
+// second half is the one that catches a mapper carrying state between calls:
+// what a burst appends may not depend on what is already in the buffer.
+inline void c_appends_not_assigns(const AddressMapper& m, const Env& e) {
+    std::vector<LineId> acc(3, LineId{kSentinel});
+    std::int64_t expect = 3;
+
+    for (const Burst& b : e.legal) {
+        std::vector<LineId> alone;
+        if (!try_expand(m, b, alone)) { CHECK_TRUE(false); continue; }
+        CHECK_TRUE(check::ssize(alone) >= 1);  // a legal burst touches a line
+
+        if (!try_expand(m, b, acc)) { CHECK_TRUE(false); continue; }
+        expect += check::ssize(alone);
+        CHECK_EQ(check::ssize(acc), expect);   // grew by exactly that many
+    }
+
+    // The caller's own data is still there, unshifted, after every call.
+    CHECK_TRUE(acc.size() >= 3);
+    if (acc.size() >= 3) {
+        CHECK_TRUE(acc[0] == LineId{kSentinel});
+        CHECK_TRUE(acc[1] == LineId{kSentinel});
+        CHECK_TRUE(acc[2] == LineId{kSentinel});
+    }
+}
+
+// --- contract 2: within one call, strictly increasing ------------------------
+//
+// layout.h: "The ids appended by a single call are strictly increasing and
+// distinct." Strict covers both halves at once, so there is no separate
+// uniqueness check.
+//
+// The buffer is seeded before the call and the comparison starts one past the
+// seed, because the guarantee is explicitly per call: an accumulated buffer is
+// "neither sorted nor unique across calls", and comparing the first appended
+// id against the seed would be asserting a promise the interface refuses.
+inline void c_single_call_strictly_increasing(const AddressMapper& m, const Env& e) {
+    for (const Burst& b : e.legal) {
+        std::vector<LineId> out(2, LineId{kSentinel});
+        const std::size_t base = out.size();
+        if (!try_expand(m, b, out)) { CHECK_TRUE(false); continue; }
+
+        for (std::size_t i = base + 1; i < out.size(); ++i) CHECK_TRUE(out[i - 1] < out[i]);
+
+        // At most one line per element. A burst along an axis the layout does
+        // not block hits this bound exactly (the A2d obligation); a burst
+        // along a packed axis stays under it. Nothing may exceed it.
+        CHECK_TRUE(check::ssize(out) - static_cast<std::int64_t>(base) <= b.count);
+    }
+}
+
+// --- contract 3: a throwing call appends nothing -----------------------------
+//
+// layout.h: "every range check must run before the first append, so a call
+// that throws appends nothing and leaves `out` exactly as it was." This is the
+// strong exception guarantee, and it is the contract a future implementation
+// that computes as it goes breaks without breaking anything else: its ids are
+// still sorted, still distinct, still inside num_lines.
+//
+// The buffer is seeded with what stands in for a previous core's lines,
+// because that is the accumulate pattern layout.h describes and the state an
+// eager implementation corrupts.
+inline void c_throwing_call_appends_nothing(const AddressMapper& m, const Env& e) {
+    for (const Burst& b : e.illegal) {
+        std::vector<LineId> out;
+        out.push_back(LineId{kSentinel});
+        out.push_back(LineId{kSentinel + 1});
+        const std::vector<LineId> before = out;
+
+        bool threw = false;
+        try {
+            m.expand(b, out);
+        } catch (const std::exception&) {
+            threw = true;
+        } catch (...) {
+            threw = true;
+        }
+        CHECK_TRUE(threw);  // a coordinate outside the shape must not be served
+
+        CHECK_EQ(check::ssize(out), check::ssize(before));
+        bool identical = out.size() == before.size();
+        for (std::size_t i = 0; identical && i < before.size(); ++i)
+            identical = out[i] == before[i];
+        CHECK_TRUE(identical);
+    }
+}
+
+// --- contract 3b: which exception -------------------------------------------
+//
+// layout.h says "throws" and does not name a type. check.h does, and its
+// comment was written for this unit: "invalid_argument for a bad
+// configuration, out_of_range for a burst that leaves the tensor". Kept as its
+// own check rather than folded into the one above, so that an implementation
+// choosing a different type fails here alone and the disagreement is visible
+// instead of being read as a broken range check.
+inline void c_throw_type_is_out_of_range(const AddressMapper& m, const Env& e) {
+    for (const Burst& b : e.illegal) {
+        std::vector<LineId> out;
+        CHECK_THROWS(std::out_of_range, m.expand(b, out));
+    }
+}
+
+// --- contract 3c: a malformed burst is invalid_argument, not out_of_range ----
+//
+// layout.h: "A burst with `count < 1` or with `stride < 1` throws
+// std::invalid_argument. A core asking for nothing is malformed at every layer"
+// (B38 for the count, B49 for the stride). That is the OTHER
+// failing tier, and the reason it needs its own bucket rather than a push onto
+// `illegal` is arithmetic: c_throw_type_is_out_of_range demands out_of_range
+// for every burst on the illegal side, so one zero-count burst there would fail
+// every conforming mapper on a rule B38 states the other way round.
+//
+// The check is written as three separate assertions on purpose. "It threw" is
+// not enough, because v1's reading was that an empty run is legal and returns
+// nothing, which throws nothing at all. "It threw invalid_argument" is not
+// enough either, because out_of_range and invalid_argument are siblings under
+// logic_error, so a mapper answering the wrong tier still satisfies any check
+// written against the base and the distinction B27 exists for would go
+// untested.
+inline void c_malformed_burst_is_invalid_argument(const AddressMapper& m, const Env& e) {
+    for (const Burst& b : e.malformed) {
+        std::vector<LineId> out;
+        out.push_back(LineId{kSentinel});
+        out.push_back(LineId{kSentinel + 1});
+        const std::vector<LineId> before = out;
+
+        CHECK_THROWS(std::invalid_argument, m.expand(b, out));
+
+        bool was_range = false;
+        try {
+            m.expand(b, out);
+        } catch (const std::out_of_range&) {
+            was_range = true;
+        } catch (const std::exception&) {
+        } catch (...) {
+        }
+        CHECK_TRUE(!was_range);
+
+        // The same strong guarantee the out_of_range tier gets: a call that
+        // refuses leaves an accumulating caller's buffer exactly as it was.
+        CHECK_EQ(check::ssize(out), check::ssize(before));
+        bool identical = out.size() == before.size();
+        for (std::size_t i = 0; identical && i < before.size(); ++i)
+            identical = out[i] == before[i];
+        CHECK_TRUE(identical);
+    }
+}
+
+// --- contract 4: any axis, including one the layout does not block -----------
+//
+// layout.h: "An implementation therefore reads the walked axis out of the
+// burst; it may not assume COUT, and it may not assume that the walked axis is
+// one it blocks."
+inline void c_accepts_any_axis(const AddressMapper& m, const Env& e) {
+    for (Axis a : kAxes) {
+        const std::int32_t n = extent_on(e.shape, a);
+        std::vector<LineId> out;
+        const bool ok = try_expand(m, Burst{Coord{0, 0, 0, 0}, a, n, 1}, out);
+        CHECK_TRUE(ok);
+        if (!ok) continue;
+        CHECK_TRUE(check::ssize(out) >= 1);
+        CHECK_TRUE(check::ssize(out) <= n);
+    }
+}
+
+// --- contract 5: a burst is exactly the lines its elements touch -------------
+//
+// layout.h: "Appends the distinct lines this burst touches." The elements a
+// burst touches are anchor, anchor + stride, ... along b.axis, so expanding
+// the burst must yield the same SET of lines as expanding those elements one
+// at a time.
+//
+// This is the check that catches a mapper reading the wrong axis or ignoring
+// the stride. Both of those stay sorted, stay distinct, stay inside
+// num_lines(), and append a plausible number of ids, so nothing else in this
+// file notices them. It is also the only check here that pins expand's
+// meaning rather than its shape.
+inline void c_burst_is_its_elements(const AddressMapper& m, const Env& e) {
+    for (const Burst& b : e.legal) {
+        std::vector<LineId> whole;
+        if (!try_expand(m, b, whole)) { CHECK_TRUE(false); continue; }
+
+        std::vector<LineId> parts;
+        const std::int32_t start = coord_on(b.anchor, b.axis);
+        bool ok = true;
+        for (std::int32_t i = 0; i < b.count && ok; ++i) {
+            const Coord c = with_coord_on(b.anchor, b.axis, start + i * b.stride);
+            ok = try_expand(m, Burst{c, b.axis, 1, 1}, parts);
+        }
+        CHECK_TRUE(ok);
+        if (!ok) continue;
+
+        std::sort(parts.begin(), parts.end(),
+                  [](LineId x, LineId y) { return x < y; });
+        parts.erase(std::unique(parts.begin(), parts.end(),
+                                [](LineId x, LineId y) { return x == y; }),
+                    parts.end());
+
+        CHECK_EQ(check::ssize(whole), check::ssize(parts));
+        bool same = whole.size() == parts.size();
+        for (std::size_t i = 0; same && i < parts.size(); ++i) same = whole[i] == parts[i];
+        CHECK_TRUE(same);
+    }
+}
+
+// --- contract 6: locate's identity -------------------------------------------
+//
+// layout.h, on Placement: "The identity that defines the pair is `line == tag *
+// num_sets + set_index`", and the bound the set index owes,
+// `0 <= set_index < num_sets`, "is not vacuously true because the
+// representation underneath stays signed."
+//
+// Driven over ids the mapper actually produced, plus both ends of its range,
+// and over several set counts including 1 (where every line is in set 0 and
+// the tag is the line) so that a mapper cannot be right only at one power of
+// two.
+inline void c_locate_identity(const AddressMapper& m, const Env& e) {
+    std::vector<LineId> lines;
+    for (const Burst& b : e.legal) (void)try_expand(m, b, lines);
+    lines.push_back(LineId{0});
+    const std::int64_t last = m.num_lines().get() - 1;
+    if (last >= 0) lines.push_back(LineId{last});
+
+    const std::int64_t set_counts[6] = {1, 2, 4, 8, 64, 1024};
+    for (std::int64_t num_sets : set_counts) {
+        for (LineId l : lines) {
+            const Placement p = m.locate(l, num_sets);
+            // Unwrapped, because U16 typed both fields: a SetIndex does not
+            // order against a raw int64 and a TagId does not multiply by one.
+            // layout.h keeps the identity in its readable form in a comment and
+            // spells it this way in code, and this is that spelling.
+            CHECK_TRUE(p.set_index.get() >= 0);
+            CHECK_TRUE(p.set_index.get() < num_sets);
+            CHECK_EQ(p.tag.get() * num_sets + p.set_index.get(), l.get());
+
+            // No state: L1 and L2 share one mapper and call locate with
+            // different num_sets, interleaved.
+            const Placement again = m.locate(l, num_sets);
+            CHECK_EQ(again.set_index, p.set_index);
+            CHECK_EQ(again.tag, p.tag);
+        }
+    }
+}
+
+// --- contract 7: num_lines is one past the largest ---------------------------
+//
+// layout.h: "One past the largest LineId this mapper can produce. The bound the
+// engine checks tags against, and what D2 divides by for coverage." Both halves
+// are checkable and both matter: an upper bound that is too loose silently
+// deflates every coverage figure D2 reports, and one that is too tight makes
+// the engine's bound check reject real lines.
+inline void c_num_lines_is_exact(const AddressMapper& m, const Env& e) {
+    const LineId n = m.num_lines();
+    CHECK_TRUE(n > LineId{0});
+
+    std::vector<LineId> out;
+    for (const Burst& b : e.sweep) {
+        if (!try_expand(m, b, out)) { CHECK_TRUE(false); return; }
+    }
+    CHECK_TRUE(check::ssize(out) >= 1);
+
+    LineId max = LineId{-1};
+    bool in_range = true;
+    for (LineId l : out) {
+        in_range = in_range && LineId{-1} < l && l < n;
+        if (max < l) max = l;
+    }
+    CHECK_TRUE(in_range);                       // nothing at or past the bound
+    CHECK_EQ(max.get(), n.get() - 1);           // and the bound is reached
+}
+
+// --- contract 8: line_size_bytes ---------------------------------------------
+//
+// layout.h puts this on the interface because "CacheLevel holds an
+// AddressMapper and needs this to turn the config's cache_size_bytes into a
+// set count". That division is the whole reason it exists, so zero is a divide
+// by zero at config load and a negative is a nonsense set count.
+inline void c_line_size_bytes_is_usable(const AddressMapper& m, const Env&) {
+    CHECK_TRUE(m.line_size_bytes() > 0);
+    CHECK_EQ(m.line_size_bytes(), m.line_size_bytes());  // no state, same as locate
+}
+
+// --- contract 9: line_size_terms ---------------------------------------------
+//
+// Added by A4b, and it belongs here rather than in the array's own suite for
+// the reason contract 8 does: line_size_terms is on AddressMapper, so it is a
+// promise every mapper makes and a new layout should inherit the check by
+// adding one run_all line rather than by someone remembering to test it.
+//
+// The promise is deliberately weak, because layout.h gives the function an
+// inline default returning the bare product rather than making it pure: a
+// mapper whose line size does not decompose into named factors is free to say
+// nothing more. What it may NOT do is say nothing at all. The whole point of
+// the function is that SetAssociativeArray's refusal, "65536 is not a whole
+// number of 96-byte lines (...)", stays actionable, and an empty parenthesis
+// is a message that has lost its reason to exist.
+inline void c_line_size_terms_is_informative(const AddressMapper& m, const Env&) {
+    // ONE read of the line size, passed to every call below. Q3 gave
+    // line_size_terms the value as an argument precisely so a caller need not
+    // ask twice, and a conformance check that asked twice would not be
+    // exercising the interface the way the array does.
+    const std::int64_t bytes = m.line_size_bytes();
+
+    const std::string terms = m.line_size_terms(bytes);
+    CHECK_TRUE(!terms.empty());
+    // CHECK_TRUE rather than CHECK_EQ: check.h's to_str has no std::string
+    // overload, and adding one would put a formatting concern into the harness
+    // for one call site. The expression says what it compares.
+    CHECK_TRUE(terms == m.line_size_terms(bytes));  // no state, same as locate
+
+    // And it has to name the line size somewhere, whether as the bare product
+    // or as the factors it multiplies out to. A terms string that mentions
+    // neither is a string about some other quantity, which is worse than the
+    // default: it is a message that misdirects rather than one that says less.
+    bool accounted = terms.find(std::to_string(bytes)) != std::string::npos;
+    if (!accounted) {
+        // The factored form. Multiply out every run of digits in the string and
+        // require the product to be the line size, which is the only check that
+        // works without knowing how a given layout decomposes it.
+        std::int64_t product = 1;
+        bool any = false;
+        for (std::size_t i = 0; i < terms.size();) {
+            if (terms[i] >= '0' && terms[i] <= '9') {
+                std::int64_t v = 0;
+                while (i < terms.size() && terms[i] >= '0' && terms[i] <= '9') {
+                    v = v * 10 + (terms[i] - '0');
+                    ++i;
+                }
+                product *= v;
+                any = true;
+            } else {
+                ++i;
+            }
+        }
+        accounted = any && product == bytes;
+    }
+    CHECK_TRUE(accounted);
+}
+
+// Every contract, in one call. This is the line A2d adds.
+inline void run_all(const AddressMapper& m, const Env& e, const char* who) {
+    check::group(who);
+    c_appends_not_assigns(m, e);
+    c_single_call_strictly_increasing(m, e);
+    c_throwing_call_appends_nothing(m, e);
+    c_throw_type_is_out_of_range(m, e);
+    c_malformed_burst_is_invalid_argument(m, e);
+    c_accepts_any_axis(m, e);
+    c_burst_is_its_elements(m, e);
+    c_locate_identity(m, e);
+    c_num_lines_is_exact(m, e);
+    c_line_size_bytes_is_usable(m, e);
+    c_line_size_terms_is_informative(m, e);
+}
+
+}  // namespace conformance
