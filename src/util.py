@@ -18,8 +18,7 @@ def data_root() -> pathlib.Path:
     Default when unset or empty: <repo>/data. Layout under it:
     neuro_cache_trace/input_trace/loas/<capture>/ holds the full input
     captures (e.g. vgg16_T4_all), neuro_cache_outputs/weight_traces/ the
-    generated weight traces. scripts/env.sh gives shell scripts the same
-    default.
+    generated weight traces.
     """
     return pathlib.Path(os.environ.get("NEURO_CACHE_DATA")
                         or pathlib.Path(__file__).resolve().parents[1] / "data")

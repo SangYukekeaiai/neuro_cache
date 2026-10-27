@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
-"""One-command demo: nocsim and wcache on the same layers and samples of one
+"""End to end: nocsim and wcache on the same layers and samples of one
 benchmark, joined into one table.
 
 Steps: check the inputs under input_trace/<bench>/; take the tracked schedules
-(or solve them when gurobipy imports); build the native tools; generate the
-nocsim weight traces and the version-2 WCTS streams; run nocsim
-(`python -m nocsim --simulate`) and cachesim_sweep over a config grid; write
-<out>/results.csv (one row per layer, sample and config) and <out>/summary.md
-(geomean speedup per config, and every command run).
+from configs/schedules, solving the missing ones with `python -m snn_scheduler
+solve-trace` into <out>/schedules; build the native tools; `python -m
+weight_trace_gen gen` the step cycles and the WCTS streams; run `python -m
+nocsim --simulate` and `python -m cachesim sweep` over a config grid (default:
+the khkw grid of configs/cache/, or --grid, a JSON array of wcache configs);
+write <out>/results.csv (one row per layer, sample and config) and
+<out>/summary.md (geomean speedup per config, and every command run).
 
-The default grid is the khkw grid of configs/cache/ (python -m cachesim grid).
---grid takes a JSON array of wcache configs instead.
-
-  python scripts/demo.py [--bench loas] [--layers V8 R9 ...] [--jobs N]
-  python scripts/demo.py --verify-baseline [DIR]   check <out>/results.csv
-                                                   against DIR (.baseline/after)
-  python scripts/demo.py --check-bench BENCH       check input_trace/BENCH (or a
-                                                   directory) against the input
-                                                   contract in docs/REPRODUCE.md
+  python scripts/pipeline.py [--bench loas] [--layers all | V8 R9 ... | DIR/LAYER] [--jobs N]
+  python scripts/pipeline.py --verify-baseline [DIR]   check <out>/results.csv against DIR
+  python scripts/pipeline.py --check-bench BENCH       check input_trace/BENCH (or a directory)
+                                                       against the contract in docs/REPRODUCE.md
 """
 import argparse
 import concurrent.futures as cf
@@ -33,21 +30,23 @@ import time
 
 import yaml
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "profiling/0823_stagewise_verify/stage3_nocsim")]
-import wcache_baseline as wb  # noqa: E402  (puts profiling/ and stage4 on sys.path)
-import run_stage3  # noqa: E402
-from weight_trace_gen import ARCH_NATIVE_BRIDGES  # noqa: E402
-from weight_trace_gen.trace import exclusion_reason, layer_params, valid_layer_names  # noqa: E402
-from snn_scheduler.artifact import check_schedule_matches_trace  # noqa: E402
-from common import INPUT_TRACE, tags  # noqa: E402
-from util import data_root  # noqa: E402
-from cachesim.grid import full_grid, write_grid  # noqa: E402
+from cachesim.grid import full_grid, write_grid
+from snn_scheduler.artifact import check_schedule_matches_trace
+from util import data_root
+from weight_trace_gen import ARCH_NATIVE_BRIDGES
+from weight_trace_gen.trace import exclusion_reason, layer_params, valid_layer_names
 
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+# One directory per benchmark: input_trace/<bench>/<trace_dir>/{meta.json,<layer>.npy}.
+INPUT_TRACE = ROOT / "input_trace"
+# Tracked schedules: configs/schedules/<bench>/<trace_dir>/<layer>.json.
+SCHEDULES = ROOT / "configs/schedules"
 # The nocsim arch each benchmark is simulated on; only loas has one in the repo.
-NOCSIM_ARCH = {"loas": run_stage3.ARCH_YAML}
-# The layers run by default: the four of the tracked 0823 stage 4 sweep.
+NOCSIM_ARCH = {"loas": ROOT / "configs/arch/loas_inst16_node32kb.yaml"}
+# The layers run by default: the four with tracked schedules.
 TAGS = ["V8", "V9", "R9", "R16"]
+# (tag prefix, trace dir) of the workloads that have layer tags.
+WORKLOADS = [("V", "vgg16_T4_n5"), ("R", "resnet19_T4_n5")]
 # Config columns of the wcache output copied into results.csv.
 KEY_FIELDS = ("layout", "line_size_bytes", "l2_size_bytes", "l2_banks",
               "prefetch_policy", "prefetch_distance")
@@ -103,9 +102,21 @@ def run_all(cmds, record, jobs, capture=False):
         return list(pool.map(lambda c: run(c, capture), cmds))
 
 
+def tags(bench="loas"):
+    """(tag, trace_dir, layer) for every valid layer of the `_n5` workloads
+    present under input_trace/<bench>/; the tag is V<n> or R<n>."""
+    out = []
+    for prefix, trace_dir in WORKLOADS:
+        path = INPUT_TRACE / bench / trace_dir / "meta.json"
+        if path.is_file():
+            out += [(f"{prefix}{int(layer.split('_')[1])}", trace_dir, layer)
+                    for layer in valid_layer_names(json.loads(path.read_text()))]
+    return out
+
+
 def resolve_layers(bench, specs):
-    """(trace_dir, layer) for each spec: `trace_dir/layer`, or a tag such as V8
-    of a workload under input_trace/<bench>/."""
+    """(trace_dir, layer) for each spec: `trace_dir/layer`, a tag such as V8
+    of a workload under input_trace/<bench>/, or `all` for every tag."""
     known = None
     out = []
     for s in specs:
@@ -114,10 +125,13 @@ def resolve_layers(bench, specs):
             continue
         if known is None:
             known = {t: (d, l) for t, d, l in tags(bench)}
-        if s not in known:
-            sys.exit(f"unknown layer {s!r} for bench {bench!r}: give trace_dir/layer "
-                     f"or one of {sorted(known)}")
-        out.append(known[s])
+        if s == "all":
+            out += known.values()
+        elif s in known:
+            out.append(known[s])
+        else:
+            sys.exit(f"unknown layer {s!r} for bench {bench!r}: give trace_dir/layer, "
+                     f"all, or one of {sorted(known)}")
     return out
 
 
@@ -171,7 +185,7 @@ def check_bench(spec):
         problems.append(f"bench {bench!r} is not in weight_trace_gen.ARCH_NATIVE_BRIDGES "
                         f"(known: {sorted(ARCH_NATIVE_BRIDGES)})")
     if bench not in NOCSIM_ARCH:
-        problems.append(f"no nocsim arch for bench {bench!r} in demo.NOCSIM_ARCH (known: {sorted(NOCSIM_ARCH)})")
+        problems.append(f"no nocsim arch for bench {bench!r} in pipeline.NOCSIM_ARCH (known: {sorted(NOCSIM_ARCH)})")
     if not root.is_dir():
         return problems + [f"no input traces: {root} does not exist"], notes
     metas = sorted(root.glob("*/meta.json"))
@@ -221,11 +235,11 @@ def check_bench(spec):
                 problems.append(f"{meta_path}: {e}")
                 del shapes[name]
         valid = valid_layer_names(checked)
-        tracked = [l for l in valid if (wb.SCHEDULES / bench / d.name / f"{l}.json").is_file()]
+        tracked = [l for l in valid if (SCHEDULES / bench / d.name / f"{l}.json").is_file()]
         stale = []
         for l in tracked:
             try:
-                check_schedule_matches_trace(wb.SCHEDULES / bench / d.name / f"{l}.json", d, l)
+                check_schedule_matches_trace(SCHEDULES / bench / d.name / f"{l}.json", d, l)
             except ValueError as e:
                 stale.append(f"  {e}")
         notes.append(f"{root.name}/{d.name}: {len(layers)} layers, {len(valid)} usable, "
@@ -250,17 +264,22 @@ def can_solve():
 
 def schedules_for(bench, layers, out, record):
     """The schedule root to use: the tracked one when it has every layer, else
-    <out>/schedules, seeded with the tracked schedules and solved for the rest.
-    Exits when a schedule was solved for another workload than meta.json gives."""
-    root = wb.SCHEDULES
-    if missing_schedules(root, bench, layers):
+    <out>/schedules, seeded with the tracked schedules and solved for the
+    layers the tracked ones lack. Exits when a schedule was solved for another
+    workload than meta.json gives."""
+    root = SCHEDULES
+    missing = missing_schedules(root, bench, layers)
+    if missing:
         root = out / "schedules"
-        if (wb.SCHEDULES / bench).is_dir():
-            shutil.copytree(wb.SCHEDULES / bench, root / bench, dirs_exist_ok=True)
+        if (SCHEDULES / bench).is_dir():
+            shutil.copytree(SCHEDULES / bench, root / bench, dirs_exist_ok=True)
+        by_dir = {}
+        for p in missing:
+            by_dir.setdefault(p.parent.name, []).append(p.stem)
         # solve-trace skips schedules already in the cache.
         run_all([[sys.executable, "-m", "snn_scheduler", "solve-trace", "--arch", bench,
-                  "--trace-root", str(INPUT_TRACE / bench),
-                  "--trace-dirs", *sorted({d for d, _ in layers}), "--cache-dir", str(root)]],
+                  "--trace-root", str(INPUT_TRACE / bench), "--trace-dirs", d,
+                  "--layers", *ls, "--cache-dir", str(root)] for d, ls in by_dir.items()],
                 record, 1)
         # solve-trace exits 1, which stops run(), when a layer is infeasible or fails;
         # this catches a requested layer it did not try (not a valid layer in meta.json).
@@ -300,7 +319,7 @@ def demo(a):
     layers = resolve_layers(a.bench, a.layers)
     samples = range(a.sample_start, a.sample_start + a.sample_count)
     problems = check_inputs(a.bench, layers, samples)
-    missing = missing_schedules(wb.SCHEDULES, a.bench, layers)
+    missing = missing_schedules(SCHEDULES, a.bench, layers)
     if missing and not can_solve():
         problems += ["gurobipy does not import, so this schedule cannot be solved: "
                      f"{p}" for p in missing]
@@ -433,7 +452,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--bench", default="loas")
     p.add_argument("--layers", nargs="+", default=list(TAGS),
-                   help="trace_dir/layer or a tag such as V8 (default: the 4 tracked, %(default)s)")
+                   help="trace_dir/layer, a tag such as V8, or all for every tag "
+                        "(default: the 4 tracked, %(default)s)")
     p.add_argument("--sample-start", type=int, default=0)
     p.add_argument("--sample-count", type=int, default=5)
     p.add_argument("--out", help="default $NEURO_CACHE_DATA/demo/<bench>")
