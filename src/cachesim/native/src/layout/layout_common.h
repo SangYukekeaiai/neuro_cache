@@ -147,21 +147,6 @@ void expand_burst(const char* cls, const Mapper& m, const Burst& b, std::vector<
     out.insert(out.end(), lines.begin(), lines.end());
 }
 
-// AddressMapper::locate, the same for every layout: a layout moves which line
-// an element lands on and leaves the cache's indexing alone. The range check
-// runs BEFORE the division, because LineId is signed and a negative id would
-// come back out of `line % num_sets` as a negative set index.
-inline Placement locate_line(const char* cls, std::int64_t num_lines, LineId line,
-                             std::int64_t num_sets) {
-    const std::int64_t v = line.get();
-    if (v < 0 || v >= num_lines) {
-        reject_range(cls, "line id out of range [0, " + std::to_string(num_lines) + "), got " +
-                              std::to_string(v));
-    }
-    // `line == tag * num_sets + set_index` is the definition of the pair.
-    return Placement{SetIndex{v % num_sets}, TagId{v / num_sets}};
-}
-
 // AddressMapper::line_size_terms: the three factors of line_size_bytes, in
 // the order they are multiplied, so a reader who sees "96-byte lines" in a
 // refusal can reach the config fields that produced the 96. The same text for

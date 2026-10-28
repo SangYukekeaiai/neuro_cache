@@ -20,7 +20,7 @@
 #include "cachesim/core/engine.h"
 #include "cachesim/layout/mapper.h"
 #include "cachesim/prefetch/prefetcher.h"
-#include "cachesim/replacement/stamp_policy.h"
+#include "cachesim/replacement/policy.h"
 
 namespace cachesim {
 

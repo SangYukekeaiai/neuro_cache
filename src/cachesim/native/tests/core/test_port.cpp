@@ -46,7 +46,7 @@ namespace {
 // Probes
 // ===========================================================================
 //
-// One probe pair per test file is the repo convention (test_stamp_policy.cpp
+// One probe pair per test file is the repo convention (test_stamp.cpp
 // states why): the probe encodes which exception type is CORRECT for this
 // file's subject, and a shared probe would have to be told. Port's two
 // rejections are both configuration, so `invalid_argument` is the right answer

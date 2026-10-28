@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "layout_common.h"
+#include "cachesim/index/set_index.h"
 
 namespace cachesim {
 namespace {
@@ -136,7 +137,12 @@ void KhkwSplitMapper::expand(const Burst& b, std::vector<LineId>& out) const {
 }
 
 Placement KhkwSplitMapper::locate(LineId line, std::int64_t num_sets) const {
-    return detail::locate_line(kName, num_lines_, line, num_sets);
+    if (line.get() < 0 || line.get() >= num_lines_) {
+        throw std::out_of_range(std::string(kName) + ": line id out of range [0, " +
+                                std::to_string(num_lines_) + "), got " +
+                                std::to_string(line.get()));
+    }
+    return set_index(line, num_sets);
 }
 
 std::string KhkwSplitMapper::line_size_terms(std::int64_t) const {

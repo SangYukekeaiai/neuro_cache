@@ -19,6 +19,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 #include "cachesim/index/cache_array.h"
@@ -122,5 +123,20 @@ protected:
     ReplacementPolicy& operator=(const ReplacementPolicy&) = default;
     ReplacementPolicy& operator=(ReplacementPolicy&&)      = default;
 };
+
+// The configuration vocabulary is kept with the replacement-policy interface,
+// rather than with one concrete implementation. RANDOM remains an explicit
+// placeholder and is rejected by make_policy/config validation.
+enum class PolicyKind : std::uint8_t {
+    LRU    = 0,
+    FIFO   = 1,
+    RANDOM = 2,
+    BELADY = 3,
+    RRIP   = 4,
+    LFU    = 5
+};
+
+std::unique_ptr<ReplacementPolicy> make_policy(PolicyKind kind, std::int32_t num_slots,
+                                               std::int32_t rrip_bits = 2);
 
 }  // namespace cachesim

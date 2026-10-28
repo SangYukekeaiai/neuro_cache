@@ -319,8 +319,8 @@ void test_core_stall_and_fetch_latency_are_equal_by_construction() {
     // prefetch runs, so ruling R8's line anchor never moves off the burst's own
     // issue and the two integrals agree term by term.
     //
-    // The second half is test_prefetch.cpp's, where the difference is nonzero at
-    // every distance above zero.
+    // The prefetch-specific half is covered by test_prefetch.cpp; this engine
+    // check keeps the no-prefetch equality explicit.
     FakeTrace tr = three_core_two_tile_trace();
     LinearMapper map(64);
 

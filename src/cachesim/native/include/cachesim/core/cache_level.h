@@ -43,7 +43,6 @@
 #include "cachesim/replacement/next_use.h"
 #include "cachesim/replacement/policy.h"
 #include "cachesim/core/port.h"
-#include "cachesim/replacement/stamp_policy.h"
 #include "cachesim/types.h"
 
 namespace cachesim {

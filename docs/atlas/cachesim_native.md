@@ -155,9 +155,9 @@ only by `--oracle` / `--l2-oracle` (`read_oracle_lines`, `app_support.h:322`).
      `-- stats_ : EngineStats  --> RunStats --> CSV row
 ```
 
-The `Request` (one line of one burst, `include/cachesim/core/mshr.h:117`) is the unit that travels. It lives
+The `Request` (one line of one burst, `include/cachesim/core/request.h:27`) is the unit that travels. It lives
 in `Engine::arena_` (a `std::deque`, stable addresses) with a free list (`core/engine.h:629,653`). An
-`Mshr` (`core/mshr.h:207`) is one outstanding line per level; `targets` are satisfied directly by the
+`Mshr` (`core/mshr.h:48`) is one outstanding line per level; `targets` are satisfied directly by the
 fill, `line_wait` are requests that found the target list full.
 
 Strongly typed scalars (`include/cachesim/types.h`): `LineId`, `CoreId`, `SlotId`, `SetIndex`,
@@ -343,26 +343,22 @@ is a line of the file the entry is named after (a source file, not the header na
   tile), `gap(core,tile,k)` `:87` (= tick[k+1]-tick[k]), `tile_tail(tile)` `:104`
   (= mac_cycles - max_tick).
 
-**core/mshr.h**
-- `enum class Level {L1, L2}` `core/mshr.h:49`; `enum class WaitReason {None, Slot, Line}` `:63`;
-  `enum class StallCause {None, L1Slot, L1Line, L1Port, L2Slot, L2Line, L2Port, Channel, Barrier}`
-  `:89`.
-- `struct Request` `:117`: `core, line, burst, demand(=true), issued_at, refusal(=NoRefusal),
+**core/request.h**
+- `Level`, `WaitReason` and `StallCause` are the shared request enums (`core/request.h:12-25`).
+- `struct Request` `core/request.h:27`: `core, line, burst, demand(=true), issued_at, refusal(=NoRefusal),
   reason, level(=L1, where to RE-ENTER), mshr1 (L1 entry once forwarded), reserved, on_wait_index,
-  cause, line_resident_at_wake`. Invariant I6: `level==L2 <=> mshr1!=null` (except L2-originated
-  prefetches).
-- `struct Mshr` `:207`: `line, core (unused at L2), demand (promoted by a merging demand),
-  pf_opened (fixed), first_request, targets, line_wait`.
-- `class RefusalCounter` `:259`: `next()` `:264`, `issued()` `:269`. One per run, shared by all
-  levels.
-- `is_prefetch_at_issue(r)` `:299` = `!demand && mshr1==nullptr`.
-- `mark_refused(r, reason, counter)` `:308`; `key_less(Request,Request)` `:313` (by refusal stamp).
-- `struct RetireResult {targets; wake;}` `:321`.
-- `class MshrFile` `:346`: ctor `(capacity, tgts_per_mshr, demand_reserve, counter&)` `:374`;
-  `find` `:383`, `has_slot` `:396`, `allocate` `:414`, `add_target` `:427`, `push_line_wait` `:450`,
-  `push_slot_wait` `:451`, `release_reservation` `:462`, `retire` `:480`, `collect_grants` `:494`,
-  accessors `:496-509`. `entries_` is an `unordered_map` and is never iterated (`:533`).
+  cause, line_resident_at_wake`.
 
+**core/mshr.h**
+- `struct Mshr` `core/mshr.h:48`: `line, core (unused at L2), demand (promoted by a merging demand),
+  pf_opened (fixed), first_request, targets, line_wait`.
+- `class RefusalCounter` `:100`: `next()` `:105`, `issued()` `:110`. One per run, shared by all levels.
+- `is_prefetch_at_issue(r)` `:140` = `!demand && mshr1==nullptr`.
+- `mark_refused(r, reason, counter)` `:149`; `key_less(Request,Request)` `:154` (by refusal stamp).
+- `struct RetireResult {targets; wake;}` `:162`.
+- `class MshrFile` `:187`: ctor `:215`, `find` `:224`, `has_slot` `:237`, `allocate` `:255`,
+  `add_target` `:268`, `push_line_wait`/`push_slot_wait` `:291-292`, `release_reservation` `:303`,
+  `retire` `:321`, `collect_grants` `:335`; `entries_` `:374` is an `unordered_map`.
 **core/port.h**
 - `class Port` `core/port.h:37`: ctor `(ii, latency)` `:57` (both >= 0); `reserve(now)` `:74` returns
   `max(now, next_accept)` and sets `next_accept = accept + ii`; `ii()` `:76`, `latency()` `:82`
@@ -374,16 +370,24 @@ is a line of the file the entry is named after (a source file, not the header na
   `associativity` `:109`; private `base_slot` `:131`. Slots of set s are `[s*assoc, s*assoc+assoc)`;
   stores full `LineId` per slot (`:160`).
 
-**replacement/stamp_policy.h** (file comment `:1-2` names all five policies)
-- `class StampPolicy : ReplacementPolicy` `replacement/stamp_policy.h:36` (abstract; one i64 stamp per slot,
-  victim = smallest stamp, tie -> smallest slot), protected `stamp()` `:75`.
-- `LruPolicy` `:97` (hit restamps), `FifoPolicy` `:106` (hit ignored).
-- `BeladyPolicy` `:132`: per-slot next-use; victim = LARGEST next use, tie smallest slot.
-- `LfuPolicy` `:177`: per-slot hit count, reset on fill; victim = smallest count.
-- `RripPolicy(num_slots, bits=2)` `:218`: uint8 RRPV; hit->0, fill->max-1, invalidate->max.
-- `enum class PolicyKind {LRU, FIFO, RANDOM, BELADY, RRIP, LFU}` `:273`.
-- `make_policy(kind, num_slots, rrip_bits=2)` `:294`.
+**replacement/stamp.h**
+- `class StampPolicy` `replacement/stamp.h:12` (abstract; one i64 stamp per slot, victim = smallest stamp,
+  tie -> smallest slot), protected `stamp()` `:21`.
+- `LruPolicy` `:29` (hit restamps), `FifoPolicy` `:35` (hit ignored).
 
+**replacement/belady.h**
+- `class BeladyPolicy` `replacement/belady.h:12`: per-slot next-use; victim = LARGEST next use, tie smallest slot.
+
+**replacement/lfu.h**
+- `class LfuPolicy` `replacement/lfu.h:12`: per-slot hit count, reset on fill; victim = smallest count.
+
+**replacement/rrip.h**
+- `class RripPolicy(num_slots, bits=2)` `replacement/rrip.h:12`: uint8 RRPV; hit->0, fill->max-1,
+  invalidate->max.
+
+**replacement/policy.h**
+- `enum class PolicyKind {LRU, FIFO, RANDOM, BELADY, RRIP, LFU}` `:130`.
+- `make_policy(kind, num_slots, rrip_bits=2)` `:139`.
 **replacement/next_use.h** (header-only)
 - `class NextUseOracle` `replacement/next_use.h:39`: `kNever`=INT64_MAX `:41`; ctor from a reference sequence
   (one backward pass, then grouped by line) `:45`; `next_use(line, occurrence)` `:73` returns the
@@ -611,20 +615,23 @@ the shared `src/layout/layout_common.h`.
 - `probe` `:209`, `free_slot` `:221` (lowest free way), `victim_candidates` `:240` (clears then
   fills, whole set), `insert` `:264` (slot range-checked, line not), `invalidate` `:274`.
 
-**replacement/stamp_policy.cpp**
-- `kNeverStamped = 0` `:27` (counter starts at 1). `StampPolicy` ctor `:31`, `index_or_reject` `:50`,
-  `stamp` `:60`, `on_fill` `:65`, `on_invalidate` `:72` (back to never-stamped), `pick_victim` `:76`.
-- `LruPolicy::on_hit` `:102`; `FifoPolicy::on_hit` `:107` (empty).
-- `BeladyPolicy` ctor `:118`, `index_or_reject` `:126`, `on_hit/on_fill` `:140-141` (range check
-  only), `on_invalidate` `:143`, `note_next_use` `:147`, `pick_victim` `:151`.
-- `LfuPolicy` ctor `:172`, `on_hit` `:189`, `on_fill` `:195` (reset 0), `on_invalidate` `:199`,
-  `pick_victim` `:203`.
-- RRPV comment `:226-227` says "An M-bit RRPV (M = rrip_bits)"; `kRripMaxBits = 8` `:231`.
-- `RripPolicy` ctor `:235` (`max = 2^bits-1`, `insert = max-1`, initial all max), `on_hit` `:263`,
-  `on_fill` `:265`, `on_invalidate` `:271`, `pick_victim` `:275` (one aging step `max - highest`
-  applied to all candidates, then smallest slot at max).
-- `make_policy` `:308` (RANDOM throws `invalid_argument`).
+**replacement/policy.cpp**
+- `make_policy` `replacement/policy.cpp:19` constructs the selected concrete policy and rejects RANDOM.
 
+**replacement/stamp.cpp**
+- `StampPolicy` constructor `replacement/stamp.cpp:23`, bound check `:28`, stamp/fill/invalidate/victim
+  operations `:38-84`; LRU/FIFO hit behavior `:99-101`.
+
+**replacement/belady.cpp**
+- `BeladyPolicy` constructor `replacement/belady.cpp:18`, bound check `:26`, next-use notifications `:45-47`,
+  maximum-next-use victim selection `:49`.
+
+**replacement/lfu.cpp**
+- `LfuPolicy` constructor `replacement/lfu.cpp:18`, count updates `:35-41`, victim selection `:43`.
+
+**replacement/rrip.cpp**
+- `RripPolicy` constructor `replacement/rrip.cpp:22`, RRPV updates `:45-53`, uniform aging and tie-break
+  in `pick_victim` `:55-76`.
 **prefetch/prefetcher.cpp**
 - `NoPrefetcher` `:10-11`; `NextBurstPrefetcher` ctor `:13`, `pf_cursor` `:27`, `on_tile_start`
   `:31` (cursor 0), `on_demand_issue` `:39`: cursor = max(cursor, k+1); issue bursts while `cursor <=
@@ -633,29 +640,19 @@ the shared `src/layout/layout_common.h`.
 - `NoL2Prefetcher::suggest` `:92`; `NeighbourL2Prefetcher` ctor `:94`, `suggest` `:109` (order: +1,
   -1, +2, -2, ...); `make_l2_prefetcher` `:127`.
 
+**index/set_index.h**
+- `set_index(LineId, num_sets) -> Placement` `index/set_index.h:14`: shared modulo mapping, with
+  `set = line % num_sets` and `tag = line / num_sets`; malformed set counts and negative line ids are refused.
+
 **layout/layout_common.h / layout/layout_common.cpp** (namespace `cachesim::detail`, private to
 `src/`, not installed under `include/`)
-- What the three mappers share: argument checks, the coordinate range check, the burst walk, the
-  placement and the line-size message; each mapper keeps its own flatten and `neighbour`
-  (`layout/layout_common.h:3-6`). Every refusal is prefixed with the mapper name passed as `cls`
-  (`:8-13`).
+- The three mappers share argument checks, shape validation, burst walking and line-size diagnostics;
+  each mapper keeps its own flatten, placement call and `neighbour`.
 - `kAxes[4]` `layout/layout_common.h:28`; `reject` `:30` / `.cpp:10` (`invalid_argument`),
-  `reject_range` `:31` / `.cpp:14` (`out_of_range`); `positive_or_reject` `:36` (prints the value);
-  `checked_mul` `:43` / `.cpp:18` (`b > INT64_MAX / a` refused, both arguments assumed positive);
-  `blocks_covering` `:48` (ceiling in int64); `block_size_on` `:56` (KH, KW -> 1; unknown Axis ->
-  `logic_error`).
-- `check_shape_and_blocking` `:72` / `.cpp:26`: all four extents >= 1, then `cin_block`,
-  `cout_block`, `weight_bytes` >= 1, in that order.
-- `line_size_bytes` `:80` / `.cpp:41`: checked `cin_block * cout_block * weight_bytes`.
-- `check_in_shape` `:87`: every coordinate in `[0, extent)` against the SHAPE, not the block counts.
-- `expand_burst<Mapper>` `:119-148`: the one burst walk. `count < 1` then `stride < 1` refused
-  (`:121-124`); far end `start + (count-1)*stride` computed in int64 and range-checked (`:126-132`);
-  elements walked into a local vector (`:137-143`), then `sort` + `unique` + append (`:145-147`), so a
-  throw leaves `out` untouched.
-- `locate_line` `:154`: range check before division; `set = id % num_sets`, `tag = id / num_sets`
-  (`:162`).
-- `line_size_terms` `:169` / `.cpp:47`: "cin_block A x cout_block B x weight_bytes C".
-
+  `reject_range` `:31` / `.cpp:14` (`out_of_range`); `positive_or_reject` `:36`;
+  `checked_mul` `:43` / `.cpp:18`; `blocks_covering` `:48`; `block_size_on` `:56`.
+- `check_shape_and_blocking` `:72` / `.cpp:26`, `line_size_bytes` `:80` / `.cpp:41`,
+  `check_in_shape` `:87`, `expand_burst<Mapper>` `:120-148`, and `line_size_terms` `:154` / `.cpp:47`.
 **layout/block_pack.cpp** (`BlockPackMapper`, header `include/cachesim/layout/block_pack.h:42`; 235 lines)
 - Nesting `[KH][KW][cin_blk][cout_blk]`, cout innermost; `kName` `layout/block_pack.cpp:14`; Axis-order `static_assert`s
   `:33-36`.
@@ -664,8 +661,8 @@ the shared `src/layout/layout_common.h`.
   `:118-124` (COUT 1, CIN `n_cout_blocks`, KW `n_cin_blocks*n_cout_blocks`, KH `KW*stride_KW`).
 - `line_stride(Axis)` `:136`, `block_len(Axis)` `:152` (KH,KW raw; CIN,COUT block counts),
   `line_of(Coord)` `:162` (`check_in_shape` `:169`, then one loop over `kAxes` `:176-185`),
-  `expand` `:200` (= `detail::expand_burst`), `locate` `:206` (= `detail::locate_line`),
-  `line_size_terms` `:212`, `neighbour` `:220`. Accessors in header `:159-164`.
+  `expand` `:200` (= `detail::expand_burst`), `locate` `:207` (= `set_index`),
+  `line_size_terms` `:218`, `neighbour` `:226`. Accessors in header `:159-164`.
 
 **layout/split_cin.cpp** (`SplitCinMapper`, header `include/cachesim/layout/split_cin.h:110`; 333 lines)
 - Nesting `[KH][KW][cin_hi][cout_blk][cin_lo]`, `cin_lo = cin_blk % n_cin_lo` innermost, so with
@@ -677,8 +674,8 @@ the shared `src/layout/layout_common.h`.
   `:155-160`, may be below the radix product (holes when n_cin_lo does not divide ncb), sanity check
   `:167-171`.
 - `digit_stride` `:181`, `digit_radix` `:193`, `block_len` `:210`, `line_of` `:222` (the only cin
-  split `:242-243`), `expand` `:275` (= `detail::expand_burst`), `locate` `:286`, `line_size_terms`
-  `:294`, `neighbour` `:300` (CIN step recombines the two digits, `:322-330`). Accessors header
+  split `:242-243`), `expand` `:275` (= `detail::expand_burst`), `locate` `:287`, `line_size_terms`
+  `:300`, `neighbour` `:306` (CIN step recombines the two digits, `:333-341`). Accessors header
   `:189-196`.
 
 **layout/khkw_split.cpp** (`KhkwSplitMapper`, header `include/cachesim/layout/khkw_split.h:70`; 186 lines)
@@ -687,9 +684,9 @@ the shared `src/layout/layout_common.h`.
   `kName` `layout/khkw_split.cpp:14`.
 - Ctor `:18`; `n_pos`, `n_pos_lo`, `n_pos_hi` `:33-35`; strides `:39-45`; `radix_product` `:50-52`;
   `num_lines` = max id + 1 via a loop over every `pos` `:63-71` (see 3.1 item 1 on its comment).
-- `digit_stride` `:80`, `digit_radix` `:91`, `block_len` `:101`, `line_of` `:111`, `expand` `:134`
-  (= `detail::expand_burst`; comment `:130-133`), `locate` `:138`, `line_size_terms` `:142`,
-  `neighbour` `:148` (KH/KW step via pos, `:170-183`).
+- `digit_stride` `:80`, `digit_radix` `:91`, `block_len` `:101`, `line_of` `:111`, `expand` `:135`
+  (= `detail::expand_burst`; comment `:130-133`), `locate` `:139`, `line_size_terms` `:148`,
+  `neighbour` `:154` (KH/KW step via pos, `:176-189`).
 
 **trace/stream_trace.cpp**
 - Constants: frame prefix 24, burst record 28, trailer 12 bytes `:14-18`.
@@ -795,14 +792,15 @@ Unit test binaries (`Makefile:57`, one binary per `tests/test_*.cpp`):
   neighbouring coordinate.
 - `test_cache.cpp`: `CacheArray` interface shape, `Candidate`, `InsertResult`.
 - `test_set_associative.cpp`: SetAssociativeArray geometry refusals and the five verbs.
-- `test_stamp_policy.cpp`: ReplacementPolicy and LRU/FIFO (plus Belady/LFU/RRIP) behaviour and
-  order independence.
+- `test_stamp.cpp`, `test_belady.cpp`, `test_lfu.cpp`, `test_rrip.cpp`: the replacement interface and
+  each policy family behavior and order independence.
 - `test_port.cpp`: `Port` reservation arithmetic.
 - `test_event.cpp`: EventQueue total order and determinism.
 - `test_mshr.cpp`: MshrFile entries, targets, waits, refusal counter, grant loop.
 - `test_cache_level.cpp`: CacheLevel triage table branch by branch.
 - `test_engine.cpp`: event loop handlers, core state machine, tile barrier, inclusion.
-- `test_prefetch.cpp`: prefetch interface, `none` vs `next_burst`, drop rules.
+- `test_prefetcher.cpp`: prefetch interface and `none` vs `next_burst`; `test_prefetch_engine.cpp`:
+  engine integration and drop rules.
 - `test_config.cpp`: RunConfig parse, defaults, validation rules, among them
   `test_the_l2_mshr_floor_holds_a_burst_with_one_to_spare` (`test_config.cpp:204`): default
   `l2_mshrs` is 20, `lines_per_burst` 19 passes and resolves the reserve to 19, 20 is refused with
@@ -901,7 +899,7 @@ Drivers:
    at `src/layout/split_cin.cpp:303`, `src/layout/khkw_split.cpp:151`). Runs of three blank lines: `layout/block_pack.cpp:215-217`, `layout/split_cin.cpp:297-299`, `layout/khkw_split.cpp:145-147`.
 6. `EngineStats::pf_dropped_targets_full` (`include/cachesim/core/engine.h:214`) is never incremented
    anywhere in `src/`; it is always 0 by construction (read only at `src/instrument/stats.cpp:270,326`).
-   `Request::reason` (`include/cachesim/core/mshr.h:148`) is written (`src/core/mshr.cpp:64`) but never read in
+   `Request::reason` (`include/cachesim/core/request.h:34`) is written (`src/core/mshr.cpp:64`) but never read in
    `src/` or `apps/`. `CoreState::issued_at` is written (`src/core/engine_core.cpp:64,193`) and never read
    in `src/`/`apps/`.
 7. `replacement/next_use.h:29` includes `<istream>`, which nothing in the file uses.
@@ -929,7 +927,7 @@ Drivers:
 3. Nearest-rank quantile twice: `include/cachesim/instrument/hist.h:85-92` and `src/instrument/stats.cpp:60-65`.
 4. `engine_error` / `idx` twice: `src/core/engine.cpp:18-22`, `src/core/engine_core.cpp:31-35`. Way-from-slot
    arithmetic twice: `core/engine.cpp:692-695` and `core/engine.cpp:755-758`.
-5. Per-policy `index_or_reject` four times: `src/replacement/stamp_policy.cpp:50,126,179,253`.
+5. Per-policy `index_or_reject` four times: `src/replacement/{stamp,belady,lfu,rrip}.cpp`.
 6. The two apps duplicate the config/trace/mapper/validate setup and drift:
    - `--max-engines` uses bare `std::stoi` (`apps/cachesim_sweep.cpp:107`, accepts `"12abc"`) while
      `cachesim_run` uses `int_value_of` (`app_support.h:60`).
@@ -992,7 +990,7 @@ Drivers:
 - The grid defaults are fixed files: `configs/cache/base.json` and `configs/cache/khkw_sweep.json`
   (`src/cachesim/grid.py:8-9`), found from the repo root `ROOT` (`src/cachesim/grid.py:7`).
 - Magic numbers in code: `kPosLoRadix = 8` (`include/cachesim/layout/khkw_split.h:89`); RRIP width cap 8 twice
-  (`src/replacement/stamp_policy.cpp:231`, `src/config.cpp:592`); `--max-engines` 256
+  (`src/replacement/rrip.cpp:11`, `src/config.cpp:592`); `--max-engines` 256
   (`apps/cachesim_sweep.cpp:84`); AccessLog record limits 32-bit line / 8-bit core
   (`instrument/access_log.h:135-136`).
 - `trace/stream_format.h:35-37` requires the GCC/Clang `__BYTE_ORDER__` macro.

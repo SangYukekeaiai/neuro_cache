@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 
-#include "cachesim/core/mshr.h"
+#include "cachesim/core/request.h"
 #include "cachesim/types.h"
 
 namespace cachesim {

@@ -929,7 +929,7 @@ tryS reject 'the array assigned over'    "$SAMAP int main(){ SM m;
 
 section "== A5: a ReplacementPolicy needs nothing but SlotId and Candidate"
 # The minimal conforming policy, written out here rather than reached for from
-# stamp_policy.h. That is the point of the preamble rather than a convenience:
+# policy.h and its concrete policy headers. That is the point of the preamble rather than a convenience:
 # a case that pulled in the concrete policies would compile against a header
 # that already includes them, and would stop being able to say what policy.h
 # alone provides.

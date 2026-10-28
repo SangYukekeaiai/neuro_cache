@@ -41,8 +41,8 @@ ulimit -c 0 2>/dev/null || true
 # untestable from the moment it was created, so A4a's interface would have
 # carried a clean sweep while nothing in it was ever mutated. A4b is a whole
 # constructor of validation and would have done the same, at a larger size.
-# A5 adds include/cachesim/replacement/policy.h, include/cachesim/replacement/stamp_policy.h and
-# src/replacement/stamp_policy.cpp, by the same rule: a unit whose file is not on this line
+# A5's split adds the policy interface, four concrete policy headers and five
+# replacement sources, by the same rule: a unit whose file is not on this line
 # is not mutation tested at all while the summary still reports a clean sweep.
 # Phase C adds all eight of ITS files: include/cachesim/trace/tile_trace.h, cache_level.h,
 # engine.h and prefetcher.h, and src/core/cache_level.cpp, engine.cpp,
@@ -76,7 +76,7 @@ ulimit -c 0 2>/dev/null || true
 # naming: it is header-only AND was included by no translation unit at all until
 # tests/core/test_event.cpp existed, so before this round nothing in the tree either
 # compiled it or could mutate it.
-FILES="include/cachesim/types.h include/cachesim/layout/mapper.h include/cachesim/layout/block_pack.h include/cachesim/index/cache_array.h include/cachesim/index/set_associative.h include/cachesim/replacement/policy.h include/cachesim/replacement/stamp_policy.h include/cachesim/core/port.h include/cachesim/core/event.h include/cachesim/core/mshr.h include/cachesim/trace/tile_trace.h include/cachesim/core/cache_level.h include/cachesim/core/engine.h include/cachesim/prefetch/prefetcher.h src/layout/block_pack.cpp src/layout/layout_common.h src/layout/layout_common.cpp src/index/set_associative.cpp src/replacement/stamp_policy.cpp src/core/port.cpp src/core/mshr.cpp src/core/cache_level.cpp src/core/engine.cpp src/core/engine_core.cpp src/prefetch/prefetcher.cpp include/cachesim/config.h src/config.cpp include/cachesim/trace/stream_format.h include/cachesim/trace/byte_source.h include/cachesim/trace/stream_trace.h src/trace/stream_trace.cpp include/cachesim/instrument/stats.h src/instrument/stats.cpp include/cachesim/instrument/hist.h apps/cachesim_run.cpp include/cachesim/sweep.h src/sweep.cpp apps/app_support.h apps/cachesim_sweep.cpp"
+FILES="include/cachesim/types.h include/cachesim/layout/mapper.h include/cachesim/layout/block_pack.h include/cachesim/index/cache_array.h include/cachesim/index/set_associative.h include/cachesim/index/set_index.h include/cachesim/replacement/policy.h include/cachesim/replacement/stamp.h include/cachesim/replacement/belady.h include/cachesim/replacement/lfu.h include/cachesim/replacement/rrip.h include/cachesim/core/port.h include/cachesim/core/event.h include/cachesim/core/request.h include/cachesim/core/mshr.h include/cachesim/trace/tile_trace.h include/cachesim/core/cache_level.h include/cachesim/core/engine.h include/cachesim/prefetch/prefetcher.h src/layout/block_pack.cpp src/layout/layout_common.h src/layout/layout_common.cpp src/index/set_associative.cpp src/replacement/policy.cpp src/replacement/stamp.cpp src/replacement/belady.cpp src/replacement/lfu.cpp src/replacement/rrip.cpp src/core/port.cpp src/core/mshr.cpp src/core/cache_level.cpp src/core/engine.cpp src/core/engine_core.cpp src/prefetch/prefetcher.cpp include/cachesim/config.h src/config.cpp include/cachesim/trace/stream_format.h include/cachesim/trace/byte_source.h include/cachesim/trace/stream_trace.h src/trace/stream_trace.cpp include/cachesim/instrument/stats.h src/instrument/stats.cpp include/cachesim/instrument/hist.h apps/cachesim_run.cpp include/cachesim/sweep.h src/sweep.cpp apps/app_support.h apps/cachesim_sweep.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
@@ -226,11 +226,13 @@ mutate_pack() { mutate_in src/layout/block_pack.cpp "$@"; }
 # The helpers, burst walk and placement the three layout mappers share.
 mutate_lc_h() { mutate_in src/layout/layout_common.h "$@"; }
 mutate_lc() { mutate_in src/layout/layout_common.cpp "$@"; }
+mutate_set_index_h() { mutate_in include/cachesim/index/set_index.h "$@"; }
 mutate_sa_h() { mutate_in include/cachesim/index/set_associative.h "$@"; }
 mutate_sa() { mutate_in src/index/set_associative.cpp "$@"; }
 mutate_pol() { mutate_in include/cachesim/replacement/policy.h "$@"; }
-mutate_sp_h() { mutate_in include/cachesim/replacement/stamp_policy.h "$@"; }
-mutate_sp() { mutate_in src/replacement/stamp_policy.cpp "$@"; }
+mutate_sp_h() { mutate_in include/cachesim/replacement/stamp.h "$@"; }
+mutate_sp() { mutate_in src/replacement/stamp.cpp "$@"; }
+mutate_policy() { mutate_in src/replacement/policy.cpp "$@"; }
 # Phase B. NAMING, because the tree carries a collision that misreads easily:
 # the PLAN's Phase B units are B1 (Port), B2 (EventQueue) and B3 (MshrFile),
 # while PROGRESS.md's DECISIONS are also numbered B1-B104. Every "B1"/"B2"/"B3"
@@ -240,6 +242,7 @@ mutate_port_h() { mutate_in include/cachesim/core/port.h "$@"; }
 mutate_port() { mutate_in src/core/port.cpp "$@"; }
 mutate_ev() { mutate_in include/cachesim/core/event.h "$@"; }
 mutate_mshr_h() { mutate_in include/cachesim/core/mshr.h "$@"; }
+mutate_req_h() { mutate_in include/cachesim/core/request.h "$@"; }
 mutate_mshr() { mutate_in src/core/mshr.cpp "$@"; }
 # Phase C. Same naming trap as Phase B, one letter along: the PLAN's Phase C
 # units are C1 (CacheLevel), C2 (the handlers), C3 (the core state machine and
@@ -716,8 +719,8 @@ mutate_lc_h allow 'A2c block_size_on invents an answer' \
 #                     cover
 #   the walk          the sort, the de-duplication, and the append, which are
 #                     B31 and layout.h's accumulate pattern
-#   locate            the range check that runs BEFORE the division, and the
-#                     identity `line == tag * num_sets + set_index`
+#   locate            the range check that runs BEFORE the shared placement
+#                     helper, and the identity `line == tag * num_sets + set_index`
 # ---------------------------------------------------------------------------
 echo "== A2d: B38, the count check"
 # The boundary, not the sign. `< 1` and `< 0` agree on every negative count and
@@ -852,24 +855,25 @@ mutate_lc_h kill 'A2d the walk stops one short' \
     's|    for (std::int32_t i = 0; i < b.count; ++i) {|    for (std::int32_t i = 0; i + 1 < b.count; ++i) {|'
 
 echo "== A2d: locate"
-# The range check, and it runs BEFORE the division. LineId is signed (B5), so a
-# negative id comes back out of `line % num_sets` as a negative set index and a
-# cache array subscripts its slot vector from below. That is v1's F9, found in
-# the release build after the signedness change made it reachable.
-mutate_lc_h kill 'A2d locate never range checks' \
-    's@    if (v < 0 || v >= num_lines) {@    if (false) {@'
-mutate_lc_h kill 'A2d locate drops the lower half' \
-    's@    if (v < 0 || v >= num_lines) {@    if (v >= num_lines) {@'
-mutate_lc_h kill 'A2d locate drops the upper half' \
-    's@    if (v < 0 || v >= num_lines) {@    if (v < 0) {@'
-mutate_lc_h kill 'A2d locate is off by one' \
-    's@    if (v < 0 || v >= num_lines) {@    if (v < 0 || v > num_lines) {@'
+# The mapper range check runs BEFORE the shared placement helper. LineId is
+# signed (B5), so a negative id must not reach `line % num_sets` and produce a
+# negative set index. The three mapper implementations carry the same guard;
+# mutate BlockPackMapper here because the conformance suite exercises all three
+# through the same AddressMapper contract.
+mutate_pack kill 'A2d locate never range checks' \
+    's@    if (line.get() < 0 || line.get() >= num_lines_) {@    if (false) {@'
+mutate_pack kill 'A2d locate drops the lower half' \
+    's@    if (line.get() < 0 || line.get() >= num_lines_) {@    if (line.get() >= num_lines_) {@'
+mutate_pack kill 'A2d locate drops the upper half' \
+    's@    if (line.get() < 0 || line.get() >= num_lines_) {@    if (line.get() < 0) {@'
+mutate_pack kill 'A2d locate is off by one' \
+    's@    if (line.get() < 0 || line.get() >= num_lines_) {@    if (line.get() < 0 || line.get() > num_lines_) {@'
 # out_of_range, not invalid_argument: a LineId outside [0, num_lines()) is well
 # formed and outside THIS layer, which is the same tier line_of throws from.
-mutate_lc_h kill 'A2d the locate failure is invalid_argument' \
-    's|        reject_range(cls, "line id out of range|        reject(cls, "line id out of range|'
-mutate_lc_h kill 'A2d the locate message loses its subject' \
-    's|reject_range(cls, "line id out of range \[0, "|reject_range(cls, "[0, "|'
+mutate_pack kill 'A2d the locate failure is invalid_argument' \
+    's|throw std::out_of_range(std::string(kName) + ": line id out of range|throw std::invalid_argument(std::string(kName) + ": line id out of range|'
+mutate_pack kill 'A2d the locate message loses its subject' \
+    's|std::string(kName) + ": line id out of range \[0, "|std::string("line id out of range [0, "|'
 # The identity is the definition of the pair, and swapping the two fields is
 # silent at a small set count and catastrophic at a large one.
 #
@@ -878,10 +882,10 @@ mutate_lc_h kill 'A2d the locate message loses its subject' \
 # not compile and would be a weaker mutation, killed by the compiler before it
 # ever reached the identity check. The value swap is the one that still
 # produces a well-typed mapper that is wrong, so it is the one kept.
-mutate_lc_h kill 'A2d locate swaps set index and tag' \
-    's|    return Placement{SetIndex{v % num_sets}, TagId{v / num_sets}};|    return Placement{SetIndex{v / num_sets}, TagId{v % num_sets}};|'
-mutate_lc_h kill 'A2d locate divides by num_lines' \
-    's|    return Placement{SetIndex{v % num_sets}, TagId{v / num_sets}};|    return Placement{SetIndex{v % num_lines}, TagId{v / num_lines}};|'
+mutate_set_index_h kill 'A2d locate swaps set index and tag' \
+    's|    return Placement{SetIndex{value % num_sets}, TagId{value / num_sets}};|    return Placement{SetIndex{value / num_sets}, TagId{value % num_sets}};|'
+mutate_set_index_h kill 'A2d locate uses one set' \
+    's|value % num_sets|value % 1|; s|value / num_sets|value / 1|'
 
 echo "== A4a: the CacheArray interface (plan 2.2)"
 # Like A2a's, these are killed mostly at COMPILE time rather than by a failing
@@ -1373,16 +1377,16 @@ mutate_sp kill 'A5 the slot count check drops the boundary' \
     's|    if (num_slots < 1) {|    if (num_slots < 0) {|'
 
 echo "== A5: make_policy"
-mutate_sp kill 'A5 make_policy gives FIFO for lru' \
-    's|        case PolicyKind::LRU:  return std::make_unique<LruPolicy>(num_slots);|        case PolicyKind::LRU:  return std::make_unique<FifoPolicy>(num_slots);|'
-mutate_sp kill 'A5 make_policy gives LRU for fifo' \
-    's|        case PolicyKind::FIFO: return std::make_unique<FifoPolicy>(num_slots);|        case PolicyKind::FIFO: return std::make_unique<LruPolicy>(num_slots);|'
+mutate_policy kill 'A5 make_policy gives FIFO for lru' \
+    's|        case PolicyKind::LRU:    return std::make_unique<LruPolicy>(num_slots);|        case PolicyKind::LRU:    return std::make_unique<FifoPolicy>(num_slots);|'
+mutate_policy kill 'A5 make_policy gives LRU for fifo' \
+    's|        case PolicyKind::FIFO:   return std::make_unique<FifoPolicy>(num_slots);|        case PolicyKind::FIFO:   return std::make_unique<LruPolicy>(num_slots);|'
 # The one wrong answer for Random: a config naming a policy this build does not
 # have would run to completion under a policy nobody selected, and the results
 # row would attribute a hit rate to the wrong one.
-mutate_sp kill 'A5 make_policy falls back to LRU for random' \
+mutate_policy kill 'A5 make_policy falls back to LRU for random' \
     's|            reject("make_policy",|            return std::make_unique<LruPolicy>(num_slots); reject("make_policy",|'
-mutate_sp kill 'A5 make_policy ignores the slot count' \
+mutate_policy kill 'A5 make_policy ignores the slot count' \
     's|std::make_unique<LruPolicy>(num_slots)|std::make_unique<LruPolicy>(1)|'
 
 echo "== A5: the interface (policy.h)"
@@ -1417,7 +1421,7 @@ mutate_pol kill 'A5 the policy default constructor is dropped' \
 mutate_pol kill 'A5 the policy destructor stops being virtual' \
     's|    virtual ~ReplacementPolicy() = default;|    ~ReplacementPolicy() = default;|'
 
-echo "== A5: the concrete policies (stamp_policy.h)"
+echo "== A5: the concrete policies (stamp.h)"
 mutate_sp_h kill 'A5 LruPolicy loses final' \
     's|class LruPolicy final : public StampPolicy {|class LruPolicy : public StampPolicy {|'
 mutate_sp_h kill 'A5 FifoPolicy loses final' \
@@ -1430,15 +1434,15 @@ mutate_sp_h kill 'A5 FifoPolicy loses final' \
 # Under `inclusion = inclusive` the back-invalidation path is where this lands,
 # so an L2 eviction would leave an L1 way that is empty and unreachable.
 mutate_sp_h kill 'A5 FIFO ignores an invalidate' \
-    '/^class FifoPolicy/,/^};/ s|    void on_hit(SlotId slot) override;|    void on_hit(SlotId slot) override;\n    void on_invalidate(SlotId) override {}|'
+    '/^class FifoPolicy/,/^};/ s|    void on_hit(SlotId) override;|    void on_hit(SlotId) override;\n    void on_invalidate(SlotId) override {}|'
 mutate_sp_h kill 'A5 FIFO stamps on an invalidate' \
-    '/^class FifoPolicy/,/^};/ s|    void on_hit(SlotId slot) override;|    void on_hit(SlotId slot) override;\n    void on_invalidate(SlotId slot) override { on_fill(slot); }|'
+    '/^class FifoPolicy/,/^};/ s|    void on_hit(SlotId) override;|    void on_hit(SlotId) override;\n    void on_invalidate(SlotId slot) override { on_fill(slot); }|'
 # V29's rule made literal: dropping random from the enum makes `policy = random`
 # an unknown NAME rather than a known and unbuilt one, so the run would report a
 # typo where it should report a missing feature.
-mutate_sp_h kill 'A5 random leaves the enum' \
-    's|enum class PolicyKind : std::uint8_t { LRU = 0, FIFO = 1, RANDOM = 2 };|enum class PolicyKind : std::uint8_t { LRU = 0, FIFO = 1 };|'
-mutate_sp_h kill 'A5 PolicyKind widens' \
+mutate_pol kill 'A5 random leaves the enum' \
+    's|    RANDOM = 2,|    // RANDOM removed by mutation|'
+mutate_pol kill 'A5 PolicyKind widens' \
     's|enum class PolicyKind : std::uint8_t|enum class PolicyKind : std::int32_t|'
 
 echo "== B1: Port, the occupancy arithmetic (src/core/port.cpp)"
@@ -1802,19 +1806,19 @@ mutate_mshr kill 'B3 find never answers' \
 # request in the run: a fresh request that is a prefetch never waits, one born
 # refused is never stamped, one born at the L2 re-enters at the wrong level
 # (3.5), and one born holding a reservation is admitted by has_slot forever.
-mutate_mshr_h kill 'B3 a fresh request is a prefetch' \
+mutate_req_h kill 'B3 a fresh request is a prefetch' \
     's|    bool demand = true;|    bool demand = false;|'
-mutate_mshr_h kill 'B3 a fresh request is born refused' \
+mutate_req_h kill 'B3 a fresh request is born refused' \
     's|    RefusalOrder refusal = NoRefusal;|    RefusalOrder refusal = RefusalOrder{0};|'
-mutate_mshr_h kill 'B3 a fresh request re-enters at the L2' \
+mutate_req_h kill 'B3 a fresh request re-enters at the L2' \
     's|    Level level = Level::L1;|    Level level = Level::L2;|'
-mutate_mshr_h kill 'B3 a fresh request holds a reservation' \
+mutate_req_h kill 'B3 a fresh request holds a reservation' \
     's|    bool reserved = false;|    bool reserved = true;|'
-mutate_mshr_h kill 'B3 a fresh request carries an entry' \
+mutate_req_h kill 'B3 a fresh request carries an entry' \
     's|    Mshr\* mshr1 = nullptr;|    Mshr* mshr1 = reinterpret_cast<Mshr*>(1);|'
-mutate_mshr_h kill 'B3 WaitReason widens' \
+mutate_req_h kill 'B3 WaitReason widens' \
     's|enum class WaitReason : std::uint8_t|enum class WaitReason : std::int32_t|'
-mutate_mshr_h kill 'B3 Level widens' \
+mutate_req_h kill 'B3 Level widens' \
     's|enum class Level : std::uint8_t|enum class Level : std::int32_t|'
 
 # ---------------------------------------------------------------------------
@@ -1823,7 +1827,7 @@ mutate_mshr_h kill 'B3 Level widens' \
 # C1 is CacheLevel and triage, C2 the six event handlers plus retire/reinject,
 # C3 the core state machine and the tile barrier, C4 inclusion, C5 prefetching.
 # The suites are tests/core/test_cache_level.cpp, tests/core/test_engine.cpp and
-# tests/prefetch/test_prefetch.cpp, sharing tests/engine_fixture.h.
+# tests/prefetch/test_prefetch_engine.cpp, sharing tests/engine_fixture.h.
 #
 # Two families dominate, and they are the two the plan itself says are
 # load-bearing:
