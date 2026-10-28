@@ -1,6 +1,6 @@
 # Code atlas: `src/cachesim` (cache simulator)
 
-Branch `wcache-rebuild-phase-a`, commit `94a5b34`. Written from code only: `.cpp`, `.h`, `.sh`,
+Branch `wcache-rebuild-phase-a`, commit `b0d09ca`. Written from code only: `.cpp`, `.h`, `.sh`,
 `.py`, `Makefile`, `.json`. No markdown, text or log file was read, so any design rationale below is
 what the code's own comments state. Paths that start with `src/cachesim/native/`, `src/cachesim/`,
 `configs/`, `scripts/`, `tests/` or `docs/` are relative to the repo root; every other path (such as
