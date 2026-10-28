@@ -230,7 +230,7 @@ def test_check_bench_refuses_meta_without_layers_or_n_samples(traces):
                                              "layer_params": {"layer_01_a": {"cout": 8, "kernel": 3, "stride": 1}}}))
     np.save(d / "layer_01_a.npy", np.zeros([4, 5, 8, 4, 4], dtype=np.uint8))
     problems, notes = pipeline.check_bench("loas")
-    assert problems == [f"{d / 'meta.json'}: no 'n_samples' (scripts/subset_input_traces.py reads it)"]
+    assert problems == [f"{d / 'meta.json'}: no 'n_samples' (the sample count B, see docs/REPRODUCE.md, Input contract)"]
 
 
 def test_check_bench_refuses_a_layer_without_cout_kernel_or_stride(traces):

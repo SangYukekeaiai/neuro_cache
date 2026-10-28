@@ -53,9 +53,9 @@ from weight_trace_gen import ARCH_NATIVE_BRIDGES
 from weight_trace_gen.trace import load_layer_trace, valid_layer_names
 from nocsim.schedule.decode import schedule_from_strategy
 
-# The in-repo traces are a 5-sample subset of the full capture, cut by
-# scripts/subset_input_traces.py; pass --trace-root to use a full capture
-# (kept under $NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas).
+# The in-repo traces are a 5-sample subset cut from the full captures
+# on Delta; pass --trace-root to use a full capture (see
+# input_trace/README.md).
 DEFAULT_TRACE_ROOT = ROOT / "input_trace/loas"
 DEFAULT_TRACE_DIRS = ["resnet19_T4_n5", "vgg16_T4_n5"]
 

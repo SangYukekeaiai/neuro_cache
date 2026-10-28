@@ -224,7 +224,7 @@ def check_bench(spec):
             problems.append(f"{meta_path}: layers disagree on B (the sample count): "
                             + ", ".join(f"{n}={s[1]}" for n, s in shapes.items()))
         if "n_samples" not in m:
-            problems.append(f"{meta_path}: no 'n_samples' (scripts/subset_input_traces.py reads it)")
+            problems.append(f"{meta_path}: no 'n_samples' (the sample count B, see docs/REPRODUCE.md, Input contract)")
         elif shapes and m["n_samples"] not in {s[1] for s in shapes.values()}:
             problems.append(f"{meta_path}: n_samples {m['n_samples']} differs from the layers' B")
         checked = {"layers": shapes, "layer_params": m.get("layer_params", {})}

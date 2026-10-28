@@ -27,8 +27,7 @@ make build
   has no schedule in `configs/schedules/` (`scripts/pipeline.py:322-325`).
 - `NEURO_CACHE_DATA` is the root for data kept outside git, default `data/`
   (`src/util.py:15-24`): the pipeline writes to `$NEURO_CACHE_DATA/demo/<bench>` by
-  default (`scripts/pipeline.py:312-313`), and the full captures for
-  `scripts/subset_input_traces.py` live under it (`scripts/subset_input_traces.py:44`).
+  default (`scripts/pipeline.py:312-313`).
 
 ## Input contract
 
@@ -59,13 +58,7 @@ name under `input_trace/` or a directory path), lists the excluded layers with t
 and exits 0 when it finds no problem (`scripts/pipeline.py:170-249`,
 `scripts/pipeline.py:468-471`).
 
-A subset of N samples is cut from a full capture with the same sample indices for every
-layer, into `<capture minus _all>_n<N>/`, with B and `n_samples` rewritten
-(`scripts/subset_input_traces.py:49-93`, `scripts/subset_input_traces.py:119`):
-
-```
-python scripts/subset_input_traces.py --src <captures dir> --dest <dir> --captures <network>_T4_all --n 5 --seed 0
-```
+The 5-sample subset in `input_trace/loas/` was cut from the full captures on Delta; see `input_trace/README.md`.
 
 ## The four modules, each alone
 

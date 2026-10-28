@@ -57,14 +57,12 @@ any cwd.
 | `python -m cachesim grid` (`src/cachesim/cli.py:28`) | Write the khkw grid (`configs/cache/base.json` x `configs/cache/khkw_sweep.json`) as one JSON file per `cin_block`, print the paths | `--out` (required), `--base`, `--sweep` (`src/cachesim/cli.py:38-41`) |
 | `python -m cachesim sweep` / `run` | Run the native `cachesim_sweep` / `cachesim_run` with every later argument passed through, building them first if missing (`src/cachesim/cli.py:20-25`, dispatch :32-33) | native flags; see `docs/atlas/cachesim_native.md` |
 | `scripts/pipeline.py` `main` :451 | End to end for one benchmark (1.5); or `--verify-baseline [DIR]`; or `--check-bench BENCH` | `--bench` (`loas`), `--layers` (`V8 V9 R9 R16`; also `trace_dir/layer` or `all`), `--sample-start` (0), `--sample-count` (5), `--out` (`$NEURO_CACHE_DATA/demo/<bench>`), `--grid` (the khkw grid), `--jobs` (`min(8, cpu_count)`), `--verify-baseline` (`<repo>/.baseline/after`), `--check-bench` (`scripts/pipeline.py:452-466`) |
-| `scripts/subset_input_traces.py` `main` :96 | Cut an N-sample subset out of the full 10,000-sample captures | `--src` (`$NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas`, :44), `--dest` (`<repo>/input_trace/loas`), `--captures` (`vgg16_T4_all resnet19_T4_all`), `--n` (5), `--seed` (0) |
 | `make build` / `demo` / `test` (`Makefile:5-14`) | build the cache simulator apps, eventsim and `loasgen`; `scripts/pipeline.py` with defaults; `pytest tests -q` | `PYTHON` (`.baseline/venv/bin/python` when present, else `python3`, `Makefile:2`) |
 | Native `src/weight_trace_gen/<arch>/<arch>gen` | `<bin> <trace.bin> <task.bin> <out.bin or ->` (`src/weight_trace_gen/loas/main.cpp:3-4`) | built by each arch's `Makefile` |
 
 Settings read from the environment: only `NEURO_CACHE_DATA`, through
 `util.data_root()` (`src/util.py:15`, default `<repo>/data`, :23-24). It sets
-the pipeline's default output directory (`scripts/pipeline.py:312-313`) and
-the subset tool's source (`scripts/subset_input_traces.py:44`). The pipeline
+the pipeline's default output directory (`scripts/pipeline.py:312-313`). The pipeline
 runs every child with `PYTHONPATH=<repo>/src` prepended
 (`scripts/pipeline.py:53-54`) and `cwd=<repo>` (:91).
 
@@ -401,9 +399,8 @@ commands above are repo-relative, so run them from the repo root.
 
 - `data_root()` :15: `Path($NEURO_CACHE_DATA)` when set and non-empty, else
   `<repo>/data` (:23-24), with no log of the fallback. Layout in the
-  docstring (:18-21): `neuro_cache_trace/input_trace/loas/<capture>/` for the
-  full captures, `neuro_cache_outputs/weight_traces/` for generated traces.
-  Callers: `scripts/pipeline.py:313`, `scripts/subset_input_traces.py:44`.
+  docstring (:18-21): `demo/<bench>/`, the default output directory of
+  `scripts/pipeline.py`. Caller: `scripts/pipeline.py:313`.
 - `build_strategy(levels)` `src/util.py:27`: fuses solver factor placements into the
   `NodeLevel / NoCLevel / DRAM` strategy dict. Helpers `_region_levels` :66,
   `_strategy_block` :70, `_tile_block` :82, `_loops` :89, `_fuse_kind` :96
@@ -600,11 +597,6 @@ C++ (each `Makefile`: `g++ -O2 -std=c++17 -Wall -Wextra`,
   `load_grid` :301 (`--grid` must be a non-empty JSON array, :307-308),
   `out_dir` :312, `demo` :316, `write_summary` :404, `verify` :422, `main` :451.
   Tests: `tests/test_pipeline.py`.
-- `scripts/subset_input_traces.py` (129 lines): `ROOT` from `__file__` (:41), imports
-  `util.data_root` (:42); `subset_one(src_dir, dest_dir, n, seed)` :49:
-  `np.random.default_rng(seed).choice`, sorted (:59-60), the same indices for
-  every layer, rewrites `B` and `n_samples` and adds `meta["subset"]`
-  (:74-89); `main` :96; the output dir name replaces `_all` with `_n<N>` (:119).
 
 ### 2.10 `configs/`
 
@@ -645,10 +637,10 @@ kept in git by `.gitignore:44-45` although `.gitignore:22` ignores
 `layer_12_features_40`) and `resnet19_T4_n5/` (19 layers incl. 3
 `*_shortcut_0`), each with `meta.json` (T=4, B=5, dataset cifar10, dtype
 uint8, `layer_params`, `subset.sample_indices` `[2697, 3078, 5110, 6367,
-8502]`, seed 0, made by `scripts/subset_input_traces.py`). Only LoAS-captured
-traces exist; every arch model reads these same spikes. The full `_all`
-captures are expected under `$NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas/`
-(`src/util.py:18-21`).
+8502]`, seed 0, cut from the full captures on Delta by a tool removed on
+2026-10-27, recoverable with `git show 21467c4:scripts/subset_input_traces.py`).
+Only LoAS-captured traces exist; every arch model reads these same spikes. The
+full `_all` captures are on Delta (path in `input_trace/README.md`).
 
 ### 2.12 `tests/` (pytest; `conftest.py:5` puts `scripts/` on `sys.path`)
 
@@ -778,10 +770,6 @@ captures are expected under `$NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loa
 - The default trace root `input_trace/loas` and the two `_n5` trace dirs:
   `src/snn_scheduler/cli.py:116-117`, `src/weight_trace_gen/cli.py:59-60`,
   `scripts/pipeline.py:41`, :49; the two CLIs list the dirs in opposite order.
-- The data sub-path `neuro_cache_trace/input_trace/loas` after
-  `data_root()`: `scripts/subset_input_traces.py:44`, restated in comments at
-  `src/snn_scheduler/cli.py:115`, `src/weight_trace_gen/cli.py:58`,
-  `src/util.py:19`.
 - Scoring weights 0.1/1.0/10.0 in four places (3.2).
 - Output defaults under `<repo>/outputs/` (`src/snn_scheduler/cli.py:25`,
   :78, `src/weight_trace_gen/cli.py:367`) while the pipeline writes under
@@ -818,8 +806,6 @@ captures are expected under `$NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loa
   and :102 its entries B173/B179; no such file exists.
 - `tests/test_stream_dump.py:3` points at a shell test `test_stream_flag.sh`
   that is not in `tests/`.
-- `scripts/subset_input_traces.py:27` shows `conda run -n ${CONDA_ENV:-cosa_snn}`;
-  nothing in the repo defines `CONDA_ENV` any more.
 - A "Phase D campaign plan" is cited in `src/weight_trace_gen/weight_trace.py:127`,
   `src/weight_trace_gen/cli.py:285`, :404, `src/cachesim/stream.py:21` and
   each `main.cpp` (e.g. `src/weight_trace_gen/loas/main.cpp:116`, :133); no
@@ -858,9 +844,8 @@ What a fresh machine needs:
 Inputs missing from the repo:
 
 - The full captures `vgg16_T4_all`, `resnet19_T4_all` (10,000 samples, 25.8 GB
-  per `scripts/subset_input_traces.py:3-4`), expected under
-  `data_root()/neuro_cache_trace/input_trace/loas/`. Only the `_n5` subset is
-  stored.
+  per `input_trace/README.md`, which gives their path on Delta). Only the `_n5`
+  subset is stored.
 - `gen`'s default `--n-samples 100` draws indices from `range(10000)`
   (`src/weight_trace_gen/weight_trace.py:199`), out of range for the stored
   B=5 arrays; use `--sample-start/--sample-count` with indices 0-4. The saved

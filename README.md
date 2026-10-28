@@ -19,7 +19,7 @@ src/weight_trace_gen/  weight-trace generator   python -m weight_trace_gen gen
 src/nocsim/            NoC simulator            python -m nocsim
 src/cachesim/          cache simulator          python -m cachesim {grid,sweep,run}
 src/parsers/, src/util.py                       YAML parsers, shared helpers
-scripts/               pipeline.py (end to end), subset_input_traces.py
+scripts/               pipeline.py (end to end)
 configs/               arch/ node_mapspace/ cache/ schedules/ workloads/
 input_trace/loas/      5-sample spike captures: meta.json + one .npy per layer
 tests/                 pytest suite

@@ -24,7 +24,7 @@ Where each part of the tree is described:
 | `src/nocsim/` (`step_cycles.py` also in pipeline.md 2.3) | nocsim.md |
 | `src/cachesim/native/`, `src/cachesim/examples/` | cachesim_native.md |
 | `src/cachesim/stream.py`, `grid.py`, `cli.py` | pipeline.md 2.4 |
-| `scripts/pipeline.py`, `scripts/subset_input_traces.py` | pipeline.md 1.5, 2.9 |
+| `scripts/pipeline.py` | pipeline.md 1.5, 2.9 |
 | `configs/` (`arch`, `node_mapspace`, `cache`, `schedules`, `workloads`) | pipeline.md 2.10 |
 | `input_trace/` | pipeline.md 2.11 |
 | `tests/` | pipeline.md 2.12 (nocsim tests also in nocsim.md) |

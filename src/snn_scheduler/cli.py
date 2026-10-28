@@ -110,9 +110,9 @@ def _build_parser() -> argparse.ArgumentParser:
         "--node-mapspace", default=None,
         help="node mapspace YAML (default: configs/node_mapspace/<arch>.yaml)",
     )
-    # The in-repo traces are a 5-sample subset of the full capture, cut by
-    # scripts/subset_input_traces.py; pass --trace-root to use a full capture
-    # (kept under $NEURO_CACHE_DATA/neuro_cache_trace/input_trace/loas).
+    # The in-repo traces are a 5-sample subset cut from the full captures
+    # on Delta; pass --trace-root to use a full capture (see
+    # input_trace/README.md).
     st.add_argument("--trace-root", default=str(ROOT / "input_trace/loas"))
     st.add_argument("--trace-dirs", nargs="+", default=["vgg16_T4_n5", "resnet19_T4_n5"])
     st.add_argument(

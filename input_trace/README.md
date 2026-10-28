@@ -28,13 +28,9 @@ reconstruction walks one network's layers as a single forward pass, so a
 per-layer draw would put different CIFAR-10 images in layer 2 than in layer 1.
 Seed, indices, and method are recorded in each `meta.json` under `subset`.
 
-## Regenerating, or widening to more samples
+## How the subset was cut
 
-`scripts/subset_input_traces.py` cuts these. To take 20 samples instead:
-
-```
-conda run -n base python scripts/subset_input_traces.py --n 20 --seed 0
-```
+The cutting tool was removed from the repo on 2026-10-27; `git show 21467c4:scripts/subset_input_traces.py` recovers it.
 
 ## Where the full captures live
 
@@ -55,9 +51,6 @@ python -m snn_scheduler solve-trace --arch loas \
     --trace-root /work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas \
     --trace-dirs vgg16_T4_all resnet19_T4_all --cache-dir data/schedules
 ```
-
-`scripts/subset_input_traces.py --src <that path>` cuts a wider subset from the
-same place.
 
 ## How this was recovered, in case it happens again
 

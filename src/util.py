@@ -15,10 +15,10 @@ KINDS = ("temporal", "spatial")
 def data_root() -> pathlib.Path:
     """Root of the data kept outside git, from $NEURO_CACHE_DATA.
 
-    Default when unset or empty: <repo>/data. Layout under it:
-    neuro_cache_trace/input_trace/loas/<capture>/ holds the full input
-    captures (e.g. vgg16_T4_all), neuro_cache_outputs/weight_traces/ the
-    generated weight traces.
+    Default when unset or empty: <repo>/data.
+
+    Layout under it: demo/<bench>/ is the default output directory
+    written by scripts/pipeline.py, one per benchmark (e.g. demo/loas/).
     """
     return pathlib.Path(os.environ.get("NEURO_CACHE_DATA")
                         or pathlib.Path(__file__).resolve().parents[1] / "data")
