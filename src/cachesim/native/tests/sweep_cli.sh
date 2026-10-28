@@ -79,6 +79,36 @@ for r in data:
 print(f"sweep: {len(data)} rows, {len(head)} columns")
 PY
 
+# A second golden for the Phase 3 equivalence hazards: one point with the L2
+# neighbour prefetcher enabled. Keep this separate from the L1 next-burst grid
+# so the row isolates the L2 issue order and up/down accounting.
+cat > "$tmp/l2_grid.json" <<'JSON'
+[{"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
+  "l1_size_bytes": 8192, "l1_assoc": 8,
+  "l2_size_bytes": 524288, "l2_assoc": 16,
+  "l1_latency": 0, "l2_latency": 10, "l2_miss_latency": 100,
+  "l2_prefetch_policy": "neighbour", "l2_prefetch_axis": "cin",
+  "l2_prefetch_distance": 1, "l2_prefetch_up": 1, "l2_prefetch_down": 1}]
+JSON
+"$sweep" --config-grid "$tmp/l2_grid.json" --trace "$tmp/fixture.wcts" \
+         --run-id fixed --tier smoke --header > "$tmp/l2_sweep.csv"
+"$py" - "$tmp/l2_sweep.csv" <<'PY'
+import csv, sys
+rows = list(csv.reader(open(sys.argv[1])))
+assert len(rows) == 2, len(rows)
+assert all(len(r) == 112 for r in rows), [len(r) for r in rows]
+row = dict(zip(rows[0], rows[1]))
+assert row["l2_prefetch_policy"] == "neighbour", row
+assert row["l2_prefetch_axis"] == "CIN", row
+assert row["l2_prefetch_distance"] == "1", row
+assert row["l2_prefetch_up"] == row["l2_prefetch_down"] == "1", row
+issued = int(row["l2_pf_issued"])
+assert issued > 0, row
+assert int(row["l2_pf_issued_up"]) + int(row["l2_pf_issued_down"]) == issued, row
+assert int(row["l2_pf_timely"]) == int(row["l2_pf_retriggers"]), row
+print(f"l2 neighbour: {issued} lines, {len(rows[0])} columns")
+PY
+
 # 2. --progress reports one line per tile, on stderr, out of the CSV's way.
 test "$(wc -l < "$tmp/progress.txt")" -eq 2
 
