@@ -1370,7 +1370,7 @@ mutate_sp kill 'A5 pick_victim skips a candidate' \
 # The minimum of nothing has no answer, so the alternative to refusing is
 # returning a slot id that names no candidate, which the caller installs into.
 mutate_sp kill 'A5 pick_victim accepts an empty candidate set' \
-    's|    if (candidates.empty()) {|    if (candidates.size() > 1000000) {|'
+    's|    if (candidates.empty()) reject("StampPolicy::pick_victim", "the candidate set is empty");|    if (candidates.size() > 1000000) reject("StampPolicy::pick_victim", "the candidate set is empty");|'
 mutate_sp kill 'A5 the stamp bound is closed at the top' \
     's@if (s < 0 || static_cast<std::size_t>(s) >= stamp_.size()) {@if (s < 0 || static_cast<std::size_t>(s) > stamp_.size()) {@'
 mutate_sp kill 'A5 the slot count check drops the boundary' \
@@ -1807,7 +1807,7 @@ mutate_mshr kill 'B3 find never answers' \
 # refused is never stamped, one born at the L2 re-enters at the wrong level
 # (3.5), and one born holding a reservation is admitted by has_slot forever.
 mutate_req_h kill 'B3 a fresh request is a prefetch' \
-    's|    bool demand = true;|    bool demand = false;|'
+    's|    bool       demand = true;|    bool       demand = false;|'
 mutate_req_h kill 'B3 a fresh request is born refused' \
     's|    RefusalOrder refusal = NoRefusal;|    RefusalOrder refusal = RefusalOrder{0};|'
 mutate_req_h kill 'B3 a fresh request re-enters at the L2' \
