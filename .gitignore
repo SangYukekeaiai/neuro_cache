@@ -44,6 +44,9 @@ input_trace/
 !input_trace/
 !input_trace/loas/**
 
+# Delta's 500-sample capture suite is generated data, not source.
+input_trace/delta/
+
 # Local Gurobi installation and license files
 gurobi_server1302/
 gurobi.lic

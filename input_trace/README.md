@@ -1,4 +1,4 @@
-# Captured LoAS input spike traces
+# Captured input spike traces: the committed LoAS subsets
 
 `loas/<workload>/` holds one `meta.json` (layer name -> input-tensor shape
 `[T, B, Cin, Hin, Win]`) plus one `<layer_name>.npy` per captured layer, binary
@@ -12,14 +12,14 @@ These are **5-sample subsets**, not the full captures. The originals are 10,000
 CIFAR-10 samples per layer and **25.8 GB** across both workloads, which is why
 they never lived in this repo.
 
+The `_n5` suffix is deliberate: the source directories are named `_all` because
+they hold all 10,000 samples, and a directory named `_all` holding five of them
+would read as the full capture later.
+
 | Directory | Layers | Samples | Size |
 |---|---|---|---|
 | `loas/vgg16_T4_n5` | 12 | 5 of 10,000 | 3.6 MB |
 | `loas/resnet19_T4_n5` | 19 | 5 of 10,000 | 10.0 MB |
-
-The `_n5` suffix is deliberate: the source directories are named `_all` because
-they hold all 10,000 samples, and a directory named `_all` holding five of them
-would read as the full capture later.
 
 Both subsets hold **the same five images**, indices `[2697, 3078, 5110, 6367,
 8502]`, drawn with `numpy.random.default_rng(0)`. The same indices across every
@@ -27,6 +27,17 @@ layer of both workloads is what makes the subset a subset of *images*: the
 reconstruction walks one network's layers as a single forward pass, so a
 per-layer draw would put different CIFAR-10 images in layer 2 than in layer 1.
 Seed, indices, and method are recorded in each `meta.json` under `subset`.
+
+The Delta array capture suite lives under the ignored `delta/<benchmark>/`
+hierarchy (for example, `delta/A02/<arch>_T<T>_n500/`, with `T` varying by
+benchmark); its 500-sample captures are generated data, written into the
+working tree on Delta but never committed. Like the LoAS captures, their durable
+bulk copies belong on a `bebv` allocation rather than in `$HOME`, but no Delta
+destination path is recorded here or in the capture side-project: the path to
+use is undetermined. The capture procedure itself -- the Slurm array, its
+task-to-benchmark map, and the settings to verify before submitting -- is in
+`slurm/README_DELTA.md` of the separate `neuro_cache_bench_trace` checkout, not
+in this repo.
 
 ## How the subset was cut
 
