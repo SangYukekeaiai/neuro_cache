@@ -1,6 +1,6 @@
 # Code atlas index
 
-Commit `ef48902` (branch `wcache-rebuild-phase-a`) plus the uncommitted
+Commit `94a5b34` (branch `wcache-rebuild-phase-a`) plus the uncommitted
 working-tree changes to `scripts/pipeline.py`, `src/snn_scheduler/cli.py`,
 `tests/test_snn_scheduler_cli.py` and `src/cachesim/examples/manifest.json`.
 Built only from reading code (`.py .cpp .h Makefile .yaml .json .toml`) and
