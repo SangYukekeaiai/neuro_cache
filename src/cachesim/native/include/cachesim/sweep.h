@@ -22,9 +22,9 @@
 #include <vector>
 
 #include "cachesim/config.h"
-#include "cachesim/engine.h"
-#include "cachesim/layout.h"
-#include "cachesim/stream_trace.h"
+#include "cachesim/core/engine.h"
+#include "cachesim/layout/mapper.h"
+#include "cachesim/trace/stream_trace.h"
 
 namespace cachesim {
 

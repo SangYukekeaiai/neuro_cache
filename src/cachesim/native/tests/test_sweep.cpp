@@ -13,14 +13,14 @@
 // decoded up front, driven by Engine::run(): no window, no advance(), no
 // step_tile(). Only the engine's own event loop is shared, and that is the
 // thing the equality is asserting about rather than the thing under suspicion.
-#include <cachesim/block_pack.h>
-#include <cachesim/byte_source.h>
+#include <cachesim/layout/block_pack.h>
+#include <cachesim/trace/byte_source.h>
 #include <cachesim/config.h>
-#include <cachesim/engine.h>
-#include <cachesim/stats.h>
-#include <cachesim/stream_trace.h>
+#include <cachesim/core/engine.h>
+#include <cachesim/instrument/stats.h>
+#include <cachesim/trace/stream_trace.h>
 #include <cachesim/sweep.h>
-#include <cachesim/trace.h>
+#include <cachesim/trace/tile_trace.h>
 #include <cachesim/types.h>
 
 #include <cstdint>

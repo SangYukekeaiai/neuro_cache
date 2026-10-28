@@ -114,14 +114,14 @@ try() {
 # AddressMapper; A1's do not, and keeping the two preambles apart means an
 # accidental dependency of types.h on layout.h shows up here rather than
 # hiding behind a header everybody includes.
-tryL() { try "$1" "$2" "$3" '#include <cachesim/layout.h>'; }
+tryL() { try "$1" "$2" "$3" '#include <cachesim/layout/mapper.h>'; }
 
 # tryP: the same again with block_pack.h, for A2b. A third preamble rather than
 # folding it into tryL, for the same reason tryL is not folded into try: the
 # concrete mapper's header pulls in layout.h and types.h, so a case compiled
 # with it proves nothing about which header a name came from, and the A1 and
 # A2a cases must keep proving that.
-tryP() { try "$1" "$2" "$3" '#include <cachesim/block_pack.h>'; }
+tryP() { try "$1" "$2" "$3" '#include <cachesim/layout/block_pack.h>'; }
 
 # tryC: the same again with cache.h, for A4a. A fourth preamble for the reason
 # the other three are separate: cache.h includes types.h and nothing else, so a
@@ -129,14 +129,14 @@ tryP() { try "$1" "$2" "$3" '#include <cachesim/block_pack.h>'; }
 # CacheArray ever grows a dependency on AddressMapper, the A4a cases start
 # failing here rather than being carried silently by a preamble that already
 # included it.
-tryC() { try "$1" "$2" "$3" '#include <cachesim/cache.h>'; }
+tryC() { try "$1" "$2" "$3" '#include <cachesim/index/cache_array.h>'; }
 
 # tryS: the same again with set_associative.h, for A4b. A fifth preamble for
 # the reason tryP is not folded into tryL: the concrete array's header pulls in
 # cache.h AND layout.h, so a case compiled with it proves nothing about which
 # header a name came from, and the A4a cases under tryC must keep proving that
 # CacheArray needs no layout header.
-tryS() { try "$1" "$2" "$3" '#include <cachesim/set_associative.h>'; }
+tryS() { try "$1" "$2" "$3" '#include <cachesim/index/set_associative.h>'; }
 
 # tryR: the same again with policy.h, for A5. A sixth preamble, and it is the
 # one that carries A5's half of plan 2.2's array/policy split.
@@ -148,7 +148,7 @@ tryS() { try "$1" "$2" "$3" '#include <cachesim/set_associative.h>'; }
 # wanted an associativity and reached for the array's header to get one. If
 # policy.h ever grows that dependency the cases below start ACCEPTING, which is
 # the same wall tryC puts around the array in the other direction.
-tryR() { try "$1" "$2" "$3" '#include <cachesim/policy.h>'; }
+tryR() { try "$1" "$2" "$3" '#include <cachesim/replacement/policy.h>'; }
 
 # Phase B's three preambles. NAMING, because the tree carries a collision: the
 # PLAN's Phase B units are B1 (Port), B2 (EventQueue) and B3 (MshrFile), while
@@ -159,18 +159,18 @@ tryR() { try "$1" "$2" "$3" '#include <cachesim/policy.h>'; }
 # it proves the timing primitive needs no layout, no array and no MSHR, which is
 # what "Phase B: timing primitives, the clock exists and the hierarchy does not"
 # means as a compile-time fact rather than as a sentence in a plan.
-tryPort() { try "$1" "$2" "$3" '#include <cachesim/port.h>'; }
+tryPort() { try "$1" "$2" "$3" '#include <cachesim/core/port.h>'; }
 
 # tryEvent: event.h. This preamble is also the reason `make test` compiles the
 # header at all: before B2's tests, event.h was included by NO translation unit
 # in the tree, so nothing built it. Same shape as cache.h's state before A4a,
 # which B59 recorded.
-tryEvent() { try "$1" "$2" "$3" '#include <cachesim/event.h>'; }
+tryEvent() { try "$1" "$2" "$3" '#include <cachesim/core/event.h>'; }
 
 # tryMshr: mshr.h, an eighth preamble for tryPort's reason. The MSHR file holds
 # no port and no clock (it "cannot violate P2 by predicting a time, since it
 # holds no clock"), so a case compiled here proves it reaches neither.
-tryMshr() { try "$1" "$2" "$3" '#include <cachesim/mshr.h>'; }
+tryMshr() { try "$1" "$2" "$3" '#include <cachesim/core/mshr.h>'; }
 
 # tryBoth: event.h AND mshr.h in one translation unit. It exists for exactly one
 # question, and it is a question no single-header preamble can ask: both headers
@@ -178,8 +178,8 @@ tryMshr() { try "$1" "$2" "$3" '#include <cachesim/mshr.h>'; }
 # EventKey and one over 3.8's Request. They are different keys for different
 # populations, and the engine includes both headers, so "these two overloads
 # coexist and each call resolves" has to be measured somewhere.
-tryBoth() { try "$1" "$2" "$3" '#include <cachesim/event.h>
-#include <cachesim/mshr.h>'; }
+tryBoth() { try "$1" "$2" "$3" '#include <cachesim/core/event.h>
+#include <cachesim/core/mshr.h>'; }
 
 # The one valid configuration every A2b case builds on, so a case that is meant
 # to fail on a type cannot pass or fail on a bad extent instead.
@@ -438,7 +438,7 @@ tryP reject 'LineId from block_len'        "int main(){ $PACK
   LineId n = m.block_len(Axis::CIN); return (int)n.get(); }"
 # The arithmetic that a step check wants to write. LineId has no operator+ at
 # all (A1a), so "the line one block along CIN" has to be spelled with an
-# explicit .get(), which is what tests/test_block_pack.cpp does. Without this
+# explicit .get(), which is what tests/layout/test_block_pack.cpp does. Without this
 # case the .get() there reads as a style choice rather than as the only
 # spelling that exists.
 tryP reject 'line_of + line_stride'        "int main(){ $PACK
@@ -630,7 +630,7 @@ tryP accept 'line_of < num_lines'          "int main(){ $PACK
   return m.line_of(Coord{0,0,0,0}) < m.num_lines(); }"
 # The step check's spelling, with the unwrap made explicit. N12 asks that the
 # mix be impossible by accident, not that it be impossible, and this is the
-# escape hatch tests/test_block_pack.cpp uses on every stride check.
+# escape hatch tests/layout/test_block_pack.cpp uses on every stride check.
 tryP accept 'explicit .get() plus a stride' "int main(){ $PACK
   return (int)(m.line_of(Coord{0,0,0,0}).get() + m.line_stride(Axis::CIN)); }"
 # B29 discharged on A2c's surface. A stride is a factor of num_lines(), which
@@ -1277,7 +1277,7 @@ tryBoth reject 'key_less mixes the two keys' 'int main(){
 # thing that joins every unit, so a case compiled with it proves nothing about
 # where a name came from and is not trying to.
 # ---------------------------------------------------------------------------
-tryEngine() { try "$1" "$2" "$3" '#include <cachesim/engine.h>'; }
+tryEngine() { try "$1" "$2" "$3" '#include <cachesim/core/engine.h>'; }
 
 section "Phase C: the contracts a later reader could plausibly break"
 

@@ -22,7 +22,7 @@
 //                   this review does not add one to production code, so the
 //                   fixtures observe from where the engine already calls out:
 //                   SetAssociativeArray::probe / free_slot / victim_candidates
-//                   / insert all reach `mapper.locate` (src/set_associative.cpp
+//                   / insert all reach `mapper.locate` (src/index/set_associative.cpp
 //                   base_slot), and E_Issue and the prefetcher both reach
 //                   `mapper.expand`. A recorder on the mapper therefore sees an
 //                   ORDERED log of every array operation the run performs, and
@@ -30,11 +30,11 @@
 //                   invariant soak check after every step rather than at the end.
 #pragma once
 
-#include <cachesim/cache_level.h>
-#include <cachesim/engine.h>
-#include <cachesim/layout.h>
-#include <cachesim/prefetcher.h>
-#include <cachesim/trace.h>
+#include <cachesim/core/cache_level.h>
+#include <cachesim/core/engine.h>
+#include <cachesim/layout/mapper.h>
+#include <cachesim/prefetch/prefetcher.h>
+#include <cachesim/trace/tile_trace.h>
 #include <cachesim/types.h>
 
 #include <algorithm>

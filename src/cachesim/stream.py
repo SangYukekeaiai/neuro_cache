@@ -1,7 +1,8 @@
 """The WCTS (weight cache trace stream) writer.
 
 Written by the weight-trace generator (stream_weight_trace); read only by
-the cache simulator's C++ reader (native/include/cachesim/stream_format.h).
+the cache simulator's C++ reader
+(src/cachesim/native/include/cachesim/trace/stream_format.h).
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
 # addresses that file leaves out, as a stream, so a producer can feed the cache simulator down a
 # pipe with nothing materialized in between (Phase D campaign plan, 10).
 # docs/atlas/cachesim_native.md section 1.7 describes the format; the C++
-# reader (src/cachesim/native/include/cachesim/stream_format.h) decodes exactly
+# reader (src/cachesim/native/include/cachesim/trace/stream_format.h) decodes exactly
 # these bytes. `burst_span` sits beside burst_dim and burst_stride per
 # coordinator ruling Q-D, a later addition to the format -- that is the one
 # field to check first if the two sides disagree.

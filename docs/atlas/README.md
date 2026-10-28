@@ -44,24 +44,24 @@ Where each part of the tree is described:
    as `<q5i` after the tick (`src/cachesim/stream.py:130`); the reader sets
    the anchor to `Coord{kh, kw, cin, cout}`, takes `run_start` on the burst
    axis and refuses `run_end <= run_start`
-   (`src/cachesim/native/src/stream_trace.cpp:292-294`), so bursts on every
+   (`src/cachesim/native/src/trace/stream_trace.cpp:292-294`), so bursts on every
    axis decode. Any other format version is refused
-   (`src/cachesim/native/include/cachesim/stream_format.h:42`, :221).
+   (`src/cachesim/native/include/cachesim/trace/stream_format.h:42`, :221).
 3. The three mappers (block_pack, split_cin, khkw_split) share their checks
    and burst walk (`detail::expand_burst`,
-   `src/cachesim/native/src/layout_common.h:120`), included by
-   `src/cachesim/native/src/block_pack.cpp:7`,
-   `src/cachesim/native/src/split_cin.cpp:8` and
-   `src/cachesim/native/src/khkw_split.cpp:9`;
-   `src/cachesim/native/tests/test_layout_golden.cpp:6-10` pins every mapping
+   `src/cachesim/native/src/layout/layout_common.h:120`), included by
+   `src/cachesim/native/src/layout/block_pack.cpp:7`,
+   `src/cachesim/native/src/layout/split_cin.cpp:8` and
+   `src/cachesim/native/src/layout/khkw_split.cpp:9`;
+   `src/cachesim/native/tests/layout/test_layout_golden.cpp:6-10` pins every mapping
    and refusal with one FNV-1a hash per case.
 4. Cache simulator output: both apps write the CSV header by default and
    `--no-header` turns it off (`src/cachesim/native/apps/cachesim_run.cpp:46-47`,
    :140; `src/cachesim/native/apps/cachesim_sweep.cpp:44-45`, :85);
    `l2_pf_timely` always equals `l2_pf_retriggers`, since
-   `src/cachesim/native/src/engine.cpp:423-424` increments both at one site
-   (`src/cachesim/native/include/cachesim/engine.h:265`,
-   `src/cachesim/native/src/stats.cpp:362`).
+   `src/cachesim/native/src/core/engine.cpp:423-424` increments both at one site
+   (`src/cachesim/native/include/cachesim/core/engine.h:265`,
+   `src/cachesim/native/src/instrument/stats.cpp:362`).
 5. L2 MSHR floor: an unset `l2_demand_reserve` (-1,
    `src/cachesim/native/include/cachesim/config.h:104`) resolves to
    `lines_per_burst` and must stay below `l2_mshrs` (default 20, :71), else
@@ -94,7 +94,7 @@ Where each part of the tree is described:
 10. Build and reproduce: GNU make, C++17, no CMake. `make build`
     (`Makefile:5-8`) builds the cache simulator apps, eventsim and `loasgen`;
     in `src/cachesim/native`, `make release` builds only the library
-    (`src/cachesim/native/Makefile:206-207`), so the apps need `make
+    (`src/cachesim/native/Makefile:181-182`), so the apps need `make
     MODE=release apps`, which is what `src/cachesim/cli.py:23` and
     `scripts/pipeline.py:333` run. A Gurobi license is needed only to solve:
     the tracked schedules in `configs/schedules/loas` cover V8, V9, R9 and R16,
@@ -120,12 +120,12 @@ their "2. Bottom-up" entries:
 | 4 | `reconstruct_samples` | `src/weight_trace_gen/weight_trace.py:163` |
 | 5 | `run_stream` | `src/weight_trace_gen/cli.py:301` |
 | 6 | `stream_weight_trace` | `src/cachesim/stream.py:177` |
-| 7 | `decode_header` | `src/cachesim/native/include/cachesim/stream_format.h:208` |
-| 8 | `StreamingTileTrace::advance` | `src/cachesim/native/src/stream_trace.cpp:176` |
-| 9 | `detail::expand_burst` | `src/cachesim/native/src/layout_common.h:120` |
+| 7 | `decode_header` | `src/cachesim/native/include/cachesim/trace/stream_format.h:208` |
+| 8 | `StreamingTileTrace::advance` | `src/cachesim/native/src/trace/stream_trace.cpp:176` |
+| 9 | `detail::expand_burst` | `src/cachesim/native/src/layout/layout_common.h:120` |
 | 10 | `validate` | `src/cachesim/native/src/config.cpp:521` |
-| 11 | `Engine::run_to_barrier` | `src/cachesim/native/src/engine.cpp:128` |
-| 12 | `CacheLevel::triage` | `src/cachesim/native/src/cache_level.cpp:112` |
+| 11 | `Engine::run_to_barrier` | `src/cachesim/native/src/core/engine.cpp:128` |
+| 12 | `CacheLevel::triage` | `src/cachesim/native/src/core/cache_level.cpp:112` |
 | 13 | `schedule_from_strategy` | `src/nocsim/schedule/decode.py:238` |
 | 14 | `iter_node_tiles` | `src/nocsim/schedule/tiles.py:98` |
 | 15 | `combine` | `src/nocsim/combine.py:120` |

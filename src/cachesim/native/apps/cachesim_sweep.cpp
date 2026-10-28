@@ -17,12 +17,12 @@
 #include <vector>
 
 #include "app_support.h"
-#include "cachesim/block_pack.h"
-#include "cachesim/byte_source.h"
+#include "cachesim/layout/block_pack.h"
+#include "cachesim/trace/byte_source.h"
 #include "cachesim/config.h"
-#include "cachesim/hist.h"
-#include "cachesim/stats.h"
-#include "cachesim/stream_trace.h"
+#include "cachesim/instrument/hist.h"
+#include "cachesim/instrument/stats.h"
+#include "cachesim/trace/stream_trace.h"
 #include "cachesim/sweep.h"
 #include "cachesim/types.h"
 

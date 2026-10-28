@@ -29,7 +29,7 @@
 //     reporting one failure and continuing.
 #pragma once
 
-#include <cachesim/layout.h>
+#include <cachesim/layout/mapper.h>
 #include <cachesim/types.h>
 
 #include <algorithm>

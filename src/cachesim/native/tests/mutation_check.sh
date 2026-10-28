@@ -32,20 +32,20 @@ ulimit -c 0 2>/dev/null || true
 # each case, not just the one being mutated, so a case can never inherit the
 # previous case's damage. Basenames are unique across the list, which is what
 # lets one flat backup directory hold them.
-# A4a adds include/cachesim/cache.h. Listing it is not bookkeeping: the comment
+# A4a adds include/cachesim/index/cache_array.h. Listing it is not bookkeeping: the comment
 # above is the rule, and a unit whose file is missing from this line is not
 # mutation tested at all while the summary still reports a clean sweep, which
 # is the same shape of silent lie the baseline guard below exists for.
-# A4b adds include/cachesim/set_associative.h and src/set_associative.cpp, which
+# A4b adds include/cachesim/index/set_associative.h and src/index/set_associative.cpp, which
 # is B59's precedent applied to the file it was written about: cache.h was
 # untestable from the moment it was created, so A4a's interface would have
 # carried a clean sweep while nothing in it was ever mutated. A4b is a whole
 # constructor of validation and would have done the same, at a larger size.
-# A5 adds include/cachesim/policy.h, include/cachesim/stamp_policy.h and
-# src/stamp_policy.cpp, by the same rule: a unit whose file is not on this line
+# A5 adds include/cachesim/replacement/policy.h, include/cachesim/replacement/stamp_policy.h and
+# src/replacement/stamp_policy.cpp, by the same rule: a unit whose file is not on this line
 # is not mutation tested at all while the summary still reports a clean sweep.
-# Phase C adds all eight of ITS files: include/cachesim/trace.h, cache_level.h,
-# engine.h and prefetcher.h, and src/cache_level.cpp, engine.cpp,
+# Phase C adds all eight of ITS files: include/cachesim/trace/tile_trace.h, cache_level.h,
+# engine.h and prefetcher.h, and src/core/cache_level.cpp, engine.cpp,
 # engine_core.cpp and prefetcher.cpp. This omission has now bitten three times
 # (cache.h at A4a, set_associative.* at A4b, and all of Phase B), which is why
 # extending this line is the FIRST thing done to this file in a review round.
@@ -53,7 +53,7 @@ ulimit -c 0 2>/dev/null || true
 # code at all, so nothing in it can produce a wrong number and only its SHAPE
 # can be mutated -- which is exactly the argument A2a's section already makes,
 # and exactly why leaving it off the list would have been invisible.
-# D2c and D2d add include/cachesim/stats.h, src/stats.cpp and include/cachesim/hist.h,
+# D2c and D2d add include/cachesim/instrument/stats.h, src/instrument/stats.cpp and include/cachesim/instrument/hist.h,
 # by the rule this comment block states: a unit whose file is not on this line is
 # not mutation tested at all while the summary still reports a clean sweep.
 # Task 15 adds apps/cachesim_run.cpp, by the same rule and with one difference
@@ -69,14 +69,14 @@ ulimit -c 0 2>/dev/null || true
 # name tests/sweep_cli.sh as their cover. apps/app_support.h is where Task 15's
 # `lines_per_burst` and `PaddingMeter` now live, shared by the two programs, so
 # the two cases that used to name apps/cachesim_run.cpp for them name it instead.
-# Phase B adds all five of its files: include/cachesim/port.h, event.h and mshr.h,
-# and src/port.cpp and src/mshr.cpp. This omission has now bitten twice (cache.h
+# Phase B adds all five of its files: include/cachesim/core/port.h, event.h and mshr.h,
+# and src/core/port.cpp and src/core/mshr.cpp. This omission has now bitten twice (cache.h
 # at A4a, set_associative.* at A4b), which is why it is the FIRST thing done to
 # this file in a review round rather than the last. event.h is the one worth
 # naming: it is header-only AND was included by no translation unit at all until
-# tests/test_event.cpp existed, so before this round nothing in the tree either
+# tests/core/test_event.cpp existed, so before this round nothing in the tree either
 # compiled it or could mutate it.
-FILES="include/cachesim/types.h include/cachesim/layout.h include/cachesim/block_pack.h include/cachesim/cache.h include/cachesim/set_associative.h include/cachesim/policy.h include/cachesim/stamp_policy.h include/cachesim/port.h include/cachesim/event.h include/cachesim/mshr.h include/cachesim/trace.h include/cachesim/cache_level.h include/cachesim/engine.h include/cachesim/prefetcher.h src/block_pack.cpp src/layout_common.h src/layout_common.cpp src/set_associative.cpp src/stamp_policy.cpp src/port.cpp src/mshr.cpp src/cache_level.cpp src/engine.cpp src/engine_core.cpp src/prefetcher.cpp include/cachesim/config.h src/config.cpp include/cachesim/stream_format.h include/cachesim/byte_source.h include/cachesim/stream_trace.h src/stream_trace.cpp include/cachesim/stats.h src/stats.cpp include/cachesim/hist.h apps/cachesim_run.cpp include/cachesim/sweep.h src/sweep.cpp apps/app_support.h apps/cachesim_sweep.cpp"
+FILES="include/cachesim/types.h include/cachesim/layout/mapper.h include/cachesim/layout/block_pack.h include/cachesim/index/cache_array.h include/cachesim/index/set_associative.h include/cachesim/replacement/policy.h include/cachesim/replacement/stamp_policy.h include/cachesim/core/port.h include/cachesim/core/event.h include/cachesim/core/mshr.h include/cachesim/trace/tile_trace.h include/cachesim/core/cache_level.h include/cachesim/core/engine.h include/cachesim/prefetch/prefetcher.h src/layout/block_pack.cpp src/layout/layout_common.h src/layout/layout_common.cpp src/index/set_associative.cpp src/replacement/stamp_policy.cpp src/core/port.cpp src/core/mshr.cpp src/core/cache_level.cpp src/core/engine.cpp src/core/engine_core.cpp src/prefetch/prefetcher.cpp include/cachesim/config.h src/config.cpp include/cachesim/trace/stream_format.h include/cachesim/trace/byte_source.h include/cachesim/trace/stream_trace.h src/trace/stream_trace.cpp include/cachesim/instrument/stats.h src/instrument/stats.cpp include/cachesim/instrument/hist.h apps/cachesim_run.cpp include/cachesim/sweep.h src/sweep.cpp apps/app_support.h apps/cachesim_sweep.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
@@ -186,7 +186,7 @@ mutate_in() {
     # anything, and it was the dominant cost of every .cpp case.
     #
     # Verified rather than assumed, because the whole sweep's meaning rests on
-    # it: swapping locate's set index and tag in src/block_pack.cpp leaves
+    # it: swapping locate's set index and tag in src/layout/block_pack.cpp leaves
     # compile_fail.sh at 188 cases / 0 failures while turning `make test` red.
     # A header mutation still runs the full `make test`, since for several of
     # them the compile cases are the ONLY thing that catches them.
@@ -219,28 +219,28 @@ mutate_in() {
 # The A1 cases were written before there was a second header, so `mutate`
 # stays spelled the way they use it.
 mutate() { mutate_in include/cachesim/types.h "$@"; }
-mutate_layout() { mutate_in include/cachesim/layout.h "$@"; }
-mutate_cache() { mutate_in include/cachesim/cache.h "$@"; }
-mutate_pack_h() { mutate_in include/cachesim/block_pack.h "$@"; }
-mutate_pack() { mutate_in src/block_pack.cpp "$@"; }
+mutate_layout() { mutate_in include/cachesim/layout/mapper.h "$@"; }
+mutate_cache() { mutate_in include/cachesim/index/cache_array.h "$@"; }
+mutate_pack_h() { mutate_in include/cachesim/layout/block_pack.h "$@"; }
+mutate_pack() { mutate_in src/layout/block_pack.cpp "$@"; }
 # The helpers, burst walk and placement the three layout mappers share.
-mutate_lc_h() { mutate_in src/layout_common.h "$@"; }
-mutate_lc() { mutate_in src/layout_common.cpp "$@"; }
-mutate_sa_h() { mutate_in include/cachesim/set_associative.h "$@"; }
-mutate_sa() { mutate_in src/set_associative.cpp "$@"; }
-mutate_pol() { mutate_in include/cachesim/policy.h "$@"; }
-mutate_sp_h() { mutate_in include/cachesim/stamp_policy.h "$@"; }
-mutate_sp() { mutate_in src/stamp_policy.cpp "$@"; }
+mutate_lc_h() { mutate_in src/layout/layout_common.h "$@"; }
+mutate_lc() { mutate_in src/layout/layout_common.cpp "$@"; }
+mutate_sa_h() { mutate_in include/cachesim/index/set_associative.h "$@"; }
+mutate_sa() { mutate_in src/index/set_associative.cpp "$@"; }
+mutate_pol() { mutate_in include/cachesim/replacement/policy.h "$@"; }
+mutate_sp_h() { mutate_in include/cachesim/replacement/stamp_policy.h "$@"; }
+mutate_sp() { mutate_in src/replacement/stamp_policy.cpp "$@"; }
 # Phase B. NAMING, because the tree carries a collision that misreads easily:
 # the PLAN's Phase B units are B1 (Port), B2 (EventQueue) and B3 (MshrFile),
 # while PROGRESS.md's DECISIONS are also numbered B1-B104. Every "B1"/"B2"/"B3"
 # case-name prefix below is the plan's UNIT, matching the A2c / A4a / A5
 # prefixes already in this file, which are unit names too (B40).
-mutate_port_h() { mutate_in include/cachesim/port.h "$@"; }
-mutate_port() { mutate_in src/port.cpp "$@"; }
-mutate_ev() { mutate_in include/cachesim/event.h "$@"; }
-mutate_mshr_h() { mutate_in include/cachesim/mshr.h "$@"; }
-mutate_mshr() { mutate_in src/mshr.cpp "$@"; }
+mutate_port_h() { mutate_in include/cachesim/core/port.h "$@"; }
+mutate_port() { mutate_in src/core/port.cpp "$@"; }
+mutate_ev() { mutate_in include/cachesim/core/event.h "$@"; }
+mutate_mshr_h() { mutate_in include/cachesim/core/mshr.h "$@"; }
+mutate_mshr() { mutate_in src/core/mshr.cpp "$@"; }
 # Phase C. Same naming trap as Phase B, one letter along: the PLAN's Phase C
 # units are C1 (CacheLevel), C2 (the handlers), C3 (the core state machine and
 # barrier), C4 (inclusion) and C5 (prefetching), while PROGRESS.md's DECISIONS
@@ -248,11 +248,11 @@ mutate_mshr() { mutate_in src/mshr.cpp "$@"; }
 # UNIT. A third spelling exists and is NOT used here: Parts 2.1, 3.1 and 4.1 of
 # the plan write "C1" and "C2" for two of v3's own changes, the core model of
 # 4.5 and the prefetcher of 4.6.
-mutate_tr() { mutate_in include/cachesim/trace.h "$@"; }
-mutate_st() { mutate_in src/stream_trace.cpp "$@"; }
-mutate_stats_h() { mutate_in include/cachesim/stats.h "$@"; }
-mutate_stats() { mutate_in src/stats.cpp "$@"; }
-mutate_hist() { mutate_in include/cachesim/hist.h "$@"; }
+mutate_tr() { mutate_in include/cachesim/trace/tile_trace.h "$@"; }
+mutate_st() { mutate_in src/trace/stream_trace.cpp "$@"; }
+mutate_stats_h() { mutate_in include/cachesim/instrument/stats.h "$@"; }
+mutate_stats() { mutate_in src/instrument/stats.cpp "$@"; }
+mutate_hist() { mutate_in include/cachesim/instrument/hist.h "$@"; }
 mutate_app() { mutate_in apps/cachesim_run.cpp "$@"; }
 mutate_appsup() { mutate_in apps/app_support.h "$@"; }
 mutate_sweep_h() { mutate_in include/cachesim/sweep.h "$@"; }
@@ -262,13 +262,13 @@ mutate_sweep_app() { mutate_in apps/cachesim_sweep.cpp "$@"; }
 # The gap is noted rather than filled here: this task owns parse_config_grid,
 # not parse_config.
 mutate_cfg() { mutate_in src/config.cpp "$@"; }
-mutate_cl_h() { mutate_in include/cachesim/cache_level.h "$@"; }
-mutate_cl() { mutate_in src/cache_level.cpp "$@"; }
-mutate_eng_h() { mutate_in include/cachesim/engine.h "$@"; }
-mutate_eng() { mutate_in src/engine.cpp "$@"; }
-mutate_engc() { mutate_in src/engine_core.cpp "$@"; }
-mutate_pf_h() { mutate_in include/cachesim/prefetcher.h "$@"; }
-mutate_pf() { mutate_in src/prefetcher.cpp "$@"; }
+mutate_cl_h() { mutate_in include/cachesim/core/cache_level.h "$@"; }
+mutate_cl() { mutate_in src/core/cache_level.cpp "$@"; }
+mutate_eng_h() { mutate_in include/cachesim/core/engine.h "$@"; }
+mutate_eng() { mutate_in src/core/engine.cpp "$@"; }
+mutate_engc() { mutate_in src/core/engine_core.cpp "$@"; }
+mutate_pf_h() { mutate_in include/cachesim/prefetch/prefetcher.h "$@"; }
+mutate_pf() { mutate_in src/prefetch/prefetcher.cpp "$@"; }
 
 echo "== comparison operators"
 mutate kill '<= becomes <'   's|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() <= b|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() < b|'
@@ -562,7 +562,7 @@ mutate_pack_h kill 'n_cin_blocks narrowed to int32'   's|std::int64_t       n_ci
 # ---------------------------------------------------------------------------
 # A2c: the four radices, line_stride, block_len and the flatten
 #
-# Every case below lives in src/block_pack.cpp, which A2b already occupies, so
+# Every case below lives in src/layout/block_pack.cpp, which A2b already occupies, so
 # the file path no longer separates the two units. The names carry an `A2c`
 # prefix instead and `./tests/mutation_check.sh A2c` runs exactly this section.
 # That is not cosmetic: each case costs a full `make test`, and a login node
@@ -949,7 +949,7 @@ mutate_cache kill 'A4a InsertResult loses its evicted line' \
 #
 # The names carry an `A4b` prefix, per B40, so `./tests/mutation_check.sh A4b`
 # runs exactly this section. The path would separate A4b from A4a today, since
-# src/set_associative.cpp is a new file, but it will not separate A4b from A4c
+# src/index/set_associative.cpp is a new file, but it will not separate A4b from A4c
 # and the prefix is what keeps the filter working when it stops.
 #
 # Five families:
@@ -1441,7 +1441,7 @@ mutate_sp_h kill 'A5 random leaves the enum' \
 mutate_sp_h kill 'A5 PolicyKind widens' \
     's|enum class PolicyKind : std::uint8_t|enum class PolicyKind : std::int32_t|'
 
-echo "== B1: Port, the occupancy arithmetic (src/port.cpp)"
+echo "== B1: Port, the occupancy arithmetic (src/core/port.cpp)"
 # The unit is three lines, so the mutations are the three lines: which of the
 # two stamps the accept comes from, what next_accept advances by, and what is
 # handed back.
@@ -1590,7 +1590,7 @@ mutate_ev kill 'B2 scheduled() reports the queue depth' \
 mutate_ev kill 'D4 an empty peek is an out_of_range' \
     's|throw std::logic_error("EventQueue::peek_min: the queue is empty")|throw std::out_of_range("EventQueue::peek_min: the queue is empty")|'
 
-echo "== B3: MshrFile, 3.8's write-once stamp (src/mshr.cpp)"
+echo "== B3: MshrFile, 3.8's write-once stamp (src/core/mshr.cpp)"
 mutate_mshr kill 'B3 mark_refused overwrites an existing stamp' \
     's|    if (r.refusal == NoRefusal) {|    if (true) {|'
 mutate_mshr kill 'B3 mark_refused does not record the reason' \
@@ -1822,8 +1822,8 @@ mutate_mshr_h kill 'B3 Level widens' \
 #
 # C1 is CacheLevel and triage, C2 the six event handlers plus retire/reinject,
 # C3 the core state machine and the tile barrier, C4 inclusion, C5 prefetching.
-# The suites are tests/test_cache_level.cpp, tests/test_engine.cpp and
-# tests/test_prefetch.cpp, sharing tests/engine_fixture.h.
+# The suites are tests/core/test_cache_level.cpp, tests/core/test_engine.cpp and
+# tests/prefetch/test_prefetch.cpp, sharing tests/engine_fixture.h.
 #
 # Two families dominate, and they are the two the plan itself says are
 # load-bearing:
@@ -1838,7 +1838,7 @@ mutate_mshr_h kill 'B3 Level widens' \
 #               budget, and 4.4's inclusion guard, each of which produces a
 #               plausible timeline when broken.
 # ---------------------------------------------------------------------------
-echo "== C1: triage, branch by branch (src/cache_level.cpp)"
+echo "== C1: triage, branch by branch (src/core/cache_level.cpp)"
 mutate_cl kill 'C1 an array hit does not move recency' \
     's|        policy_->on_hit(slot);||'
 mutate_cl kill 'D3 an L1 array hit is charged to no bucket (V21)' \
@@ -1893,7 +1893,7 @@ mutate_cl allow 'C1 bank_of loses its single-bank shortcut' \
     's|    if (banks == 1) return 0;  // the L1, and the L2 at its 2.5b default||' \
     'equivalent at banks == 1: set % 1 and set / num_sets are both 0 for every set'
 
-echo "== C1: the outcome set itself (include/cachesim/cache_level.h)"
+echo "== C1: the outcome set itself (include/cachesim/core/cache_level.h)"
 mutate_cl_h kill 'C1 is_dropped forgets DroppedArrayHit' \
     's@    return o == TriageOutcome::DroppedArrayHit || o == TriageOutcome::DroppedEntry ||@    return o == TriageOutcome::DroppedEntry ||@'
 mutate_cl_h kill 'C1 is_dropped forgets DroppedReserve' \
@@ -1901,7 +1901,7 @@ mutate_cl_h kill 'C1 is_dropped forgets DroppedReserve' \
 mutate_cl_h kill 'C1 Merged and BlockedTargets collapse' \
     's|    BlockedTargets  = 2,|    BlockedTargets  = 1,|'
 
-echo "== C2: the loop and the six handlers (src/engine.cpp)"
+echo "== C2: the loop and the six handlers (src/core/engine.cpp)"
 mutate_eng kill 'C2 dispatch sends an L1 fill to the L2 handler' \
     's|        case EventKind::L1Fill:  on_l1_fill(\*e.payload.entry, now); return;|        case EventKind::L1Fill:  on_l2_fill(*e.payload.entry, now); return;|'
 mutate_eng kill 'C2 reinject always re-enters at the L1 (3.5)' \
@@ -1962,7 +1962,7 @@ mutate_eng kill 'D4 tile 0 is never seeded' \
 mutate_eng kill 'D4 the D12 checks are skipped when the queue empties' \
     's|    check_no_work_outstanding();||'
 
-echo "== C4: inclusion (src/engine.cpp)"
+echo "== C4: inclusion (src/core/engine.cpp)"
 mutate_eng kill 'C4 back-invalidation is not guarded by the knob' \
     's|res.evicted && params_.inclusion == Inclusion::Inclusive|res.evicted|'
 mutate_eng kill 'C4 back-invalidations are not counted' \
@@ -1972,7 +1972,7 @@ mutate_eng kill 'C4 the scan stops at the first L1 holding the line' \
 mutate_eng kill 'C4 the invalidated line is not invalidated' \
     's|            l1_\[c\].array().invalidate(s);||'
 
-echo "== C3: the core state machine and the barrier (src/engine_core.cpp)"
+echo "== C3: the core state machine and the barrier (src/core/engine_core.cpp)"
 mutate_engc kill 'C3 the service floor does not stop at the tile seam' \
     's|    const SimTime want = cs.cursor == BurstIndex{0}|    const SimTime want = false|'
 mutate_engc kill 'C3 the cursor is not reset at a tile start' \
@@ -2005,7 +2005,7 @@ mutate_engc kill 'C3 the next issue carries no spacing (N14)' \
 mutate_engc kill 'C3 the service floor takes the minimum' \
     's|    return gap < params_.core_accept_ii ? params_.core_accept_ii : gap;|    return gap < params_.core_accept_ii ? gap : params_.core_accept_ii;|'
 
-echo "== C5: the prefetch sink (src/engine_core.cpp)"
+echo "== C5: the prefetch sink (src/core/engine_core.cpp)"
 mutate_engc kill 'C5 the prefetcher is never called' \
     's|    prefetcher_->on_demand_issue(\*this, c, k, now);||'
 mutate_engc kill 'C5 the budget is off by one (I14)' \
@@ -2019,7 +2019,7 @@ mutate_engc kill 'C5 a prefetch is issued as a demand request (I15)' \
 mutate_engc kill 'C5 the tile length is read from the next tile' \
     's|    return trace_.n_bursts(core, cs.tile);|    return trace_.n_bursts(core, cs.tile + 1);|'
 
-echo "== C5: next_burst(d) itself (src/prefetcher.cpp)"
+echo "== C5: next_burst(d) itself (src/prefetch/prefetcher.cpp)"
 mutate_pf kill 'C5 the cursor is allowed to fall behind the core' \
     's|    if (cursor < next) cursor = next;||'
 mutate_pf kill 'C5 the fetch-ahead is one burst short' \
@@ -2037,7 +2037,7 @@ mutate_pf kill 'C5 none is built as next_burst' \
 mutate_pf kill 'C5 the fetch-ahead distance is ignored' \
     's|    const std::int32_t last    = k.get() + distance_;|    const std::int32_t last    = k.get() + 1;|'
 
-echo "== D2a: the stall breakdown and the Part 8 counters (src/engine_core.cpp)"
+echo "== D2a: the stall breakdown and the Part 8 counters (src/core/engine_core.cpp)"
 mutate_engc kill 'D2a stall_total is not accumulated (V21)' \
     's|    stats_.stall_total.at(idx(c)) += stall;||'
 mutate_engc kill 'D2a the channel bucket is never charged (V21)' \
@@ -2057,7 +2057,7 @@ mutate_engc kill 'D2a the coverage ceiling counts the first burst too' \
 mutate_engc kill 'D2a prefetches issued are not counted' \
     's|        ++stats_.pf_issued;||'
 
-echo "== D2b: ruling R8, the line anchor (src/engine_core.cpp)"
+echo "== D2b: ruling R8, the line anchor (src/core/engine_core.cpp)"
 mutate_engc kill 'D2b the burst anchor is never lowered (R8)' \
     's|    if (anchor < cs.burst_anchor) cs.burst_anchor = anchor;||'
 mutate_engc kill 'D2b the burst anchor takes the LAST line, not the earliest' \
@@ -2067,7 +2067,7 @@ mutate_engc kill 'D2b the anchor is not reset at the burst issue' \
 mutate_engc kill 'D2b fetch_latency reverts to the demand issue (pre-R8)' \
     's|    stats_.fetch_latency.at(idx(c)) += (now - cs.burst_anchor).get();|    stats_.fetch_latency.at(idx(c)) += (now - cs.issued_at).get();|'
 
-echo "== D2a/D2b: the counters and the anchor at their sites (src/engine.cpp)"
+echo "== D2a/D2b: the counters and the anchor at their sites (src/core/engine.cpp)"
 mutate_eng kill 'D2a l1 hits are counted on every outcome' \
     's|        if (result == TriageOutcome::Hit) ++stats_.l1_hits;|        ++stats_.l1_hits;|'
 mutate_eng kill 'D2a l2 hits are counted on every outcome' \
@@ -2097,7 +2097,7 @@ mutate_eng allow 'D2a a downgraded hit is not counted (D4, V6)' \
     's|    if (woken_onto_resident \&\& result != TriageOutcome::Hit) ++stats_.hits_downgraded_to_miss;||' \
     'no fixture yet evicts a line between a line waiter waking and re-probing; V6 is the fixture that would'
 
-echo "== D2b: the anchor is written once, at allocate (src/mshr.cpp)"
+echo "== D2b: the anchor is written once, at allocate (src/core/mshr.cpp)"
 mutate_mshr kill 'D2b the entry does not record its first request (R8)' \
     's|primary.issued_at, {}, {}};|SimTime{0}, {}, {}};|'
 mutate_mshr kill 'D2b every entry claims a prefetch opened it (R8)' \
@@ -2107,7 +2107,7 @@ mutate_mshr kill 'D2b a line waiter is not marked as woken onto its line (D4)' \
 mutate_mshr kill 'D2b the slot waiters are marked too (D4)' \
     's|    collect_grants(out.wake);|    collect_grants(out.wake); for (Request* g_ : out.wake) g_->line_resident_at_wake = true;|'
 
-echo "== C5: the interface (include/cachesim/prefetcher.h)"
+echo "== C5: the interface (include/cachesim/prefetch/prefetcher.h)"
 mutate_pf_h kill 'C5 issue_prefetch stops reporting the budget' \
     's|    virtual bool issue_prefetch(CoreId core, BurstIndex k, SimTime now) = 0;|    virtual void issue_prefetch(CoreId core, BurstIndex k, SimTime now) = 0;|'
 mutate_pf_h kill 'C5 on_tile_start loses the core it is about' \
@@ -2115,11 +2115,11 @@ mutate_pf_h kill 'C5 on_tile_start loses the core it is about' \
 mutate_pf_h kill 'C5 the prefetcher may read the memory system by value' \
     's|    virtual void on_demand_issue(PrefetchIssuer& mem, CoreId core, BurstIndex k, SimTime now) = 0;|    virtual void on_demand_issue(PrefetchIssuer mem, CoreId core, BurstIndex k, SimTime now) = 0;|'
 
-echo "== C3: the one crossing from trace time to simulated time (include/cachesim/engine.h)"
+echo "== C3: the one crossing from trace time to simulated time (include/cachesim/core/engine.h)"
 mutate_eng_h kill 'C3 as_duration loses the offset' \
     's|constexpr SimTime as_duration(LocalTick d) { return SimTime{0} + d; }|constexpr SimTime as_duration(LocalTick d) { (void)d; return SimTime{0}; }|'
 
-echo "== A3: TileTrace, whose whole content is its shape (include/cachesim/trace.h)"
+echo "== A3: TileTrace, whose whole content is its shape (include/cachesim/trace/tile_trace.h)"
 mutate_tr kill 'A3 gap loses its const' \
     's|    virtual LocalTick gap(CoreId core, std::int32_t tile, BurstIndex k) const = 0;|    virtual LocalTick gap(CoreId core, std::int32_t tile, BurstIndex k) = 0;|'
 mutate_tr kill 'A3 gap returns a SimTime instead of a spacing' \
@@ -2141,13 +2141,13 @@ mutate_mshr kill 'B3 line waiters are left marked as waiting' \
 mutate_mshr kill 'B3 the demand reserve is applied to the wrong requests' \
     's|    return is_prefetch_at_issue(r) ? free > demand_reserve_ : free > 0;|    return is_prefetch_at_issue(r) ? free > 0 : free > demand_reserve_;|'
 
-echo "== D2c: the coverage denominator (src/engine_core.cpp)"
+echo "== D2c: the coverage denominator (src/core/engine_core.cpp)"
 mutate_engc kill 'D2c demand bursts are not counted, so coverage has no denominator' \
     's|    ++stats_.demand_bursts;||'
 mutate_engc kill 'D2c the coverage ceiling counts every burst as prefetchable' \
     's|    if (k.get() > 0) ++stats_.pf_bursts_eligible;|    ++stats_.pf_bursts_eligible;|'
 
-echo "== D2c: the results CSV schema (include/cachesim/stats.h, src/stats.cpp)"
+echo "== D2c: the results CSV schema (include/cachesim/instrument/stats.h, src/instrument/stats.cpp)"
 mutate_stats kill 'D2c a column is dropped from the schema' \
     's|        "max_wait_depth", "hits_downgraded_to_miss", "events", "events_per_cycle",|        "max_wait_depth", "hits_downgraded_to_miss", "events",|'
 mutate_stats kill 'D2c two columns are swapped in the schema' \
@@ -2166,7 +2166,7 @@ mutate_stats kill 'D2c a cell that would break the CSV is accepted' \
 # repointed with it, so it matched nothing and covered nothing while the summary
 # still read clean. That is the B148-B150 failure mode, caught here only because
 # a sed matching nothing is an ERROR rather than a warning. The live guard is
-# `check_invariants`'s equality, `src/stats.cpp:369`.
+# `check_invariants`'s equality, `src/instrument/stats.cpp:369`.
 mutate_stats kill 'D2c V21 is never checked as an equality' \
     's|    if (stall_causes_ != stall_total_) {|    if (false) {|'
 mutate_stats kill 'D2c a negative hidden_latency passes (R8)' \
@@ -2186,7 +2186,7 @@ mutate_stats allow 'D2c the emit-position guard is removed' \
 mutate_stats_h kill 'D2c check_invariants drops its const' \
     's|    void check_invariants() const;|    void check_invariants();|'
 
-echo "== D2d: G14's distinct-address diagnostic (include/cachesim/hist.h)"
+echo "== D2d: G14's distinct-address diagnostic (include/cachesim/instrument/hist.h)"
 mutate_hist kill 'D2d the sidecar header line changes' \
     's|arch,workload,layer,sample_idx,tile,core,distinct_addresses|arch,workload,layer,sample,tile,core,distinct|'
 mutate_hist kill 'D2d every row claims tile 0' \
@@ -2198,7 +2198,7 @@ mutate_hist kill 'D2d p50 reports a different quantile' \
 mutate_hist kill 'D2d max reports the minimum' \
     's|        return \*std::max_element(counts_.begin(), counts_.end());|        return *std::min_element(counts_.begin(), counts_.end());|'
 
-echo "== D2d: distinct_addresses on the stream reader (src/stream_trace.cpp)"
+echo "== D2d: distinct_addresses on the stream reader (src/trace/stream_trace.cpp)"
 mutate_st kill 'D2d repeated addresses are counted twice' \
     's|    return static_cast<std::int32_t>(std::unique(keys.begin(), keys.end()) - keys.begin());|    return static_cast<std::int32_t>(keys.size());|'
 mutate_st kill 'D2d the address key drops the run length' \
@@ -2206,7 +2206,7 @@ mutate_st kill 'D2d the address key drops the run length' \
 mutate_st kill 'D2d distinct_addresses answers with an empty window' \
     's|    if (window_ < 0) {|    if (false) {|'
 
-echo "== Task 15: finish, the end of a run a driver parked (src/engine.cpp)"
+echo "== Task 15: finish, the end of a run a driver parked (src/core/engine.cpp)"
 mutate_eng kill 'T15 finish is a no-op, so the last barrier is never dispatched' \
     's|^    run();|    return;|'
 mutate_eng kill 'T15 finish takes one step instead of draining' \
@@ -2224,7 +2224,7 @@ mutate_appsup kill 'T15 padding_fraction reports a constant' \
 mutate_app kill 'T15 the histogram never observes the engine arm tiles' \
     's|^            hist.observe(trace);||'
 
-echo "== Task 17: step_tile, one tile of progress (src/engine.cpp)"
+echo "== Task 17: step_tile, one tile of progress (src/core/engine.cpp)"
 mutate_eng kill 'T17 step_tile takes no step at all' \
     's|^bool Engine::step_tile() { return run_to_barrier() >= 0; }|bool Engine::step_tile() { return false; }|'
 # The plan's own body for step_tile, kept as a case because it is the fixture

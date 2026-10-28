@@ -27,16 +27,16 @@
 #include <string>
 #include <vector>
 
-#include "cachesim/access_log.h"
-#include "cachesim/block_pack.h"
+#include "cachesim/instrument/access_log.h"
+#include "cachesim/layout/block_pack.h"
 #include "cachesim/config.h"
-#include "cachesim/engine.h"
-#include "cachesim/next_use.h"
-#include "cachesim/khkw_split.h"
-#include "cachesim/layout.h"
-#include "cachesim/split_cin.h"
-#include "cachesim/stream_format.h"
-#include "cachesim/stream_trace.h"
+#include "cachesim/core/engine.h"
+#include "cachesim/replacement/next_use.h"
+#include "cachesim/layout/khkw_split.h"
+#include "cachesim/layout/mapper.h"
+#include "cachesim/layout/split_cin.h"
+#include "cachesim/trace/stream_format.h"
+#include "cachesim/trace/stream_trace.h"
 #include "cachesim/types.h"
 
 namespace cachesim {
@@ -369,7 +369,7 @@ inline void read_oracle_lines(const std::string& path,
 // RESERVED and filled COMPLETELY before anything attaches to it. `CacheLevel`
 // holds a raw non-owning `NextUseOracle*`, so a push_back that reallocated
 // would leave every already-attached pointer dangling: the hazard is the
-// attached pointer, not the copy. That is the same hazard src/engine.cpp:48-50
+// attached pointer, not the copy. That is the same hazard src/core/engine.cpp:48-50
 // solves for the per-core `CacheLevel` vector, and it is solved the same way
 // here, twice over, because a reserve alone is one careless later edit away
 // from being wrong.

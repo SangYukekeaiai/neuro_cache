@@ -18,17 +18,17 @@
 #include <vector>
 
 #include "app_support.h"
-#include "cachesim/block_pack.h"
-#include "cachesim/byte_source.h"
-#include "cachesim/access_log.h"
-#include "cachesim/next_use.h"
-#include "cachesim/cache_state_log.h"
+#include "cachesim/layout/block_pack.h"
+#include "cachesim/trace/byte_source.h"
+#include "cachesim/instrument/access_log.h"
+#include "cachesim/replacement/next_use.h"
+#include "cachesim/instrument/cache_state_log.h"
 #include "cachesim/config.h"
-#include "cachesim/engine.h"
-#include "cachesim/hist.h"
-#include "cachesim/line_trace.h"
-#include "cachesim/stats.h"
-#include "cachesim/stream_trace.h"
+#include "cachesim/core/engine.h"
+#include "cachesim/instrument/hist.h"
+#include "cachesim/instrument/line_trace.h"
+#include "cachesim/instrument/stats.h"
+#include "cachesim/trace/stream_trace.h"
 #include "cachesim/types.h"
 
 namespace {

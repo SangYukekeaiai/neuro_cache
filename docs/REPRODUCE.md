@@ -146,7 +146,7 @@ python -m cachesim sweep --config-grid $OUT/grid/khkw_0.json --trace $OUT/stream
   `cachesim_run` (`src/cachesim/cli.py:15-33`); `python -m cachesim sweep --help` prints
   the native usage. The `--out` directory must exist.
 - Output: a CSV with one row per config, including `total_cycles`, `l1_hits`, `l2_hits`,
-  `dram_bytes` (`src/cachesim/native/src/stats.cpp:215-217`).
+  `dram_bytes` (`src/cachesim/native/src/instrument/stats.cpp:215-217`).
 
 ## End to end: `scripts/pipeline.py`
 

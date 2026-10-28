@@ -39,7 +39,7 @@ endif
 BUILDDIR := build/$(MODE)
 CXXFLAGS := $(CXXSTD) $(WARN) $(INCLUDES) $(MODEFLAGS)
 
-SRCS := $(wildcard src/*.cpp)
+SRCS := $(sort $(shell find src -type f -name '*.cpp' -print))
 OBJS := $(patsubst src/%.cpp,$(BUILDDIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 LIB  := $(BUILDDIR)/libcachesim.a
@@ -51,52 +51,27 @@ LIB  := $(BUILDDIR)/libcachesim.a
 # in one unit's file does not stop the others from building and running, which
 # is what would otherwise hide a passing suite behind an unrelated breakage.
 #
-# The wildcard is tests/test_*.cpp, not tests/*.cpp, so a future non-test .cpp
+# The source set is tests/test_*.cpp, not tests/*.cpp, so a future non-test .cpp
 # under tests/ is not silently turned into a binary that is expected to have a
 # main().
-TEST_SRCS := $(wildcard tests/test_*.cpp)
+TEST_SRCS := $(sort $(shell find tests -type f -name 'test_*.cpp' -print))
 TEST_BINS := $(patsubst tests/%.cpp,$(BUILDDIR)/%,$(TEST_SRCS))
-# Headers under tests/ are listed explicitly. Each test binary is compiled and
-# linked in one command, so it carries no -MMD dependency file of its own, and
-# without this a change to tests/check.h left `make test` running the previous
-# binary and reporting a pass. Verified: a deliberate #error in check.h still
-# printed "125 checks, 0 failures" and exited 0. Headers under include/ need no
-# entry here, since the library objects depend on them through -MMD and the
-# test relinks whenever $(LIB) is newer.
-TEST_HDRS := $(wildcard tests/*.h)
-# Library headers are listed too. The note above says they need no entry
-# because the test relinks whenever $(LIB) is newer, but that only holds once
-# src/ has a .cpp: while the units are header-only, $(OBJS) is empty, $(LIB)
-# never changes, and a mutated include/cachesim/*.h left the previous binary in
-# place. Verified: mutating operator<= in types.h still printed "161 checks,
-# 0 failures" until this line existed.
-#
-# Both lines were re-verified empirically after the split to one binary per
-# file (A2a), because the split rewrote the rule that carries them and the
-# failure they prevent is silent. What was actually run, not inspected:
-#
-#   types.h,  operator<= changed to <          -> 2 binaries recompiled, red
-#   layout.h, Placement's two fields swapped   -> 2 binaries recompiled, red
-#   tests/check.h, a deliberate #error         -> red
-#   all three reverted                         -> green, with no `make clean`
-#
-# Note that BOTH binaries rebuild on any library header, not only the one that
-# includes it. That is the wildcard being coarse rather than a dependency being
-# tracked, and it is the safe direction: every unit is header-only today, so
-# $(OBJS) is still empty and $(LIB) still never changes, and these two lines
-# are the only thing connecting a header to a test binary at all.
-LIB_HDRS  := $(wildcard include/cachesim/*.h)
+# TEST_HDRS is explicit because each test binary is compiled and linked in one
+# command, so it has no -MMD dependency file of its own. Without this
+# prerequisite, changing tests/check.h can leave `make test` running the old
+# binary and reporting a pass.
+TEST_HDRS := $(sort $(shell find tests -type f -name '*.h' -print))
+LIB_HDRS  := $(sort $(shell find include/cachesim -type f -name '*.h' -print))
 
 # The programs. They live under apps/ and NOT under src/, because $(SRCS) is
-# `$(wildcard src/*.cpp)`: a main() there would be archived into libcachesim.a
+# collected recursively under src/: a main() there would be archived into
+# libcachesim.a
 # and collide with every test binary's own main().
 #
-# Named one by one rather than derived from a wildcard through a
-# $(BUILDDIR)/% pattern rule. That pattern would also match
-# $(BUILDDIR)/libcachesim.a and every $(BUILDDIR)/*.o, which is the same trap the
-# `test_%` stem below is spelled out to avoid, and it would give make two
-# candidate rules for an object whose source moved. A second program is one
-# more line here.
+# Named one by one rather than derived from a broad pattern rule. That pattern
+# would also match $(BUILDDIR)/libcachesim.a and every $(BUILDDIR)/*.o, and it
+# would give make two candidate rules for an object whose source moved. A
+# second program is one more line here.
 APP_BINS := $(BUILDDIR)/cachesim_run $(BUILDDIR)/cachesim_sweep
 
 .PHONY: all lib apps test test-cli test-run test-compile-fail release clean
@@ -108,7 +83,7 @@ apps: $(APP_BINS)
 # No -Itests: a program is not a test and must not reach into the test headers.
 # apps/app_support.h is what the two programs share; it is reached by a quoted
 # include from the source's own directory, so no -I is needed for it either.
-APP_HDRS := $(wildcard apps/*.h)
+APP_HDRS := $(sort $(shell find apps -type f -name '*.h' -print))
 
 $(BUILDDIR)/cachesim_run: apps/cachesim_run.cpp $(APP_HDRS) $(LIB_HDRS) $(LIB) | $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) $< $(LIB) -o $@
@@ -177,9 +152,9 @@ test-cli: apps
 # compile_fail.sh compiles every case with -fsyntax-only against include/ and
 # never links the library, so no mutation inside src/*.cpp can change a single
 # one of its verdicts. Verified rather than argued: swapping locate's set index
-# and tag in src/block_pack.cpp leaves compile_fail.sh at 188 cases, 0 failures
-# while turning `make test` red. Running the 188-case pass for those mutations
-# is 188 g++ spawns that cannot report anything, and it was the dominant cost
+# and tag in src/layout/block_pack.cpp leaves compile_fail.sh at 316 cases, 0 failures
+# while turning `make test` red. Running the 316-case pass for those mutations
+# is 316 g++ spawns that cannot report anything, and it was the dominant cost
 # of every .cpp case in the sweep.
 #
 # Header mutations still run the full `make test`, because those cases DO
@@ -194,11 +169,11 @@ test-run: $(TEST_BINS)
 test-compile-fail:
 	@tests/compile_fail.sh
 
-# The stem is `test_%` rather than `%` on purpose: a bare $(BUILDDIR)/% pattern
-# would also match $(BUILDDIR)/libcachesim.a and every $(BUILDDIR)/*.o, and make
-# would then have two candidate rules for objects whose source moved or was
-# deleted. Nothing the library builds is named test_*.
-$(BUILDDIR)/test_%: tests/test_%.cpp $(TEST_HDRS) $(LIB_HDRS) $(LIB) | $(BUILDDIR)
+
+$(TEST_BINS): $(TEST_HDRS) $(LIB_HDRS) $(LIB)
+
+$(TEST_BINS): $(BUILDDIR)/%: tests/%.cpp
+	mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -Itests $< $(LIB) -o $@
 
 # Re-enters make so the release objects land in build/release and the
@@ -206,12 +181,11 @@ $(BUILDDIR)/test_%: tests/test_%.cpp $(TEST_HDRS) $(LIB_HDRS) $(LIB) | $(BUILDDI
 release:
 	$(MAKE) MODE=release lib
 
-# Order-only on $(BUILDDIR) because until the first src/*.cpp lands (A2) the
-# header-only units leave $(OBJS) empty, and nothing else creates the directory.
 $(LIB): $(OBJS) | $(BUILDDIR)
 	$(AR) rcs $@ $^
 
 $(BUILDDIR)/%.o: src/%.cpp | $(BUILDDIR)
+	mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
 
 $(BUILDDIR):
