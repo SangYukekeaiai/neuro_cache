@@ -4,7 +4,8 @@ Branch `wcache-rebuild-phase-a`, commit `b0d09ca`. Written from code only: `.cpp
 `.py`, `Makefile`, `.json`. No markdown, text or log file was read, so any design rationale below is
 what the code's own comments state. Paths that start with `src/cachesim/native/`, `src/cachesim/`,
 `configs/`, `scripts/`, `tests/` or `docs/` are relative to the repo root; every other path (such as
-`src/core/engine.cpp`, `include/cachesim/config.h`, `apps/app_support.h`, `tests/run_cli.sh`, `Makefile`)
+`src/core/engine.cpp`, `include/cachesim/config.h`, `apps/cli_args.h`, `apps/oracle_io.h`,
+`apps/output.h`, `tests/run_cli.sh`, `Makefile`)
 is relative to `src/cachesim/native/`.
 
 > **The reader accepts WCTS version 2 only.** `decode_header` throws `std::invalid_argument` for any
@@ -48,8 +49,9 @@ its next burst at `max(trace gap, core_accept_ii)` after its previous burst was 
   code; if the binary is missing it first runs `make -C src/cachesim/native MODE=release apps`
   (`native` in `src/cachesim/cli.py`).
 
-Two native programs, both `main()` in `src/cachesim/native/apps/`, sharing `apps/app_support.h`.
-Exit codes: 0 ok, 2 usage error (`UsageError`, `app_support.h:48`), 1 any other exception.
+Two native programs, both `main()` in `src/cachesim/native/apps/`, sharing `apps/cli_args.h`,
+`apps/oracle_io.h`, and `apps/output.h`. Exit codes: 0 ok, 2 usage error (`UsageError`,
+`cli_args.h:25-27`), 1 any other exception.
 
 **`cachesim_run`** (`src/cachesim/native/apps/cachesim_run.cpp:430`): one config, one trace, one CSV
 row. Flags parsed in `parse_args` (`cachesim_run.cpp:148`); help text `kUsage` (`cachesim_run.cpp:39`).
@@ -58,9 +60,9 @@ row. Flags parsed in `parse_args` (`cachesim_run.cpp:148`); help text `kUsage` (
 |---|---|---|
 | `--config PATH` | required | flat JSON object, `parse_config` |
 | `--trace PATH` | required | WCTS v2 stream; `-` = stdin, `fd:N` = open descriptor |
-| `--out PATH` | `-` (stdout) | CSV destination (file is truncated, `app_support.h:288`) |
+| `--out PATH` | `-` (stdout) | CSV destination (file is truncated, `output.h:133`) |
 | `--header` / `--no-header` | **on** (`cachesim_run.cpp:140`) | CSV header line |
-| `--arm NAME` | `cache` | one of `cache, spad_oracle, spad_wcache, spad_nocsim` (`app_support.h:76`) |
+| `--arm NAME` | `cache` | one of `cache, spad_oracle, spad_wcache, spad_nocsim` (`cli_args.h:53-59`) |
 | `--tier`, `--run-id`, `--git-commit` | empty, random UUIDv4, empty | identity columns |
 | `--hist PATH` | off | per-(core,tile) distinct-address CSV |
 | `--cache-state PATH` (+`-core/-tile/-limit N`, default -1) | off | every array fill/evict/invalidate |
@@ -101,14 +103,15 @@ writes one layer-sample as a WCTS stream on stdout (`--stream` flag
 
 1. **Config text -> `RunConfig`**: `parse_config` (`src/cachesim/native/src/config.cpp:448`), a strict
    JSON subset (integers and quoted strings only, unknown or duplicate key = error).
-2. **Trace bytes -> `StreamHeader`**: `TraceFd` (`app_support.h:255`) -> `FdByteSource`
+2. **Trace bytes -> `StreamHeader`**: `TraceFd` (`apps/cli_args.h:77-102`) -> `FdByteSource`
    (`include/cachesim/trace/byte_source.h:51`) -> `StreamingTileTrace` ctor reads and validates the header
    (`src/trace/stream_trace.cpp:26`, `decode_header` at `trace/stream_format.h:208`).
 3. **Header -> `WeightShape`** via `shape_of` (`src/trace/stream_trace.cpp:354`).
-4. **Validation**: a `BlockPackMapper` "probe" computes `lines_per_burst` (`app_support.h:163`), then
+4. **Validation**: a `BlockPackMapper` "probe" computes `lines_per_burst` (`apps/output.h:38-44`), then
    `validate(cfg, lines_per_burst, warnings)` (`src/config.cpp:571`) resolves the `-1` sentinels
    (`l1_demand_reserve`, `l2_demand_reserve`, `cin_lo_blocks`, `l2_policy`) and refuses bad configs.
-5. **Mapper**: `make_mapper` (`app_support.h:116`) builds `BlockPackMapper` / `SplitCinMapper` /
+5. **Mapper**: `make_mapper` (`include/cachesim/layout/factory.h:11-15`, `src/layout/factory.cpp:30-60`) builds
+   `BlockPackMapper` / `SplitCinMapper` /
    `KhkwSplitMapper` -> `const AddressMapper&`. All three share `src/layout/layout_common.h`.
 6. **`RunConfig` -> `EngineParams`**: `to_engine_params` (`src/config.cpp:772`) -> two `LevelParams`.
 7. **Engine**: `Engine(mapper, trace, params)` (`src/core/engine.cpp:51`) builds N L1 `CacheLevel`s, one L2
@@ -118,7 +121,7 @@ writes one layer-sample as a WCTS stream on stdout (`--stream` flag
    runs events until tile N's barrier is next; then `engine.finish()`.
 9. **Stats -> CSV**: `RunStats(id, cfg, hdr, engine.stats(), tile_origin(n_tiles), tick_base(n_tiles),
    padding, wall, hist.p50, hist.max)` (`src/instrument/stats.cpp:256`), `check_invariants()`, `csv_row()`;
-   `write_out` (`app_support.h:282`).
+   `write_out` (`apps/output.h:127-136`).
 
 `cachesim_sweep` is the same with steps 4-9 per grid point, `BroadcastSweep` (`src/sweep.cpp:44`)
 driving all engines over one window (`src/sweep.cpp:112`).
@@ -131,7 +134,7 @@ refuses a run that is empty along `burst_dim` at `:124`), `write_stream_trailer`
 and `stream_weight_trace` (`:177`, refuses any `burst_dim != 3` at `:195`). `scripts/pipeline.py`
 writes each layer-sample's stream to a `.wcts` file with `python -m weight_trace_gen gen ... --stream`
 and runs `python -m cachesim sweep` on it once per grid file. `--access-log` output is read back
-only by `--oracle` / `--l2-oracle` (`read_oracle_lines`, `app_support.h:322`).
+only by `--oracle` / `--l2-oracle` (`read_oracle_lines`, `apps/oracle_io.h:46-88`).
 
 ### 1.4 Key abstractions
 
@@ -240,7 +243,7 @@ Issue(3); then refusal stamp (older refused first, never-refused last), core id,
 Derived: `line_size_bytes = cin_block*cout_block*weight_bytes`; `l{1,2}_num_lines = size/line`;
 `num_sets = num_lines/assoc` (`src/config.cpp:438-444`). Warnings returned by `validate`:
 `W_MSHR_VS_LINES`, `W_FEW_SETS`, `W_CIN_LO_VS_SETS`, `W_PREFETCH_BUDGET`, `W_ZERO_II`
-(`src/config.cpp:738-768`); `make_mapper` adds `W_CIN_LO_UNREACHABLE` (`app_support.h:138`).
+(`src/config.cpp:738-768`); `make_mapper` adds `W_CIN_LO_UNREACHABLE` (`src/layout/factory.cpp`).
 
 The L2 MSHR floor: with `l2_demand_reserve` unset it resolves to `lines_per_burst`
 (`config.cpp:702`) and must stay below `l2_mshrs` whatever the L2 prefetch policy is
@@ -523,6 +526,12 @@ is a line of the file the entry is named after (a source file, not the header na
   max_engines)` `:53`; `run(on_tile)` `:60`; `size` `:62`; `engine(i)` const `:63` / mutable `:71`;
   `config(i)` `:72`; `wall_seconds(i)` `:77` (time inside engine dispatch only).
 
+**enum_names.h** (header-only)
+- `kUnknownEnumName` `include/cachesim/enum_names.h:15` is the sentinel shared with the CSV guard;
+  the four overloaded `name_of`/`parse` pairs `:17-87` are the single source for `LayoutKind`,
+  `PolicyKind`, `PrefetchKind`, and `Inclusion` used by config parsing, CSV emission, and sweep
+  diagnostics. Their invalid-enum fallbacks return the sentinel at `:23`, `:43`, `:63`, and `:79`.
+
 **layout mappers**: see 2.2 with their sources (`layout/block_pack.h`, `layout/split_cin.h`, `layout/khkw_split.h`) and
 the shared `src/layout/layout_common.h`.
 
@@ -656,6 +665,10 @@ the shared `src/layout/layout_common.h`.
   `checked_mul` `:43` / `.cpp:18`; `blocks_covering` `:48`; `block_size_on` `:56`.
 - `check_shape_and_blocking` `:72` / `.cpp:26`, `line_size_bytes` `:80` / `.cpp:41`,
   `check_in_shape` `:87`, `expand_burst<Mapper>` `:120-148`, and `line_size_terms` `:154` / `.cpp:47`.
+**layout/factory.h / layout/factory.cpp**
+- `make_mapper(cfg, shape, warnings)` is the library-owned layout factory. It builds the selected
+  mapper and emits `W_CIN_LO_UNREACHABLE` for a SplitCin width above the layer's CIN-block count;
+  both native drivers call this same function after validation.
 **layout/block_pack.cpp** (`BlockPackMapper`, header `include/cachesim/layout/block_pack.h:42`; 235 lines)
 - Nesting `[KH][KW][cin_blk][cout_blk]`, cout innermost; `kName` `layout/block_pack.cpp:14`; Axis-order `static_assert`s
   `:33-36`.
@@ -707,8 +720,8 @@ the shared `src/layout/layout_common.h`.
 - `read_trailer` `:337`; `shape_of` `:354`.
 
 **instrument/stats.cpp**
-- `name_of` overloads for PolicyKind `:16`, LayoutKind `:28`, Inclusion `:37`, PrefetchKind `:45`;
-  `total` `:53`; `quantile` `:60`.
+- Uses the shared `name_of` overloads from `include/cachesim/enum_names.h`; `total` and `quantile`
+  remain local helpers.
 - `class Row` `:71`: `str` (refuses `, " \n \r`) `:73`, `i64` `:86`, `f64` (`%.6f`) `:91`, `ratio`
   (empty cell when denominator 0) `:101`, `blank` `:109`, `blank_rest` `:115`, `take` `:120`; every
   cell checked against the schema position (`expect` `:130`).
@@ -727,8 +740,8 @@ the shared `src/layout/layout_common.h`.
 - `oracle_row` `:452`: identity + config + `total_cycles = tick_base_total`, rest blank.
 
 **sweep.cpp**
-- `layout_text` `:14`; `rethrow_with_index` `:27` (prefixes "sweep: configuration i:" preserving
-  exception type).
+- Uses `name_of(LayoutKind)` from `include/cachesim/enum_names.h`; `rethrow_with_index` prefixes
+  "sweep: configuration i:" while preserving exception type.
 - Ctor `:44`: non-empty grid, `size <= max_engines`, all points share `cin_block, cout_block,
   weight_bytes, layout, cin_lo_blocks` `:76-91`, mapper line size matches `:93`, then builds engines.
 - `run` `:112`: per tile `advance` -> observer -> `step_tile` on each engine (timed); then `finish`
@@ -736,23 +749,28 @@ the shared `src/layout/layout_common.h`.
 
 ### 2.3 `apps/`
 
-**app_support.h** (namespace `cachesim::app`)
-- `UsageError` `:48`; `value_of` `:52`; `int_value_of` `:60` (whole-string integer); `check_arm`
-  `:76`; `uuid4` `:86` (`std::random_device`, unseeded by design).
-- `make_mapper(cfg, shape, warnings)` `:116`.
-- `lines_per_burst(mapper, hdr)` `:163`: expands the widest burst `{origin, burst_dim, burst_span,
-  burst_stride}` (`:165`) and counts lines. Both apps pass a BlockPackMapper for any layout
-  (`:156-161`).
-- `class PaddingMeter` `:184`: `observe(burst)` `:197`, `observe_tile(trace)` `:215`, `fraction()`
-  `:226` = `(lines_touched*cin_block*cout_block - elements_touched) / (lines_touched*...)`.
-- `class TraceFd(spec)` `:255`: `-`, `fd:N`, or path (owned, closed in dtor); `get` `:275`.
-- `write_out(path, text)` `:282` (`-` = stdout; else truncating ofstream `:288`).
-- `read_oracle_lines(path, n_cores, l1_by_core*, l2_lines&)` `:322`: reads an AccessLog file;
-  demand records only; per-core L1 lists + one L2 list.
-- `struct OracleSet {l1 vector, optional l2, attached}` `:376`; `build_oracles` `:386`;
-  `attach_oracles(oracles, cfg, engine)` `:416` (only levels whose policy is Belady);
-  `report_oracles` `:437`; `report_overruns` `:474` (warns if `max_wait_depth != 0` with Belady,
-  `:481-487`: re-probes shift occurrence indices).
+**apps/cli_args.h** (namespace `cachesim::app`)
+- `UsageError` `:25-27`, `value_of` `:29-32`, `int_value_of` `:37-49` (whole-string integer),
+  `check_arm` `:53-59`, and `uuid4` `:63-73` (version 4, unseeded by design).
+- `class TraceFd(spec)` `:77-102`: `-`, `fd:N`, or a path (owned and closed in the destructor).
+
+**apps/output.h** (namespace `cachesim::app`)
+- `lines_per_burst(mapper, hdr)` `:38-44`: expands the widest burst `{origin, burst_dim, burst_span,
+  burst_stride}` and counts lines. Both apps pass a BlockPackMapper for any layout; the rationale is
+  the mapper-count argument in the comment at `:24-37`.
+- `class PaddingMeter` `:59-125`: observes bursts or a whole tile and reports
+  `(lines_touched*cin_block*cout_block - elements_touched) / (lines_touched*...)`; dense bitmap
+  sizing and the per-run/per-layout meaning are stated at `:46-58`.
+- `write_out(path, text)` `:127-136`: `-` means stdout; otherwise the truncating ofstream is opened
+  at `:133`.
+
+**apps/oracle_io.h** (namespace `cachesim::app`)
+- `read_oracle_lines(path, n_cores, l1_by_core*, l2_lines&)` `:46-88`: reads demand records from an
+  AccessLog into per-core L1 lists and one shared L2 list; the nullable L1 convention and its memory
+  reason are stated at `:23-44`, and the L2-only branch is annotated at `:72`.
+- `OracleSet` `:100-108` (reserved L1 vector, optional shared L2, attached flag), `build_oracles`
+  `:110-128` (frees each source bucket after construction), `attach_oracles` `:139-153` (only
+  levels whose policy is Belady), `report_oracles` `:160-172`, and `report_overruns` `:197-211`.
 
 **cachesim_run.cpp**: `kUsage` `:39` (header help `:46-47`), `struct Options` `:117` (`header = true`
 `:140`), `parse_args` `:148` (`--header`/`--no-header` `:183-184`), `run` `:216` (steps in 1.3;
@@ -923,22 +941,17 @@ Drivers:
    extent); and the same `neighbour` range-check block in each mapper (`layout/block_pack.cpp:222-226`,
    `layout/split_cin.cpp:302-306`, `layout/khkw_split.cpp:150-154`). `neighbour` staying per mapper is by design
    (`layout/layout_common.h:5-6`).
-2. Enum spellings are written in several places: parse (`src/config.cpp:201-351`), emit
-   (`src/instrument/stats.cpp:16-51`), `layout_text` (`src/sweep.cpp:14-21`), a two-way ternary over the
-   three-valued `LayoutKind` (`config.cpp:629`, exactly the pattern `sweep.cpp:10-13` warns against;
-   correct today only because SplitCin is excluded by the branch), and the separate `PrefetchKind`
-   parser/emitter spellings (`config.cpp:262-351`, `instrument/stats.cpp:45-51`).
-3. Nearest-rank quantile twice: `include/cachesim/instrument/hist.h:85-92` and `src/instrument/stats.cpp:60-65`.
-4. `engine_error` / `idx` twice: `src/core/engine.cpp:18-22`, `src/core/engine_core.cpp:31-35`. Way-from-slot
+2. Nearest-rank quantile twice: `include/cachesim/instrument/hist.h:85-92` and `src/instrument/stats.cpp:60-65`.
+3. `engine_error` / `idx` twice: `src/core/engine.cpp:18-22`, `src/core/engine_core.cpp:31-35`. Way-from-slot
    arithmetic twice: `core/engine.cpp:692-695` and `core/engine.cpp:755-758`.
-5. Per-policy `index_or_reject` four times: `src/replacement/{stamp,belady,lfu,rrip}.cpp`.
-6. The two apps duplicate the config/trace/mapper/validate setup and drift:
+4. Per-policy `index_or_reject` four times: `src/replacement/{stamp,belady,lfu,rrip}.cpp`.
+5. The two apps duplicate the config/trace/mapper/validate setup and drift:
    - `--max-engines` uses bare `std::stoi` (`apps/cachesim_sweep.cpp:107`, accepts `"12abc"`) while
-     `cachesim_run` uses `int_value_of` (`app_support.h:60`).
+     `cachesim_run` uses `int_value_of` (`apps/cli_args.h:37-49`).
    - Oracle help text disagrees: L1 oracles "exact WHILE NOTHING BLOCKS" (`cachesim_run.cpp:88-93`) vs
      "EXACT" (`cachesim_sweep.cpp:64-66`).
    - Sweep has no `--l2-oracle`, instruments, or `--oracle-only`.
-   - AccessLog batch size `1 << 16` duplicated in `instrument/access_log.h:141` and `app_support.h:336`.
+   - AccessLog batch size `1 << 16` duplicated in `instrument/access_log.h:141` and `apps/oracle_io.h:60`.
 
 ### 3.3 Behaviour hazards worth a look before trusting new runs
 1. **H2** `LineTrace::key` packs `core+1` into 6 bits with no check (`include/cachesim/instrument/line_trace.h:179-182`); the comment says a wider machine "would trip the encoding" (`:175-178`), but nothing
@@ -952,19 +965,19 @@ Drivers:
 3. **H6** MSHR occupancy samples are appended on every forward and retire
    (`src/core/engine.cpp:267,394,533,602`) and kept for the whole run per engine; memory grows with miss
    count times grid size (up to 256 engines).
-4. **H7** `TraceFd` parses `fd:N` with unchecked `std::stoi` (`app_support.h:261`).
+4. **H7** `TraceFd` parses `fd:N` with unchecked `std::stoi` (`apps/cli_args.h:77-102`).
 5. **H8** The decoded run length ignores `burst_stride`: `count = run_end - run_start`
    (`src/trace/stream_trace.cpp:306`) while `expand_burst` walks `start + i*stride` for `i < count`
    (`layout/layout_common.h:138-139`). For stride `s > 1` a run `[start, end)` holds
    `ceil((end - start) / s)` elements, but the decoder asks for `end - start` of them, so the walk
    runs past `run_end` (or is refused as out of range). The writer does the same: `burst_span` is the
    largest `cout_end - cout_start` (`src/cachesim/stream.py:166`) and `lines_per_burst` expands
-   `burst_span` elements at `burst_stride` (`app_support.h:165`). Unreachable today because
+   `burst_span` elements at `burst_stride` (`apps/output.h:38-44`). Unreachable today because
    `stream_weight_trace` defaults `burst_stride=1` (`src/cachesim/stream.py:178`) and every test uses 1
    (`tests/stream_builder.h:110`).
 6. **H9** The header's `burst_span` is never checked against the bursts. `decode_header` only
    requires `burst_span >= 1` (`trace/stream_format.h:258-262`) and `advance` never reads it
-   (`src/trace/stream_trace.cpp:176-335`), yet `lines_per_burst` (`app_support.h:163-169`) is computed
+   (`src/trace/stream_trace.cpp:176-335`), yet `lines_per_burst` (`apps/output.h:38-44`) is computed
    from it and sets the `l1_mshrs` check (`config.cpp:667-670`) and both demand-reserve defaults
    (`config.cpp:702,727`). A header that understates the span passes validation. Separately,
    `lines_per_burst` expands the burst at the origin; a burst whose anchor is not block-aligned can
@@ -1017,7 +1030,7 @@ What the code needs:
 - **Compiler/build**: GNU make and `g++` with C++17 (`Makefile:24-26`); flags `-Wall -Wextra
   -Wpedantic -Wsign-conversion -Wconversion -Wshadow` (`Makefile:27`), `-O0 -g` (fixture) or
   `-O2 -DNDEBUG` (release, `Makefile:31-34`). No CMake (no `CMakeLists.txt` exists). No third-party
-  libraries; POSIX headers (`unistd.h`, `fcntl.h` in `trace/byte_source.h:17`, `app_support.h:15-16`).
+  libraries; POSIX headers (`unistd.h`, `fcntl.h` in `trace/byte_source.h:17`, `apps/cli_args.h:9-10`).
   `ar` for the archive. Minimum g++ version is not pinned anywhere. `src/layout/layout_common.cpp` is picked
   up by `SRCS := $(sort $(shell find src -type f -name '*.cpp' -print))` (`Makefile:42`).
 - **Release programs**: `make release` builds only `libcachesim.a` (`Makefile:181-182`).
@@ -1035,8 +1048,8 @@ What the code needs:
   this on one fixture).
 - **Two-pass Belady**: `policy/l2_policy = belady` needs `--oracle` / `--l2-oracle` from a prior
   run's `--access-log` over the same trace and layout (`cachesim_run.cpp:310-340`); results are only
-  sound when `max_wait_depth == 0` (`app_support.h:481-487`).
-- **Non-deterministic columns**: `run_id` defaults to a random UUID (`app_support.h:86`),
+  sound when `max_wait_depth == 0` (`apps/oracle_io.h:204-210`).
+- **Non-deterministic columns**: `run_id` defaults to a random UUID (`apps/cli_args.h:63-73`),
   `sim_wall_seconds` is wall time, and `git_commit` is empty unless the driver passes it
   (`cachesim_run.cpp:52-53`). Everything else is designed to be bit-identical across runs (total event
   order, vectors iterated by index; `unordered_map`s are never iterated in decision paths, though

@@ -17,8 +17,11 @@
 #include <string>
 #include <vector>
 
-#include "app_support.h"
+#include "cli_args.h"
+#include "oracle_io.h"
+#include "output.h"
 #include "cachesim/layout/block_pack.h"
+#include "cachesim/layout/factory.h"
 #include "cachesim/trace/byte_source.h"
 #include "cachesim/instrument/access_log.h"
 #include "cachesim/replacement/next_use.h"

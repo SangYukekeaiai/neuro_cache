@@ -203,7 +203,7 @@ void test_a_kernel_burst_is_sorted_despite_the_wrap() {
 }
 
 // Every mapper is injective on block coordinates, so a burst touches the same
-// NUMBER of lines under any nesting. app_support::lines_per_burst rests on
+// NUMBER of lines under any nesting. app::lines_per_burst (in apps/output.h) rests on
 // this, since it sizes the L1 demand reserve from a BlockPackMapper even when
 // the run uses another layout.
 void test_it_agrees_with_block_pack_on_how_many_lines_a_burst_touches() {

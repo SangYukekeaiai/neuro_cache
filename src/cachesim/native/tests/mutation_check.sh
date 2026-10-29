@@ -63,11 +63,11 @@ ulimit -c 0 2>/dev/null || true
 # `allow` for that reason, and the reason names tests/run_cli.sh, which is the
 # end-to-end script that does cover it and which this harness does not drive.
 # Listing the file anyway is what keeps the omission from being silent.
-# Tasks 17 and 18 add include/cachesim/sweep.h, src/sweep.cpp, apps/app_support.h
+# Tasks 17 and 18 add include/cachesim/sweep.h, src/sweep.cpp, apps/output.h
 # and apps/cachesim_sweep.cpp. The two library files ARE built by `make test`,
 # through tests/test_sweep.cpp, so their cases expect a kill. The two under
 # apps/ are not, for the reason stated just above, so theirs are `allow` and
-# name tests/sweep_cli.sh as their cover. apps/app_support.h is where Task 15's
+# name tests/sweep_cli.sh as their cover. apps/output.h is where Task 15's
 # `lines_per_burst` and `PaddingMeter` now live, shared by the two programs, so
 # the two cases that used to name apps/cachesim_run.cpp for them name it instead.
 # Phase B adds all five of its files: include/cachesim/core/port.h, event.h and mshr.h,
@@ -77,7 +77,7 @@ ulimit -c 0 2>/dev/null || true
 # naming: it is header-only AND was included by no translation unit at all until
 # tests/core/test_event.cpp existed, so before this round nothing in the tree either
 # compiled it or could mutate it.
-FILES="include/cachesim/types.h include/cachesim/layout/mapper.h include/cachesim/layout/block_pack.h include/cachesim/index/cache_array.h include/cachesim/index/set_associative.h include/cachesim/index/set_index.h include/cachesim/replacement/policy.h include/cachesim/replacement/stamp.h include/cachesim/replacement/belady.h include/cachesim/replacement/lfu.h include/cachesim/replacement/rrip.h include/cachesim/core/port.h include/cachesim/core/event.h include/cachesim/core/request.h include/cachesim/core/mshr.h include/cachesim/trace/tile_trace.h include/cachesim/core/cache_level.h include/cachesim/core/engine.h include/cachesim/prefetch/prefetcher.h include/cachesim/prefetch/none.h include/cachesim/prefetch/next_burst.h include/cachesim/prefetch/neighbour.h src/layout/block_pack.cpp src/layout/layout_common.h src/layout/layout_common.cpp src/index/set_associative.cpp src/replacement/policy.cpp src/replacement/stamp.cpp src/replacement/belady.cpp src/replacement/lfu.cpp src/replacement/rrip.cpp src/core/port.cpp src/core/mshr.cpp src/core/cache_level.cpp src/core/engine.cpp src/core/engine_core.cpp src/prefetch/prefetcher.cpp src/prefetch/none.cpp src/prefetch/next_burst.cpp src/prefetch/neighbour.cpp include/cachesim/config.h src/config.cpp include/cachesim/trace/stream_format.h include/cachesim/trace/byte_source.h include/cachesim/trace/stream_trace.h src/trace/stream_trace.cpp include/cachesim/instrument/stats.h src/instrument/stats.cpp include/cachesim/instrument/hist.h apps/cachesim_run.cpp include/cachesim/sweep.h src/sweep.cpp apps/app_support.h apps/cachesim_sweep.cpp"
+FILES="include/cachesim/types.h include/cachesim/layout/mapper.h include/cachesim/layout/factory.h include/cachesim/enum_names.h include/cachesim/layout/block_pack.h include/cachesim/index/cache_array.h include/cachesim/index/set_associative.h include/cachesim/index/set_index.h include/cachesim/replacement/policy.h include/cachesim/replacement/stamp.h include/cachesim/replacement/belady.h include/cachesim/replacement/lfu.h include/cachesim/replacement/rrip.h include/cachesim/core/port.h include/cachesim/core/event.h include/cachesim/core/request.h include/cachesim/core/mshr.h include/cachesim/trace/tile_trace.h include/cachesim/core/cache_level.h include/cachesim/core/engine.h include/cachesim/prefetch/prefetcher.h include/cachesim/prefetch/none.h include/cachesim/prefetch/next_burst.h include/cachesim/prefetch/neighbour.h src/layout/block_pack.cpp src/layout/factory.cpp src/layout/layout_common.h src/layout/layout_common.cpp src/index/set_associative.cpp src/replacement/policy.cpp src/replacement/stamp.cpp src/replacement/belady.cpp src/replacement/lfu.cpp src/replacement/rrip.cpp src/core/port.cpp src/core/mshr.cpp src/core/cache_level.cpp src/core/engine.cpp src/core/engine_core.cpp src/prefetch/prefetcher.cpp src/prefetch/none.cpp src/prefetch/next_burst.cpp src/prefetch/neighbour.cpp include/cachesim/config.h src/config.cpp include/cachesim/trace/stream_format.h include/cachesim/trace/byte_source.h include/cachesim/trace/stream_trace.h src/trace/stream_trace.cpp include/cachesim/instrument/stats.h src/instrument/stats.cpp include/cachesim/instrument/hist.h apps/cachesim_run.cpp apps/cli_args.h apps/oracle_io.h apps/output.h include/cachesim/sweep.h src/sweep.cpp apps/cachesim_sweep.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
@@ -258,7 +258,7 @@ mutate_stats_h() { mutate_in include/cachesim/instrument/stats.h "$@"; }
 mutate_stats() { mutate_in src/instrument/stats.cpp "$@"; }
 mutate_hist() { mutate_in include/cachesim/instrument/hist.h "$@"; }
 mutate_app() { mutate_in apps/cachesim_run.cpp "$@"; }
-mutate_appsup() { mutate_in apps/app_support.h "$@"; }
+mutate_output() { mutate_in apps/output.h "$@"; }
 mutate_sweep_h() { mutate_in include/cachesim/sweep.h "$@"; }
 mutate_sweep() { mutate_in src/sweep.cpp "$@"; }
 mutate_sweep_app() { mutate_in apps/cachesim_sweep.cpp "$@"; }
@@ -2224,9 +2224,9 @@ mutate_app kill 'T15 finish is never called, so the makespan is never written' \
     's|^        engine.finish();||'
 mutate_app kill 'T15 the header line is not csv_header' \
     's|    if (opt.header) text = csv_header() + "\\n";|    if (opt.header) text = "run_id\\n";|'
-mutate_appsup kill 'T15 lines_per_burst is the raw span, ignoring the layout' \
+mutate_output kill 'T15 lines_per_burst is the raw span, ignoring the layout' \
     's|    return static_cast<std::int32_t>(lines.size());|    return hdr.burst_span;|'
-mutate_appsup kill 'T15 padding_fraction reports a constant' \
+mutate_output kill 'T15 padding_fraction reports a constant' \
     's|        if (fetched == 0) return 0.0;|        if (fetched >= 0) return 0.5;|'
 mutate_app kill 'T15 the histogram never observes the engine arm tiles' \
     's|^            hist.observe(trace);||'

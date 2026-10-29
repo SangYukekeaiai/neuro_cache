@@ -81,8 +81,8 @@ all: lib apps
 apps: $(APP_BINS)
 
 # No -Itests: a program is not a test and must not reach into the test headers.
-# apps/app_support.h is what the two programs share; it is reached by a quoted
-# include from the source's own directory, so no -I is needed for it either.
+# apps/cli_args.h, oracle_io.h and output.h are what the two programs share; they
+# are reached by quoted includes from the sources' own directory.
 APP_HDRS := $(sort $(shell find apps -type f -name '*.h' -print))
 
 $(BUILDDIR)/cachesim_run: apps/cachesim_run.cpp $(APP_HDRS) $(LIB_HDRS) $(LIB) | $(BUILDDIR)

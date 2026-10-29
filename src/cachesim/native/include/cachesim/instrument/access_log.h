@@ -48,7 +48,7 @@
 
 // For `Level`, which lives in request.h. Included here rather than left to the
 // caller: this header compiled only because every existing includer happened to
-// reach mshr.h first, and app_support.h, which does not, found that out.
+// reach mshr.h first, and the app-only headers, which do not, found that out.
 #include "cachesim/core/request.h"
 #include "cachesim/types.h"
 

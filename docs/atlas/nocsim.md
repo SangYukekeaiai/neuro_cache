@@ -68,7 +68,7 @@ simulation, missing or failing eventsim (src/nocsim/sim.py:326, :340, :350,
   `configs/arch/loas_inst16_node32kb.yaml`), parses the `total_cycles` line
   from stdout, and joins it with the cache simulator rows in `join_results`.
 - The cache simulator's C++ apps accept `--arm spad_nocsim` only as a label
-  for the `arm` column (src/cachesim/native/apps/app_support.h:76-80); no
+  for the `arm` column (src/cachesim/native/apps/cli_args.h:53-59); no
   cachesim code calls nocsim.
 - tests: see 2.7.
 

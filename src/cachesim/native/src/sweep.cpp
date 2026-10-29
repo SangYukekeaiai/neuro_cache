@@ -1,4 +1,5 @@
 #include "cachesim/sweep.h"
+#include "cachesim/enum_names.h"
 
 #include <chrono>
 #include <stdexcept>
@@ -6,19 +7,6 @@
 
 namespace cachesim {
 namespace {
-
-// The spelling for a refusal message. A local switch and not a ternary: a
-// two-way ternary over a three-valued enum reports the wrong layout the day a
-// fourth one lands, and this message exists to tell a sweeper which grid point
-// disagreed.
-const char* layout_text(LayoutKind l) {
-    switch (l) {
-        case LayoutKind::BlockPack: return "block_pack";
-        case LayoutKind::SplitCin:  return "split_cin";
-        case LayoutKind::KhkwSplit: return "khkw_split";
-    }
-    return "unknown";
-}
 
 // Names the grid point a throw came from without losing the type the caller
 // distinguishes on. Called from a `catch (...)`, so the bare `throw;` inside
@@ -80,7 +68,7 @@ BroadcastSweep::BroadcastSweep(StreamingTileTrace& trace, const AddressMapper& m
                 return "cin_block " + std::to_string(p.cin_block) + ", cout_block " +
                        std::to_string(p.cout_block) + ", weight_bytes " +
                        std::to_string(p.weight_bytes) + ", layout " +
-                       layout_text(p.layout) +
+                       name_of(p.layout) +
                        ", cin_lo_blocks " + std::to_string(p.cin_lo_blocks);
             };
             throw std::invalid_argument(

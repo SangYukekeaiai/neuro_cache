@@ -109,7 +109,7 @@ struct StreamHeader {
     // burst's actual extent is run_end minus its anchor's coordinate on
     // burst_dim. Ruling Q-D: D1's `l1_demand_reserve` default is
     // `lines_per_burst`, the line count of a `burst_span` burst along burst_dim
-    // (apps/app_support.h), and validation runs before any burst has been
+    // (apps/output.h), and validation runs before any burst has been
     // decoded.
     std::int32_t burst_span   = 1;
     std::vector<FieldCode>                        addr_fields;

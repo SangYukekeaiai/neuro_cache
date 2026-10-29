@@ -1,4 +1,5 @@
 #include "cachesim/config.h"
+#include "cachesim/enum_names.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -207,13 +208,7 @@ void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t 
 
     if (key == "layout") {
         const std::string& t = enum_text(key, v, pos);
-        if (t == "block_pack") {
-            cfg.layout = LayoutKind::BlockPack;
-        } else if (t == "split_cin") {
-            cfg.layout = LayoutKind::SplitCin;
-        } else if (t == "khkw_split") {
-            cfg.layout = LayoutKind::KhkwSplit;
-        } else {
+        if (!parse(t, cfg.layout)) {
             fail("unknown layout \"" + t + "\"", pos);
         }
         return;
@@ -228,80 +223,43 @@ void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t 
             else       { cfg.policy = k; }
         };
         const std::string& t = enum_text(key, v, pos);
-        if (t == "lru") {
-            assign(PolicyKind::LRU);
-        } else if (t == "fifo") {
-            assign(PolicyKind::FIFO);
-        } else if (t == "random") {
-            assign(PolicyKind::RANDOM);
-        } else if (t == "rrip") {
-            assign(PolicyKind::RRIP);
-        } else if (t == "lfu") {
-            assign(PolicyKind::LFU);
-        } else {
-            if (t == "belady") assign(PolicyKind::BELADY);
-            else fail("unknown policy \"" + t + "\"", pos);
-        }
+        PolicyKind parsed = PolicyKind::LRU;
+        if (!parse(t, parsed)) fail("unknown policy \"" + t + "\"", pos);
+        assign(parsed);
         return;
     }
     if (key == "inclusion") {
         const std::string& t = enum_text(key, v, pos);
-        if (t == "non_inclusive") {
-            cfg.inclusion = Inclusion::NonInclusive;
-        } else if (t == "inclusive") {
-            cfg.inclusion = Inclusion::Inclusive;
-        } else if (t == "exclusive") {
+        if (t == "exclusive") {
             fail("inclusion \"exclusive\" is not modelled and is refused rather than "
                  "downgraded to non_inclusive",
                  pos);
-        } else {
+        } else if (!parse(t, cfg.inclusion)) {
             fail("unknown inclusion \"" + t + "\"", pos);
         }
         return;
     }
     if (key == "prefetch_policy") {
         const std::string& t = enum_text(key, v, pos);
-        if (t == "none") {
-            cfg.prefetch_policy = PrefetchKind::None;
-            cfg.l1_prefetch_policy = PrefetchKind::None;
-        } else if (t == "next_burst") {
-            cfg.prefetch_policy = PrefetchKind::NextBurst;
-            cfg.l1_prefetch_policy = PrefetchKind::NextBurst;
-        } else if (t == "neighbour" || t == "neighbor") {
-            cfg.prefetch_policy = PrefetchKind::Neighbour;
-            cfg.l1_prefetch_policy = PrefetchKind::Neighbour;
-        } else {
-            fail("unknown prefetch_policy \"" + t + "\"", pos);
-        }
+        PrefetchKind parsed = PrefetchKind::None;
+        if (!parse(t, parsed)) fail("unknown prefetch_policy \"" + t + "\"", pos);
+        cfg.prefetch_policy = parsed;
+        cfg.l1_prefetch_policy = parsed;
         return;
     }
 
     if (key == "l1_prefetch_policy") {
         const std::string& t = enum_text(key, v, pos);
-        if (t == "none") {
-            cfg.l1_prefetch_policy = PrefetchKind::None;
-            cfg.prefetch_policy = PrefetchKind::None;
-        } else if (t == "next_burst") {
-            cfg.l1_prefetch_policy = PrefetchKind::NextBurst;
-            cfg.prefetch_policy = PrefetchKind::NextBurst;
-        } else if (t == "neighbour" || t == "neighbor") {
-            cfg.l1_prefetch_policy = PrefetchKind::Neighbour;
-            cfg.prefetch_policy = PrefetchKind::Neighbour;
-        } else {
-            fail("unknown l1_prefetch_policy \"" + t + "\"", pos);
-        }
+        PrefetchKind parsed = PrefetchKind::None;
+        if (!parse(t, parsed)) fail("unknown l1_prefetch_policy \"" + t + "\"", pos);
+        cfg.l1_prefetch_policy = parsed;
+        cfg.prefetch_policy = parsed;
         return;
     }
 
     if (key == "l2_prefetch_policy") {
         const std::string& t = enum_text(key, v, pos);
-        if (t == "none") {
-            cfg.l2_prefetch_policy = PrefetchKind::None;
-        } else if (t == "next_burst") {
-            cfg.l2_prefetch_policy = PrefetchKind::NextBurst;
-        } else if (t == "neighbour" || t == "neighbor") {
-            cfg.l2_prefetch_policy = PrefetchKind::Neighbour;
-        } else {
+        if (!parse(t, cfg.l2_prefetch_policy)) {
             fail("unknown l2_prefetch_policy \"" + t + "\"", pos);
         }
         return;
@@ -625,8 +583,7 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
         // would take it for a measurement.
         if (cfg.cin_lo_blocks != -1) {
             reject("cin_lo_blocks = " + std::to_string(cfg.cin_lo_blocks) +
-                   " has no meaning under layout = " +
-                   (cfg.layout == LayoutKind::BlockPack ? "block_pack" : "khkw_split") +
+                   " has no meaning under layout = " + std::string(name_of(cfg.layout)) +
                    ", which does not split the CIN block index; it is refused rather than "
                    "carried into the row as a width the run did not use");
         }
@@ -652,18 +609,25 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
     //
     // The line above runs first, so `policy = belady` with no `l2_policy` now
     // resolves to belady at BOTH levels, which is what the flag is for.
-    if (cfg.l2_policy == PolicyKind::RANDOM) {
-        reject("l2_policy = random is a placeholder and is not implemented");
-    }
+    // Use the factory's one policy-kind check here as well as at construction.
+    // Keep the key at the call site so RANDOM cannot grow a second rejection
+    // rule that disagrees with make_policy while a bad l2_policy still names
+    // l2_policy rather than the ordinary policy key.
+    const auto check_policy_kind = [](const char* key, PolicyKind kind) {
+        try {
+            (void)make_policy(kind, 1);
+        } catch (const std::invalid_argument& e) {
+            reject(std::string(key) + ": " + e.what());
+        }
+    };
+    check_policy_kind("l2_policy", cfg.l2_policy);
     // Refused rather than clamped: a width outside the store's range would
     // silently wrap the aging step, and 1 is legal but degenerate (see the
     // RripPolicy constructor), so a human who typed 0 or 9 meant something else.
     if (cfg.rrip_bits < 1 || cfg.rrip_bits > 8) {
         reject("rrip_bits = " + std::to_string(cfg.rrip_bits) + " must be in [1, 8]");
     }
-    if (cfg.policy == PolicyKind::RANDOM) {
-        reject("policy = random is a placeholder and is not implemented");
-    }
+    check_policy_kind("policy", cfg.policy);
     if (lines_per_burst > cfg.l1_mshrs) {
         reject("l1_mshrs = " + std::to_string(cfg.l1_mshrs) + " cannot hold a burst of " +
                std::to_string(lines_per_burst) + " lines");

@@ -1,54 +1,25 @@
 #include "cachesim/instrument/stats.h"
+#include "cachesim/enum_names.h"
 
 #include <algorithm>
 #include <cstdio>
 #include <numeric>
 #include <stdexcept>
+#include <string>
 
 namespace cachesim {
 
 namespace {
 
-// The spellings config.cpp's parser accepts, written back out. Kept beside the
-// emitter rather than exported from the parser because these are the CSV's
-// vocabulary: a round trip through parse_config is what pairs them, and
-// test_config already pins the reading half.
-const char* name_of(PolicyKind k) {
-    switch (k) {
-        case PolicyKind::LRU:    return "lru";
-        case PolicyKind::FIFO:   return "fifo";
-        case PolicyKind::RANDOM: return "random";
-        case PolicyKind::BELADY: return "belady";
-        case PolicyKind::RRIP:   return "rrip";
-        case PolicyKind::LFU:    return "lfu";
+template <typename Kind>
+const char* csv_name_of(Kind kind, const char* type) {
+    const char* text = name_of(kind);
+    // enum_names.h owns the sentinel spelling; keeping this comparison shared
+    // makes a new enum fallback fail loudly instead of becoming a CSV value.
+    if (std::string(text) == kUnknownEnumName) {
+        throw std::logic_error(std::string("RunStats: unknown ") + type);
     }
-    throw std::logic_error("RunStats: unknown PolicyKind");
-}
-
-const char* name_of(LayoutKind l) {
-    switch (l) {
-        case LayoutKind::BlockPack: return "block_pack";
-        case LayoutKind::SplitCin:  return "split_cin";
-        case LayoutKind::KhkwSplit: return "khkw_split";
-    }
-    throw std::logic_error("RunStats: unknown LayoutKind");
-}
-
-const char* name_of(Inclusion i) {
-    switch (i) {
-        case Inclusion::NonInclusive: return "non_inclusive";
-        case Inclusion::Inclusive:    return "inclusive";
-    }
-    throw std::logic_error("RunStats: unknown Inclusion");
-}
-
-const char* name_of(PrefetchKind p) {
-    switch (p) {
-        case PrefetchKind::None:      return "none";
-        case PrefetchKind::NextBurst: return "next_burst";
-        case PrefetchKind::Neighbour: return "neighbour";
-    }
-    throw std::logic_error("RunStats: unknown PrefetchKind");
+    return text;
 }
 
 std::int64_t total(const std::vector<std::int64_t>& v) {
@@ -167,7 +138,7 @@ void emit_config(Row& r, const RunConfig& cfg) {
     r.i64("cin_block", cfg.cin_block);
     r.i64("cout_block", cfg.cout_block);
     r.i64("weight_bytes", cfg.weight_bytes);
-    r.str("layout", name_of(cfg.layout));
+    r.str("layout", csv_name_of(cfg.layout, "LayoutKind"));
     // -1 under block_pack, which has no split. The cell says so itself rather
     // than repeating l1_num_sets and implying a width the run did not use.
     r.i64("cin_lo_blocks", cfg.cin_lo_blocks);
@@ -178,7 +149,7 @@ void emit_config(Row& r, const RunConfig& cfg) {
     r.i64("l1_demand_reserve", cfg.l1_demand_reserve);
     // l2_demand_reserve is not echoed here; it is written with the other L2
     // prefetch fields in the RunStats constructor below.
-    r.str("prefetch_policy", name_of(cfg.prefetch_policy));
+    r.str("prefetch_policy", csv_name_of(cfg.prefetch_policy, "PrefetchKind"));
     r.i64("prefetch_distance", cfg.prefetch_distance);
     r.i64("l1_latency", cfg.l1_latency);
     r.i64("l1_ii", cfg.l1_ii);
@@ -189,8 +160,8 @@ void emit_config(Row& r, const RunConfig& cfg) {
     r.i64("l2_ii", cfg.l2_ii);
     r.i64("dram_ii", cfg.dram_ii);
     r.i64("core_accept_ii", cfg.core_accept_ii);
-    r.str("inclusion", name_of(cfg.inclusion));
-    r.str("policy", name_of(cfg.policy));
+    r.str("inclusion", csv_name_of(cfg.inclusion, "Inclusion"));
+    r.str("policy", csv_name_of(cfg.policy, "PolicyKind"));
 }
 
 void emit_headline(Row& r, std::int64_t total_cycles, std::int64_t tick_base_total) {
@@ -342,7 +313,7 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
     // self-describing, then the outcomes, which sum to at most `l2_pf_issued`
     // (L2 lines still tagged at end of run are not charged; see
     // `close_out_prefetch_stats` in engine.cpp).
-    r.str("l2_prefetch_policy", name_of(cfg.l2_prefetch_policy));
+    r.str("l2_prefetch_policy", csv_name_of(cfg.l2_prefetch_policy, "PrefetchKind"));
     r.str("l2_prefetch_axis", axis_name(cfg.l2_prefetch_axis));
     r.i64("l2_prefetch_distance", cfg.l2_prefetch_distance);
     r.i64("l2_prefetch_up", cfg.l2_prefetch_up ? 1 : 0);
