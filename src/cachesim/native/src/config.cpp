@@ -596,19 +596,12 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
     }
 
     if (!cfg.l2_policy_set) cfg.l2_policy = cfg.policy;
-    // `policy = belady` is accepted, and the refusal that stood here is gone.
-    // It said Belady is measured at the L2 only, which was a scope statement for
-    // the 0831 stage rather than a property of the policy: the L1 is private per
-    // core, so it needs ONE ORACLE PER CORE rather than the single shared oracle
-    // that stage built, and building those was the only thing missing.
-    //
-    // What refuses a belady configuration with no oracle is now the app, in
-    // cachesim_run.cpp and cachesim_sweep.cpp, because that is the layer that knows
-    // whether the flag was given. Config validation cannot see a CLI flag and
-    // must not pretend to.
-    //
-    // The line above runs first, so `policy = belady` with no `l2_policy` now
-    // resolves to belady at BOTH levels, which is what the flag is for.
+    // `policy = belady` is valid and applies to both levels when `l2_policy` is
+    // unset. Belady needs one private-L1 oracle per core and one shared-L2
+    // oracle; the applications build those from an access log and refuse a
+    // Belady run without the required oracle flag. Config validation cannot
+    // inspect CLI flags, so it checks enum validity and leaves that requirement
+    // to each application.
     // Use the factory's one policy-kind check here as well as at construction.
     // Keep the key at the call site so RANDOM cannot grow a second rejection
     // rule that disagrees with make_policy while a bad l2_policy still names

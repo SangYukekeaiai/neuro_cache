@@ -1918,7 +1918,7 @@ mutate_eng kill 'C2 reinject resets the refusal stamp (3.8, I10)' \
 mutate_eng kill 'C2 the wake list is reinjected in reverse (I7b)' \
     's|    for (Request\* w : wake) reinject(\*w, now);|    for (auto it = wake.rbegin(); it != wake.rend(); ++it) reinject(**it, now);|'
 mutate_eng kill 'C2 an L1 hit does not complete the core line' \
-    's|            core_line_done(r, now);||'
+    's|            core_line_done(r, now, anchor);||'
 mutate_eng kill 'C2 a dropped prefetch does not return its credit' \
     's|        --stats_.pf_outstanding.at(idx(r.core));||'
 mutate_eng kill 'C2 grants are never reinjected' \
@@ -1928,7 +1928,7 @@ mutate_eng kill 'C2 the return leg is not charged on a fill' \
 mutate_eng kill 'C2 the return leg is not charged on an L2 hit' \
     's|            queue_.schedule(now + params_.l2_to_l1_latency, EventKind::L1Fill, NoRefusal, r.core,|            queue_.schedule(now, EventKind::L1Fill, NoRefusal, r.core,|'
 mutate_eng kill 'C2 an L1 fill does not install the line' \
-    's|    lvl.install(line);||'
+    's|    const InsertResult res = lvl.install(line);|    const InsertResult res{false, NoLine};|'
 mutate_eng kill 'C2 a filled prefetch does not return its credit' \
     's|        if (!t->demand) --stats_.pf_outstanding.at(idx(t->core));||'
 # The dangling-pointer obligation plan unit B3 recorded against C2. Without this
@@ -2027,8 +2027,11 @@ mutate_engc kill 'C5 the tile length is read from the next tile' \
     's|    return trace_.n_bursts(core, cs.tile);|    return trace_.n_bursts(core, cs.tile + 1);|'
 
 echo "== C5: next_burst(d) itself (src/prefetch/next_burst.cpp)"
+# Isolate on_demand's pull-forward; on_issued is covered by the recipe below.
 mutate_pf_next kill 'C5 the cursor is allowed to fall behind the core' \
-    's|    if (cursor < next) cursor = next;||'
+    '0,/^    if (cursor < next) cursor = next;$/s|^    if (cursor < next) cursor = next;$||'
+mutate_pf_next kill 'C5 on_issued does not advance the cursor' \
+    '/on_issued/,$ s|^    if (cursor < next) cursor = next;$||'
 mutate_pf_next kill 'C5 the fetch-ahead is one burst short' \
     's|    for (std::int32_t burst = cursor; burst <= last && burst < n_bursts; ++burst) {|    for (std::int32_t burst = cursor; burst < last \&\& burst < n_bursts; ++burst) {|'
 mutate_pf_next kill 'C5 the fetch-ahead runs one burst past the tile' \
@@ -2062,7 +2065,7 @@ mutate_engc kill 'D2a barrier slack is charged to the bucket only' \
 mutate_engc kill 'D2a the coverage ceiling counts the first burst too' \
     's|    if (k.get() > 0) ++stats_.pf_bursts_eligible;|    ++stats_.pf_bursts_eligible;|'
 mutate_eng kill 'D2a prefetches issued are not counted' \
-    's|        ++stats_.pf_issued;||'
+    's|                ++stats_.pf_issued;||'
 
 echo "== D2b: ruling R8, the line anchor (src/core/engine_core.cpp)"
 mutate_engc kill 'D2b the burst anchor is never lowered (R8)' \
@@ -2144,7 +2147,7 @@ mutate_mshr kill 'B3 wait-index membership is not recorded (I5)' \
 mutate_mshr kill 'B3 a granted request is left marked as waiting' \
     's|        r->on_wait_index = false;||'
 mutate_mshr kill 'B3 line waiters are left marked as waiting' \
-    's|    for (Request\* w : out.wake) w->on_wait_index = false;||'
+    's|        w->on_wait_index         = false;||'
 mutate_mshr kill 'B3 the demand reserve is applied to the wrong requests' \
     's|    return is_prefetch_at_issue(r) ? free > demand_reserve_ : free > 0;|    return is_prefetch_at_issue(r) ? free > 0 : free > demand_reserve_;|'
 
@@ -2253,8 +2256,8 @@ mutate_sweep kill 'D3a finish is never called, so the last barrier is never disp
     's|            engines_\[i\]->finish();||'
 mutate_sweep kill 'D3a the tile observer is never called' \
     's|        if (on_tile) on_tile(\*trace_);||'
-mutate_sweep kill 'D3a a mixed-layout grid is accepted' \
-    's|            c.weight_bytes != first.weight_bytes) {|            false) {|'
+mutate_sweep kill 'D3a a grid with mixed weight_bytes is accepted' \
+    's|            c.weight_bytes != first.weight_bytes|            false|'
 mutate_sweep kill 'D3a max_engines is not enforced' \
     's|    if (configs_.size() > static_cast<std::size_t>(max_engines)) {|    if (false) {|'
 mutate_sweep kill 'D3a a mapper built for another line size is accepted' \

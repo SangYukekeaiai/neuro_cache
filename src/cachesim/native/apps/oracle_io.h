@@ -133,9 +133,9 @@ inline OracleSet build_oracles(const std::string& path, std::int32_t n_cores) {
 // the attach to the belady levels leaves every other arm of a grid identical to
 // a run with no --oracle at all by construction rather than by argument.
 //
-// Validation owns the Belady-with-a-prefetcher warning because it reads only
-// RunConfig fields, and both apps already print every Warning with its code.
-// Keeping one warning channel preserves one format for the message.
+// Validation checks enum validity but cannot inspect CLI flags. Each
+// application therefore refuses a Belady run without the required --oracle
+// flag; the applications own this requirement rather than validation.
 inline void attach_oracles(OracleSet& oracles, const RunConfig& cfg, Engine& engine) {
     if (cfg.policy == PolicyKind::BELADY) {
         // `std::int32_t` and not `std::size_t`, so `CoreId{c}` needs no cast:

@@ -357,7 +357,7 @@ simulation time, so one trace replays under several layouts.
 - `src/layout/layout_common.h/.cpp` (private): shared checks and the
   `expand_burst<Mapper>` template (validate, call `line_of` per element,
   sort, dedup). Today also holds `locate_line`; that moves to `index/`.
-- `factory.h/.cpp` (new, from `apps/app_support.h:116`): `make_mapper(cfg,
+- `factory.h/.cpp` (new, from `6f05fd2:apps/app_support.h:116`): `make_mapper(cfg,
   shape)` picks the concrete mapper from `cfg.layout`.
 
 ### `index/` : LineId -> (set, way)
@@ -531,8 +531,6 @@ accounting), so the same policy works at L1 and L2.
   L2 banking is always `set % banks`.
 - `l2_policy` is not a results CSV column; two rows differing only in
   `l2_policy` are indistinguishable.
-- `app_support.h:412` refers to a warning `W_BELADY_PREFETCH` that does not
-  exist in `validate()`.
 
 ## 8. Taxonomy alignment
 

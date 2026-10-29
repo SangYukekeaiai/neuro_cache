@@ -12,7 +12,7 @@ the simulator corresponds. Paths are under `src/cachesim/native/`.
 | Taxonomy item | In cachesim | Where |
 |---|---|---|
 | RRIP / SRRIP / DRRIP | SRRIP only: static insertion at max-1, hit promotion to 0, no set dueling, no DRRIP | `RripPolicy`, `stamp_policy.h:218`, `src/stamp_policy.cpp:263-306`; key `rrip_bits` |
-| Hawkeye / Belady-based | Belady OPT itself (true oracle from an access log), not the Hawkeye learned predictor | `BeladyPolicy`, `stamp_policy.h:132`; `NextUseOracle`, `next_use.h:39`; `--oracle` in `app_support.h:386-437` |
+| Hawkeye / Belady-based | Belady OPT itself (true oracle from an access log), not the Hawkeye learned predictor | `BeladyPolicy`, `stamp_policy.h:132`; `NextUseOracle`, `next_use.h:39`; `--oracle` builds `OracleSet` in `apps/oracle_io.h:100-128` |
 | Frequency-aware (LFU hybrids, ARC, LIRS) | Plain LFU, count reset on fill; no ARC / LIRS | `LfuPolicy`, `stamp_policy.h:177` |
 | Reuse-distance prediction | Partial: exact next-use from the oracle, used for Belady; no predictor | `next_use.h:73`; `NextUseOracle::optimal_hit_rate` |
 | (not in the list) LRU, FIFO | Stamp-based LRU and FIFO | `StampPolicy`, `LruPolicy`, `FifoPolicy`, `stamp_policy.h:36-106` |
