@@ -61,7 +61,6 @@ void Engine::start_tile(std::int32_t tile, SimTime now) {
         cs.tile          = tile;
         cs.cursor        = BurstIndex{0};
         cs.pending_lines = 0;
-        cs.issued_at     = now;
         cs.burst_anchor  = now;
         cs.served_time   = now;
         cs.phase         = Phase::Computing;
@@ -191,7 +190,6 @@ void Engine::on_issue(CoreId c, BurstIndex k, SimTime now) {
     }
 
     cs.pending_lines = static_cast<std::int32_t>(lines_.size());
-    cs.issued_at     = now;
     // R8's anchor starts at the burst's own issue and is only ever lowered, by a
     // line a prefetch already had in flight or already had resident. So
     // `fetch_latency >= core_stall` is structural: under N14 this instant IS the

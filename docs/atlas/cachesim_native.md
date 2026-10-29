@@ -159,7 +159,7 @@ only by `--oracle` / `--l2-oracle` (`read_oracle_lines`, `apps/oracle_io.h:46-88
 ```
 
 The `Request` (one line of one burst, `include/cachesim/core/request.h:43`) is the unit that travels. It lives
-in `Engine::arena_` (a `std::deque`, stable addresses) with a free list (`core/engine.h:626,644`). An
+in `Engine::arena_` (a `std::deque`, stable addresses) with a free list (`core/engine.h:620,638`). An
 `Mshr` (`core/mshr.h:48`) is one outstanding line per level; `targets` are satisfied directly by the
 fill, `line_wait` are requests that found the target list full.
 
@@ -176,7 +176,7 @@ Times are integer cycles (`SimTime`). Trace ticks (`LocalTick`) are offsets insi
 2. `start_tile(t, now)` (`src/core/engine_core.cpp:55`): every core reset (cursor 0, phase Computing),
    each level's prefetcher reset; a core with 0 bursts arrives at the barrier at once; otherwise an `Issue`
    event is scheduled at `now + local_tick(core, t, 0)` (the only absolute tick used).
-3. `on_issue` (`src/core/engine_core.cpp:149`): checks `k == cursor` and `pending_lines == 0`; `expand`
+3. `on_issue` (`src/core/engine_core.cpp:148`): checks `k == cursor` and `pending_lines == 0`; `expand`
    turns the burst into sorted distinct lines; `pending_lines = #lines`, phase Stalled; per line a
    demand `Request` reserves the L1 port and schedules `L1Probe` at `accept + l1_latency`. Then the
    L1 prefetcher is asked for ordered `PrefetchTarget`s below the demand port.
@@ -198,16 +198,16 @@ Times are integer cycles (`SimTime`). Trace ticks (`LocalTick`) are offsets insi
 7. `on_l1_fill` (`src/core/engine.cpp:600`): install in L1, update prefetch outcome bookkeeping, clear
    `mshr1` on every target, retire the L1 entry, `core_line_done` per demand target, return the
    prefetch credit per prefetch target, reinject wake list.
-8. `core_line_done` (`src/core/engine_core.cpp:223`): `--pending_lines`; at 0 the burst is served
+8. `core_line_done` (`src/core/engine_core.cpp:221`): `--pending_lines`; at 0 the burst is served
    (bursts are atomic) and the last line's `StallCause` is charged.
-9. `serve` (`src/core/engine_core.cpp:245`): `want = tile_origin[t] + local_tick(0)` for burst 0, else
+9. `serve` (`src/core/engine_core.cpp:243`): `want = tile_origin[t] + local_tick(0)` for burst 0, else
    `served_time + max(gap(k-1), core_accept_ii)`; `stall = now - want` (throws if negative);
    `fetch_latency += now - burst_anchor`. Next `Issue` at `now + max(gap(k), core_accept_ii)`, or
    barrier arrival after the last burst.
-10. `barrier_arrive` (`src/core/engine_core.cpp:96`): countdown; the last core schedules `Barrier` at
+10. `barrier_arrive` (`src/core/engine_core.cpp:95`): countdown; the last core schedules `Barrier` at
     `now + tile_tail(t)` (`tile_tail = mac_cycles - max_tick`, must be >= 1).
 11. `run_to_barrier` returns *before* dispatching a Barrier, so the driver can advance the shared
-    window; the next call dispatches it. `on_barrier` (`src/core/engine_core.cpp:115`) sets
+    window; the next call dispatches it. `on_barrier` (`src/core/engine_core.cpp:114`) sets
     `tile_origin[t+1] = now`, charges barrier slack per core, and starts tile t+1 or marks all Done.
 12. When the queue empties: L1 prefetched-but-unused lines are charged as wasted (L2 ones are not,
     finding H4), then `check_no_work_outstanding` throws on any deadlock (`src/core/engine.cpp:183`).
@@ -426,27 +426,27 @@ is a line of the file the entry is named after (a source file, not the header na
 **core/engine.h**
 - `enum class Inclusion {NonInclusive, Inclusive}` `core/engine.h:59`; `enum class Phase {Computing,
   Stalled, AtBarrier, Done}` `:68`.
-- `struct CoreState` `:77`: `tile, cursor, phase, pending_lines, issued_at, burst_anchor,
+- `struct CoreState` `:77`: `tile, cursor, phase, pending_lines, burst_anchor,
   barrier_arrival, served_time`.
-- `struct EngineStats` `:128`: per-core vectors `core_stall, fetch_latency, stall_l1_slot ...
-  stall_barrier, stall_total, pf_outstanding`; scalar counters for prefetch outcomes (L1 `:205-224`,
-  L2 `:252-268`), `l1/l2_hits/accesses` `:239-240`, `dram_accesses` `:269`, health counters
-  `hits_downgraded_to_miss, max_wait_depth, events` `:276-284`, MSHR occupancy samples `:289-290`.
+- `struct EngineStats` `:125`: per-core vectors `core_stall, fetch_latency, stall_l1_slot ...
+  stall_barrier, stall_total, pf_outstanding`; scalar counters for prefetch outcomes (L1 `:199-218`,
+  L2 `:246-262`), `l1/l2_hits/accesses` `:233-234`, `dram_accesses` `:263`, health counters
+  `hits_downgraded_to_miss, max_wait_depth, events` `:270-278`, MSHR occupancy samples `:283-284`.
 - Comments on the L2 block: the outcomes plus drops sum to **at most** `l2_pf_issued`
-  because L2 lines still tagged at end of run are not charged (`:244-247`), and `l2_pf_timely` is
-  always equal to `l2_pf_retriggers` (`:254-255`, `:265-267`): both are incremented at one site,
+  because L2 lines still tagged at end of run are not charged (`:238-241`), and `l2_pf_timely` is
+  always equal to `l2_pf_retriggers` (`:248-249`, `:259-261`): both are incremented at one site,
   `src/core/engine.cpp:468-469`.
-- `struct EventPayload {Request* req; Mshr* entry; BurstIndex burst; int32 tile;}` `:308`;
-  `using EngineQueue = EventQueue<EventPayload>` `:315`.
-- `struct EngineParams` `:331`: `l1, l2` LevelParams, `l2_to_l1_latency, dram_ii, l2_miss_latency,
+- `struct EventPayload {Request* req; Mshr* entry; BurstIndex burst; int32 tile;}` `:302`;
+  `using EngineQueue = EventQueue<EventPayload>` `:309`.
+- `struct EngineParams` `:325`: `l1, l2` LevelParams, `l2_to_l1_latency, dram_ii, l2_miss_latency,
   `core_accept_ii`, `inclusion`, and source-compatible L1 aliases `prefetch_policy/distance` plus
   `l2_prefetch_*`. No validation by design.
-- `class Engine` `core/engine.h:370`: ctor `:377`; `run` `:386`; `run_to_barrier` `:407`
-  (returns pending barrier's tile or -1); `step_tile` `:419`; `finish` `:431`; `tile_origin(t)` `:437`
-  (size n_tiles+1); `core` `:439`; `stats` `:440`; `queue` `:441`; `l1(c)` `:443`; `l2` `:444`;
-  `set_cache_state_log` `:460`, `set_line_trace` `:461`, `set_access_log` `:467`; `n_bursts_in_tile`
-  `:469`. Private handlers listed `:477-646`.
-- `as_duration(LocalTick) -> SimTime` `:671`: the one trace-gap-to-duration crossing.
+- `class Engine` `core/engine.h:364`: ctor `:371`; `run` `:380`; `run_to_barrier` `:401`
+  (returns pending barrier's tile or -1); `step_tile` `:413`; `finish` `:425`; `tile_origin(t)` `:431`
+  (size n_tiles+1); `core` `:433`; `stats` `:434`; `queue` `:435`; `l1(c)` `:437`; `l2` `:438`;
+  `set_cache_state_log` `:454`, `set_line_trace` `:455`, `set_access_log` `:461`; `n_bursts_in_tile`
+  `:463`. Private handlers listed `:471-640`.
+- `as_duration(LocalTick) -> SimTime` `:665`: the one trace-gap-to-duration crossing.
 
 **config.h**
 - `struct RunConfig` `config.h:27` (fields in 1.6) with `line_size_bytes, l1_num_lines, l1_num_sets,
@@ -919,11 +919,10 @@ Drivers:
 5. Doubled prefix in the `neighbour` range messages: `reject_range(kName, "BlockPackMapper::neighbour:
    ...")` prints "BlockPackMapper: BlockPackMapper::neighbour: ..." (`src/layout/block_pack.cpp:223`; same
    at `src/layout/split_cin.cpp:303`, `src/layout/khkw_split.cpp:151`). Runs of three blank lines: `layout/block_pack.cpp:215-217`, `layout/split_cin.cpp:297-299`, `layout/khkw_split.cpp:145-147`.
-6. `EngineStats::pf_dropped_targets_full` (`include/cachesim/core/engine.h:214`) is never incremented
+6. `EngineStats::pf_dropped_targets_full` (`include/cachesim/core/engine.h:208`) is never incremented
    anywhere in `src/`; it is always 0 by construction (read only at `src/instrument/stats.cpp:240-243,298`).
    `Request::reason` (`include/cachesim/core/request.h:66-74`) is written (`src/core/mshr.cpp:64`) but never read in
-   `src/` or `apps/`. `CoreState::issued_at` is written (`src/core/engine_core.cpp:64,194`) and never read
-   in `src/`/`apps/`.
+   `src/` or `apps/`.
 7. `replacement/next_use.h:29` includes `<istream>`, which nothing in the file uses.
 8. `LevelParams::bank_high_bits` (`include/cachesim/core/cache_level.h:131`) has no config key (absent from
    `config.cpp:136-165`, never set in `to_engine_params`), so the high-bits banking branch
@@ -960,7 +959,7 @@ Drivers:
 2. **H4** L2 prefetch accounting is not closed: `close_out_prefetch_stats` handles L1 only
    (`src/core/engine.cpp:705-720`), lines still tagged in `l2_prefetched_` at end of run are not charged
    as wasted, and `check_invariants` checks only the L1 identity (`src/instrument/stats.cpp:390-422`). The gap is
-   stated in comments (`core/engine.cpp:717-719`, `core/engine.h:244-247`,
+   stated in comments (`core/engine.cpp:717-719`, `core/engine.h:238-241`,
    `instrument/stats.cpp:312-315`).
 3. **H6** MSHR occupancy samples are appended on every forward and retire
    (`src/core/engine.cpp:267,394,533,602`) and kept for the whole run per engine; memory grows with miss

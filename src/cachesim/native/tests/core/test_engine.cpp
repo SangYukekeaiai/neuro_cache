@@ -313,8 +313,8 @@ void test_core_stall_and_fetch_latency_are_equal_by_construction() {
     //
     // The equality here is the first half, and the argument is two lines of
     // 3.4b: `serve` computes `want = served_time + max(gap, ii)` and schedules
-    // the next `E_Issue` at exactly `now + max(gap, ii)`, so `issued_at`, which
-    // is the timestamp of that event, IS `want` for every burst after the first;
+    // the next `E_Issue` at exactly `now + max(gap, ii)`, so the issue timestamp
+    // is `want` for every burst after the first;
     // and for the first burst of a tile both are `tile_origin + local_tick`. No
     // prefetch runs, so ruling R8's line anchor never moves off the burst's own
     // issue and the two integrals agree term by term.
@@ -1066,7 +1066,6 @@ void test_run_to_barrier_walks_the_same_timeline_run_does() {
         CHECK_EQ(a.cursor.get(), b.cursor.get());
         CHECK_TRUE(a.phase == b.phase);
         CHECK_EQ(a.pending_lines, b.pending_lines);
-        CHECK_EQ(a.issued_at, b.issued_at);
         CHECK_EQ(a.served_time, b.served_time);
         CHECK_EQ(stepped.stats().core_stall.at(i), whole.stats().core_stall.at(i));
         CHECK_EQ(stepped.stats().fetch_latency.at(i), whole.stats().fetch_latency.at(i));

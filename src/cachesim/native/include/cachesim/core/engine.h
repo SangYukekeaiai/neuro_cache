@@ -87,12 +87,9 @@ struct CoreState {
     // the phase: `pending_lines > 0 <=> phase == Stalled`.
     std::int32_t pending_lines = 0;
 
-    // When the current burst was issued, for `fetch_latency` (Part 8).
-    SimTime issued_at{0};
-
     // Ruling R8's line anchor for the burst in flight: the minimum, over the
-    // lines of THIS burst, of each line's `Mshr::first_request`. Reset to
-    // `issued_at` at every issue and lowered as each line resolves, so
+    // lines of THIS burst, of each line's `Mshr::first_request`. It starts at
+    // the burst's own issue and is lowered as each line resolves, so
     // `served - burst_anchor` is R8's per-burst term.
     //
     // It is lowered only for a line a PREFETCH of this core brought in or that
@@ -152,9 +149,6 @@ struct EngineStats {
     // the burst's own issue, which IS `want` under N14's recurrence, and only
     // ever moves earlier. `serve` refuses a run where it does not hold.
     //
-    // This supersedes the definition `served - issued_at`, under which the
-    // difference was identically zero at every distance (U19) and the prefetch
-    // study therefore had no metric (G7).
     std::vector<std::int64_t> fetch_latency;
 
     // --- Part 8 "Time": the stall breakdown, per core.

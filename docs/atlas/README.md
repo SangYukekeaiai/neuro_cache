@@ -59,7 +59,7 @@ Where each part of the tree is described:
    :143; `src/cachesim/native/apps/cachesim_sweep.cpp:47-48`, :88);
    `l2_pf_timely` always equals `l2_pf_retriggers`, since
    `src/cachesim/native/src/core/engine.cpp:468-469` increments both at one site
-   (`src/cachesim/native/include/cachesim/core/engine.h:265`,
+   (`src/cachesim/native/include/cachesim/core/engine.h:259`,
    `src/cachesim/native/src/instrument/stats.cpp:333-337`).
 5. L2 MSHR floor: an unset `l2_demand_reserve` (-1,
    `src/cachesim/native/include/cachesim/config.h:110`) resolves to

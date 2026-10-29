@@ -1994,8 +1994,6 @@ mutate_engc kill 'C3 the tile tail is not charged (Q10)' \
     's|    queue_.schedule(now + as_duration(trace_.tile_tail(tile)), EventKind::Barrier, NoRefusal,|    queue_.schedule(now, EventKind::Barrier, NoRefusal,|'
 mutate_engc kill 'C3 tile_origin is written to the tile that just ended' \
     's|    tile_origin_.at(static_cast<std::size_t>(tile) + 1) = now;|    tile_origin_.at(static_cast<std::size_t>(tile)) = now;|'
-mutate_engc kill 'C3 issued_at is not recorded' \
-    's|^    cs.issued_at     = now;||'
 mutate_engc kill 'C3 the core is not marked stalled (I16)' \
     's|^    cs.phase         = Phase::Stalled;||'
 mutate_engc kill 'C3 core_stall is not accumulated' \
@@ -2075,7 +2073,7 @@ mutate_engc kill 'D2b the burst anchor takes the LAST line, not the earliest' \
 mutate_engc kill 'D2b the anchor is not reset at the burst issue' \
     's|^    cs.burst_anchor  = now;||'
 mutate_engc kill 'D2b fetch_latency reverts to the demand issue (pre-R8)' \
-    's|    stats_.fetch_latency.at(idx(c)) += (now - cs.burst_anchor).get();|    stats_.fetch_latency.at(idx(c)) += (now - cs.issued_at).get();|'
+    's|    stats_.fetch_latency.at(idx(c)) += (now - cs.burst_anchor).get();|    stats_.fetch_latency.at(idx(c)) += (now - want).get();|'
 
 echo "== D2a/D2b: the counters and the anchor at their sites (src/core/engine.cpp)"
 mutate_eng kill 'D2a l1 hits are counted on every outcome' \
