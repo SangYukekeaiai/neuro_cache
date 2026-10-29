@@ -210,7 +210,7 @@ in both directions; only the native binaries are one-way):
   `src/nocsim/step_cycles.py:17`) and `snn_scheduler.constants`
   (`src/nocsim/schedule/decode.py:39`, `src/nocsim/schedule/buf_spatial.py:47`).
 - `cachesim.stream` needs only `struct` at run time
-  (`src/cachesim/stream.py:9-13`); the C++ under `src/cachesim/native` has no
+  (`src/cachesim/stream.py:10-14`); the C++ under `src/cachesim/native` has no
   Python dependency.
 - `scripts/pipeline.py` imports `cachesim.grid`, `snn_scheduler.artifact`,
   `util` and `weight_trace_gen` (`scripts/pipeline.py:33-37`) and runs every
@@ -730,7 +730,7 @@ full `_all` captures are on Delta (path in `input_trace/README.md`).
 - The three `gen` modes each locate and check the schedule:
   `src/weight_trace_gen/cli.py:130-138`, :205-206, :311-321.
 - The WCTS byte layout lives in three places: the writer's comment
-  (`src/cachesim/stream.py:28-39`), a Python reader in the tests
+  (`src/cachesim/stream.py:29-40`), a Python reader in the tests
   (`decode_stream`, `tests/test_stream_writer.py:154`), and the C++ reader.
 
 ### 3.3 Hardcoded paths and host values
