@@ -1,6 +1,6 @@
 # Code atlas: the pipeline (input trace -> schedule -> weight trace -> cachesim / nocsim -> results)
 
-Repo `neuro_cache-wcache`, branch `wcache-rebuild-phase-a`, commit `e151510`.
+Repo `neuro_cache-wcache`, branch `wcache-rebuild-phase-a`, commit `2970731`.
 Every `.gitignore` line cited below is committed at that commit; the working
 tree's one uncommitted ignore rule sits at the end of the file, below all of
 them.
@@ -381,12 +381,14 @@ commands above are repo-relative, so run them from the repo root.
     header so `n_tiles` stays right (:202-203). A non-COUT stream has to be
     written with `write_stream_header` + `write_tile_frame` directly (only
     `tests/test_stream_writer.py` does).
-- `src/cachesim/grid.py` (53 lines): `BASE_JSON` :8, `SWEEP_JSON` :9; `grid_for(line_bytes)`
-  :20 sets `cin_block = line_bytes // (cout_block * weight_bytes)` (:26) and
-  crosses `l2_banks` with `(prefetch_policy, prefetch_distance)` (:27-29);
-  `full_grid` :32 loops line sizes slowest; `write_grid(out_dir, grid, name)`
-  :39 writes one `<name>_<k>.json` per `cin_block` (:49-52), because one
-  `cachesim_sweep` call takes one mapper.
+- `src/cachesim/grid.py` (65 lines): `BASE_JSON` :8, `SWEEP_JSON` :9; `grid_for(line_bytes)`
+  :20 sets `cin_block = line_bytes // (cout_block * weight_bytes)` (:30) and
+  then branches on the sweep's optional `l2_prefetch` key (:31): absent, it
+  crosses `l2_banks` with `(prefetch_policy, prefetch_distance)` and each point
+  carries the base config's L2 settings (:32-35); present, it crosses an
+  L2-prefetch axis in between the two (:36-41). `full_grid` :44 loops line sizes
+  slowest; `write_grid(out_dir, grid, name)` :51 writes one `<name>_<k>.json`
+  per `cin_block` (:61-64), because one `cachesim_sweep` call takes one mapper.
 - `src/cachesim/cli.py` (47 lines): `NATIVE`, `BINS` :15-17; `native` :20 runs
   `make -C src/cachesim/native MODE=release apps` when the binary is missing
   (:22-24); `main` :28 dispatches `sweep`/`run` before argparse sees the
@@ -597,6 +599,24 @@ C++ (each `Makefile`: `g++ -O2 -std=c++17 -Wall -Wextra`,
   `load_grid` :301 (`--grid` must be a non-empty JSON array, :307-308),
   `out_dir` :312, `demo` :316, `write_summary` :404, `verify` :422, `main` :451.
   Tests: `tests/test_pipeline.py`.
+- `scripts/compare_l2pf.py` (294 lines): the loas L2-prefetch comparison, which
+  keeps the cache statistics `pipeline.py` drops. It imports that module rather
+  than copying it (`join_results`, `resolve_layers`, `run_all`,
+  `scripts/compare_l2pf.py:21-22`) and reuses its input and schedule checks
+  (`check_inputs` :133, `missing_schedules` :134, `schedules_for` :147), so a
+  missing schedule with no gurobipy stops the run by name (:135-141).
+  `RESULT_FIELDS` :25-34 is the 32-column output schema - keys, config echo,
+  latency, hit rate, and the `l2_pf_*` outcomes - and `RAW_FIELDS` :36-39 is the
+  subset read back from the simulator's own output. Helpers `_mean` :42,
+  `_geomean` :46, `_grid` :50 (grid name is the sweep file's stem),
+  `_summary_rows` :55 (one row per layer, L1 policy and bank count, refusing a
+  group that lacks exactly one baseline and one enhanced arm, :67),
+  `write_summary` :94; `compare` :129 writes `results.csv`
+  (`scripts/compare_l2pf.py:264`) and `summary.md` (`:268`) under
+  `$NEURO_CACHE_DATA/demo_l2pf/<bench>` (`scripts/compare_l2pf.py:144`); `main`
+  :274 defaults `--bench` loas, `--layers` to `pipeline.TAGS`, 5 samples from 0,
+  and `--grid` to `configs/cache/l2pf_demo.json`
+  (`scripts/compare_l2pf.py:276-284`). No test file names this script.
 
 ### 2.10 `configs/`
 
@@ -620,6 +640,10 @@ C++ (each `Makefile`: `g++ -O2 -std=c++17 -Wall -Wextra`,
   `configs/cache/base.json:2-16`). `configs/cache/khkw_sweep.json:2-4`: the axes
   `line_bytes` [16, 32, 64], `l2_banks` [1, 2, 4, 8], `prefetch` none or
   `next_burst` 1/2/4, so `full_grid` has 3 x 4 x 4 = 48 points.
+  `configs/cache/l2pf_demo.json:2-5`: the axes of the L2-prefetch comparison,
+  `line_bytes` [64], `l2_banks` [1], `prefetch` none or `next_burst` 1, and the
+  `l2_prefetch` key `none` or `next_tile` 1 that turns on `grid_for`'s L2 axis,
+  so `full_grid` has 1 x 1 x 2 x 2 = 4 points.
 - `schedules/loas/{vgg16_T4_n5,resnet19_T4_n5}/`: the tracked schedules for
   V8, V9, R9, R16 (`layer_08_features_27`, `layer_09_features_30`,
   `layer_09_layer2_0_conv2`, `layer_16_layer3_0_conv2`). Their

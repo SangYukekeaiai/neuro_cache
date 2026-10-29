@@ -23,14 +23,14 @@ cd neuro_cache
 git checkout wcache-rebuild-phase-a
 ```
 
-Use commit **`c994fad`**, which is the revision this prompt describes:
+Use commit **`1934fd4`**, which is the revision this prompt describes:
 
 ```
-git checkout c994fad
+git checkout 1934fd4
 ```
 
 **The commit must be pushed before you can clone it.** `origin` is behind the
-machine this prompt was written on, so if `git checkout c994fad` fails with an
+machine this prompt was written on, so if `git checkout 1934fd4` fails with an
 unknown revision, the push has not happened yet — stop and ask for it rather
 than running against a different revision.
 
@@ -166,8 +166,8 @@ Three presentations, all from `results.csv`:
    (`l2_hit_rate`), per layer.
 3. **An L2 prefetch outcome table** over `l2_pf_issued, l2_pf_timely,
    l2_pf_late, l2_pf_wasted, l2_pf_coverage` for the `next_tile` rows. Read the
-   third and fourth bullets of §7 before captioning it: these columns neither
-   sum to `l2_pf_issued` nor belong to `next_tile` alone.
+   third and fourth bullets of §7 before captioning it: these columns belong to
+   the L2 policy alone, but they do not sum to `l2_pf_issued`.
 
 For orientation, the reference run on the authoring machine produced
 `l2_pf_timely` exactly equal to `l2_hits` (403200 for `l2pf_demo_02`, 5760 for
@@ -185,18 +185,26 @@ expect, not as values to reproduce.
   arms. `stall_total`, `fetch_latency_sum`, `hidden_latency` and
   `hidden_fraction` come along as supporting columns, not as a latency
   breakdown.
-- **The L2 outcome columns are not a partition of `l2_pf_issued`, in both
-  directions.** L2 lines still tagged as prefetched when the run ends are not
-  charged to `l2_pf_wasted`, so the outcomes can sum to *less* than issued
-  (`src/cachesim/native/src/core/engine.cpp:717-719`). They can also be charged
-  when the L2 policy issued *nothing*: `l2_pf_issued` counts only L2-policy
-  issues (`engine.cpp:393`), while the waste tag is set for any L2 line opened
-  by a prefetch with no demand merged onto it (`engine.cpp:550-551`) — which
-  includes lines an **L1** `next_burst` prefetch pulled in. The reference run
-  shows this plainly: `l2pf_demo_01` has `l2_pf_issued = 0` and
-  `l2_pf_wasted = 1034240`. Do not present these columns as percentages of
-  issued that add to 100, and do not read `l2_pf_wasted` as attributable to
-  `next_tile` alone.
+- **The L2 outcome columns belong to the L2 policy, but they do not sum to
+  `l2_pf_issued`.** They are bounded by it from one side only. L2 lines still
+  tagged as prefetched when the run ends are never charged to `l2_pf_wasted`
+  (`src/cachesim/native/src/core/engine.cpp:719-721`), so the outcomes plus
+  drops can sum to *less* than issued; they can never sum to more, and
+  `check_invariants` throws "H4 violated" if they do
+  (`src/cachesim/native/src/instrument/stats.cpp:428-433`). The counters are
+  scoped at the L2 fill: the prefetched tag goes in only when the MSHR's primary
+  target is a prefetch at issue (`engine.cpp:551-554`), and an L1 prefetch keeps
+  its L1 entry, so the L2 fill it causes on the way through charges nothing
+  here. With L2 `none` (`l2pf_demo_01`) every `l2_pf_*` column is therefore 0:
+  nothing is issued and no L1 prefetch can charge them. Do not present these
+  columns as percentages of issued that add to 100.
+- **The invariant is not checkable on `results.csv`.** Its 32 columns carry
+  `l2_pf_issued`, `l2_pf_timely`, `l2_pf_late`, `l2_pf_wasted` and
+  `l2_pf_coverage` only (`scripts/compare_l2pf.py:25-34`); the four
+  `l2_pf_dropped_*` columns exist in the simulator's own per-run CSV
+  (`src/cachesim/native/src/instrument/stats.cpp:201-203`), not here. If you
+  want to state that outcomes plus drops stay within issued, say which surface
+  you checked it on, and do not infer the drops from `results.csv`.
 
 - **The L2 baseline hit rate is identically zero, and that is a real zero.** In
   the reference run both baseline configs have `l2_hits = 0` against

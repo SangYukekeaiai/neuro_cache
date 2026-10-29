@@ -1,6 +1,6 @@
 # Code atlas: `src/cachesim` (cache simulator)
 
-Branch `wcache-rebuild-phase-a`, commit `c994fad`. Written from code only: `.cpp`, `.h`, `.sh`,
+Branch `wcache-rebuild-phase-a`, commit `1934fd4`. Written from code only: `.cpp`, `.h`, `.sh`,
 `.py`, `Makefile`, `.json`. No markdown, text or log file was read, so any design rationale below is
 what the code's own comments state. Paths that start with `src/cachesim/native/`, `src/cachesim/`,
 `configs/`, `scripts/`, `tests/` or `docs/` are relative to the repo root; every other path (such as
@@ -197,7 +197,7 @@ Times are integer cycles (`SimTime`). Trace ticks (`LocalTick`) are offsets insi
 6. `on_l2_fill` (`src/core/engine.cpp:537`): install in L2 (free way first, then policy victim);
    back-invalidate the victim from every L1 if `inclusive`; retire the L2 entry; every target with an
    L1 entry gets `L1Fill` at `now + l2_to_l1_latency`; woken requests re-enter through their port.
-7. `on_l1_fill` (`src/core/engine.cpp:600`): install in L1, update prefetch outcome bookkeeping, clear
+7. `on_l1_fill` (`src/core/engine.cpp:602`): install in L1, update prefetch outcome bookkeeping, clear
    `mshr1` on every target, retire the L1 entry, `core_line_done` per demand target, return the
    prefetch credit per prefetch target, reinject wake list.
 8. `core_line_done` (`src/core/engine_core.cpp:221`): `--pending_lines`; at 0 the burst is served
@@ -305,8 +305,8 @@ is a line of the file the entry is named after (a source file, not the header na
   `Axis`, throw `logic_error` on unknown value.
 - `std::hash<Tagged<..>>` `:355` (for `unordered_map<LineId,...>`).
 
-**layout/mapper.h**
-- `enum class LayoutKind {BlockPack, SplitCin, KhkwSplit}` `layout/mapper.h:41`.
+**include/cachesim/layout/mapper.h**
+- `enum class LayoutKind {BlockPack, SplitCin, KhkwSplit}` `include/cachesim/layout/mapper.h:41`.
 - `struct Placement {SetIndex set_index; TagId tag;}` `:72`; identity `line == tag*num_sets + set`.
 - `class AddressMapper` `:84` (abstract). Error vocabulary: `invalid_argument` malformed,
   `out_of_range` outside the layer, `logic_error` programmer error (`:88-103`).
@@ -436,12 +436,12 @@ is a line of the file the entry is named after (a source file, not the header na
   L2 `:246-262`), `l1/l2_hits/accesses` `:233-234`, `dram_accesses` `:263`, health counters
   `hits_downgraded_to_miss, max_wait_depth, events` `:270-278`, MSHR occupancy samples `:283-284`.
 - Comments on the L2 block: the outcomes plus drops sum to **at most** `l2_pf_issued`
-  because L2 lines still tagged at end of run are not charged (`:238-241`). That is what the
-  comment says; the counters also run the other way, because an L1-originated fill is charged to
-  the L2 outcomes while `l2_pf_issued` does not count it, so `l2_pf_wasted` can exceed
-  `l2_pf_issued` (see H4 in 3.3). Also `l2_pf_timely` is
-  always equal to `l2_pf_retriggers` (`:248-249`, `:259-261`): both are incremented at one site,
-  `src/core/engine.cpp:468-469`.
+  because L2 lines still tagged at end of run are not charged (`:238-241`), and that bound is the
+  whole of the slack: the tag is set only behind the L2-originated gate at the L2 fill
+  (`src/core/engine.cpp:551-554`), so no L1 prefetch fill reaches these counters and the sum cannot
+  exceed `l2_pf_issued` (H4 in 3.3; the guard is `src/instrument/stats.cpp:426-433`). Also
+  `l2_pf_timely` is always equal to `l2_pf_retriggers` (`:248-249`, `:259-261`): both are
+  incremented at one site, `src/core/engine.cpp:468-469`.
 - `struct EventPayload {Request* req; Mshr* entry; BurstIndex burst; int32 tile;}` `:302`;
   `using EngineQueue = EventQueue<EventPayload>` `:309`.
 - `struct EngineParams` `:325`: `l1, l2` LevelParams, `l2_to_l1_latency, dram_ii, l2_miss_latency,
@@ -495,8 +495,8 @@ is a line of the file the entry is named after (a source file, not the header na
   to streamed+1).
 - `shape_of(StreamHeader) -> WeightShape` `:119`.
 
-**instrument/access_log.h** (header-only)
-- `struct AccessRecord {u8 level, core, demand, pad; u32 line}` `instrument/access_log.h:63`, 8 bytes
+**include/cachesim/instrument/access_log.h** (header-only)
+- `struct AccessRecord {u8 level, core, demand, pad; u32 line}` `include/cachesim/instrument/access_log.h:63`, 8 bytes
   (`static_assert` `:70`).
 - `class AccessLog(ostream&)` `:72,75`: `write_header` `:85` (u64 magic `0x5743414C4F473031`
   "WCALOG01", `:134`), `observe(level, core, line)` `:93` (throws if line > 2^32-1 or core > 255,
@@ -524,7 +524,7 @@ is a line of the file the entry is named after (a source file, not the header na
 **instrument/stats.h**
 - `struct RowIdentity {run_id, git_commit, arm="cache", tier}` `instrument/stats.h:24`.
 - `csv_columns()` `:38` (single schema), `csv_header()` `:41`.
-- `class RunStats` `:69`: ctor `:71`, `csv_row` `:80`, `check_invariants` `:92`.
+- `class RunStats` `:69`: ctor `:71`, `csv_row` `:80`, `check_invariants` `:94`.
 - `oracle_row(id, cfg, hdr, tick_base_total)` `:111`.
 
 **sweep.h**
@@ -538,7 +538,7 @@ is a line of the file the entry is named after (a source file, not the header na
   `PolicyKind`, `PrefetchKind`, and `Inclusion` used by config parsing, CSV emission, and sweep
   diagnostics. Their invalid-enum fallbacks return the sentinel at `:23`, `:43`, `:64`, and `:81`.
 
-**layout mappers**: see 2.2 with their sources (`layout/block_pack.h`, `layout/split_cin.h`, `layout/khkw_split.h`) and
+**layout mappers**: see 2.2 with their sources (`include/cachesim/layout/block_pack.h`, `include/cachesim/layout/split_cin.h`, `include/cachesim/layout/khkw_split.h`) and
 the shared `src/layout/layout_common.h`.
 
 ### 2.2 `src/` (library `libcachesim.a`)
@@ -568,26 +568,26 @@ the shared `src/layout/layout_common.h`.
   legacy aliases; throws if not validated.
 
 **core/engine.cpp** (loop, memory-side handlers, inclusion, instruments)
-- anonymous `engine_error` `:18`, `idx` `:22`, `is_blocked` `:27`.
+- anonymous `engine_error` `:18`, `idx` `:22`, `is_blocked` `:45`.
 - `Engine::Engine` `:51`: needs n_cores >= 1; `l1_.reserve` before emplace (CacheLevel holds refs)
-  `:63-70`; sizes per-core stats; `tile_origin_` sized n_tiles+1 `:90`.
-- `tile_origin` `:93`, `core` `:97`, `l1` `:99`.
-- `acquire` `:103` (reuse from free list, whole-struct assign), `release` `:118` (throws if still
+  `:63-70`; sizes per-core stats; `tile_origin_` sized n_tiles+1 `:97`.
+- `tile_origin` `:100`, `core` `:104`, `l1` `:106`.
+- `acquire` `:110` (reuse from free list, whole-struct assign), `release` `:125` (throws if still
   referenced).
-- `run_to_barrier` `:130`, `run` `:158` (= loop of run_to_barrier), `step_tile` `:163`, `finish`
-  `:165` (= run), `check_no_work_outstanding` `:172`, `dispatch` `:198` (increments `events`).
-- `reinject` `:219` (re-enters at `r.level` through that level's port, keeps original stamp),
-  `reinject_all` `:240`.
+- `run_to_barrier` `:141`, `run` `:169` (= loop of run_to_barrier), `step_tile` `:174`, `finish`
+  `:176` (= run), `check_no_work_outstanding` `:183`, `dispatch` `:209` (increments `events`).
+- `reinject` `:230` (re-enters at `r.level` through that level's port, keeps original stamp),
+  `reinject_all` `:251`.
 - `on_l1_probe` `:267`, `prefetch_on_demand` `:356` (applies ordered targets through the selected
-  level's budget/port/triage path), `on_l2_probe` `:413` (the one site that increments both
-  `l2_pf_timely` and `l2_pf_retriggers`, `:467-468`), `on_l2_fill` `:536` (L2 tag set
-  `l2_prefetched_` update `:546-561`), `on_l1_fill` `:599`.
-- Prefetch accounting: `demand_anchor_on_probe` `:668` (timely / pollution), `note_prefetch_resident`
-  `:692`, `note_line_left_l1` `:696` (wasted), `close_out_prefetch_stats` `:704` (L1 only; the
-  comment `:712-714` says so).
-- Instruments: `current_tile` `:723` (core 0's tile), `way_of` `:727` (`slot % assoc`), `note_fill`
-  `:742`, `note_leave` `:756`, `note_hit` `:767`.
-- `back_invalidate(line, now)` `:777`, under its section header `:775`:
+  level's budget/port/triage path), `on_l2_probe` `:414` (the one site that increments both
+  `l2_pf_timely` and `l2_pf_retriggers`, `:468-469`), `on_l2_fill` `:537` (L2 tag set behind the
+  L2-originated gate, `l2_prefetched_` update `:547-564`), `on_l1_fill` `:602`.
+- Prefetch accounting: `demand_anchor_on_probe` `:671` (timely / pollution), `note_prefetch_resident`
+  `:695`, `note_line_left_l1` `:699` (wasted), `close_out_prefetch_stats` `:707` (L1 only; the
+  comment `:719-721` says so).
+- Instruments: `current_tile` `:726` (core 0's tile), `way_of` `:730` (`slot % assoc`), `note_fill`
+  `:745`, `note_leave` `:759`, `note_hit` `:770`.
+- `back_invalidate(line, now)` `:780`, under its section header `:778`:
   scans all L1s by core id, invalidates + `on_invalidate`.
 
 **core/engine_core.cpp** (core state machine and barrier)
@@ -669,22 +669,22 @@ the shared `src/layout/layout_common.h`.
 - `set_index(LineId, num_sets) -> Placement` `index/set_index.h:14`: shared modulo mapping, with
   `set = line % num_sets` and `tag = line / num_sets`; malformed set counts and negative line ids are refused.
 
-**layout/layout_common.h / layout/layout_common.cpp** (namespace `cachesim::detail`, private to
+**src/layout/layout_common.h / src/layout/layout_common.cpp** (namespace `cachesim::detail`, private to
 `src/`, not installed under `include/`)
 - The three mappers share argument checks, shape validation, burst walking and line-size diagnostics;
   each mapper keeps its own flatten, placement call and `neighbour`.
-- `kAxes[4]` `layout/layout_common.h:28`; `reject` `:30` / `.cpp:10` (`invalid_argument`),
+- `kAxes[4]` `src/layout/layout_common.h:28`; `reject` `:30` / `.cpp:10` (`invalid_argument`),
   `reject_range` `:31` / `.cpp:14` (`out_of_range`); `positive_or_reject` `:36`;
   `checked_mul` `:43` / `.cpp:18`; `blocks_covering` `:48`; `block_size_on` `:56`.
 - `check_shape_and_blocking` `:72` / `.cpp:26`, `line_size_bytes` `:80` / `.cpp:41`,
   `check_in_shape` `:87`, `expand_burst<Mapper>` `:120-148`, and `line_size_terms` `:154` / `.cpp:47`.
-**layout/factory.h / layout/factory.cpp**
+**include/cachesim/layout/factory.h / src/layout/factory.cpp**
 - `make_mapper(cfg, shape, warnings)` is the library-owned layout factory. It builds the selected
   mapper and emits `W_CIN_LO_UNREACHABLE` for a SplitCin width above the layer's CIN-block count;
   both native drivers call this same function after validation.
-**layout/block_pack.cpp** (`BlockPackMapper`, header `include/cachesim/layout/block_pack.h:42`; 241 lines)
-- Nesting `[KH][KW][cin_blk][cout_blk]`, cout innermost; `kName` `layout/block_pack.cpp:15`; Axis-order `static_assert`s
-  `:33-36`.
+**src/layout/block_pack.cpp** (`BlockPackMapper`, header `include/cachesim/layout/block_pack.h:42`; 241 lines)
+- Nesting `[KH][KW][cin_blk][cout_blk]`, cout innermost; `kName` `src/layout/block_pack.cpp:15`; Axis-order `static_assert`s
+  `:34-37`.
 - Ctor `:40` (header `:64`): `check_shape_and_blocking` `:57`; block counts `:63-64`;
   `line_size_bytes_` `:77`; `num_lines = KH*KW*ncb*nkb` via `checked_mul` `:91-94`; strides
   `:118-124` (COUT 1, CIN `n_cout_blocks`, KW `n_cin_blocks*n_cout_blocks`, KH `KW*stride_KW`).
@@ -693,10 +693,10 @@ the shared `src/layout/layout_common.h`.
   `expand` `:200` (= `detail::expand_burst`), `locate` `:207` (= `set_index`),
   `line_size_terms` `:218`, `neighbour` `:226`. Accessors in header `:159-164`.
 
-**layout/split_cin.cpp** (`SplitCinMapper`, header `include/cachesim/layout/split_cin.h:110`; 339 lines)
+**src/layout/split_cin.cpp** (`SplitCinMapper`, header `include/cachesim/layout/split_cin.h:110`; 339 lines)
 - Nesting `[KH][KW][cin_hi][cout_blk][cin_lo]`, `cin_lo = cin_blk % n_cin_lo` innermost, so with
   `n_cin_lo = L1 sets` the L1 set index is the CIN digit. `enum Digit` header `:99`;
-  `static_assert`s on Digit order `:21-25`; `kName` `layout/split_cin.cpp:14`.
+  `static_assert`s on Digit order `:22-26`; `kName` `src/layout/split_cin.cpp:14`.
 - `ceil_div` `:32` (int64 ceiling, see 3.2 item 1).
 - Ctor `:37` (extra arg `n_cin_lo >= 1`, `:59`); `n_cin_hi = ceil(ncb / n_cin_lo)` `:69`;
   `radix_product` as an overflow guard `:99-104`; strides `:127-136`; `num_lines` = max id + 1
@@ -707,10 +707,10 @@ the shared `src/layout/layout_common.h`.
   `:300`, `neighbour` `:306` (CIN step recombines the two digits, `:333-336`). Accessors header
   `:189-196`.
 
-**layout/khkw_split.cpp** (`KhkwSplitMapper`, header `include/cachesim/layout/khkw_split.h:70`; 192 lines)
+**src/layout/khkw_split.cpp** (`KhkwSplitMapper`, header `include/cachesim/layout/khkw_split.h:70`; 192 lines)
 - Nesting `[pos_hi][cout_blk][cin_blk][pos_lo]`, `pos = kh*KW + kw`, split at `n_pos_lo =
-  min(kPosLoRadix=8, KH*KW)` (`layout/khkw_split.h:89`, `layout/khkw_split.cpp:34`). `enum Digit` header `:79`;
-  `kName` `layout/khkw_split.cpp:15`.
+  min(kPosLoRadix=8, KH*KW)` (`include/cachesim/layout/khkw_split.h:89`, `src/layout/khkw_split.cpp:34`). `enum Digit` header `:79`;
+  `kName` `src/layout/khkw_split.cpp:15`.
 - Ctor `:18`; `n_pos`, `n_pos_lo`, `n_pos_hi` `:33-35`; strides `:39-45`; `radix_product` `:50-52`;
   `num_lines` = max id + 1 via a loop over every `pos` `:63-71` (see 3.1 item 1 on its comment).
 - `digit_stride` `:80`, `digit_radix` `:91`, `block_len` `:101`, `line_of` `:111`, `expand` `:135`
@@ -743,14 +743,15 @@ the shared `src/layout/layout_common.h`.
 - `csv_columns` `:175` (112 columns; `l2_demand_reserve` `:199`; `rrip_bits` appended last `:215`),
   `csv_header` `:219`.
 - `RunStats::RunStats` `:228`: `hidden_latency = fetch_latency_sum - core_stall_sum` `:247`, derived
-  `dram_bytes = dram_accesses*line_size` `:263`, `pf_coverage = (timely+late) / demand_bursts`
-  `:306-307`, L2 prefetch config then outcomes `:316-328` (`l2_demand_reserve` `:321`),
-  `l2_pf_coverage = l2_pf_timely / l2_accesses` `:336-337` (comment `:333-335`: also the retrigger
-  ratio), `port_bound_threshold = miss_frac * l2_miss_latency * l2_banks / l2_ii` `:339-352`, MSHR
-  occupancy p50/p95/max `:355-365`, `events_per_cycle` `:372`.
-- `csv_row` `:381`; `check_invariants` `:390-422`: stall causes sum == stall_total, hidden_latency >=
-  0, L1 prefetch outcomes + drops == pf_issued.
-- `oracle_row` `:424`: identity + config + `total_cycles = tick_base_total`, rest blank.
+  `dram_bytes = dram_accesses*line_size` `:267`, `pf_coverage = (timely+late) / demand_bursts`
+  `:310-311`, L2 prefetch config then outcomes `:320-332` (`l2_demand_reserve` `:325`),
+  `l2_pf_coverage = l2_pf_timely / l2_accesses` `:340-341` (comment `:337-339`: also the retrigger
+  ratio), `port_bound_threshold = miss_frac * l2_miss_latency * l2_banks / l2_ii` `:343-356`, MSHR
+  occupancy p50/p95/max `:359-369`, `events_per_cycle` `:376`.
+- `csv_row` `:385`; `check_invariants` `:394-434`: stall causes sum == stall_total, hidden_latency >=
+  0, L1 prefetch outcomes + drops == pf_issued (`:421-425`), and the L2 outcomes plus drops at most
+  `l2_pf_issued`, invariant 4.6 with `H4` as its alias (`:426-433`; 3.3 item 2).
+- `oracle_row` `:436`: identity + config + `total_cycles = tick_base_total`, rest blank.
 
 **sweep.cpp**
 - Uses `name_of(LayoutKind)` from `include/cachesim/enum_names.h`; `rethrow_with_index` prefixes
@@ -909,15 +910,15 @@ Drivers:
 ## 3. Findings for cleanup (code-evidenced)
 
 ### 3.1 Dead code, stale comments, stale references
-1. **`layout/khkw_split.cpp` comments state a false premise about the sort and the max loop.** The comment
+1. **`src/layout/khkw_split.cpp` comments state a false premise about the sort and the max loop.** The comment
    above `expand` says the sort in `expand_burst` is load-bearing because "line_of is NOT monotone in
    pos" and a wrap "can move the line down" (`src/cachesim/native/src/layout/khkw_split.cpp:130-133`). By the
    code's own arithmetic it cannot: the position term is `(pos / L) * S + pos % L` with
    `L = n_pos_lo` and `S = stride[POS_HI] = n_cout_blocks * n_cin_blocks * L >= L`
-   (`layout/khkw_split.cpp:39-45,123,126`). Stepping `pos` inside a group adds 1; a wrap adds
+   (`src/layout/khkw_split.cpp:39-45,123,126`). Stepping `pos` inside a group adds 1; a wrap adds
    `S - (L - 1) >= 1`. So `line_of` is strictly increasing in `pos`, the sort is a no-op on this
-   layout exactly as on the other two (`layout/block_pack.cpp:195-199`, `layout/split_cin.cpp:260-274`), and the
-   ctor comment "the largest sum is not in general at the largest pos" (`layout/khkw_split.cpp:59-62`) is
+   layout exactly as on the other two (`src/layout/block_pack.cpp:195-199`, `src/layout/split_cin.cpp:260-274`), and the
+   ctor comment "the largest sum is not in general at the largest pos" (`src/layout/khkw_split.cpp:59-62`) is
    wrong for the same reason. The code is correct (the sort is harmless and the loop finds the true
    maximum); only the stated reasons are wrong. Derived by hand, not by running code.
 2. Stale test names that contradict their own group strings: `test_l2_demand_reserve_is_rejected_by_name`
@@ -928,14 +929,14 @@ Drivers:
    unreachable while claiming to be on", `src/config.cpp:660-662`), while the message itself
    describes an MSHR floor that holds whatever the prefetch policy is (`config.cpp:668-672`) and
    `test_config.cpp:205-227` asserts the message does not mention prefetching.
-4. References to an archive that is not in the repo: `src/layout/block_pack.cpp:167` ("the v1 lesson the archive
+4. References to an archive that is not in the repo: `src/layout/block_pack.cpp:168` ("the v1 lesson the archive
    preserved"), `tests/layout/test_block_pack.cpp:831`, `tests/index/test_set_associative.cpp:21`. Also
-   `layout/block_pack.cpp:26-29` says "the expression is not written yet", while `line_of` (`:162`) is.
+   `src/layout/block_pack.cpp:26-29` says "the expression is not written yet", while `line_of` (`:163`) is.
 5. Doubled prefix in the `neighbour` range messages: `reject_range(kName, "BlockPackMapper::neighbour:
-   ...")` prints "BlockPackMapper: BlockPackMapper::neighbour: ..." (`src/layout/block_pack.cpp:223`; same
-   at `src/layout/split_cin.cpp:303`, `src/layout/khkw_split.cpp:151`). Runs of three blank lines: `layout/block_pack.cpp:215-217`, `layout/split_cin.cpp:297-299`, `layout/khkw_split.cpp:145-147`.
+   ...")` prints "BlockPackMapper: BlockPackMapper::neighbour: ..." (`src/layout/block_pack.cpp:229`; same
+   at `src/layout/split_cin.cpp:309`, `src/layout/khkw_split.cpp:157`). Runs of three blank lines: `src/layout/block_pack.cpp:221-223`, `src/layout/split_cin.cpp:303-305`, `src/layout/khkw_split.cpp:151-153`.
 6. `EngineStats::pf_dropped_targets_full` (`include/cachesim/core/engine.h:208`) is never incremented
-   anywhere in `src/`; it is always 0 by construction (read only at `src/instrument/stats.cpp:240-243,298`).
+   anywhere in `src/`; it is always 0 by construction (read only at `src/instrument/stats.cpp:240-243,302`).
    `Request::reason` (`include/cachesim/core/request.h:66-74`) is written (`src/core/mshr.cpp:64`) but never read in
    `src/` or `apps/`.
 7. `replacement/next_use.h:29` includes `<istream>`, which nothing in the file uses.
@@ -951,13 +952,13 @@ Drivers:
 1. Mapper helpers: the checks, `expand`, `locate` and `line_size_terms` live in
    `src/layout/layout_common.h` / `.cpp` (2.2). What is still duplicated: an int64 ceiling written twice more,
    `ceil_div` (`src/layout/split_cin.cpp:32`) and the inline `n_pos_hi_` ceiling
-   (`src/layout/khkw_split.cpp:35`), beside `detail::blocks_covering` (`layout/layout_common.h:48`, int32
-   extent); and the same `neighbour` range-check block in each mapper (`layout/block_pack.cpp:222-226`,
-   `layout/split_cin.cpp:302-306`, `layout/khkw_split.cpp:150-154`). `neighbour` staying per mapper is by design
-   (`layout/layout_common.h:5-6`).
+   (`src/layout/khkw_split.cpp:35`), beside `detail::blocks_covering` (`src/layout/layout_common.h:48`, int32
+   extent); and the same `neighbour` range-check block in each mapper (`src/layout/block_pack.cpp:228-232`,
+   `src/layout/split_cin.cpp:308-312`, `src/layout/khkw_split.cpp:156-160`). `neighbour` staying per mapper is by design
+   (`src/layout/layout_common.h:5-6`).
 2. Nearest-rank quantile twice: `include/cachesim/instrument/hist.h:85-92` and `src/instrument/stats.cpp:29-36`.
 3. `engine_error` / `idx` twice: `src/core/engine.cpp:18-22`, `src/core/engine_core.cpp:31-35`. Way-from-slot
-   arithmetic twice: `core/engine.cpp:728-740` and `core/engine.cpp:798-802`.
+   arithmetic twice: `core/engine.cpp:730-742` and `core/engine.cpp:800-804`.
 4. Per-policy `index_or_reject` four times: `src/replacement/{stamp,belady,lfu,rrip}.cpp`.
 5. The two apps duplicate the config/trace/mapper/validate setup and drift:
    - `--max-engines` uses bare `std::stoi` (`apps/cachesim_sweep.cpp:107-110`, accepts `"12abc"`) while
@@ -965,37 +966,51 @@ Drivers:
    - Oracle help text disagrees: L1 oracles "exact WHILE NOTHING BLOCKS" (`cachesim_run.cpp:91-96`) vs
      "EXACT" (`cachesim_sweep.cpp:67-69`).
    - Sweep has no `--l2-oracle`, instruments, or `--oracle-only`.
-   - AccessLog batch size `1 << 16` duplicated in `instrument/access_log.h:141` and `apps/oracle_io.h:60`.
+   - AccessLog batch size `1 << 16` duplicated in `include/cachesim/instrument/access_log.h:141` and `apps/oracle_io.h:60`.
 
 ### 3.3 Behaviour hazards worth a look before trusting new runs
 1. **H2** `LineTrace::key` packs `core+1` into 6 bits with no check (`include/cachesim/instrument/line_trace.h:179-182`); the comment says a wider machine "would trip the encoding" (`:175-178`), but nothing
    trips, so with more than 62 cores keys alias silently. `AccessLog` allows 255 cores
-   (`instrument/access_log.h:136`); the code mentions 256-core targets (`core/event.h:240-243`).
-2. **H4** L2 prefetch accounting is not closed, and it is open in **both** directions, so
-   `instrument/stats.cpp:312-315`'s claim that the L2 outcomes "sum to at most `l2_pf_issued`" does
-   not hold. There is no guard: `check_invariants` enforces the outcomes-equal-issued identity for
-   L1 only, and throws on a mismatch there (`src/instrument/stats.cpp:390-422`, the check at
-   `:417-420`).
-   - **Undercount.** `close_out_prefetch_stats` handles L1 only (`src/core/engine.cpp:705-720`), so
-     lines still tagged in `l2_prefetched_` at end of run are never charged as wasted and the
-     outcomes can sum to less than `l2_pf_issued`. Stated in comments
-     (`core/engine.cpp:717-719`, `core/engine.h:238-241`, `instrument/stats.cpp:312-315`).
-   - **Overcount, and not confined to the L2 policy.** `l2_pf_issued` counts only the L2 issue path
-     (`src/core/engine.cpp:393`), but the prefetched tag is set for *any* L2 line opened by a
-     prefetch with no demand merged onto it (`src/core/engine.cpp:550-551`), and eviction of a
-     still-tagged line charges `l2_pf_wasted` (`src/core/engine.cpp:557-562`). An **L1** `next_burst` prefetch fills L2
-     on its way through, so its lines are charged to the L2 counters although the L2 policy issued
-     nothing: `l2_pf_wasted` can exceed `l2_pf_issued`, and is nonzero when `l2_pf_issued` is 0.
-     Measured on the `configs/cache/l2pf_demo.json` grid: the L1-`next_burst`, L2-`none` point has
-     `l2_pf_issued` 0 against `l2_pf_wasted` 1,034,240. So `l2_pf_wasted` is not the L2 policy's own
-     waste, and no reader should attribute it to one.
+   (`include/cachesim/instrument/access_log.h:136`); the code mentions 256-core targets (`core/event.h:240-243`).
+2. **H4** L2 prefetch accounting is closed in one direction only: the L2-policy outcomes plus the
+   four drop reasons sum to **at most** `l2_pf_issued`, and `check_invariants` enforces exactly that
+   bound, throwing "H4 violated" when the sum exceeds the issue count
+   (`src/instrument/stats.cpp:428-433`, inside `check_invariants` `:394-434`). The bound is written
+   as invariant 4.6 with `H4` as its alias (`include/cachesim/instrument/stats.h:92-93`) and
+   restated beside the CSV emission (`src/instrument/stats.cpp:316-319`). What it judges is summed
+   per row at `src/instrument/stats.cpp:250-253`: `l2_pf_timely + l2_pf_late + l2_pf_wasted` plus the
+   four `l2_pf_dropped_*` counters, with `l2_pf_retriggers` deliberately not a term.
+   - **The open direction is the undercount.** `close_out_prefetch_stats` charges the L1 prefetcher
+     only (`src/core/engine.cpp:707-722`), so L2 lines still tagged in `l2_prefetched_` when the run
+     ends are never charged as wasted and the outcomes can sum to less than `l2_pf_issued`. Stated
+     in the function's closing comment (`:719-721`), beside the CSV emission
+     (`src/instrument/stats.cpp:317-319`) and in the invariant itself
+     (`include/cachesim/instrument/stats.h:93`). `tests/instrument/test_stats.cpp:394-426` pins the
+     direction: with any one outcome or drop reason set to 1, the row refuses at `l2_pf_issued` 0 and
+     passes at 1 and 2.
+   - **The counters are scoped to the L2 policy.** The tag is inserted at one chokepoint, the L2
+     fill, and only when the MSHR's primary target is a prefetch at issue
+     (`src/core/engine.cpp:551-554`, predicate `include/cachesim/core/mshr.h:140`); the primary
+     keeps its L1 entry until L1 fill, so an L1 prefetch's own L2 fill opens no tag, which is what
+     the gate's comment says (`src/core/engine.cpp:547-550`). Eviction of a still-tagged line
+     charges `l2_pf_wasted` (`:559-564`) and a demand hit on one charges `l2_pf_timely`, clears the
+     tag and retriggers (`:462-469`), so every L2 outcome counter belongs to a prefetch the L2
+     policy issued. `tests/prefetch/test_neighbour.cpp:86-113` pins it: an L1 `next_burst` run with
+     `pf_issued > 0` and `pf_timely > 0` has `l2_pf_issued`, `l2_pf_timely`, `l2_pf_late`,
+     `l2_pf_wasted` and `l2_pf_retriggers` all 0; `:115-143` repeats it for an L1-prefetched line
+     used by a second core.
+   - **The surface the invariant is checkable on.** Only the simulator's own per-run CSV carries the
+     four `l2_pf_dropped_*` columns (`src/instrument/stats.cpp:201-203`), so the sum can be checked
+     there. The demo's `results.csv` is 32 columns and carries `l2_pf_issued`, `l2_pf_timely`,
+     `l2_pf_late`, `l2_pf_wasted` and `l2_pf_coverage` only (`scripts/compare_l2pf.py:25-34`), with
+     no drop counters, so the invariant cannot be checked on that file.
 3. **H6** MSHR occupancy samples are appended on every forward and retire
-   (`src/core/engine.cpp:267,394,533,602`) and kept for the whole run per engine; memory grows with miss
+   (`src/core/engine.cpp:280,439,580,649`) and kept for the whole run per engine; memory grows with miss
    count times grid size (up to 256 engines).
 4. **H7** `TraceFd` parses `fd:N` with unchecked `std::stoi` (`apps/cli_args.h:77-102`).
 5. **H8** The decoded run length ignores `burst_stride`: `count = run_end - run_start`
    (`src/trace/stream_trace.cpp:306`) while `expand_burst` walks `start + i*stride` for `i < count`
-   (`layout/layout_common.h:138-139`). For stride `s > 1` a run `[start, end)` holds
+   (`src/layout/layout_common.h:138-139`). For stride `s > 1` a run `[start, end)` holds
    `ceil((end - start) / s)` elements, but the decoder asks for `end - start` of them, so the walk
    runs past `run_end` (or is refused as out of range). The writer does the same: `burst_span` is the
    largest `cout_end - cout_start` (`src/cachesim/stream.py:167`) and `lines_per_burst` expands
@@ -1036,7 +1051,7 @@ Drivers:
 - Magic numbers in code: `kPosLoRadix = 8` (`include/cachesim/layout/khkw_split.h:89`); RRIP width cap 8 twice
   (`src/replacement/rrip.cpp:11`, `src/config.cpp:620`); `--max-engines` 256
   (`apps/cachesim_sweep.cpp:87`); AccessLog record limits 32-bit line / 8-bit core
-  (`instrument/access_log.h:135-136`).
+  (`include/cachesim/instrument/access_log.h:135-136`).
 - `trace/stream_format.h:35-37` requires the GCC/Clang `__BYTE_ORDER__` macro.
 - No absolute paths or hostnames appear in any `.cpp/.h/.sh/.py` file in scope (grep for `/home/`,
   `/projects/`, `/scratch`, `delta`, `ncsa` hits comments only).
@@ -1082,7 +1097,7 @@ What the code needs:
   order, vectors iterated by index; `unordered_map`s are never iterated in decision paths, though
   `LineTrace::flush` sorts its map keys `instrument/line_trace.h:148-151`).
 - **Binary formats**: the AccessLog is written in host byte order with no endianness marker
-  (`instrument/access_log.h:129-130`), unlike WCTS, which is explicitly little-endian. The WCTS magic did not
+  (`include/cachesim/instrument/access_log.h:129-130`), unlike WCTS, which is explicitly little-endian. The WCTS magic did not
   change between v1 and v2 (`trace/stream_format.h:41`); only the version field tells them apart.
 - **Paths**: `src/cachesim/cli.py` and `scripts/pipeline.py` locate the binaries and configs from the
   repo root (`ROOT`, `src/cachesim/grid.py:7`), not through absolute paths.
@@ -1095,8 +1110,10 @@ What the code needs:
    bound (and the decoder compute `ceil((run_end - run_start) / stride)`), or become a count (H8)?
 2. Should the reader check each burst against the header's `burst_span`, and should
    `lines_per_burst` account for anchors that are not block-aligned (H9)?
-3. Should tagged-but-unused L2 prefetched lines be charged as wasted at end of run, and should the L2
-   identity be enforced in `check_invariants` (H4)?
+3. Should tagged-but-unused L2 prefetched lines be charged as wasted at end of run? `check_invariants`
+   bounds the L2 outcomes by `l2_pf_issued` (4.6/H4, `src/instrument/stats.cpp:426-433`) but nothing
+   charges the lines still resident at finish, so the sum trails the issue count by exactly those
+   lines and the code alone does not say whether that is the intended reading of waste.
 4. Is `l2_policy` meant to appear in the CSV? The schema has only `policy` (`src/instrument/stats.cpp:184-186`), so
    a row with a different L2 policy is not self-describing.
 5. Is `bank_high_bits` meant to be a sweepable knob (3.1 item 8)?
