@@ -51,7 +51,7 @@ any cwd.
 |---|---|---|
 | `python -m snn_scheduler solve` (`src/snn_scheduler/__main__.py:1-2` -> `cli.main` `src/snn_scheduler/cli.py:28`) | Solve one layer YAML in one TrafficMode, write the result JSON | `--layer` (`configs/workloads/sample_snn_layer.yaml`), `--arch` (`configs/arch/spinalflow.yaml`), `--dataflow` (`configs/node_mapspace/spinalflow.yaml`), `--out` (`outputs/schedule.json`), `--time-limit`, `--mip-gap`, `--solver-log`; defaults are cwd-relative strings (`src/snn_scheduler/cli.py:22-25`) |
 | `python -m snn_scheduler enumerate` | Solve all 13 TrafficModes, report the best, write JSON plus a `.txt` summary | as `solve`, `--out` (`outputs/enumeration.json`, :78), `--w-u 0.1 --w-tr 1.0 --w-dl 10.0` (:86-97) |
-| `python -m snn_scheduler solve-trace` (`_run_solve_trace` `src/snn_scheduler/cli.py:192`) | Solve and cache the schedule of every valid layer (or of `--layers`) of captured trace dirs; skip cached ones; write `summary.csv` | `--arch` (required, one of the 5 bridges, :103), `--arch-yaml` (`configs/arch/loas_inst16_node32kb.yaml` for loas, else `configs/arch/<arch>.yaml`; `src/snn_scheduler/cli.py:183-189`), `--node-mapspace` (`configs/node_mapspace/<arch>.yaml`, :198), `--trace-root` (`<repo>/input_trace/loas`, :116), `--trace-dirs` (`vgg16_T4_n5 resnet19_T4_n5`, :117), `--layers` (each name applies only to the dirs whose meta.json has it, :215-216; a name in no dir exits 2, :207-211), `--cache-dir` (required), `--force` |
+| `python -m snn_scheduler solve-trace` (`_run_solve_trace` `src/snn_scheduler/cli.py:192`) | Solve and cache the schedule of every valid layer (or of `--layers`) of captured trace dirs; skip cached ones; write `summary.csv` | `--arch` (required, one of the 5 bridges, :103), `--arch-yaml` (`configs/arch/loas_inst16_node32kb.yaml` for loas, else `configs/arch/<arch>.yaml`; `src/snn_scheduler/cli.py:183-189`), `--node-mapspace` (`configs/node_mapspace/<arch>.yaml`, :198), `--trace-root` (`<repo>/input_trace/loas`, :116), `--trace-dirs` (`vgg16_T4_n5 resnet19_T4_n5`, :117), `--layers` (each name applies only to the dirs whose meta.json has it, `src/snn_scheduler/cli.py:215-216`; a name in no dir exits 2, :207-211), `--cache-dir` (required), `--force` |
 | `python -m weight_trace_gen gen` (`src/weight_trace_gen/__main__.py:1-4` -> `cli.main` `src/weight_trace_gen/cli.py:421`) | Load a cached schedule, reconstruct samples through the native bridge; three modes: one combo (step-cycles files), `--all-layers`, `--stream` (one WCTS stream on stdout) | `--arch` (required), `--trace-dir`, `--layer`, `--trace-dirs` (`resnet19_T4_n5 vgg16_T4_n5`, `--all-layers` only), `--trace-root` (`<repo>/input_trace/loas`), `--schedule-cache` (`<repo>/configs/schedules`), `--out-dir` (`<repo>/outputs/weight_traces`), `--combo-tag` (`""`), `--sample-start` (0), `--sample-count`, `--n-samples` (100), `--seed` (0), `--workers` (1), `--force`, `--all-layers`, `--stream`, `--dump-trace PATH`, `--dump-trace-tiles N` (`src/weight_trace_gen/cli.py:353-392`) |
 | `python -m nocsim` (`src/nocsim/__main__.py:1-4` -> `nocsim.sim.main` `src/nocsim/sim.py:313`) | NoC simulation of one schedule; with `--weight-trace` it charges each step the step-cycles file's MAC cycles, with `--simulate` it runs eventsim and prints `total_cycles` | see `docs/atlas/nocsim.md` |
 | `python -m cachesim grid` (`src/cachesim/cli.py:28`) | Write the khkw grid (`configs/cache/base.json` x `configs/cache/khkw_sweep.json`) as one JSON file per `cin_block`, print the paths | `--out` (required), `--base`, `--sweep` (`src/cachesim/cli.py:38-41`) |
@@ -147,18 +147,18 @@ Formats crossing each boundary:
    (`src/nocsim/step_cycles.py:142`) also
    reads an older full form (no `format` key, each tile also carrying `ticks`,
    ignored) and raises `ValueError` on any other `format` (:162-165).
-6. **WCTS v2 stream** (`src/cachesim/stream.py:16-53`): 56-byte fixed header
-   (layout table :28-35; magic `WCTRACE1` :42, version 2 :43), then the 5
-   field codes `0=KH 1=KW 2=CIN 3=COUT 4=RUN_END` (:50-52), `(dim_id, factor)`
+6. **WCTS v2 stream** (`src/cachesim/stream.py:17-54`): 56-byte fixed header
+   (layout table :29-36; magic `WCTRACE1` :43, version 2 :44), then the 5
+   field codes `0=KH 1=KW 2=CIN 3=COUT 4=RUN_END` (:51-53), `(dim_id, factor)`
    spatial pairs, `(dim_id, extent)` for all 7 dims (wire codes 0=KH..6=T,
-   :49), identity `arch\0trace_dir\0layer\0sample_idx\0` (:78-80). Per tile
+   :50), identity `arch\0trace_dir\0layer\0sample_idx\0` (:79-81). Per tile
    frame `<iiqQ` = tile_index, cores in frame, mac_cycles, payload bytes
-   (:106); per core `<ii` core_id, n_bursts (:116); per burst `<q5i` =
+   (:107); per core `<ii` core_id, n_bursts (:117); per burst `<q5i` =
    local_tick, the run's anchor `kh, kw, cin, cout`, then `run_end` (28 B,
-   :53, :130). The run walks `burst_dim` from the anchor's coordinate on that
-   axis to `run_end` (exclusive). Trailer `<iQ` = -1, total bursts (:137). The
-   header writer accepts `burst_dim` 0..3 (:65-66); `stream_weight_trace` emits
-   only `burst_dim=3` (COUT) and refuses others (:195-200), because
+   :54, :131). The run walks `burst_dim` from the anchor's coordinate on that
+   axis to `run_end` (exclusive). Trailer `<iQ` = -1, total bursts (:138). The
+   header writer accepts `burst_dim` 0..3 (:66-67); `stream_weight_trace` emits
+   only `burst_dim=3` (COUT) and refuses others (:196-201), because
    `LayerWeightTrace` addresses are COUT runs. The C++ reader is described in
    `docs/atlas/cachesim_native.md` (WCTS v2 wire format).
 7. **Simulator outputs.** `cachesim_sweep` prints CSV to stdout (or `--out`),
@@ -224,7 +224,7 @@ in both directions; only the native binaries are one-way):
    (:128-129).
 2. `check_inputs` (:138) refuses a missing bench dir, a bench without a nocsim
    arch (`NOCSIM_ARCH` :45 has only loas), a missing meta.json or `.npy`, an
-   excluded layer, or samples beyond `B` (:164-166). A missing schedule plus a
+   excluded layer, or samples beyond `B` (`scripts/pipeline.py:164-166`). A missing schedule plus a
    `gurobipy` that does not import is also refused (:322-325). All problems
    are printed before anything is written (:326-327).
 3. `schedules_for` (:265): if `configs/schedules/<bench>` (`SCHEDULES` :43)
@@ -232,7 +232,7 @@ in both directions; only the native binaries are one-way):
    make one `python -m snn_scheduler solve-trace` call for the missing dirs and
    layer names (:276-283); exit if a requested schedule is still absent
    (:286-289). Every schedule is then checked against meta.json with
-   `check_schedule_matches_trace` (:290-297).
+   `check_schedule_matches_trace` (`scripts/pipeline.py:290-297`).
 4. Builds (:333-337): `make -C src/cachesim/native MODE=release apps`,
    `make -C src/nocsim/eventsim`, and the bench's own `src/weight_trace_gen/<bench>`.
 5. Weight traces (:339-351), in parallel under `--jobs`: per layer one
@@ -364,21 +364,21 @@ commands above are repo-relative, so run them from the repo root.
 
 ### 2.4 `src/cachesim/` Python: `stream.py`, `grid.py`, `cli.py`
 
-- `src/cachesim/stream.py` (219 lines): constants :42-53 (`_WCTS_BURST_BYTES` = 28, :53).
-  - `write_stream_header(...)` :56: checks `burst_dim` in 0..3 (:65-66) before
-    writing a byte, then `prod(spatial_factors) == n_cores` (:70-74) and all 7
-    dims present (:75-76).
-  - `write_tile_frame(fh, *, tile_index, mac_cycles, cores, burst_dim)` :98:
+- `src/cachesim/stream.py` (220 lines): constants :43-54 (`_WCTS_BURST_BYTES` = 28, :54).
+  - `write_stream_header(...)` :57: checks `burst_dim` in 0..3 (:66-67) before
+    writing a byte, then `prod(spatial_factors) == n_cores` (:71-75) and all 7
+    dims present (:76-77).
+  - `write_tile_frame(fh, *, tile_index, mac_cycles, cores, burst_dim)` :99:
     each burst is `(local_tick, (kh, kw, cin, cout, run_end))`; checks core
-    ids ascending (:111), no empty cores (:113), ticks strictly ascending
-    (:119), and a run not empty along `burst_dim` (:124-128).
-  - `write_stream_trailer` :135.
-  - `_wcts_tile_frames(tiles, n_cores)` :140: tick-major -> core-major;
-    rejects core ids outside `[0, n_cores)` (:154), empty COUT runs (:161),
-    and measures `burst_span` as the largest `cout_end - cout_start` (:166).
-  - `stream_weight_trace(trace, fh, *, n_cores, spatial_factors, burst_dim=3, burst_stride=1, weight_bytes=1, max_tiles=None)` :177:
-    refuses any `burst_dim` but 3 (:195-200); `max_tiles` truncates before the
-    header so `n_tiles` stays right (:201-202). A non-COUT stream has to be
+    ids ascending (:112), no empty cores (:114), ticks strictly ascending
+    (:120), and a run not empty along `burst_dim` (:125-129).
+  - `write_stream_trailer` :136.
+  - `_wcts_tile_frames(tiles, n_cores)` :141: tick-major -> core-major;
+    rejects core ids outside `[0, n_cores)` (:155), empty COUT runs (:162),
+    and measures `burst_span` as the largest `cout_end - cout_start` (:167).
+  - `stream_weight_trace(trace, fh, *, n_cores, spatial_factors, burst_dim=3, burst_stride=1, weight_bytes=1, max_tiles=None)` :178:
+    refuses any `burst_dim` but 3 (:196-201); `max_tiles` truncates before the
+    header so `n_tiles` stays right (:202-203). A non-COUT stream has to be
     written with `write_stream_header` + `write_tile_frame` directly (only
     `tests/test_stream_writer.py` does).
 - `src/cachesim/grid.py` (53 lines): `BASE_JSON` :8, `SWEEP_JSON` :9; `grid_for(line_bytes)`
@@ -807,7 +807,7 @@ full `_all` captures are on Delta (path in `input_trace/README.md`).
 - `tests/test_stream_dump.py:3` points at a shell test `test_stream_flag.sh`
   that is not in `tests/`.
 - A "Phase D campaign plan" is cited in `src/weight_trace_gen/weight_trace.py:127`,
-  `src/weight_trace_gen/cli.py:285`, :404, `src/cachesim/stream.py:21` and
+  `src/weight_trace_gen/cli.py:285`, :404, `src/cachesim/stream.py:22` and
   each `main.cpp` (e.g. `src/weight_trace_gen/loas/main.cpp:116`, :133); no
   such document is in the repo.
 - `src/weight_trace_gen/__init__.py:85-110` describes per-arch `address.py`
