@@ -1,7 +1,9 @@
 # Code atlas index
 
-Commit `e151510` (branch `wcache-rebuild-phase-a`).
-The working tree also has an uncommitted change in `.gitignore`.
+Commit `0c598d1` (branch `wcache-rebuild-phase-a`).
+Every file cited here is committed at that commit. The tree's one uncommitted
+change is an ignore rule appended to the end of `.gitignore`, below every line
+of it this atlas cites.
 Built only from reading code (`.py .cpp .h Makefile .yaml .json .toml`) and
 directory listings; no notes or logs were read. Paths are relative to the repo
 root; `file:N` is line N of that file, and a bare `:N` refers to the file

@@ -1,6 +1,6 @@
 # Code atlas: `src/cachesim` (cache simulator)
 
-Branch `wcache-rebuild-phase-a`, commit `e151510`. Written from code only: `.cpp`, `.h`, `.sh`,
+Branch `wcache-rebuild-phase-a`, commit `0c598d1`. Written from code only: `.cpp`, `.h`, `.sh`,
 `.py`, `Makefile`, `.json`. No markdown, text or log file was read, so any design rationale below is
 what the code's own comments state. Paths that start with `src/cachesim/native/`, `src/cachesim/`,
 `configs/`, `scripts/`, `tests/` or `docs/` are relative to the repo root; every other path (such as
@@ -445,7 +445,7 @@ is a line of the file the entry is named after (a source file, not the header na
   (returns pending barrier's tile or -1); `step_tile` `:413`; `finish` `:425`; `tile_origin(t)` `:431`
   (size n_tiles+1); `core` `:433`; `stats` `:434`; `queue` `:435`; `l1(c)` `:437`; `l2` `:438`;
   `set_cache_state_log` `:454`, `set_line_trace` `:455`, `set_access_log` `:461`; `n_bursts_in_tile`
-  `:463`. Private handlers listed `:471-640`.
+  `:463`. Private section from `:465`: the six event handlers `:471-476`, then helpers and scratch members.
 - `as_duration(LocalTick) -> SimTime` `:665`: the one trace-gap-to-duration crossing.
 
 **config.h**
@@ -630,7 +630,7 @@ the shared `src/layout/layout_common.h`.
 
 **replacement/stamp.cpp**
 - `StampPolicy` constructor `replacement/stamp.cpp:19`, bound check `:28`, stamp/fill/invalidate/victim
-  operations `:38-84`; LRU/FIFO hit behavior `:99-101`.
+  operations `:36-61`; LRU/FIFO hit behavior `:63-65`.
 
 **replacement/belady.cpp**
 - `BeladyPolicy` constructor `replacement/belady.cpp:18`, bound check `:26`, next-use notifications `:45-47`,
@@ -641,7 +641,7 @@ the shared `src/layout/layout_common.h`.
 
 **replacement/rrip.cpp**
 - `RripPolicy` constructor `replacement/rrip.cpp:19`, RRPV updates `:45-53`, uniform aging and tie-break
-  in `pick_victim` `:55-76`.
+  in `pick_victim` `:55-71`.
 **prefetch/**
 - `prefetcher.cpp`: `make_prefetcher` `:12-29` constructs `NoPrefetcher`, `NextBurstPrefetcher`,
   or `NeighbourPrefetcher` from the shared `PrefetchKind`/`PrefetchParams`.
@@ -691,7 +691,7 @@ the shared `src/layout/layout_common.h`.
   `:167-171`.
 - `digit_stride` `:181`, `digit_radix` `:193`, `block_len` `:210`, `line_of` `:222` (the only cin
   split `:242-243`), `expand` `:275` (= `detail::expand_burst`), `locate` `:287`, `line_size_terms`
-  `:300`, `neighbour` `:306` (CIN step recombines the two digits, `:333-341`). Accessors header
+  `:300`, `neighbour` `:306` (CIN step recombines the two digits, `:333-336`). Accessors header
   `:189-196`.
 
 **layout/khkw_split.cpp** (`KhkwSplitMapper`, header `include/cachesim/layout/khkw_split.h:70`; 186 lines)
@@ -742,10 +742,10 @@ the shared `src/layout/layout_common.h`.
 **sweep.cpp**
 - Uses `name_of(LayoutKind)` from `include/cachesim/enum_names.h`; `rethrow_with_index` prefixes
   "sweep: configuration i:" while preserving exception type.
-- Ctor `:44`: non-empty grid, `size <= max_engines`, all points share `cin_block, cout_block,
-  weight_bytes, layout, cin_lo_blocks` `:76-91`, mapper line size matches `:93`, then builds engines.
-- `run` `:112`: per tile `advance` -> observer -> `step_tile` on each engine (timed); then `finish`
-  each. Accessors `:146-152`.
+- Ctor `:32`: non-empty grid, `size <= max_engines`, all points share `cin_block, cout_block,
+  weight_bytes, layout, cin_lo_blocks` `:64-66`, mapper line size matches `:81`, then builds engines.
+- `run` `:100`: per tile `advance` -> observer -> `step_tile` on each engine (timed); then `finish`
+  each. Accessors `:134-140`.
 
 ### 2.3 `apps/`
 

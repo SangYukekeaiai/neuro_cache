@@ -1,7 +1,9 @@
 # Code atlas: the pipeline (input trace -> schedule -> weight trace -> cachesim / nocsim -> results)
 
 Repo `neuro_cache-wcache`, branch `wcache-rebuild-phase-a`, commit `e151510`.
-The working tree also has an uncommitted change in `.gitignore`.
+Every `.gitignore` line cited below is committed at that commit; the working
+tree's one uncommitted ignore rule sits at the end of the file, below all of
+them.
 Every `file:N` below is line N of the file, and a bare `:N` refers to the file
 named last before it. Built only from code (`.py .cpp .h
 Makefile .yaml .json .toml`) and directory listings; no notes, logs or result
@@ -685,8 +687,8 @@ full `_all` captures are on Delta (path in `input_trace/README.md`).
 - `conftest.py`: puts `scripts/` on `sys.path` so tests import `pipeline` (:4-5).
 - `requirements.txt:1-4`: `gurobipy==13.0.2`, `numpy==2.4.6`, `PyYAML==6.0.3`,
   `matplotlib` (unpinned).
-- `.gitignore`: native binaries (:53-58), `/data/` (:81), `.baseline/`
-  (:78), and re-includes `configs/**` (:32), `src/cachesim/examples/*.json`
+- `.gitignore`: native binaries (:55-61), `/data/` (:84), `.baseline/`
+  (:81), and re-includes `configs/**` (:32), `src/cachesim/examples/*.json`
   (:38) and `input_trace/loas/**` (:44-45).
 
 ---------------------------------------------------------------------------
