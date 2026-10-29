@@ -2056,6 +2056,12 @@ mutate_pf_tile kill 'C5 next_tile ignores the nullopt boundary guard' \
 mutate_pf_tile kill 'C5 next_tile accepts a nonpositive distance' \
     's|    if (distance < 1) {|    if (false) {|'
 
+echo "== C5/H4: L2-fill prefetch-origin accounting (src/core/engine.cpp)"
+mutate_eng kill 'C5 H4 L2 fill charges every prefetch origin' \
+    's|^    const bool l2_pf_opened = is_prefetch_at_issue(\*e\.targets\.front());$|    const bool l2_pf_opened = e.pf_opened;|'
+mutate_eng kill 'C5 H4 L2 fill inverts the prefetch-origin gate' \
+    's|^    const bool l2_pf_opened = is_prefetch_at_issue(\*e\.targets\.front());$|    const bool l2_pf_opened = !is_prefetch_at_issue(*e.targets.front());|'
+
 echo "== D2a: the stall breakdown and the Part 8 counters (src/core/engine_core.cpp)"
 mutate_engc kill 'D2a stall_total is not accumulated (V21)' \
     's|    stats_.stall_total.at(idx(c)) += stall;||'

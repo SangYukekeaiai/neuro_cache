@@ -2,11 +2,68 @@
 
 Branch `wcache-rebuild-phase-a`, commit `1934fd4`. Written from code only: `.cpp`, `.h`, `.sh`,
 `.py`, `Makefile`, `.json`. No markdown, text or log file was read, so any design rationale below is
-what the code's own comments state. Paths that start with `src/cachesim/native/`, `src/cachesim/`,
-`configs/`, `scripts/`, `tests/` or `docs/` are relative to the repo root; every other path (such as
-`src/core/engine.cpp`, `include/cachesim/config.h`, `apps/cli_args.h`, `apps/oracle_io.h`,
-`apps/output.h`, `tests/run_cli.sh`, `Makefile`)
-is relative to `src/cachesim/native/`.
+what the code's own comments state.
+
+**Path and citation conventions.** Every path and every citation below obeys these six rules, and a
+resolver needs nothing else to read the file.
+
+1. **Repo-root paths.** A path that starts with `src/cachesim/native/`, `src/cachesim/`,
+   `src/weight_trace_gen/`, `configs/`, `scripts/` or `docs/` is relative to the repo root. So is a
+   bare `.gitignore`, which always means the repo-root file; the two-line native twin is spelled in
+   full as `src/cachesim/native/.gitignore` wherever it is meant (3.5).
+2. **Every other path is relative to `src/cachesim/native/`**, including a bare `Makefile`, which is
+   the GNU make native build (`src/cachesim/native/Makefile`) and never the repo-root one, and every
+   `tests/` path: the repo-root `tests/` holds pytest `.py` files only and is never cited in this
+   file, so `tests/run_cli.sh`, `tests/test_config.cpp` and `tests/layout/test_block_pack.cpp` are
+   all native.
+3. **The implied first component.** The native tree spells the same directory names three times
+   (`core/`, `index/`, `instrument/`, `layout/`, `prefetch/`, `replacement/`, `trace/` under each of
+   `include/cachesim/`, `src/` and `tests/`), and a path whose first component is one of those names
+   is written without the tree above it. The file kind supplies the missing component: a `.h` is
+   under `include/cachesim/` (`trace/stream_format.h` is
+   `include/cachesim/trace/stream_format.h`), a `test_*.cpp` is under `tests/`
+   (`prefetch/test_neighbour.cpp` is `tests/prefetch/test_neighbour.cpp`), any other `.cpp` is under
+   `src/` (`core/engine.cpp` is `src/core/engine.cpp`). The same rule names the four headers at the
+   top of the include tree: `config.h`, `enum_names.h`, `sweep.h`, `types.h`.
+4. **A path that already starts with `include/`, `src/`, `apps/` or `tests/` is taken as written**,
+   and `src/` here is the native library's own source tree, never another of the repo's `src/`
+   subtrees: those are always written with their second component, as in rule 1. Writing the prefix
+   out is what distinguishes the headers private to the library, which are not installed under
+   `include/`, from the public ones: `src/layout/layout_common.h` is a `src/` header, and
+   `tests/stream_builder.h` a test one.
+5. **Bare file names.** A name with no directory component is the file of that name anywhere in
+   `src/cachesim/`, the tree this atlas covers and which contains `native/`. Every name there is
+   unique, so the lookup needs no section context: `cachesim_run.cpp` is `apps/cachesim_run.cpp`,
+   `engine.cpp` is `src/core/engine.cpp`, `check.h` is `tests/check.h`, `test_block_pack.cpp` is
+   `tests/layout/test_block_pack.cpp`, and `stream.py` is `src/cachesim/stream.py`. A section or
+   entry heading that names a directory (`apps/` in 2.3, `tests/` in 2.4, `prefetch/` in 2.2) says
+   where that section's files sit; it does not change where a name resolves. Exactly one name occurs
+   twice in the tree, and the second copy is always spelled with its directory: a bare
+   `test_neighbour.cpp` is `tests/layout/test_neighbour.cpp`, and the prefetch one is written
+   `prefetch/test_neighbour.cpp`. Two kinds of bare name are not files of that tree and are never
+   cited: a config name (`base.json`, `khkw_sweep.json`, `l2pf_demo.json`) is the file under
+   `configs/cache/`, and a run output such as `results.csv` is written at run time and is not in
+   the repo at all. Nor are the POSIX headers `fcntl.h` and `unistd.h` named in 4, or the
+   `CMakeLists.txt` the repo does not have.
+6. **Citations.** `path:N` cites line N of that path, `path:A-B` a line range, and `path:A,B` two
+   separate lines. A bare `:N` cites the file its entry is about: the file the entry heading names,
+   or the file named by a bullet that opens with one of its own, until a later citation inside that
+   entry names a different file, which the bare citations after it then follow. One bullet can hold
+   several entries this way, each with its own run of bares - 2.1 lists `none.h`, `next_burst.h`,
+   `neighbour.h` and `next_tile.h` in a single bullet.
+   Two things never retarget a bare `:N`: a name rule 5 places outside the tree (a config, a run
+   output, a POSIX header), and a full path named in an entry's prose as a cross-reference to
+   another entry - `include/cachesim/enum_names.h` in 2.2's `instrument/stats.cpp` and
+   `src/cachesim/stream.py` in 2.1's `trace/stream_format.h` are cross-references, so the bares
+   around them stay on `src/instrument/stats.cpp` and
+   `include/cachesim/trace/stream_format.h`.
+   In an entry whose heading names a header and source pair, a bare `:N` is always the header and
+   `.cpp:N` is line N of the source: under 2.2's
+   `src/layout/layout_common.h / src/layout/layout_common.cpp`, `reject` `:30` is
+   `src/layout/layout_common.h:30` and `.cpp:10` is `src/layout/layout_common.cpp:10`. Where an
+   entry heading names a `.cpp` and its header and a bare `:N` means the header, the prose says so:
+   2.2's `src/layout/block_pack.cpp` writes "Ctor `:41` (header `:64`)" for
+   `src/layout/block_pack.cpp:41` and `include/cachesim/layout/block_pack.h:64`.
 
 > **The reader accepts WCTS version 2 only.** `decode_header` throws `std::invalid_argument` for any
 > `format_version` other than 2 and says in the message to regenerate the stream
@@ -685,12 +742,12 @@ the shared `src/layout/layout_common.h`.
 **src/layout/block_pack.cpp** (`BlockPackMapper`, header `include/cachesim/layout/block_pack.h:42`; 241 lines)
 - Nesting `[KH][KW][cin_blk][cout_blk]`, cout innermost; `kName` `src/layout/block_pack.cpp:15`; Axis-order `static_assert`s
   `:34-37`.
-- Ctor `:40` (header `:64`): `check_shape_and_blocking` `:57`; block counts `:63-64`;
-  `line_size_bytes_` `:77`; `num_lines = KH*KW*ncb*nkb` via `checked_mul` `:91-94`; strides
-  `:118-124` (COUT 1, CIN `n_cout_blocks`, KW `n_cin_blocks*n_cout_blocks`, KH `KW*stride_KW`).
-- `line_stride(Axis)` `:136`, `block_len(Axis)` `:152` (KH,KW raw; CIN,COUT block counts),
-  `line_of(Coord)` `:162` (`check_in_shape` `:169`, then one loop over `kAxes` `:176-185`),
-  `expand` `:200` (= `detail::expand_burst`), `locate` `:207` (= `set_index`),
+- Ctor `:41` (header `:64`): `check_shape_and_blocking` `:58`; block counts `:64-65`;
+  `line_size_bytes_` `:78`; `num_lines = KH*KW*ncb*nkb` via `checked_mul` `:92-95`; strides
+  `:119-125` (COUT 1, CIN `n_cout_blocks`, KW `n_cin_blocks*n_cout_blocks`, KH `KW*stride_KW`).
+- `line_stride(Axis)` `:137`, `block_len(Axis)` `:153` (KH,KW raw; CIN,COUT block counts),
+  `line_of(Coord)` `:163` (`check_in_shape` `:170`, then one loop over `kAxes` `:178-186`),
+  `expand` `:201` (= `detail::expand_burst`), `locate` `:207` (= `set_index`),
   `line_size_terms` `:218`, `neighbour` `:226`. Accessors in header `:159-164`.
 
 **src/layout/split_cin.cpp** (`SplitCinMapper`, header `include/cachesim/layout/split_cin.h:110`; 339 lines)
@@ -698,23 +755,23 @@ the shared `src/layout/layout_common.h`.
   `n_cin_lo = L1 sets` the L1 set index is the CIN digit. `enum Digit` header `:99`;
   `static_assert`s on Digit order `:22-26`; `kName` `src/layout/split_cin.cpp:14`.
 - `ceil_div` `:32` (int64 ceiling, see 3.2 item 1).
-- Ctor `:37` (extra arg `n_cin_lo >= 1`, `:59`); `n_cin_hi = ceil(ncb / n_cin_lo)` `:69`;
-  `radix_product` as an overflow guard `:99-104`; strides `:127-136`; `num_lines` = max id + 1
-  `:155-160`, may be below the radix product (holes when n_cin_lo does not divide ncb), sanity check
-  `:167-171`.
-- `digit_stride` `:181`, `digit_radix` `:193`, `block_len` `:210`, `line_of` `:222` (the only cin
-  split `:242-243`), `expand` `:275` (= `detail::expand_burst`), `locate` `:287`, `line_size_terms`
+- Ctor `:38` (extra arg `n_cin_lo >= 1`, `:60`); `n_cin_hi = ceil(ncb / n_cin_lo)` `:70`;
+  `radix_product` as an overflow guard `:100-106`; strides `:128-137`; `num_lines` = max id + 1
+  `:156-161`, may be below the radix product (holes when n_cin_lo does not divide ncb), sanity check
+  `:168-172`.
+- `digit_stride` `:182`, `digit_radix` `:194`, `block_len` `:211`, `line_of` `:223` (the only cin
+  split `:243-244`), `expand` `:276` (= `detail::expand_burst`), `locate` `:287`, `line_size_terms`
   `:300`, `neighbour` `:306` (CIN step recombines the two digits, `:333-336`). Accessors header
   `:189-196`.
 
 **src/layout/khkw_split.cpp** (`KhkwSplitMapper`, header `include/cachesim/layout/khkw_split.h:70`; 192 lines)
 - Nesting `[pos_hi][cout_blk][cin_blk][pos_lo]`, `pos = kh*KW + kw`, split at `n_pos_lo =
-  min(kPosLoRadix=8, KH*KW)` (`include/cachesim/layout/khkw_split.h:89`, `src/layout/khkw_split.cpp:34`). `enum Digit` header `:79`;
+  min(kPosLoRadix=8, KH*KW)` (`include/cachesim/layout/khkw_split.h:89`, `src/layout/khkw_split.cpp:34-35`). `enum Digit` header `:79`;
   `kName` `src/layout/khkw_split.cpp:15`.
-- Ctor `:18`; `n_pos`, `n_pos_lo`, `n_pos_hi` `:33-35`; strides `:39-45`; `radix_product` `:50-52`;
-  `num_lines` = max id + 1 via a loop over every `pos` `:63-71` (see 3.1 item 1 on its comment).
-- `digit_stride` `:80`, `digit_radix` `:91`, `block_len` `:101`, `line_of` `:111`, `expand` `:135`
-  (= `detail::expand_burst`; comment `:130-133`), `locate` `:139`, `line_size_terms` `:148`,
+- Ctor `:19`; `n_pos`, `n_pos_lo`, `n_pos_hi` `:34-36`; strides `:40-46`; `radix_product` `:51-53`;
+  `num_lines` = max id + 1 via a loop over every `pos` `:64-72` (see 3.1 item 1 on its comment).
+- `digit_stride` `:81`, `digit_radix` `:92`, `block_len` `:102`, `line_of` `:112`, `expand` `:135`
+  (= `detail::expand_burst`; comment `:131-134`), `locate` `:139`, `line_size_terms` `:148`,
   `neighbour` `:154` (KH/KW step via pos, `:176-189`).
 
 **trace/stream_trace.cpp**
@@ -912,13 +969,13 @@ Drivers:
 ### 3.1 Dead code, stale comments, stale references
 1. **`src/layout/khkw_split.cpp` comments state a false premise about the sort and the max loop.** The comment
    above `expand` says the sort in `expand_burst` is load-bearing because "line_of is NOT monotone in
-   pos" and a wrap "can move the line down" (`src/cachesim/native/src/layout/khkw_split.cpp:130-133`). By the
+   pos" and a wrap "can move the line down" (`src/cachesim/native/src/layout/khkw_split.cpp:131-134`). By the
    code's own arithmetic it cannot: the position term is `(pos / L) * S + pos % L` with
    `L = n_pos_lo` and `S = stride[POS_HI] = n_cout_blocks * n_cin_blocks * L >= L`
-   (`src/layout/khkw_split.cpp:39-45,123,126`). Stepping `pos` inside a group adds 1; a wrap adds
+   (`src/layout/khkw_split.cpp:40-46,124,127`). Stepping `pos` inside a group adds 1; a wrap adds
    `S - (L - 1) >= 1`. So `line_of` is strictly increasing in `pos`, the sort is a no-op on this
-   layout exactly as on the other two (`src/layout/block_pack.cpp:195-199`, `src/layout/split_cin.cpp:260-274`), and the
-   ctor comment "the largest sum is not in general at the largest pos" (`src/layout/khkw_split.cpp:59-62`) is
+   layout exactly as on the other two (`src/layout/block_pack.cpp:196-200`, `src/layout/split_cin.cpp:261-275`), and the
+   ctor comment "the largest sum is not in general at the largest pos" (`src/layout/khkw_split.cpp:60-63`) is
    wrong for the same reason. The code is correct (the sort is harmless and the loop finds the true
    maximum); only the stated reasons are wrong. Derived by hand, not by running code.
 2. Stale test names that contradict their own group strings: `test_l2_demand_reserve_is_rejected_by_name`
@@ -931,7 +988,7 @@ Drivers:
    `test_config.cpp:205-227` asserts the message does not mention prefetching.
 4. References to an archive that is not in the repo: `src/layout/block_pack.cpp:168` ("the v1 lesson the archive
    preserved"), `tests/layout/test_block_pack.cpp:831`, `tests/index/test_set_associative.cpp:21`. Also
-   `src/layout/block_pack.cpp:26-29` says "the expression is not written yet", while `line_of` (`:163`) is.
+   `src/layout/block_pack.cpp:26-30` says "the expression is not written yet", while `line_of` (`:163`) is.
 5. Doubled prefix in the `neighbour` range messages: `reject_range(kName, "BlockPackMapper::neighbour:
    ...")` prints "BlockPackMapper: BlockPackMapper::neighbour: ..." (`src/layout/block_pack.cpp:229`; same
    at `src/layout/split_cin.cpp:309`, `src/layout/khkw_split.cpp:157`). Runs of three blank lines: `src/layout/block_pack.cpp:221-223`, `src/layout/split_cin.cpp:303-305`, `src/layout/khkw_split.cpp:151-153`.
@@ -952,7 +1009,7 @@ Drivers:
 1. Mapper helpers: the checks, `expand`, `locate` and `line_size_terms` live in
    `src/layout/layout_common.h` / `.cpp` (2.2). What is still duplicated: an int64 ceiling written twice more,
    `ceil_div` (`src/layout/split_cin.cpp:32`) and the inline `n_pos_hi_` ceiling
-   (`src/layout/khkw_split.cpp:35`), beside `detail::blocks_covering` (`src/layout/layout_common.h:48`, int32
+   (`src/layout/khkw_split.cpp:36`), beside `detail::blocks_covering` (`src/layout/layout_common.h:48`, int32
    extent); and the same `neighbour` range-check block in each mapper (`src/layout/block_pack.cpp:228-232`,
    `src/layout/split_cin.cpp:308-312`, `src/layout/khkw_split.cpp:156-160`). `neighbour` staying per mapper is by design
    (`src/layout/layout_common.h:5-6`).
