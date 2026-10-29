@@ -23,11 +23,18 @@ cd neuro_cache
 git checkout wcache-rebuild-phase-a
 ```
 
-Use the **head of `wcache-rebuild-phase-a`**. There is no pinned commit SHA to
-give you: at the time this prompt was written the work was not yet
-committed, so the revision you want is "the commit containing
-`scripts/compare_l2pf.py` and `src/cachesim/native/src/prefetch/next_tile.cpp`",
-which is the branch head. Confirm both files exist before going further:
+Use commit **`c994fad`**, which is the revision this prompt describes:
+
+```
+git checkout c994fad
+```
+
+**The commit must be pushed before you can clone it.** `origin` is behind the
+machine this prompt was written on, so if `git checkout c994fad` fails with an
+unknown revision, the push has not happened yet — stop and ask for it rather
+than running against a different revision.
+
+Confirm both files exist before going further:
 
 ```
 ls scripts/compare_l2pf.py src/cachesim/native/src/prefetch/next_tile.cpp
