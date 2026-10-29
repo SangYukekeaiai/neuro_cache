@@ -19,14 +19,26 @@ def load_sweep(path=SWEEP_JSON):
 
 def grid_for(line_bytes, base=None, sweep=None):
     """The points at one line size, which share one cin_block and so one mapper:
-    l2_banks x (prefetch_policy, prefetch_distance), banks varying slowest.
-    Keys stay in base.json's order."""
+    l2_banks x l2 prefetch x (L1 prefetch policy, distance), banks varying
+    slowest.  When the l2_prefetch key is absent, the grid has no L2-prefetch
+    axis and each point carries the base config's L2 settings.
+
+    Keys stay in base.json's order, with the two L2-prefetch keys appended only
+    for a sweep that declares that axis."""
     base = load_base() if base is None else base
     sweep = load_sweep() if sweep is None else sweep
     cin_block = line_bytes // (base["cout_block"] * base["weight_bytes"])
+    l2_prefetch = sweep.get("l2_prefetch")
+    if l2_prefetch is None:
+        return [dict(base, cin_block=cin_block, l2_banks=banks,
+                     prefetch_policy=policy, prefetch_distance=dist)
+                for banks in sweep["l2_banks"] for policy, dist in sweep["prefetch"]]
     return [dict(base, cin_block=cin_block, l2_banks=banks,
+                 l2_prefetch_policy=l2_policy, l2_prefetch_distance=l2_dist,
                  prefetch_policy=policy, prefetch_distance=dist)
-            for banks in sweep["l2_banks"] for policy, dist in sweep["prefetch"]]
+            for banks in sweep["l2_banks"]
+            for l2_policy, l2_dist in l2_prefetch
+            for policy, dist in sweep["prefetch"]]
 
 
 def full_grid(base=None, sweep=None):

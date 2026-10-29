@@ -5,6 +5,7 @@
 
 #include "cachesim/prefetch/neighbour.h"
 #include "cachesim/prefetch/next_burst.h"
+#include "cachesim/prefetch/next_tile.h"
 #include "cachesim/prefetch/none.h"
 
 namespace cachesim {
@@ -21,6 +22,8 @@ std::unique_ptr<Prefetcher> make_prefetcher(PrefetchKind kind,
             return std::make_unique<NoPrefetcher>();
         case PrefetchKind::NextBurst:
             return std::make_unique<NextBurstPrefetcher>(params.distance, n_cores);
+        case PrefetchKind::NextTile:
+            return std::make_unique<NextTilePrefetcher>(params.distance);
         case PrefetchKind::Neighbour:
             return std::make_unique<NeighbourPrefetcher>(params.axis, params.distance, params.up,
                                                          params.down);

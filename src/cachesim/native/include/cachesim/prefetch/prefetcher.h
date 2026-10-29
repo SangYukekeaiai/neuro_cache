@@ -53,7 +53,7 @@ struct PrefetchTarget {
     BurstIndex burst;
 };
 
-enum class PrefetchKind : std::uint8_t { None = 0, NextBurst = 1, Neighbour = 2 };
+enum class PrefetchKind : std::uint8_t { None = 0, NextBurst = 1, Neighbour = 2, NextTile = 3 };
 
 struct PrefetchParams {
     std::int32_t distance = 0;

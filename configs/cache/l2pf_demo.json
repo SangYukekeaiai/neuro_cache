@@ -1,0 +1,6 @@
+{
+  "line_bytes": [64],
+  "l2_banks": [1],
+  "prefetch": [["none", 0], ["next_burst", 1]],
+  "l2_prefetch": [["none", 0], ["next_tile", 1]]
+}

@@ -4,6 +4,7 @@
 // because a single function that throws on its first check would report the
 // remaining rules as covered when they were never reached.
 #include <cachesim/config.h>
+#include <cachesim/enum_names.h>
 
 #include <cstdint>
 #include <stdexcept>
@@ -334,6 +335,39 @@ void test_a_negative_prefetch_distance_is_rejected() {
 void test_next_burst_with_zero_distance_is_rejected() {
     check::group("Task 10: prefetch_policy = next_burst with distance 0 is rejected");
     RunConfig c = parse_config(R"({"prefetch_policy": "next_burst"})");
+    std::vector<Warning> w;
+    CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
+}
+
+void test_next_tile_parses_and_validates_at_l2() {
+    check::group("next_tile: L2 policy spelling and distance reach the engine");
+    RunConfig c = parse_config(R"({"l2_prefetch_policy": "next_tile",
+                                  "l2_prefetch_distance": 2,
+                                  "l2_prefetch_axis": "cin",
+                                  "l2_prefetch_up": 0, "l2_prefetch_down": 0})");
+    CHECK_TRUE(c.l2_prefetch_policy == PrefetchKind::NextTile);
+    CHECK_TRUE(std::string(name_of(c.l2_prefetch_policy)) == "next_tile");
+    std::vector<Warning> w;
+    validate(c, 1, w);
+    const auto p = to_engine_params(c);
+    CHECK_TRUE(p.l2.prefetch_kind == PrefetchKind::NextTile);
+    CHECK_EQ(p.l2.prefetch_params.distance, 2);
+}
+
+void test_next_tile_at_l1_is_rejected() {
+    check::group("next_tile: both L1 policy keys are refused");
+    for (const char* key : {"prefetch_policy", "l1_prefetch_policy"}) {
+        RunConfig c = parse_config(std::string("{\"") + key +
+                                   "\": \"next_tile\", \"l1_prefetch_distance\": 1}");
+        std::vector<Warning> w;
+        CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
+    }
+}
+
+void test_next_tile_with_zero_distance_is_rejected() {
+    check::group("next_tile: L2 distance zero is refused");
+    RunConfig c = parse_config(R"({"l2_prefetch_policy": "next_tile",
+                                  "l2_prefetch_distance": 0})");
     std::vector<Warning> w;
     CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
 }
@@ -718,6 +752,9 @@ int main() {
     test_core_accept_ii_below_one_is_rejected();
     test_a_negative_prefetch_distance_is_rejected();
     test_next_burst_with_zero_distance_is_rejected();
+    test_next_tile_parses_and_validates_at_l2();
+    test_next_tile_at_l1_is_rejected();
+    test_next_tile_with_zero_distance_is_rejected();
     test_a_demand_reserve_at_or_above_the_mshr_count_is_rejected();
     test_every_count_below_one_is_rejected();
     test_every_negative_time_is_rejected();

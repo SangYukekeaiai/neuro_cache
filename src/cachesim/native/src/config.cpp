@@ -644,6 +644,10 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
         reject("l2_prefetch_policy = neighbour with l2_prefetch_distance = 0 would run as "
                "none; set the policy to none or the distance to at least 1");
     }
+    if (cfg.l2_prefetch_policy == PrefetchKind::NextTile && cfg.l2_prefetch_distance == 0) {
+        reject("l2_prefetch_policy = next_tile with l2_prefetch_distance = 0 would run as "
+               "none; set the policy to none or the distance to at least 1");
+    }
     if (cfg.l2_prefetch_policy == PrefetchKind::Neighbour &&
         !cfg.l2_prefetch_up && !cfg.l2_prefetch_down) {
         reject("l2_prefetch_policy = neighbour with both directions off would run as none; "
@@ -668,6 +672,9 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
                "MSHR free");
     }
 
+    if (cfg.l1_prefetch_policy == PrefetchKind::NextTile) {
+        reject("l1_prefetch_policy = next_tile is L2-only; set l2_prefetch_policy instead");
+    }
     if (cfg.l1_prefetch_policy == PrefetchKind::NextBurst && cfg.l1_prefetch_distance == 0) {
         reject("prefetch_policy = next_burst with prefetch_distance = 0 would run as "
                "none, so it is refused rather than silently disabled");
