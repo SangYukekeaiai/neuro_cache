@@ -269,10 +269,10 @@ separates the two.
   gate explicitly.
 - **Atlas drift.** 99 path references in `cachesim_native.md`. Rewritten in
   the same commit as Phase 1.
-- **Dirty worktree.** `neuro_cache-wcache` currently has uncommitted edits
-  (`.gitignore`, `README.md`, `docs/REPRODUCE.md`, `scripts/pipeline.py`,
-  `src/snn_scheduler/cli.py`, `src/util.py`, a deleted
-  `scripts/subset_input_traces.py`). Those should be committed or set aside
+- **Dirty worktree.** When this plan was written, `neuro_cache-wcache` held
+  uncommitted edits (`.gitignore`, `README.md`, `docs/REPRODUCE.md`,
+  `scripts/pipeline.py`, `src/snn_scheduler/cli.py`, `src/util.py`, a deleted
+  `scripts/subset_input_traces.py`); they had to be committed or set aside
   before Phase 0 so the gate compares like with like.
 
 ## 6. Decisions for the owner

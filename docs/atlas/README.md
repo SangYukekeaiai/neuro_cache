@@ -1,8 +1,7 @@
 # Code atlas index
 
-Commit `b0d09ca` (branch `wcache-rebuild-phase-a`) plus the uncommitted
-working-tree changes to `scripts/pipeline.py`, `src/snn_scheduler/cli.py`,
-`tests/test_snn_scheduler_cli.py` and `src/cachesim/examples/manifest.json`.
+Commit `e151510` (branch `wcache-rebuild-phase-a`).
+The working tree also has an uncommitted change in `.gitignore`.
 Built only from reading code (`.py .cpp .h Makefile .yaml .json .toml`) and
 directory listings; no notes or logs were read. Paths are relative to the repo
 root; `file:N` is line N of that file, and a bare `:N` refers to the file
@@ -56,17 +55,17 @@ Where each part of the tree is described:
    `src/cachesim/native/tests/layout/test_layout_golden.cpp:6-10` pins every mapping
    and refusal with one FNV-1a hash per case.
 4. Cache simulator output: both apps write the CSV header by default and
-   `--no-header` turns it off (`src/cachesim/native/apps/cachesim_run.cpp:46-47`,
-   :140; `src/cachesim/native/apps/cachesim_sweep.cpp:44-45`, :85);
+   `--no-header` turns it off (`src/cachesim/native/apps/cachesim_run.cpp:49-50`,
+   :143; `src/cachesim/native/apps/cachesim_sweep.cpp:47-48`, :88);
    `l2_pf_timely` always equals `l2_pf_retriggers`, since
    `src/cachesim/native/src/core/engine.cpp:468-469` increments both at one site
    (`src/cachesim/native/include/cachesim/core/engine.h:265`,
-   `src/cachesim/native/src/instrument/stats.cpp:362`).
+   `src/cachesim/native/src/instrument/stats.cpp:333-337`).
 5. L2 MSHR floor: an unset `l2_demand_reserve` (-1,
    `src/cachesim/native/include/cachesim/config.h:110`) resolves to
    `lines_per_burst` and must stay below `l2_mshrs` (default 20, :71), else
-   `validate` resolves the reserve (`src/cachesim/native/src/config.cpp:702`) and refuses the config
-   when it leaves no MSHR free (`src/cachesim/native/src/config.cpp:707-711`).
+   `validate` resolves the reserve (`src/cachesim/native/src/config.cpp:659`) and refuses the config
+   when it leaves no MSHR free (`src/cachesim/native/src/config.cpp:664-668`).
 6. The cache simulator's base point and sweep axes have one source each,
    `configs/cache/base.json` and `configs/cache/khkw_sweep.json`, read only
    through `src/cachesim/grid.py:8-17`. One `cachesim_sweep` call takes one
@@ -120,13 +119,13 @@ their "2. Bottom-up" entries:
 | 3 | `solve_and_cache_schedule` | `src/snn_scheduler/artifact.py:49` |
 | 4 | `reconstruct_samples` | `src/weight_trace_gen/weight_trace.py:163` |
 | 5 | `run_stream` | `src/weight_trace_gen/cli.py:301` |
-| 6 | `stream_weight_trace` | `src/cachesim/stream.py:177` |
+| 6 | `stream_weight_trace` | `src/cachesim/stream.py:178` |
 | 7 | `decode_header` | `src/cachesim/native/include/cachesim/trace/stream_format.h:208` |
 | 8 | `StreamingTileTrace::advance` | `src/cachesim/native/src/trace/stream_trace.cpp:176` |
 | 9 | `detail::expand_burst` | `src/cachesim/native/src/layout/layout_common.h:120` |
-| 10 | `validate` | `src/cachesim/native/src/config.cpp:571` |
+| 10 | `validate` | `src/cachesim/native/src/config.cpp:529` |
 | 11 | `Engine::run_to_barrier` | `src/cachesim/native/src/core/engine.cpp:141` |
-| 12 | `CacheLevel::triage` | `src/cachesim/native/src/core/cache_level.cpp:112` |
+| 12 | `CacheLevel::triage` | `src/cachesim/native/src/core/cache_level.cpp:115` |
 | 13 | `schedule_from_strategy` | `src/nocsim/schedule/decode.py:238` |
 | 14 | `iter_node_tiles` | `src/nocsim/schedule/tiles.py:98` |
 | 15 | `combine` | `src/nocsim/combine.py:120` |

@@ -41,7 +41,7 @@ in this repo.
 
 ## How the subset was cut
 
-The cutting tool was removed from the repo on 2026-10-27; `git show 21467c4:scripts/subset_input_traces.py` recovers it.
+The cutting tool is not in the repo; `git show 21467c4:scripts/subset_input_traces.py` is its source.
 
 ## Where the full captures live
 
@@ -75,8 +75,9 @@ above came from
 /u/yyu9/.snapshot/snapshot-daily-_2026-08-11_17_00_00_UTC/neuro_cache_trace/
 ```
 
-which expires around 2026-09-10. Looping the snapshots and testing for a path is
-how the deletion date was bracketed: the newest snapshot still holding it is the
-last day the file existed. Note that `/projects` and `/work` are Lustre and have
+That snapshot's retention window has closed, so the `/work` copy above is the
+only one left. Looping the snapshots and testing for a path is how the deletion
+date was bracketed: the newest snapshot still holding it is the last day the
+file existed. Note that `/projects` and `/work` are Lustre and have
 **no** snapshots, so only `$HOME` is recoverable this way, which is the reason
 the durable copy above is the one that matters.

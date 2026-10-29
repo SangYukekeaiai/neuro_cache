@@ -1,6 +1,6 @@
 # Code atlas: `src/cachesim` (cache simulator)
 
-Branch `wcache-rebuild-phase-a`, commit `b0d09ca`. Written from code only: `.cpp`, `.h`, `.sh`,
+Branch `wcache-rebuild-phase-a`, commit `e151510`. Written from code only: `.cpp`, `.h`, `.sh`,
 `.py`, `Makefile`, `.json`. No markdown, text or log file was read, so any design rationale below is
 what the code's own comments state. Paths that start with `src/cachesim/native/`, `src/cachesim/`,
 `configs/`, `scripts/`, `tests/` or `docs/` are relative to the repo root; every other path (such as
@@ -53,15 +53,15 @@ Two native programs, both `main()` in `src/cachesim/native/apps/`, sharing `apps
 `apps/oracle_io.h`, and `apps/output.h`. Exit codes: 0 ok, 2 usage error (`UsageError`,
 `cli_args.h:25-27`), 1 any other exception.
 
-**`cachesim_run`** (`src/cachesim/native/apps/cachesim_run.cpp:430`): one config, one trace, one CSV
-row. Flags parsed in `parse_args` (`cachesim_run.cpp:148`); help text `kUsage` (`cachesim_run.cpp:39`).
+**`cachesim_run`** (`src/cachesim/native/apps/cachesim_run.cpp:433`): one config, one trace, one CSV
+row. Flags parsed in `parse_args` (`cachesim_run.cpp:151`); help text `kUsage` (`cachesim_run.cpp:42`).
 
 | flag | default | meaning |
 |---|---|---|
 | `--config PATH` | required | flat JSON object, `parse_config` |
 | `--trace PATH` | required | WCTS v2 stream; `-` = stdin, `fd:N` = open descriptor |
 | `--out PATH` | `-` (stdout) | CSV destination (file is truncated, `output.h:133`) |
-| `--header` / `--no-header` | **on** (`cachesim_run.cpp:140`) | CSV header line |
+| `--header` / `--no-header` | **on** (`cachesim_run.cpp:143`) | CSV header line |
 | `--arm NAME` | `cache` | one of `cache, spad_oracle, spad_wcache, spad_nocsim` (`cli_args.h:53-59`) |
 | `--tier`, `--run-id`, `--git-commit` | empty, random UUIDv4, empty | identity columns |
 | `--hist PATH` | off | per-(core,tile) distinct-address CSV |
@@ -72,15 +72,15 @@ row. Flags parsed in `parse_args` (`cachesim_run.cpp:148`); help text `kUsage` (
 | `--access-log PATH` | off | binary demand-reference log (input for `--oracle`) |
 | `--oracle-only` | off | decode only; row with `total_cycles == tick_base_total`, no engine |
 
-Narrowing flags without their file are refused (`cachesim_run.cpp:192-202`). The header does not
+Narrowing flags without their file are refused (`cachesim_run.cpp:193-205`). The header does not
 depend on whether `--out` exists, so a rerun to the same path leaves one header and one row (pinned
 by `src/cachesim/native/tests/run_cli.sh:203-220`).
 
-**`cachesim_sweep`** (`src/cachesim/native/apps/cachesim_sweep.cpp:259`): one grid, one trace read once,
-N engines in lock-step, one row per grid point. Flags (`cachesim_sweep.cpp:91`): `--config-grid PATH`
+**`cachesim_sweep`** (`src/cachesim/native/apps/cachesim_sweep.cpp:262`): one grid, one trace read once,
+N engines in lock-step, one row per grid point. Flags (`cachesim_sweep.cpp:94`): `--config-grid PATH`
 (required; JSON array of configs, or `{"base":{...},"axes":{key:[values]}}` cross product, first axis
 slowest), `--trace` (required), `--out` (`-`), `--header`/`--no-header` (default **on**,
-`cachesim_sweep.cpp:85`), `--arm`, `--tier`, `--run-id`, `--git-commit`, `--hist`, `--oracle`,
+`cachesim_sweep.cpp:88`), `--arm`, `--tier`, `--run-id`, `--git-commit`, `--hist`, `--oracle`,
 `--max-engines N` (default 256), `--progress`. No instruments, no `--l2-oracle`, no `--oracle-only`.
 
 **Build targets** (`src/cachesim/native/Makefile`): `make` = `lib apps` in `build/fixture` (`-O0 -g`,
@@ -101,29 +101,29 @@ writes one layer-sample as a WCTS stream on stdout (`--stream` flag
 `cachesim.stream.stream_weight_trace` at `src/weight_trace_gen/cli.py:290`), and
 `python -m cachesim sweep --config-grid GRID --trace STREAM` replays it.
 
-1. **Config text -> `RunConfig`**: `parse_config` (`src/cachesim/native/src/config.cpp:448`), a strict
+1. **Config text -> `RunConfig`**: `parse_config` (`src/cachesim/native/src/config.cpp:406`), a strict
    JSON subset (integers and quoted strings only, unknown or duplicate key = error).
 2. **Trace bytes -> `StreamHeader`**: `TraceFd` (`apps/cli_args.h:77-102`) -> `FdByteSource`
    (`include/cachesim/trace/byte_source.h:51`) -> `StreamingTileTrace` ctor reads and validates the header
    (`src/trace/stream_trace.cpp:26`, `decode_header` at `trace/stream_format.h:208`).
 3. **Header -> `WeightShape`** via `shape_of` (`src/trace/stream_trace.cpp:354`).
 4. **Validation**: a `BlockPackMapper` "probe" computes `lines_per_burst` (`apps/output.h:38-44`), then
-   `validate(cfg, lines_per_burst, warnings)` (`src/config.cpp:571`) resolves the `-1` sentinels
+   `validate(cfg, lines_per_burst, warnings)` (`src/config.cpp:529`) resolves the `-1` sentinels
    (`l1_demand_reserve`, `l2_demand_reserve`, `cin_lo_blocks`, `l2_policy`) and refuses bad configs.
 5. **Mapper**: `make_mapper` (`include/cachesim/layout/factory.h:11-15`, `src/layout/factory.cpp:30-60`) builds
    `BlockPackMapper` / `SplitCinMapper` /
    `KhkwSplitMapper` -> `const AddressMapper&`. All three share `src/layout/layout_common.h`.
-6. **`RunConfig` -> `EngineParams`**: `to_engine_params` (`src/config.cpp:772`) -> two `LevelParams`.
+6. **`RunConfig` -> `EngineParams`**: `to_engine_params` (`src/config.cpp:729`) -> two `LevelParams`.
 7. **Engine**: `Engine(mapper, trace, params)` (`src/core/engine.cpp:51`) builds N L1 `CacheLevel`s, one L2
    `CacheLevel`, a DRAM `Port`, and one level-owned `Prefetcher` per `CacheLevel`.
-8. **Tile loop** (`cachesim_run.cpp:372-385`): `trace.advance()` decodes tile N into the one-tile window
+8. **Tile loop** (`cachesim_run.cpp:375-388`): `trace.advance()` decodes tile N into the one-tile window
    -> `DistinctAddressHistogram::observe`, `PaddingMeter::observe_tile` -> `engine.run_to_barrier()`
    runs events until tile N's barrier is next; then `engine.finish()`.
 9. **Stats -> CSV**: `RunStats(id, cfg, hdr, engine.stats(), tile_origin(n_tiles), tick_base(n_tiles),
-   padding, wall, hist.p50, hist.max)` (`src/instrument/stats.cpp:256`), `check_invariants()`, `csv_row()`;
+   padding, wall, hist.p50, hist.max)` (`src/instrument/stats.cpp:228-232`), `check_invariants()`, `csv_row()`;
    `write_out` (`apps/output.h:127-136`).
 
-`cachesim_sweep` is the same with steps 4-9 per grid point, `BroadcastSweep` (`src/sweep.cpp:44`)
+`cachesim_sweep` is the same with steps 4-9 per grid point, `BroadcastSweep` (`src/sweep.cpp:32`)
 driving all engines over one window (`src/sweep.cpp:112`).
 
 **Upstream connection (visible in code).** The WCTS writer is `src/cachesim/stream.py` (2.5). The
@@ -159,7 +159,7 @@ only by `--oracle` / `--l2-oracle` (`read_oracle_lines`, `apps/oracle_io.h:46-88
 ```
 
 The `Request` (one line of one burst, `include/cachesim/core/request.h:43`) is the unit that travels. It lives
-in `Engine::arena_` (a `std::deque`, stable addresses) with a free list (`core/engine.h:629,653`). An
+in `Engine::arena_` (a `std::deque`, stable addresses) with a free list (`core/engine.h:626,644`). An
 `Mshr` (`core/mshr.h:48`) is one outstanding line per level; `targets` are satisfied directly by the
 fill, `line_wait` are requests that found the target list full.
 
@@ -172,7 +172,7 @@ a compile error (checked by `tests/compile_fail.sh`).
 
 Times are integer cycles (`SimTime`). Trace ticks (`LocalTick`) are offsets inside a tile.
 
-1. `run_to_barrier` first call (`src/core/engine.cpp:130`): `tile_origin[0]=0`, `start_tile(0, 0)`.
+1. `run_to_barrier` first call (`src/core/engine.cpp:141`): `tile_origin[0]=0`, `start_tile(0, 0)`.
 2. `start_tile(t, now)` (`src/core/engine_core.cpp:55`): every core reset (cursor 0, phase Computing),
    each level's prefetcher reset; a core with 0 bursts arrives at the barrier at once; otherwise an `Issue`
    event is scheduled at `now + local_tick(core, t, 0)` (the only absolute tick used).
@@ -180,7 +180,7 @@ Times are integer cycles (`SimTime`). Trace ticks (`LocalTick`) are offsets insi
    turns the burst into sorted distinct lines; `pending_lines = #lines`, phase Stalled; per line a
    demand `Request` reserves the L1 port and schedules `L1Probe` at `accept + l1_latency`. Then the
    L1 prefetcher is asked for ordered `PrefetchTarget`s below the demand port.
-4. `on_l1_probe` (`src/core/engine.cpp:267`) -> `CacheLevel::triage` (`src/core/cache_level.cpp:112`), probe
+4. `on_l1_probe` (`src/core/engine.cpp:267`) -> `CacheLevel::triage` (`src/core/cache_level.cpp:115`), probe
    order **array -> own MSHR -> MSHR pool**:
    - Hit: policy `on_hit`; `core_line_done`; request released.
    - Merged (entry exists, target list not full): subscribes, nothing scheduled.
@@ -189,13 +189,13 @@ Times are integer cycles (`SimTime`). Trace ticks (`LocalTick`) are offsets insi
    - Forwarded (allocated a new entry): request now holds the L1 entry (`mshr1`, `level = L2`), L2
      bank port reserved, `L2Probe` at `accept + l2_latency`.
    - A prefetch at issue is **dropped**, never queued: `DroppedArrayHit/Entry/NoSlot/Reserve`.
-5. `on_l2_probe` (`src/core/engine.cpp:413`): same triage at L2. Hit -> `L1Fill` at `now +
+5. `on_l2_probe` (`src/core/engine.cpp:414`): same triage at L2. Hit -> `L1Fill` at `now +
    l2_to_l1_latency`. Forwarded -> `dram_.reserve(now)` -> `L2Fill` at `accept + l2_miss_latency`.
    An L2 demand miss (or demand hit on an L2-prefetched line) asks the L2 prefetcher for targets.
-6. `on_l2_fill` (`src/core/engine.cpp:536`): install in L2 (free way first, then policy victim);
+6. `on_l2_fill` (`src/core/engine.cpp:537`): install in L2 (free way first, then policy victim);
    back-invalidate the victim from every L1 if `inclusive`; retire the L2 entry; every target with an
    L1 entry gets `L1Fill` at `now + l2_to_l1_latency`; woken requests re-enter through their port.
-7. `on_l1_fill` (`src/core/engine.cpp:599`): install in L1, update prefetch outcome bookkeeping, clear
+7. `on_l1_fill` (`src/core/engine.cpp:600`): install in L1, update prefetch outcome bookkeeping, clear
    `mshr1` on every target, retire the L1 entry, `core_line_done` per demand target, return the
    prefetch credit per prefetch target, reinject wake list.
 8. `core_line_done` (`src/core/engine_core.cpp:223`): `--pending_lines`; at 0 the burst is served
@@ -207,10 +207,10 @@ Times are integer cycles (`SimTime`). Trace ticks (`LocalTick`) are offsets insi
 10. `barrier_arrive` (`src/core/engine_core.cpp:96`): countdown; the last core schedules `Barrier` at
     `now + tile_tail(t)` (`tile_tail = mac_cycles - max_tick`, must be >= 1).
 11. `run_to_barrier` returns *before* dispatching a Barrier, so the driver can advance the shared
-    window; the next call dispatches it. `on_barrier` (`src/core/engine_core.cpp:114`) sets
+    window; the next call dispatches it. `on_barrier` (`src/core/engine_core.cpp:115`) sets
     `tile_origin[t+1] = now`, charges barrier slack per core, and starts tile t+1 or marks all Done.
 12. When the queue empties: L1 prefetched-but-unused lines are charged as wasted (L2 ones are not,
-    finding H4), then `check_no_work_outstanding` throws on any deadlock (`src/core/engine.cpp:170`).
+    finding H4), then `check_no_work_outstanding` throws on any deadlock (`src/core/engine.cpp:183`).
 
 Tie-break classes at equal time (`include/cachesim/core/event.h:43`): Fill(0) < Barrier(1) < Probe(2) <
 Issue(3); then refusal stamp (older refused first, never-refused last), core id, schedule seq.
@@ -241,13 +241,13 @@ Issue(3); then refusal stamp (older refused first, never-refused last), core id,
 | `l2_demand_reserve` | -1 (= lines_per_burst) |  |  |
 
 Derived: `line_size_bytes = cin_block*cout_block*weight_bytes`; `l{1,2}_num_lines = size/line`;
-`num_sets = num_lines/assoc` (`src/config.cpp:438-444`). Warnings returned by `validate`:
+`num_sets = num_lines/assoc` (`src/config.cpp:396-402`). Warnings returned by `validate`:
 `W_MSHR_VS_LINES`, `W_FEW_SETS`, `W_CIN_LO_VS_SETS`, `W_PREFETCH_BUDGET`, `W_ZERO_II`
-(`src/config.cpp:738-768`); `make_mapper` adds `W_CIN_LO_UNREACHABLE` (`src/layout/factory.cpp`).
+(`src/config.cpp:695-725`); `make_mapper` adds `W_CIN_LO_UNREACHABLE` (`src/layout/factory.cpp`).
 
 The L2 MSHR floor: with `l2_demand_reserve` unset it resolves to `lines_per_burst`
-(`config.cpp:702`) and must stay below `l2_mshrs` whatever the L2 prefetch policy is
-(`config.cpp:707-711`). With the default `l2_mshrs = 20`, a 19-line burst passes and a 20-line burst
+(`config.cpp:659`) and must stay below `l2_mshrs` whatever the L2 prefetch policy is
+(`config.cpp:664-668`). With the default `l2_mshrs = 20`, a 19-line burst passes and a 20-line burst
 is refused; `tests/test_config.cpp:204` pins both and pins that the message does not mention
 prefetching.
 
@@ -435,7 +435,7 @@ is a line of the file the entry is named after (a source file, not the header na
 - Comments on the L2 block: the outcomes plus drops sum to **at most** `l2_pf_issued`
   because L2 lines still tagged at end of run are not charged (`:244-247`), and `l2_pf_timely` is
   always equal to `l2_pf_retriggers` (`:254-255`, `:265-267`): both are incremented at one site,
-  `src/core/engine.cpp:467-468`.
+  `src/core/engine.cpp:468-469`.
 - `struct EventPayload {Request* req; Mshr* entry; BurstIndex burst; int32 tile;}` `:308`;
   `using EngineQueue = EventQueue<EventPayload>` `:315`.
 - `struct EngineParams` `:331`: `l1, l2` LevelParams, `l2_to_l1_latency, dram_ii, l2_miss_latency,
@@ -538,26 +538,26 @@ the shared `src/layout/layout_common.h`.
 ### 2.2 `src/` (library `libcachesim.a`)
 
 **config.cpp**
-- `fail(what, pos)` `config.cpp:29`: `invalid_argument("config: ... at byte N")`.
-- `struct Value` `:33`; `class Reader` `:39` (`skip_space`, `at`, `expect`, `expect_end`, `pos`,
-  `read_string` (no escapes) `:70`, `read_value` (integer or string; rejects `.`/`e`) `:85`).
-- Key tables `kI32Fields` `:135` (`l2_demand_reserve` at `:147`), `kI64Fields` `:153`; `to_i32`
+- `fail(what, pos)` `config.cpp:30`: `invalid_argument("config: ... at byte N")`.
+- `struct Value` `:34`; `class Reader` `:40` (`skip_space`, `at`, `expect`, `expect_end`, `pos`,
+  `read_string` (no escapes) `:71`, `read_value` (integer or string; rejects `.`/`e`) `:86`).
+- Key tables `kI32Fields` `:136` (`l2_demand_reserve` at `:148`), `kI64Fields` `:153`; `to_i32`
   `:167`, `to_i64` `:176`, `enum_text` `:181`.
-- `assign(cfg, key, value, pos)` `:185`: the single key dispatcher used by both parsers (comment
-  `:186-187` describes the table lookup); enum spellings `:201-351`; unknown key fails `:353`.
-- `reject` `:358`, `reject_below_one` `:362`, `reject_negative` `:368`, `check_level_geometry`
-  `:374` (size >= one set, whole lines, whole sets), `warn` `:393`.
-- `read_object_into(reader, cfg)` `:402` (duplicate keys refused); `struct GridAxis` `:428`.
-- `RunConfig::line_size_bytes` etc. `:438-444` (integer division; validated later).
-- `parse_config` `:448`; `parse_config_grid` `:458` (array form `:462-478`; base/axes form
-  `:481-548`; mixed-radix enumeration with last axis fastest `:549-565`).
-- `validate` `:571`: alias synchronization `:572-589`; positivity `:592-610`; geometry and
-  `cin_lo_blocks` `:612-639`; `l2_policy` follows `policy` if unset `:641`; random refused
-  `:655-665`; rrip_bits in [1,8] `:661-662`; `lines_per_burst <= l1_mshrs` `:667-670`;
-  `core_accept_ii >= 1` `:671-673`; L1/L2 prefetch distance and direction checks `:675-725`;
-  `l2_demand_reserve` resolved to lines_per_burst and must be `< l2_mshrs` `:699-711`;
-  `l1_demand_reserve` resolved and must be `< l1_mshrs` `:727-735`; warnings `:738-768`.
-- `to_engine_params` `:772`: copies both levels' prefetch kind/axis/distance/directions and the
+- `assign(cfg, key, value, pos)` `:186`: the single key dispatcher used by both parsers (comment
+  `:187-188` describes the table lookup); enum spellings `:202-310`; unknown key fails `:311`.
+- `reject` `:316`, `reject_below_one` `:320`, `reject_negative` `:326`, `check_level_geometry`
+  `:332` (size >= one set, whole lines, whole sets), `warn` `:351`.
+- `read_object_into(reader, cfg)` `:360` (duplicate keys refused); `struct GridAxis` `:386`.
+- `RunConfig::line_size_bytes` etc. `:396-402` (integer division; validated later).
+- `parse_config` `:406`; `parse_config_grid` `:416` (array form `:420-436`; base/axes form
+  `:444-505`; mixed-radix enumeration with last axis fastest `:507-524`).
+- `validate` `:529`: alias synchronization `:530-547`; positivity `:549-568`; geometry and
+  `cin_lo_blocks` `:570-596`; `l2_policy` follows `policy` if unset `:598`; random refused
+  `:605-616`; rrip_bits in [1,8] `:620-621`; `lines_per_burst <= l1_mshrs` `:624-626`;
+  `core_accept_ii >= 1` `:628-630`; L1/L2 prefetch distance and direction checks `:632-682`;
+  `l2_demand_reserve` resolved to lines_per_burst and must be `< l2_mshrs` `:656-668`;
+  `l1_demand_reserve` resolved and must be `< l1_mshrs` `:684-693`; warnings `:695-725`.
+- `to_engine_params` `:729`: copies both levels' prefetch kind/axis/distance/directions and the
   legacy aliases; throws if not validated.
 
 **core/engine.cpp** (loop, memory-side handlers, inclusion, instruments)
@@ -626,10 +626,10 @@ the shared `src/layout/layout_common.h`.
   fills, whole set), `insert` `:264` (slot range-checked, line not), `invalidate` `:274`.
 
 **replacement/policy.cpp**
-- `make_policy` `replacement/policy.cpp:19` constructs the selected concrete policy and rejects RANDOM.
+- `make_policy` `replacement/policy.cpp:21` constructs the selected concrete policy and rejects RANDOM.
 
 **replacement/stamp.cpp**
-- `StampPolicy` constructor `replacement/stamp.cpp:23`, bound check `:28`, stamp/fill/invalidate/victim
+- `StampPolicy` constructor `replacement/stamp.cpp:19`, bound check `:28`, stamp/fill/invalidate/victim
   operations `:38-84`; LRU/FIFO hit behavior `:99-101`.
 
 **replacement/belady.cpp**
@@ -637,10 +637,10 @@ the shared `src/layout/layout_common.h`.
   maximum-next-use victim selection `:49`.
 
 **replacement/lfu.cpp**
-- `LfuPolicy` constructor `replacement/lfu.cpp:18`, count updates `:35-41`, victim selection `:43`.
+- `LfuPolicy` constructor `replacement/lfu.cpp:17`, count updates `:35-41`, victim selection `:43`.
 
 **replacement/rrip.cpp**
-- `RripPolicy` constructor `replacement/rrip.cpp:22`, RRPV updates `:45-53`, uniform aging and tie-break
+- `RripPolicy` constructor `replacement/rrip.cpp:19`, RRPV updates `:45-53`, uniform aging and tie-break
   in `pick_victim` `:55-76`.
 **prefetch/**
 - `prefetcher.cpp`: `make_prefetcher` `:12-29` constructs `NoPrefetcher`, `NextBurstPrefetcher`,
@@ -670,7 +670,7 @@ the shared `src/layout/layout_common.h`.
   mapper and emits `W_CIN_LO_UNREACHABLE` for a SplitCin width above the layer's CIN-block count;
   both native drivers call this same function after validation.
 **layout/block_pack.cpp** (`BlockPackMapper`, header `include/cachesim/layout/block_pack.h:42`; 235 lines)
-- Nesting `[KH][KW][cin_blk][cout_blk]`, cout innermost; `kName` `layout/block_pack.cpp:14`; Axis-order `static_assert`s
+- Nesting `[KH][KW][cin_blk][cout_blk]`, cout innermost; `kName` `layout/block_pack.cpp:15`; Axis-order `static_assert`s
   `:33-36`.
 - Ctor `:40` (header `:64`): `check_shape_and_blocking` `:57`; block counts `:63-64`;
   `line_size_bytes_` `:77`; `num_lines = KH*KW*ncb*nkb` via `checked_mul` `:91-94`; strides
@@ -683,8 +683,8 @@ the shared `src/layout/layout_common.h`.
 **layout/split_cin.cpp** (`SplitCinMapper`, header `include/cachesim/layout/split_cin.h:110`; 333 lines)
 - Nesting `[KH][KW][cin_hi][cout_blk][cin_lo]`, `cin_lo = cin_blk % n_cin_lo` innermost, so with
   `n_cin_lo = L1 sets` the L1 set index is the CIN digit. `enum Digit` header `:99`;
-  `static_assert`s on Digit order `:21-25`; `kName` `layout/split_cin.cpp:13`.
-- `ceil_div` `:31` (int64 ceiling, see 3.2 item 1).
+  `static_assert`s on Digit order `:21-25`; `kName` `layout/split_cin.cpp:14`.
+- `ceil_div` `:32` (int64 ceiling, see 3.2 item 1).
 - Ctor `:37` (extra arg `n_cin_lo >= 1`, `:59`); `n_cin_hi = ceil(ncb / n_cin_lo)` `:69`;
   `radix_product` as an overflow guard `:99-104`; strides `:127-136`; `num_lines` = max id + 1
   `:155-160`, may be below the radix product (holes when n_cin_lo does not divide ncb), sanity check
@@ -697,7 +697,7 @@ the shared `src/layout/layout_common.h`.
 **layout/khkw_split.cpp** (`KhkwSplitMapper`, header `include/cachesim/layout/khkw_split.h:70`; 186 lines)
 - Nesting `[pos_hi][cout_blk][cin_blk][pos_lo]`, `pos = kh*KW + kw`, split at `n_pos_lo =
   min(kPosLoRadix=8, KH*KW)` (`layout/khkw_split.h:89`, `layout/khkw_split.cpp:34`). `enum Digit` header `:79`;
-  `kName` `layout/khkw_split.cpp:14`.
+  `kName` `layout/khkw_split.cpp:15`.
 - Ctor `:18`; `n_pos`, `n_pos_lo`, `n_pos_hi` `:33-35`; strides `:39-45`; `radix_product` `:50-52`;
   `num_lines` = max id + 1 via a loop over every `pos` `:63-71` (see 3.1 item 1 on its comment).
 - `digit_stride` `:80`, `digit_radix` `:91`, `block_len` `:101`, `line_of` `:111`, `expand` `:135`
@@ -722,22 +722,22 @@ the shared `src/layout/layout_common.h`.
 **instrument/stats.cpp**
 - Uses the shared `name_of` overloads from `include/cachesim/enum_names.h`; `total` and `quantile`
   remain local helpers.
-- `class Row` `:71`: `str` (refuses `, " \n \r`) `:73`, `i64` `:86`, `f64` (`%.6f`) `:91`, `ratio`
-  (empty cell when denominator 0) `:101`, `blank` `:109`, `blank_rest` `:115`, `take` `:120`; every
-  cell checked against the schema position (`expect` `:130`).
-- `emit_identity` `:144`, `emit_config` `:156` (comment `:178-179` points to where
-  `l2_demand_reserve` is written), `emit_headline` `:195`.
-- `csv_columns` `:203` (112 columns; `l2_demand_reserve` `:227`; `rrip_bits` appended last `:243`),
-  `csv_header` `:247`.
-- `RunStats::RunStats` `:256`: `hidden_latency = fetch_latency_sum - core_stall_sum` `:274`, derived
-  `dram_bytes = dram_accesses*line_size` `:291`, `pf_coverage = (timely+late) / demand_bursts`
-  `:334`, L2 prefetch config then outcomes `:340-363` (`l2_demand_reserve` `:349`),
-  `l2_pf_coverage = l2_pf_timely / l2_accesses` `:364` (comment `:361-363`: also the retrigger
-  ratio), `port_bound_threshold = miss_frac * l2_miss_latency * l2_banks / l2_ii` `:373-381`, MSHR
-  occupancy p50/p95/max `:383-395`, `events_per_cycle` `:400`.
-- `csv_row` `:409`; `check_invariants` `:418-450`: stall causes sum == stall_total, hidden_latency >=
+- `class Row` `:43`: `str` (refuses `, " \n \r`) `:45`, `i64` `:58`, `f64` (`%.6f`) `:63`, `ratio`
+  (empty cell when denominator 0) `:73`, `blank` `:81`, `blank_rest` `:87`, `take` `:92`; every
+  cell checked against the schema position (`expect` `:102`).
+- `emit_identity` `:116`, `emit_config` `:128` (comment `:150-151` points to where
+  `l2_demand_reserve` is written), `emit_headline` `:167`.
+- `csv_columns` `:175` (112 columns; `l2_demand_reserve` `:199`; `rrip_bits` appended last `:215`),
+  `csv_header` `:219`.
+- `RunStats::RunStats` `:228`: `hidden_latency = fetch_latency_sum - core_stall_sum` `:247`, derived
+  `dram_bytes = dram_accesses*line_size` `:263`, `pf_coverage = (timely+late) / demand_bursts`
+  `:306-307`, L2 prefetch config then outcomes `:316-328` (`l2_demand_reserve` `:321`),
+  `l2_pf_coverage = l2_pf_timely / l2_accesses` `:336-337` (comment `:333-335`: also the retrigger
+  ratio), `port_bound_threshold = miss_frac * l2_miss_latency * l2_banks / l2_ii` `:339-352`, MSHR
+  occupancy p50/p95/max `:355-365`, `events_per_cycle` `:372`.
+- `csv_row` `:381`; `check_invariants` `:390-422`: stall causes sum == stall_total, hidden_latency >=
   0, L1 prefetch outcomes + drops == pf_issued.
-- `oracle_row` `:452`: identity + config + `total_cycles = tick_base_total`, rest blank.
+- `oracle_row` `:424`: identity + config + `total_cycles = tick_base_total`, rest blank.
 
 **sweep.cpp**
 - Uses `name_of(LayoutKind)` from `include/cachesim/enum_names.h`; `rethrow_with_index` prefixes
@@ -772,15 +772,15 @@ the shared `src/layout/layout_common.h`.
   `:110-128` (frees each source bucket after construction), `attach_oracles` `:139-153` (only
   levels whose policy is Belady), `report_oracles` `:160-172`, and `report_overruns` `:197-211`.
 
-**cachesim_run.cpp**: `kUsage` `:39` (header help `:46-47`), `struct Options` `:117` (`header = true`
-`:140`), `parse_args` `:148` (`--header`/`--no-header` `:183-184`), `run` `:216` (steps in 1.3;
-Belady oracle checks `:310-340`; instruments `:281-365`; truncation notes `:391-406`; header
-emitted iff `opt.header` `:417`), `main` `:430`.
+**cachesim_run.cpp**: `kUsage` `:42` (header help `:49-50`), `struct Options` `:120` (`header = true`
+`:143`), `parse_args` `:151` (`--header`/`--no-header` `:186-187`), `run` `:219` (steps in 1.3;
+Belady oracle checks `:313-342`; instruments `:284-365`; truncation notes `:392-408`; header
+emitted iff `opt.header` `:420-421`), `main` `:433`.
 
-**cachesim_sweep.cpp**: `kUsage` `:34`, `struct Options` `:77`, `parse_args` `:91`, `read_file` `:123`,
-`run` `:131` (validate every point with grid[0]'s probe `:148-170`; one mapper from grid[0]
-`:178`; shared oracles `:197-208`; observer does hist/padding/progress `:209-219`; rows `:240-247`),
-`main` `:259`.
+**cachesim_sweep.cpp**: `kUsage` `:37`, `struct Options` `:80`, `parse_args` `:94`, `read_file` `:126`,
+`run` `:134` (validate every point with grid[0]'s probe `:148-172`; one mapper from grid[0]
+`:175-182`; shared oracles `:193-204`; observer does hist/padding/progress `:212-220`; rows `:241-249`),
+`main` `:262`.
 
 ### 2.4 `tests/` (one line each)
 
@@ -841,7 +841,7 @@ Drivers:
 - `compile_fail.sh`: negative compile cases (type mixing, abstractness, const overrides), `-fsyntax-only`.
 - `mutation_check.sh`: mutates library files in place, expects `make test` to go red; restores from
   backups. Its file list and the A2b mutations target `src/layout/layout_common.h` / `.cpp`
-  (`mutation_check.sh:79`, helpers `mutate_lc_h` / `mutate_lc` at `:227-228`).
+  (`mutation_check.sh:80`, helpers `mutate_lc_h` / `mutate_lc` at `:227-228`).
 - `run_cli.sh`: `cachesim_run` end to end on a fixture converted by `examples/to_stream.py`. Step
   11 (`run_cli.sh:203-220`): `--out` gets a header by default on a new and on an overwritten file,
   and `--no-header` drops it.
@@ -910,8 +910,8 @@ Drivers:
    checks that it is a column (`tests/instrument/test_stats.cpp:155-156`). `test_stream_format.cpp:158` labels
    the v2 field-order check "v1 address field order".
 3. The comment above the L2 reserve rule still gives prefetching as its reason ("makes prefetching
-   unreachable while claiming to be on", `src/config.cpp:699-701`), while the message itself
-   describes an MSHR floor that holds whatever the prefetch policy is (`config.cpp:707-711`) and
+   unreachable while claiming to be on", `src/config.cpp:656-658`), while the message itself
+   describes an MSHR floor that holds whatever the prefetch policy is (`config.cpp:664-668`) and
    `test_config.cpp:204-226` asserts the message does not mention prefetching.
 4. References to an archive that is not in the repo: `src/layout/block_pack.cpp:167` ("the v1 lesson the archive
    preserved"), `tests/layout/test_block_pack.cpp:831`, `tests/index/test_set_associative.cpp:21`. Also
@@ -920,14 +920,14 @@ Drivers:
    ...")` prints "BlockPackMapper: BlockPackMapper::neighbour: ..." (`src/layout/block_pack.cpp:223`; same
    at `src/layout/split_cin.cpp:303`, `src/layout/khkw_split.cpp:151`). Runs of three blank lines: `layout/block_pack.cpp:215-217`, `layout/split_cin.cpp:297-299`, `layout/khkw_split.cpp:145-147`.
 6. `EngineStats::pf_dropped_targets_full` (`include/cachesim/core/engine.h:214`) is never incremented
-   anywhere in `src/`; it is always 0 by construction (read only at `src/instrument/stats.cpp:270,326`).
+   anywhere in `src/`; it is always 0 by construction (read only at `src/instrument/stats.cpp:240-243,298`).
    `Request::reason` (`include/cachesim/core/request.h:66-74`) is written (`src/core/mshr.cpp:64`) but never read in
    `src/` or `apps/`. `CoreState::issued_at` is written (`src/core/engine_core.cpp:64,194`) and never read
    in `src/`/`apps/`.
 7. `replacement/next_use.h:29` includes `<istream>`, which nothing in the file uses.
 8. `LevelParams::bank_high_bits` (`include/cachesim/core/cache_level.h:131`) has no config key (absent from
-   `config.cpp:135-165`, never set in `to_engine_params`), so the high-bits banking branch
-   (`src/core/cache_level.cpp:103`) is reachable only from tests.
+   `config.cpp:136-165`, never set in `to_engine_params`), so the high-bits banking branch
+   (`src/core/cache_level.cpp:106`) is reachable only from tests.
 9. Output still names the simulator `wcache`: the comment line the line trace writes
    (`include/cachesim/instrument/line_trace.h:71`) and the one the cache-state log writes
    (`include/cachesim/instrument/cache_state_log.h:60`). The writer's comment points at a plan and a ruling that
@@ -936,20 +936,20 @@ Drivers:
 ### 3.2 Duplicated logic
 1. Mapper helpers: the checks, `expand`, `locate` and `line_size_terms` live in
    `src/layout/layout_common.h` / `.cpp` (2.2). What is still duplicated: an int64 ceiling written twice more,
-   `ceil_div` (`src/layout/split_cin.cpp:31`) and the inline `n_pos_hi_` ceiling
+   `ceil_div` (`src/layout/split_cin.cpp:32`) and the inline `n_pos_hi_` ceiling
    (`src/layout/khkw_split.cpp:35`), beside `detail::blocks_covering` (`layout/layout_common.h:48`, int32
    extent); and the same `neighbour` range-check block in each mapper (`layout/block_pack.cpp:222-226`,
    `layout/split_cin.cpp:302-306`, `layout/khkw_split.cpp:150-154`). `neighbour` staying per mapper is by design
    (`layout/layout_common.h:5-6`).
-2. Nearest-rank quantile twice: `include/cachesim/instrument/hist.h:85-92` and `src/instrument/stats.cpp:60-65`.
+2. Nearest-rank quantile twice: `include/cachesim/instrument/hist.h:85-92` and `src/instrument/stats.cpp:29-36`.
 3. `engine_error` / `idx` twice: `src/core/engine.cpp:18-22`, `src/core/engine_core.cpp:31-35`. Way-from-slot
-   arithmetic twice: `core/engine.cpp:692-695` and `core/engine.cpp:755-758`.
+   arithmetic twice: `core/engine.cpp:728-740` and `core/engine.cpp:798-802`.
 4. Per-policy `index_or_reject` four times: `src/replacement/{stamp,belady,lfu,rrip}.cpp`.
 5. The two apps duplicate the config/trace/mapper/validate setup and drift:
-   - `--max-engines` uses bare `std::stoi` (`apps/cachesim_sweep.cpp:107`, accepts `"12abc"`) while
+   - `--max-engines` uses bare `std::stoi` (`apps/cachesim_sweep.cpp:107-110`, accepts `"12abc"`) while
      `cachesim_run` uses `int_value_of` (`apps/cli_args.h:37-49`).
-   - Oracle help text disagrees: L1 oracles "exact WHILE NOTHING BLOCKS" (`cachesim_run.cpp:88-93`) vs
-     "EXACT" (`cachesim_sweep.cpp:64-66`).
+   - Oracle help text disagrees: L1 oracles "exact WHILE NOTHING BLOCKS" (`cachesim_run.cpp:91-96`) vs
+     "EXACT" (`cachesim_sweep.cpp:67-69`).
    - Sweep has no `--l2-oracle`, instruments, or `--oracle-only`.
    - AccessLog batch size `1 << 16` duplicated in `instrument/access_log.h:141` and `apps/oracle_io.h:60`.
 
@@ -958,10 +958,10 @@ Drivers:
    trips, so with more than 62 cores keys alias silently. `AccessLog` allows 255 cores
    (`instrument/access_log.h:136`); the code mentions 256-core targets (`core/event.h:240-243`).
 2. **H4** L2 prefetch accounting is not closed: `close_out_prefetch_stats` handles L1 only
-   (`src/core/engine.cpp:660-675`), lines still tagged in `l2_prefetched_` at end of run are not charged
-   as wasted, and `check_invariants` checks only the L1 identity (`src/instrument/stats.cpp:418-450`). The gap is
-   stated in comments (`core/engine.cpp:672-674`, `core/engine.h:244-247`,
-   `instrument/stats.cpp:341-343`).
+   (`src/core/engine.cpp:705-720`), lines still tagged in `l2_prefetched_` at end of run are not charged
+   as wasted, and `check_invariants` checks only the L1 identity (`src/instrument/stats.cpp:390-422`). The gap is
+   stated in comments (`core/engine.cpp:717-719`, `core/engine.h:244-247`,
+   `instrument/stats.cpp:312-315`).
 3. **H6** MSHR occupancy samples are appended on every forward and retire
    (`src/core/engine.cpp:267,394,533,602`) and kept for the whole run per engine; memory grows with miss
    count times grid size (up to 256 engines).
@@ -971,15 +971,15 @@ Drivers:
    (`layout/layout_common.h:138-139`). For stride `s > 1` a run `[start, end)` holds
    `ceil((end - start) / s)` elements, but the decoder asks for `end - start` of them, so the walk
    runs past `run_end` (or is refused as out of range). The writer does the same: `burst_span` is the
-   largest `cout_end - cout_start` (`src/cachesim/stream.py:166`) and `lines_per_burst` expands
+   largest `cout_end - cout_start` (`src/cachesim/stream.py:167`) and `lines_per_burst` expands
    `burst_span` elements at `burst_stride` (`apps/output.h:38-44`). Unreachable today because
    `stream_weight_trace` defaults `burst_stride=1` (`src/cachesim/stream.py:178`) and every test uses 1
    (`tests/stream_builder.h:110`).
 6. **H9** The header's `burst_span` is never checked against the bursts. `decode_header` only
    requires `burst_span >= 1` (`trace/stream_format.h:258-262`) and `advance` never reads it
    (`src/trace/stream_trace.cpp:176-335`), yet `lines_per_burst` (`apps/output.h:38-44`) is computed
-   from it and sets the `l1_mshrs` check (`config.cpp:667-670`) and both demand-reserve defaults
-   (`config.cpp:702,727`). A header that understates the span passes validation. Separately,
+   from it and sets the `l1_mshrs` check (`config.cpp:624-626`) and both demand-reserve defaults
+   (`config.cpp:659,684`). A header that understates the span passes validation. Separately,
    `lines_per_burst` expands the burst at the origin; a burst whose anchor is not block-aligned can
    touch one more line than that (span 16 at `cout_block` 16 starting at cout 8 covers 2 lines, not
    1). Derived from the code; the engine's response to a burst wider than the reserve was not traced.
@@ -995,7 +995,7 @@ Drivers:
   Delta Cray wrapper at `:19-22`), while `compile_fail.sh` honours `${CXX:-g++}`
   (`tests/compile_fail.sh:21`).
 - `JOBS` default 32 = the dev machine's `nproc` (`tests/compile_fail.sh:35,56`,
-  `tests/mutation_check.sh:119`).
+  `tests/mutation_check.sh:120`).
 - `cout_golden.sh` always runs `build/fixture/cachesim_sweep` (`tests/cout_golden.sh:12`), so
   `make MODE=release test-cli` builds release apps and then tests the fixture binary (or fails if
   it was never built).
@@ -1007,8 +1007,8 @@ Drivers:
 - The grid defaults are fixed files: `configs/cache/base.json` and `configs/cache/khkw_sweep.json`
   (`src/cachesim/grid.py:8-9`), found from the repo root `ROOT` (`src/cachesim/grid.py:7`).
 - Magic numbers in code: `kPosLoRadix = 8` (`include/cachesim/layout/khkw_split.h:89`); RRIP width cap 8 twice
-  (`src/replacement/rrip.cpp:11`, `src/config.cpp:661`); `--max-engines` 256
-  (`apps/cachesim_sweep.cpp:84`); AccessLog record limits 32-bit line / 8-bit core
+  (`src/replacement/rrip.cpp:11`, `src/config.cpp:620`); `--max-engines` 256
+  (`apps/cachesim_sweep.cpp:87`); AccessLog record limits 32-bit line / 8-bit core
   (`instrument/access_log.h:135-136`).
 - `trace/stream_format.h:35-37` requires the GCC/Clang `__BYTE_ORDER__` macro.
 - No absolute paths or hostnames appear in any `.cpp/.h/.sh/.py` file in scope (grep for `/home/`,
@@ -1041,17 +1041,17 @@ What the code needs:
   and `weight_trace_gen.weight_trace` (`src/cachesim/examples/to_stream.py:20`, `:34-36`); numpy is optional thanks to the
   stub.
 - **Inputs**: real runs need WCTS **v2** streams, written by `python -m weight_trace_gen gen --stream`
-  (`stream_weight_trace`, `src/cachesim/stream.py:177`) from a schedule and the input traces under
+  (`stream_weight_trace`, `src/cachesim/stream.py:178`) from a schedule and the input traces under
   `input_trace/`; `scripts/pipeline.py` writes them under its output directory. Only the five small
   example slices are committed (`src/cachesim/examples/`). A version-1 stream is refused (top note).
   For COUT streams a v2 stream gives the same rows as the v1 reader did (`tests/cout_golden.sh` checks
   this on one fixture).
 - **Two-pass Belady**: `policy/l2_policy = belady` needs `--oracle` / `--l2-oracle` from a prior
-  run's `--access-log` over the same trace and layout (`cachesim_run.cpp:310-340`); results are only
+  run's `--access-log` over the same trace and layout (`cachesim_run.cpp:313-342`); results are only
   sound when `max_wait_depth == 0` (`apps/oracle_io.h:204-210`).
 - **Non-deterministic columns**: `run_id` defaults to a random UUID (`apps/cli_args.h:63-73`),
   `sim_wall_seconds` is wall time, and `git_commit` is empty unless the driver passes it
-  (`cachesim_run.cpp:52-53`). Everything else is designed to be bit-identical across runs (total event
+  (`cachesim_run.cpp:55-56`). Everything else is designed to be bit-identical across runs (total event
   order, vectors iterated by index; `unordered_map`s are never iterated in decision paths, though
   `LineTrace::flush` sorts its map keys `instrument/line_trace.h:148-151`).
 - **Binary formats**: the AccessLog is written in host byte order with no endianness marker
@@ -1070,7 +1070,7 @@ What the code needs:
    `lines_per_burst` account for anchors that are not block-aligned (H9)?
 3. Should tagged-but-unused L2 prefetched lines be charged as wasted at end of run, and should the L2
    identity be enforced in `check_invariants` (H4)?
-4. Is `l2_policy` meant to appear in the CSV? The schema has only `policy` (`src/instrument/stats.cpp:214`), so
+4. Is `l2_policy` meant to appear in the CSV? The schema has only `policy` (`src/instrument/stats.cpp:184-186`), so
    a row with a different L2 policy is not self-describing.
 5. Is `bank_high_bits` meant to be a sweepable knob (3.1 item 8)?
 6. What core-count ceiling must the instruments support (LineTrace 62, AccessLog 255)?

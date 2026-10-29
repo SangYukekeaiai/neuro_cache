@@ -1,11 +1,9 @@
 # Code atlas: the pipeline (input trace -> schedule -> weight trace -> cachesim / nocsim -> results)
 
-Repo `neuro_cache-wcache`, branch `wcache-rebuild-phase-a`, commit `ef48902`
-plus the uncommitted working-tree changes to `scripts/pipeline.py`,
-`src/snn_scheduler/cli.py`, `tests/test_snn_scheduler_cli.py` and
-`src/cachesim/examples/manifest.json`; every `file:N` below is line N of the
-file as it is in that working tree, and a bare `:N` refers to the file named
-last before it. Built only from code (`.py .cpp .h
+Repo `neuro_cache-wcache`, branch `wcache-rebuild-phase-a`, commit `e151510`.
+The working tree also has an uncommitted change in `.gitignore`.
+Every `file:N` below is line N of the file, and a bare `:N` refers to the file
+named last before it. Built only from code (`.py .cpp .h
 Makefile .yaml .json .toml`) and directory listings; no notes, logs or result
 files were read, so anything a README states and the code does not is absent
 here. Paths are relative to the repo root.
@@ -163,7 +161,7 @@ Formats crossing each boundary:
    `docs/atlas/cachesim_native.md` (WCTS v2 wire format).
 7. **Simulator outputs.** `cachesim_sweep` prints CSV to stdout (or `--out`),
    with the header on by default
-   (`src/cachesim/native/apps/cachesim_sweep.cpp:44-45`, :85); the pipeline
+   (`src/cachesim/native/apps/cachesim_sweep.cpp:47-48`, :88); the pipeline
    still passes `--header` (`scripts/pipeline.py:375`) and keeps
    `total_cycles` and the `KEY_FIELDS` columns `layout, line_size_bytes,
    l2_size_bytes, l2_banks, prefetch_policy, prefetch_distance` (:51-52,
@@ -637,8 +635,8 @@ kept in git by `.gitignore:44-45` although `.gitignore:22` ignores
 `layer_12_features_40`) and `resnet19_T4_n5/` (19 layers incl. 3
 `*_shortcut_0`), each with `meta.json` (T=4, B=5, dataset cifar10, dtype
 uint8, `layer_params`, `subset.sample_indices` `[2697, 3078, 5110, 6367,
-8502]`, seed 0, cut from the full captures on Delta by a tool removed on
-2026-10-27, recoverable with `git show 21467c4:scripts/subset_input_traces.py`).
+8502]`, seed 0, cut from the full captures on Delta by a tool that is not in
+the tree; `git show 21467c4:scripts/subset_input_traces.py` is its source).
 Only LoAS-captured traces exist; every arch model reads these same spikes. The
 full `_all` captures are on Delta (path in `input_trace/README.md`).
 
@@ -740,7 +738,7 @@ full `_all` captures are on Delta (path in `input_trace/README.md`).
   and `solve_schedule` keeps recording paths as given
   (`src/snn_scheduler/solve.py:169-172`).
 - `--verify-baseline` defaults to `<repo>/.baseline/after`
-  (`scripts/pipeline.py:463`), a git-ignored local directory (`.gitignore:78`).
+  (`scripts/pipeline.py:463`), a git-ignored local directory (`.gitignore:81`).
 - `tests/test_cachesim_grid.py:12-16` reads its reference from `data/demo` or
   `.baseline/`, both outside git.
 
@@ -818,7 +816,7 @@ full `_all` captures are on Delta (path in `input_trace/README.md`).
 
 ### 3.8 Tracked data and build products
 
-- Native binaries (`<arch>gen`, `eventsim`) are ignored (`.gitignore:53-58`);
+- Native binaries (`<arch>gen`, `eventsim`) are ignored (`.gitignore:55-61`);
   the cache simulator builds into `src/cachesim/native/build/`.
 - Tracked data: `input_trace/loas` (14 MB), the four schedules under
   `configs/schedules/loas`, and the fixtures in `src/cachesim/examples/`.

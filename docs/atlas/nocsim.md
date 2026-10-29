@@ -1,6 +1,6 @@
 # Code atlas: src/nocsim
 
-Built from code only, at commit ef48902 (branch wcache-rebuild-phase-a). No
+Built from code only, at commit e151510 (branch wcache-rebuild-phase-a). No
 markdown, text or log file was read. Line numbers come from `grep -n` and
 `sed -n`. All paths are relative to the repo root.
 
@@ -36,10 +36,10 @@ schedules and enumerate tiles (1.3).
 | Entry | Where | Notes |
 |---|---|---|
 | CLI `python -m nocsim` | src/nocsim/__main__.py:1-4 calls src/nocsim/sim.py:313 `main(argv=None) -> int` | Works from any cwd once the repo is installed with `pip install -e .` (`package-dir` `src`, pyproject.toml:10-11). Imports top-level `parsers` and `weight_trace_gen` (src/nocsim/sim.py:43-49), and `snn_scheduler.constants` through `schedule/decode.py` (src/nocsim/schedule/decode.py:39). |
-| `--schedule JSON` (required) | src/nocsim/sim.py:266 | Raw solver doc, or a `snn_scheduler.artifact.ScheduleArtifact` (src/snn_scheduler/artifact.py:27) that nests it under `"result"` (src/nocsim/sim.py:62). |
-| `--layer YAML` (required) | src/nocsim/sim.py:272 | Read by `parsers.layer.SNNProb`. Must match the layer used when solving. |
-| `--arch YAML` (required) | src/nocsim/sim.py:278 | Read twice: `SNNArch` (for `single_node`) and `SNNBitwidths` (bit widths, `DRAM_LATENCY`). |
-| `--out CSV` (default `outputs/tc.csv`, relative to cwd) | src/nocsim/sim.py:255, :284 | Suffix `.csv` or `.json` (src/nocsim/core/generator.py:179). |
+| `--schedule JSON` (required) | src/nocsim/sim.py:267 | Raw solver doc, or a `snn_scheduler.artifact.ScheduleArtifact` (src/snn_scheduler/artifact.py:27) that nests it under `"result"` (src/nocsim/sim.py:62). |
+| `--layer YAML` (required) | src/nocsim/sim.py:273 | Read by `parsers.layer.SNNProb`. Must match the layer used when solving. |
+| `--arch YAML` (required) | src/nocsim/sim.py:279 | Read twice: `SNNArch` (for `single_node`) and `SNNBitwidths` (bit widths, `DRAM_LATENCY`). |
+| `--out CSV` (default `outputs/tc.csv`, relative to cwd) | src/nocsim/sim.py:255, :285 | Suffix `.csv` or `.json` (src/nocsim/core/generator.py:187-195). |
 | `--weight-trace JSON_GZ` (optional) | src/nocsim/sim.py:291 | One per-step cycles `sample_NNNNN.json.gz` (written by `nocsim.step_cycles.save_step_cycles`, src/nocsim/step_cycles.py:27, which `python -m weight_trace_gen gen` calls at src/weight_trace_gen/cli.py:117, :224); loaded by `nocsim.step_cycles.load_step_cycles` (src/nocsim/step_cycles.py:142), giving per-step MAC cycles. |
 | `--simulate` (flag) | src/nocsim/sim.py:302 | After writing the CSV, runs `src/nocsim/eventsim/eventsim` and prints its 5 counters. |
 | `run(x, prob, bitwidths, out_file, ...)` | src/nocsim/sim.py:79 | Gurobi-variable path (`decode()`); no caller in src/, scripts/ or tests/. |
@@ -74,7 +74,7 @@ simulation, missing or failing eventsim (src/nocsim/sim.py:326, :340, :350,
 
 ### 1.4 Data flow (CLI path)
 
-1. **Inputs -> parsed objects** (src/nocsim/sim.py:321-323):
+1. **Inputs -> parsed objects** (src/nocsim/sim.py:321-323, weight trace :335-337):
    layer YAML -> `SNNProb`; arch YAML -> `SNNArch`, `SNNBitwidths`;
    optional weight trace -> `StepCycles.by_step: {(dram_i, noc_i): ComputeCycles}`.
 2. **Schedule JSON -> `Schedule`** (src/nocsim/schedule/decode.py:238):
@@ -93,7 +93,8 @@ simulation, missing or failing eventsim (src/nocsim/sim.py:326, :340, :350,
    to the three cost dicts.
 6. **`TC_Generator.to_file()` -> `tc.csv`** (src/nocsim/core/generator.py:179):
    two lines per TC: `# annotation` then `tc_id,actor_id,op,size,src,dest,dep`.
-7. **(optional) `tc.csv` -> eventsim -> JSON** (src/nocsim/eventsim/EventSim.h:54):
+7. **(optional) `tc.csv` -> eventsim -> JSON** (src/nocsim/eventsim/EventSim.h:54,
+   keys printed at src/nocsim/eventsim/main.cpp:68-73):
    `{"total_cycles","unicast_cycles","multicast_cycles","count_cycles","dram_cycles"}`.
 
 ### 1.5 Key abstractions
@@ -142,7 +143,7 @@ Conventions that hold everywhere:
    a. DRAM->GB loads (:273-298): weight always; psum unless first-K-at-DRAM
       or psum DRAM-free; vmem only if last-K-at-DRAM and not first-T-at-DRAM
       and not vmem DRAM-free. All skipped in single-node mode.
-   b. For each `noc_i` (:326): (1) weight load if `weight_changes` (:376);
+   b. For each `noc_i` (:325): (1) weight load if `weight_changes` (:376);
       (2) psum load to K-chain tail PEs (:410); (3) MAC COUNT on every PE
       (:426); (4) K-chain unicasts (:436); (5) psum store from K tails
       (:451); if not last-K, next step (:461). Else (6) vmem load to T-chain
@@ -200,7 +201,7 @@ Conventions that hold everywhere:
 
 **noc.py**
 - `Link` (src/nocsim/core/noc.py:38): `((x0,y0),(x1,y1))`.
-- `class NoC(X, Y, gb_port=None, dram_port=None)` (src/nocsim/core/noc.py:41, `__init__` :59): `num_rports = 4XY - 2Y(X-1) - 2X(Y-1)` (:74), which equals `2X+2Y`; `num_ports = XY + num_rports`. Defaults: `gb_port = X*Y` (:78) -> coordinate (0, Y); `dram_port = num_ports-(X+Y) = XY+X+Y` (:79-82), chosen to match an external CoSA C++ backend (`testbench.cpp`, not in this repo). Both must lie in `[X*Y, num_ports)` and differ (:84-94).
+- `class NoC(X, Y, gb_port=None, dram_port=None)` (src/nocsim/core/noc.py:41, `__init__` :59): `num_rports = 4XY - 2Y(X-1) - 2X(Y-1)` (:74), which equals `2X+2Y`; `num_ports = XY + num_rports` (:73, :75). Defaults: `gb_port = X*Y` (:78) -> coordinate (0, Y); `dram_port = num_ports-(X+Y) = XY+X+Y` (:79-82), chosen to match an external CoSA C++ backend (`testbench.cpp`, not in this repo). Both must lie in `[X*Y, num_ports)` and differ (src/nocsim/core/noc.py:84-94).
 - `get_xy(pe_id)` (src/nocsim/core/noc.py:100): `(id % X, id // X)`, also used for ports past the grid.
 - `_hops_single(src, dest)` (src/nocsim/core/noc.py:111): XY route as list of links. Only caller is `count_hops` (:145).
 - `count_hops(src, dests)` (src/nocsim/core/noc.py:134): unique links over all dests. Not called anywhere.
@@ -288,7 +289,7 @@ used only in the CSV comment line.
 - `struct Transaction` (src/nocsim/eventsim/Transaction.h:16); `parse_int_list` :26; `split_csv_line` :34; `parse_csv(path)` :49: skips empty and `#` lines; exactly 7 fields or throws.
 - EventSim.h takes the flit count from `constants.h` (src/nocsim/eventsim/EventSim.h:36).
 - `struct SimResult` (src/nocsim/eventsim/EventSim.h:38); `touches_dram(tc, dram_port)` :46.
-- `simulate(tcs, noc, dram_port, dram_latency) -> SimResult` (src/nocsim/eventsim/EventSim.h:54): list scheduler. A TC becomes ready when all deps have completed; ready ties go by ascending tc_id (:106). Start = max(dep finish times :130-133, actor free time, free time of every link on its route). Durations: COUNT = `size`; DRAM-touching send = `ceil(size*dram_latency)` with no links (:139-144); other sends = `hops + FLITS_PER_PACKET*size`, multicast routed only to its farthest dest (:160, :170). An actor runs one TC at a time, and only its last finish is kept (:175), so there is no backfilling into earlier gaps. Every GB-sourced send (and `store_to_dram`) has actor `gb_port`, so they serialize. `*_cycles` are sums of durations; `total_cycles` is the makespan. Unknown dep ids or a cycle throw (:74-77, :201).
+- `simulate(tcs, noc, dram_port, dram_latency) -> SimResult` (src/nocsim/eventsim/EventSim.h:54): list scheduler. A TC becomes ready when all deps have completed; ready ties go by ascending tc_id (:106). Start = max(dep finish times :130-133, actor free time, free time of every link on its route). Durations: COUNT = `size`; DRAM-touching send = `ceil(size*dram_latency)` with no links (:139-144); other sends = `hops + FLITS_PER_PACKET*size`, multicast routed only to its farthest dest (:160, :170). An actor runs one TC at a time, and only its last finish is kept (:175), so there is no backfilling into earlier gaps. Every GB-sourced send (and `store_to_dram`) has actor `gb_port`, so they serialize. `*_cycles` are sums of durations; `total_cycles` is the makespan. Unknown dep ids or a cycle throw (:74-77, :201-204).
 - `struct Args`, `parse_args`, `main` (src/nocsim/eventsim/main.cpp:17, :24, :60): prints one JSON line (:68-73).
 
 ### 2.7 Tests that touch nocsim (tests/)
@@ -299,7 +300,7 @@ packages on the import path.
 - tests/test_nocsim_cli.py: `python -m nocsim --help` exits 0 and lists `--weight-trace` (:18-21); `load_step_cycles` refuses a `format` other than `step_cycles_v1` (:24-31); `main` returns 2 with "error loading weight trace" for such a file (:34-46), run on the tracked `configs/schedules/loas/vgg16_T4_n5/layer_08_features_27.json`.
 - tests/test_step_cycles.py: `save_step_cycles` then `load_step_cycles` round trip on a hand-built two-tile trace (:23-32); `StepCycles.check_against` names the mismatched field (:35-44).
 - tests/test_weight_trace_gen_cli.py: `test_save_step_cycles_writes_only_what_nocsim_reads` (:122), the writer side of the same file.
-- tests/test_flits_per_packet.py: `test_eventsim_uses_python_flits_per_packet` (:36). `_unicast_cycles(size, tmp_path)` (:26) writes a one-row CSV (a GB-free unicast, PE 0 -> PE 1 on a 4x4 mesh, `--dram-port 33`) and runs the built binary; the cycle difference between sizes 20 and 10, divided by 10, must equal Python's `FLITS_PER_PACKET`. This also catches a binary that is stale against constants.h. Skips if the binary is missing (:37-38).
+- tests/test_flits_per_packet.py: `test_eventsim_uses_python_flits_per_packet` (:36). `_unicast_cycles(size, tmp_path)` (:26) writes a one-row CSV (a GB-free unicast, PE 0 -> PE 1 on a 4x4 mesh, `--dram-port 33`) and runs the built binary; the cycle difference between sizes 20 and 10, divided by 10, must equal Python's `FLITS_PER_PACKET`. This also catches a binary that is stale against constants.h. Skips if the binary is missing (tests/test_flits_per_packet.py:37-38).
 - tests/test_eventsim_deps.py: hand-written CSVs check that deps delay successors across actors (:45), same-actor chains are unchanged (:53), independent sends overlap (:60), fan-in takes the max (:68), chains add up (:77). The whole module skips if the binary is missing (:29-30).
 - tests/test_weight_resend.py: `StepInfo.weight_changes` sends equal the reloads the schedule calls for, over the tracked schedules under `configs/schedules/loas` (:37, `test_campaign` :55), plus a synthetic nest (`test_synthetic` :81).
 
@@ -334,7 +335,7 @@ packages on the import path.
 21. `import math` placed after a relative import (src/nocsim/core/generator.py:32-33).
 
 **Build products and data in git**
-22. No `__pycache__` or compiled binary is tracked (`git ls-files` clean); `src/nocsim/eventsim/eventsim` is gitignored (.gitignore:53).
+22. No `__pycache__` or compiled binary is tracked (`git ls-files` clean); `src/nocsim/eventsim/eventsim` is gitignored (.gitignore:56).
 
 ---
 
