@@ -83,10 +83,71 @@ void test_each_policy_runs_at_the_other_level() {
     }
 }
 
+void test_l1_prefetch_fills_are_not_l2_policy_outcomes() {
+    check::group("H4: L1-originated prefetch fills do not charge L2 policy outcomes");
+    FakeTrace trace(1);
+    const auto tile = trace.add_tile();
+    for (std::int32_t line = 0; line < 4; ++line) {
+        trace.add_burst(tile, 0, 20 * line, line);
+    }
+    BlockPackMapper mapper(WeightShape{1, 1, 1, 16}, 1, 1, 1);
+    EngineParams p;
+    p.l1 = fx::level(16, 2, 8, 4);
+    p.l2 = fx::level(1, 1, 8, 4);
+    p.l1.prefetch_kind = PrefetchKind::NextBurst;
+    p.l1.prefetch_params.distance = 1;
+    p.l2_miss_latency = SimTime{1};
+    Engine engine(mapper, trace, p);
+    engine.run();
+    const auto& stats = engine.stats();
+    CHECK_TRUE(stats.pf_issued > 0);
+    CHECK_TRUE(stats.pf_timely > 0);
+    CHECK_TRUE(stats.dram_accesses > 1);
+    CHECK_EQ(stats.l2_pf_issued, 0);
+    CHECK_EQ(stats.l2_pf_timely, 0);
+    CHECK_EQ(stats.l2_pf_late, 0);
+    CHECK_EQ(stats.l2_pf_wasted, 0);
+    CHECK_EQ(stats.l2_pf_retriggers, 0);
+    CHECK_EQ(engine.l1(CoreId{0}).mshrs().live(), 0);
+    CHECK_EQ(engine.l2().mshrs().live(), 0);
+}
+
+void test_l1_prefetch_use_by_another_core_is_not_an_l2_outcome() {
+    check::group("H4: another core using an L1 prefetch is not an L2 timely/late outcome");
+    for (std::int64_t tick : {4, 20}) {
+        FakeTrace trace(2);
+        const auto tile = trace.add_tile();
+        trace.add_burst(tile, 0, 0, 0);
+        trace.add_burst(tile, 0, 40, 1);
+        trace.add_burst(tile, 1, tick, 1);
+        BlockPackMapper mapper(WeightShape{1, 1, 1, 16}, 1, 1, 1);
+        EngineParams p;
+        p.l1 = fx::level(16, 2, 8, 4);
+        p.l2 = fx::level(32, 2, 8, 4);
+        p.l1.prefetch_kind = PrefetchKind::NextBurst;
+        p.l1.prefetch_params.distance = 1;
+        p.l2_miss_latency = SimTime{10};
+        Engine engine(mapper, trace, p);
+        engine.run();
+        const auto& stats = engine.stats();
+        CHECK_TRUE(stats.pf_issued > 0);
+        CHECK_EQ(stats.dram_accesses, 2);
+        CHECK_EQ(stats.l2_hits, tick == 4 ? 0 : 1);
+        CHECK_EQ(stats.l2_pf_issued, 0);
+        CHECK_EQ(stats.l2_pf_timely, 0);
+        CHECK_EQ(stats.l2_pf_late, 0);
+        CHECK_EQ(stats.l2_pf_wasted, 0);
+        CHECK_EQ(stats.l2_pf_retriggers, 0);
+        CHECK_EQ(engine.l2().mshrs().live(), 0);
+    }
+}
+
 }  // namespace
 
 int main() {
     test_neighbour_preserves_line_order_and_direction();
     test_each_policy_runs_at_the_other_level();
+    test_l1_prefetch_fills_are_not_l2_policy_outcomes();
+    test_l1_prefetch_use_by_another_core_is_not_an_l2_outcome();
     return check::summary();
 }

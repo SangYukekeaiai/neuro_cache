@@ -544,12 +544,14 @@ void Engine::on_l2_fill(Mshr& e, SimTime now) {
         back_invalidate(res.evicted_line, now);
     }
 
-    // The tag bit (plan 0831 U4). Set when a prefetch put this line here and no
-    // demand has merged onto the entry; a line that leaves still tagged was
-    // never used, which is the waste term gem5 counts as `prefetchUnused`.
-    if (e.pf_opened && !e.demand) {
+    // The primary is the first target and retains its L1 entry until L1 fill.
+    // Only an L2-originated prefetch has no L1 entry; L1 prefetch fills must not
+    // contribute outcomes to l2_pf_issued. A tagged line evicted before demand
+    // use is an unused L2-policy prefetch.
+    const bool l2_pf_opened = is_prefetch_at_issue(*e.targets.front());
+    if (l2_pf_opened && !e.demand) {
         l2_prefetched_.insert(line.get());
-    } else if (e.pf_opened && e.demand) {
+    } else if (l2_pf_opened && e.demand) {
         // A demand arrived while the prefetch was still in flight: it hid part
         // of the latency but not all of it.
         ++stats_.l2_pf_late;

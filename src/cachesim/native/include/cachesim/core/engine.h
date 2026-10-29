@@ -625,9 +625,9 @@ private:
     // same LineId the array is, and both of its edges (fill, evict) are single
     // call sites in this file.
     //
-    // A line is IN this set when a prefetch put it in the L2 and no demand has
-    // used it yet. That is exactly gem5's `CacheBlk::_prefetched`, with
-    // `clearPrefetched()` on the demand hit.
+    // A line is IN this set when an L2-policy prefetch put it in the L2 and no
+    // demand has used it yet. This uses gem5's `CacheBlk::_prefetched`
+    // lifetime, with `clearPrefetched()` on the demand hit.
     std::unordered_set<std::int64_t> l2_prefetched_;
 
     // Ask a level's policy for line targets and apply that level's issue

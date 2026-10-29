@@ -247,6 +247,10 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
     hidden_latency_ = fetch_latency_sum - core_stall_sum;
     pf_issued_      = es.pf_issued;
     pf_accounted_   = pf_accounted;
+    l2_pf_issued_   = es.l2_pf_issued;
+    l2_pf_accounted_ = es.l2_pf_timely + es.l2_pf_late + es.l2_pf_wasted +
+                       es.l2_pf_dropped_array_hit + es.l2_pf_dropped_entry +
+                       es.l2_pf_dropped_no_slot + es.l2_pf_dropped_reserve;
 
     Row r;
     emit_identity(r, id, hdr);
@@ -418,6 +422,14 @@ void RunStats::check_invariants() const {
         throw std::logic_error(
             "RunStats: the prefetch outcomes and drops sum to " + std::to_string(pf_accounted_) +
             " but pf_issued is " + std::to_string(pf_issued_));
+    }
+    // H4: L2-policy fills still resident and unused at finish are uncharged,
+    // so the outcomes and drops may sum to less than the number issued.
+    if (l2_pf_accounted_ > l2_pf_issued_) {
+        throw std::logic_error(
+            "RunStats: H4 violated: the L2 prefetch outcomes and drops sum to " +
+            std::to_string(l2_pf_accounted_) + " but l2_pf_issued is " +
+            std::to_string(l2_pf_issued_));
     }
 }
 

@@ -391,6 +391,40 @@ void test_check_invariants_catches_a_broken_prefetch_sum() {
                         "pf_issued"));
 }
 
+void test_l2_prefetch_outcomes_and_drops_do_not_exceed_issues() {
+    check::group("H4: L2 outcomes plus drops may trail issues, but never exceed them");
+    fx::FakeTrace tr(1);
+    const auto tile = tr.add_tile(2);
+    tr.add_burst(tile, 0, 0, 0);
+    fx::LinearMapper mapper(64);
+    Engine engine(mapper, tr, fx::unbounded_params());
+    engine.run();
+    // Each term must participate, including each drop reason individually.
+    std::int64_t EngineStats::* const terms[] = {
+        &EngineStats::l2_pf_timely, &EngineStats::l2_pf_late, &EngineStats::l2_pf_wasted,
+        &EngineStats::l2_pf_dropped_array_hit, &EngineStats::l2_pf_dropped_entry,
+        &EngineStats::l2_pf_dropped_no_slot, &EngineStats::l2_pf_dropped_reserve,
+    };
+    for (auto term : terms) {
+        EngineStats stats = engine.stats();
+        stats.*term = 1;
+        for (std::int64_t issued : {0, 1, 2}) {
+            stats.l2_pf_issued = issued;
+            const RunStats row(RowIdentity{"r", "", "cache", ""}, default_config(),
+                               header_for(1, 1), stats, 2, 2, 0.0, 0.0, 0, 0);
+            if (issued == 0) {
+                const auto msg = exactly_thrown_by<std::logic_error>(
+                    [&] { row.check_invariants(); });
+                CHECK_TRUE(mentions(msg, "l2_pf_issued"));
+                CHECK_TRUE(mentions(msg, "sum to 1"));
+            } else {
+                CHECK_TRUE(exactly_thrown_by<std::logic_error>(
+                    [&] { row.check_invariants(); }) == "<no exception>");
+            }
+        }
+    }
+}
+
 void test_percentiles_read_the_occupancy_samples() {
     check::group("Task 13: p50/p95/max reduce the MSHR occupancy samples");
     fx::FakeTrace tr(1);
@@ -453,6 +487,7 @@ int main() {
     test_v21_is_an_equality_at_every_l1_latency();
     test_check_invariants_catches_a_negative_hidden_latency();
     test_check_invariants_catches_a_broken_prefetch_sum();
+    test_l2_prefetch_outcomes_and_drops_do_not_exceed_issues();
     test_percentiles_read_the_occupancy_samples();
     test_the_oracle_row_needs_no_engine();
     return check::summary();

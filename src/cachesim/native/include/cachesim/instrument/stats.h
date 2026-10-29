@@ -89,6 +89,8 @@ public:
     //         the line anchor makes structural.
     //   4.6   the four prefetch outcomes plus the five drop reasons sum to
     //         `pf_issued`.
+    //   4.6   L2-policy outcomes plus drops are at most `l2_pf_issued` (H4);
+    //         unused L2-prefetched lines still resident at finish are uncharged.
     void check_invariants() const;
 
 private:
@@ -101,6 +103,8 @@ private:
     std::int64_t hidden_latency_  = 0;
     std::int64_t pf_issued_       = 0;
     std::int64_t pf_accounted_    = 0;
+    std::int64_t l2_pf_issued_    = 0;
+    std::int64_t l2_pf_accounted_ = 0;
 };
 
 // The spad_oracle arm: a row whose `total_cycles` IS `tick_base_total`, with
