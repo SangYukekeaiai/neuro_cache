@@ -87,6 +87,12 @@ struct RunConfig {
     std::int64_t core_accept_ii   = 1;
 
     // --- prefetch
+    PrefetchKind l1_prefetch_policy   = PrefetchKind::None;
+    Axis         l1_prefetch_axis     = Axis::CIN;
+    std::int32_t l1_prefetch_distance = 0;
+    bool         l1_prefetch_up       = true;
+    bool         l1_prefetch_down     = true;
+
     // --- the L2 policy (plan 0831-l2-cin-neighbour) -------------------------
     //
     // `l2_demand_reserve` returns here after being deleted as inert. It was
@@ -96,7 +102,7 @@ struct RunConfig {
     // request in the design that reaches the L2 without one, so it is exactly
     // the population the reserve was written for, and the stated reason for the
     // deletion is now false.
-    L2PrefetchKind l2_prefetch_policy   = L2PrefetchKind::None;
+    PrefetchKind   l2_prefetch_policy   = PrefetchKind::None;
     Axis           l2_prefetch_axis     = Axis::CIN;
     std::int32_t   l2_prefetch_distance = 1;
     bool           l2_prefetch_up       = true;

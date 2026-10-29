@@ -353,19 +353,21 @@ struct EngineParams {
 
     Inclusion inclusion = Inclusion::NonInclusive;
 
+    // Deprecated source-compatible aliases for the L1 fields. Config loading
+    // keeps them synchronized; direct callers are normalized by Engine.
     PrefetchKind prefetch_policy   = PrefetchKind::None;
     std::int32_t prefetch_distance = 0;
 
     // The L2 policy (plan 0831-l2-cin-neighbour). Independent of the L1 one
     // above: they hook different levels and either may run without the other.
-    L2PrefetchKind l2_prefetch_policy   = L2PrefetchKind::None;
+    PrefetchKind l2_prefetch_policy     = PrefetchKind::None;
     Axis           l2_prefetch_axis     = Axis::CIN;
     std::int32_t   l2_prefetch_distance = 1;
     bool           l2_prefetch_up       = true;
     bool           l2_prefetch_down     = true;
 };
 
-class Engine final : public PrefetchIssuer {
+class Engine final {
 public:
     // `mapper` and `trace` must outlive the engine. One mapper serves the whole
     // hierarchy (layout.h) and one trace serves the whole run.
@@ -440,7 +442,6 @@ public:
 
     CacheLevel& l1(CoreId c);
     CacheLevel& l2() { return l2_; }
-    const Prefetcher& prefetcher() const { return *prefetcher_; }
 
     // --- the two debugging instruments ---------------------------------------
     //
@@ -465,9 +466,7 @@ public:
     // are different events: a hit changes nothing and is still a reference.
     void set_access_log(AccessLog* log) { access_log_ = log; }
 
-    // --- PrefetchIssuer (C5) -------------------------------------------------
-    std::int32_t n_bursts_in_tile(CoreId core) const override;
-    bool issue_prefetch(CoreId core, BurstIndex k, SimTime now) override;
+    std::int32_t n_bursts_in_tile(CoreId core) const;
 
 private:
     // --- the loop and the six handlers (C2) ----------------------------------
@@ -587,8 +586,6 @@ private:
     CacheLevel l2_;
     Port dram_;
 
-    std::unique_ptr<Prefetcher> prefetcher_;
-
     EngineQueue queue_;
 
     std::vector<CoreState> cores_;
@@ -628,9 +625,6 @@ private:
 
     std::deque<Request> arena_;
 
-    // --- the L2 prefetcher (plan 0831-l2-cin-neighbour) ----------------------
-    std::unique_ptr<L2Prefetcher> l2_prefetcher_;
-
     // The tag bit of tagged prefetching, held as a set of line ids rather than
     // as a bit on the array. The array stores no per-line metadata and widening
     // it for one policy's bit would be the wrong trade; the set is keyed by the
@@ -642,22 +636,18 @@ private:
     // `clearPrefetched()` on the demand hit.
     std::unordered_set<std::int64_t> l2_prefetched_;
 
-    // Scratch for one suggestion, so a prefetch does not allocate.
-    std::vector<LineId> l2_pf_scratch_;
-
-    // Issues whatever the policy suggests for `line`, subject to the budget.
-    // Called from `on_l2_probe` on a demand miss and on a demand hit to a
-    // tagged line, and from nowhere else: a prefetch never triggers a prefetch,
-    // so no cascade exists.
-    void l2_prefetch_from(LineId line, CoreId core, SimTime now);
+    // Ask a level's policy for line targets and apply that level's issue
+    // mechanics. L1 is capped by its prefetch MSHR budget; L2 relies on triage
+    // drops and its bank port.
+    void prefetch_on_demand(Level level, CoreId core, std::int32_t tile, BurstIndex k,
+                            LineId line, SimTime now);
     std::vector<Request*> free_;
 
-    // Scratch, so no event handler allocates on a hot path. Separate buffers
-    // rather than one shared: `lines_` is live across `E_Issue`'s scheduling
-    // loop, and the prefetcher hook at the end of that handler reaches
-    // `issue_prefetch`, which expands a second burst.
+    // Scratch, so no event handler allocates on a hot path. `lines_` is live
+    // across E_Issue's demand scheduling loop; `pf_targets_` is consumed after
+    // the policy has returned its complete ordered list.
     std::vector<LineId> lines_;
-    std::vector<LineId> pf_lines_;
+    std::vector<PrefetchTarget> pf_targets_;
     std::vector<Request*> granted_;
     RetireResult retire_;
 

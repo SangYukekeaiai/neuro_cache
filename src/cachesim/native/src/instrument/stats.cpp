@@ -46,6 +46,7 @@ const char* name_of(PrefetchKind p) {
     switch (p) {
         case PrefetchKind::None:      return "none";
         case PrefetchKind::NextBurst: return "next_burst";
+        case PrefetchKind::Neighbour: return "neighbour";
     }
     throw std::logic_error("RunStats: unknown PrefetchKind");
 }
@@ -341,7 +342,7 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
     // self-describing, then the outcomes, which sum to at most `l2_pf_issued`
     // (L2 lines still tagged at end of run are not charged; see
     // `close_out_prefetch_stats` in engine.cpp).
-    r.str("l2_prefetch_policy", cfg.l2_prefetch_policy == L2PrefetchKind::None ? "none" : "neighbour");
+    r.str("l2_prefetch_policy", name_of(cfg.l2_prefetch_policy));
     r.str("l2_prefetch_axis", axis_name(cfg.l2_prefetch_axis));
     r.i64("l2_prefetch_distance", cfg.l2_prefetch_distance);
     r.i64("l2_prefetch_up", cfg.l2_prefetch_up ? 1 : 0);

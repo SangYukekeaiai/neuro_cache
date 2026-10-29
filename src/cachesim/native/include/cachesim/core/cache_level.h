@@ -43,6 +43,7 @@
 #include "cachesim/replacement/next_use.h"
 #include "cachesim/replacement/policy.h"
 #include "cachesim/core/port.h"
+#include "cachesim/prefetch/prefetcher.h"
 #include "cachesim/types.h"
 
 namespace cachesim {
@@ -132,6 +133,9 @@ struct LevelParams {
     std::int32_t mshrs          = 1;
     std::int32_t tgts_per_mshr  = 1;
     std::int32_t demand_reserve = 0;
+
+    PrefetchKind   prefetch_kind   = PrefetchKind::None;
+    PrefetchParams prefetch_params{};
 };
 
 class CacheLevel {
@@ -150,7 +154,8 @@ public:
     CacheLevel(Level level,
                const AddressMapper& mapper,
                const LevelParams& params,
-               RefusalCounter& counter);
+               RefusalCounter& counter,
+               std::int32_t n_cores = 1);
 
     // 3.4's triage, called on FIRST arrival and again on EVERY wake (D4).
     //
@@ -211,6 +216,8 @@ public:
     CacheArray& array() { return *array_; }
     const CacheArray& array() const { return *array_; }
     ReplacementPolicy& policy() { return *policy_; }
+    Prefetcher& prefetcher() { return *prefetcher_; }
+    const Prefetcher& prefetcher() const { return *prefetcher_; }
 
     // --- Belady's oracle (plan 0831-belady, unit W3) --------------------------
     //
@@ -236,6 +243,7 @@ private:
     const AddressMapper& mapper_;
     std::unique_ptr<CacheArray> array_;
     std::unique_ptr<ReplacementPolicy> policy_;
+    std::unique_ptr<Prefetcher> prefetcher_;
 
     // Belady's oracle and the per-line demand occurrence count it is keyed by.
     // Both are inert unless `attach_next_use` was called.

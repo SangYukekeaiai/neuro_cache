@@ -99,20 +99,20 @@ writes one layer-sample as a WCTS stream on stdout (`--stream` flag
 `cachesim.stream.stream_weight_trace` at `src/weight_trace_gen/cli.py:290`), and
 `python -m cachesim sweep --config-grid GRID --trace STREAM` replays it.
 
-1. **Config text -> `RunConfig`**: `parse_config` (`src/cachesim/native/src/config.cpp:398`), a strict
+1. **Config text -> `RunConfig`**: `parse_config` (`src/cachesim/native/src/config.cpp:448`), a strict
    JSON subset (integers and quoted strings only, unknown or duplicate key = error).
 2. **Trace bytes -> `StreamHeader`**: `TraceFd` (`app_support.h:255`) -> `FdByteSource`
    (`include/cachesim/trace/byte_source.h:51`) -> `StreamingTileTrace` ctor reads and validates the header
    (`src/trace/stream_trace.cpp:26`, `decode_header` at `trace/stream_format.h:208`).
 3. **Header -> `WeightShape`** via `shape_of` (`src/trace/stream_trace.cpp:354`).
 4. **Validation**: a `BlockPackMapper` "probe" computes `lines_per_burst` (`app_support.h:163`), then
-   `validate(cfg, lines_per_burst, warnings)` (`src/config.cpp:521`) resolves the `-1` sentinels
+   `validate(cfg, lines_per_burst, warnings)` (`src/config.cpp:571`) resolves the `-1` sentinels
    (`l1_demand_reserve`, `l2_demand_reserve`, `cin_lo_blocks`, `l2_policy`) and refuses bad configs.
 5. **Mapper**: `make_mapper` (`app_support.h:116`) builds `BlockPackMapper` / `SplitCinMapper` /
    `KhkwSplitMapper` -> `const AddressMapper&`. All three share `src/layout/layout_common.h`.
-6. **`RunConfig` -> `EngineParams`**: `to_engine_params` (`src/config.cpp:691`) -> two `LevelParams`.
-7. **Engine**: `Engine(mapper, trace, params)` (`src/core/engine.cpp:33`) builds N L1 `CacheLevel`s, one L2
-   `CacheLevel`, a DRAM `Port`, a `Prefetcher` and an `L2Prefetcher`.
+6. **`RunConfig` -> `EngineParams`**: `to_engine_params` (`src/config.cpp:772`) -> two `LevelParams`.
+7. **Engine**: `Engine(mapper, trace, params)` (`src/core/engine.cpp:51`) builds N L1 `CacheLevel`s, one L2
+   `CacheLevel`, a DRAM `Port`, and one level-owned `Prefetcher` per `CacheLevel`.
 8. **Tile loop** (`cachesim_run.cpp:372-385`): `trace.advance()` decodes tile N into the one-tile window
    -> `DistinctAddressHistogram::observe`, `PaddingMeter::observe_tile` -> `engine.run_to_barrier()`
    runs events until tile N's barrier is next; then `engine.finish()`.
@@ -141,7 +141,7 @@ only by `--oracle` / `--l2-oracle` (`read_oracle_lines`, `app_support.h:322`).
    ByteSource -> StreamingTileTrace : TileTrace           AddressMapper (BlockPack|SplitCin|KhkwSplit)
                  |   (one-tile window)                         |   expand(Burst)->[LineId]
                  v                                             |   locate(LineId,num_sets)->Placement
-              Engine : PrefetchIssuer  <------------------------+   neighbour(line,axis,d)
+              Engine  <-----------------------------------------+   neighbour(line,axis,d)
    EventQueue<EventPayload> (total order: time,class,age,core,seq)    (expand/locate/checks shared
      |-- cores_[c] : CoreState (cursor, pending_lines, phase)          via src/layout/layout_common.h)
      |-- l1_[c] : CacheLevel ----+-- SetAssociativeArray : CacheArray (slots_[] of LineId)
@@ -150,12 +150,12 @@ only by `--oracle` / `--l2-oracle` (`read_oracle_lines`, `app_support.h:322`).
      |                           +-- MshrFile (entries_ line->Mshr, slot_wait_, RefusalCounter&)
      |                           +-- NextUseOracle* (Belady only)
      |-- dram_ : Port
-     |-- prefetcher_ : Prefetcher (None|NextBurst), l2_prefetcher_ : L2Prefetcher (None|Neighbour)
+     |-- each CacheLevel.prefetcher_ : Prefetcher (None|NextBurst|Neighbour)
      |-- optional: CacheStateLog*, LineTrace*, AccessLog*   (observers, never change results)
      `-- stats_ : EngineStats  --> RunStats --> CSV row
 ```
 
-The `Request` (one line of one burst, `include/cachesim/core/request.h:27`) is the unit that travels. It lives
+The `Request` (one line of one burst, `include/cachesim/core/request.h:43`) is the unit that travels. It lives
 in `Engine::arena_` (a `std::deque`, stable addresses) with a free list (`core/engine.h:629,653`). An
 `Mshr` (`core/mshr.h:48`) is one outstanding line per level; `targets` are satisfied directly by the
 fill, `line_wait` are requests that found the target list full.
@@ -169,15 +169,15 @@ a compile error (checked by `tests/compile_fail.sh`).
 
 Times are integer cycles (`SimTime`). Trace ticks (`LocalTick`) are offsets inside a tile.
 
-1. `run_to_barrier` first call (`src/core/engine.cpp:128`): `tile_origin[0]=0`, `start_tile(0, 0)`.
+1. `run_to_barrier` first call (`src/core/engine.cpp:130`): `tile_origin[0]=0`, `start_tile(0, 0)`.
 2. `start_tile(t, now)` (`src/core/engine_core.cpp:55`): every core reset (cursor 0, phase Computing),
-   prefetch cursor reset; a core with 0 bursts arrives at the barrier at once; otherwise an `Issue`
+   each level's prefetcher reset; a core with 0 bursts arrives at the barrier at once; otherwise an `Issue`
    event is scheduled at `now + local_tick(core, t, 0)` (the only absolute tick used).
-3. `on_issue` (`src/core/engine_core.cpp:148`): checks `k == cursor` and `pending_lines == 0`; `expand`
+3. `on_issue` (`src/core/engine_core.cpp:149`): checks `k == cursor` and `pending_lines == 0`; `expand`
    turns the burst into sorted distinct lines; `pending_lines = #lines`, phase Stalled; per line a
    demand `Request` reserves the L1 port and schedules `L1Probe` at `accept + l1_latency`. Then the
-   prefetcher hook `on_demand_issue` runs.
-4. `on_l1_probe` (`src/core/engine.cpp:254`) -> `CacheLevel::triage` (`src/core/cache_level.cpp:112`), probe
+   L1 prefetcher is asked for ordered `PrefetchTarget`s below the demand port.
+4. `on_l1_probe` (`src/core/engine.cpp:267`) -> `CacheLevel::triage` (`src/core/cache_level.cpp:112`), probe
    order **array -> own MSHR -> MSHR pool**:
    - Hit: policy `on_hit`; `core_line_done`; request released.
    - Merged (entry exists, target list not full): subscribes, nothing scheduled.
@@ -186,22 +186,22 @@ Times are integer cycles (`SimTime`). Trace ticks (`LocalTick`) are offsets insi
    - Forwarded (allocated a new entry): request now holds the L1 entry (`mshr1`, `level = L2`), L2
      bank port reserved, `L2Probe` at `accept + l2_latency`.
    - A prefetch at issue is **dropped**, never queued: `DroppedArrayHit/Entry/NoSlot/Reserve`.
-5. `on_l2_probe` (`src/core/engine.cpp:369`): same triage at L2. Hit -> `L1Fill` at `now +
+5. `on_l2_probe` (`src/core/engine.cpp:413`): same triage at L2. Hit -> `L1Fill` at `now +
    l2_to_l1_latency`. Forwarded -> `dram_.reserve(now)` -> `L2Fill` at `accept + l2_miss_latency`.
-   An L2 demand miss (or demand hit on an L2-prefetched line) triggers `l2_prefetch_from`.
-6. `on_l2_fill` (`src/core/engine.cpp:492`): install in L2 (free way first, then policy victim);
+   An L2 demand miss (or demand hit on an L2-prefetched line) asks the L2 prefetcher for targets.
+6. `on_l2_fill` (`src/core/engine.cpp:536`): install in L2 (free way first, then policy victim);
    back-invalidate the victim from every L1 if `inclusive`; retire the L2 entry; every target with an
    L1 entry gets `L1Fill` at `now + l2_to_l1_latency`; woken requests re-enter through their port.
-7. `on_l1_fill` (`src/core/engine.cpp:555`): install in L1, update prefetch outcome bookkeeping, clear
+7. `on_l1_fill` (`src/core/engine.cpp:599`): install in L1, update prefetch outcome bookkeeping, clear
    `mshr1` on every target, retire the L1 entry, `core_line_done` per demand target, return the
    prefetch credit per prefetch target, reinject wake list.
-8. `core_line_done` (`src/core/engine_core.cpp:219`): `--pending_lines`; at 0 the burst is served
+8. `core_line_done` (`src/core/engine_core.cpp:223`): `--pending_lines`; at 0 the burst is served
    (bursts are atomic) and the last line's `StallCause` is charged.
-9. `serve` (`src/core/engine_core.cpp:241`): `want = tile_origin[t] + local_tick(0)` for burst 0, else
+9. `serve` (`src/core/engine_core.cpp:245`): `want = tile_origin[t] + local_tick(0)` for burst 0, else
    `served_time + max(gap(k-1), core_accept_ii)`; `stall = now - want` (throws if negative);
    `fetch_latency += now - burst_anchor`. Next `Issue` at `now + max(gap(k), core_accept_ii)`, or
    barrier arrival after the last burst.
-10. `barrier_arrive` (`src/core/engine_core.cpp:95`): countdown; the last core schedules `Barrier` at
+10. `barrier_arrive` (`src/core/engine_core.cpp:96`): countdown; the last core schedules `Barrier` at
     `now + tile_tail(t)` (`tile_tail = mac_cycles - max_tick`, must be >= 1).
 11. `run_to_barrier` returns *before* dispatching a Barrier, so the driver can advance the shared
     window; the next call dispatches it. `on_barrier` (`src/core/engine_core.cpp:114`) sets
@@ -230,19 +230,21 @@ Issue(3); then refusal stamp (older refused first, never-refused last), core id,
 | `policy` | `lru` (`fifo`,`belady`,`rrip`,`lfu`; `random` refused) | `l2_miss_latency` | 100 |
 | `l2_policy` | unset -> `policy` | `l2_banks` | 1 |
 | `rrip_bits` | 2 (1..8) | `l2_ii`, `dram_ii`, `core_accept_ii` | 1, 1, 1 |
-| `inclusion` | `non_inclusive` (`inclusive`; `exclusive` refused) | `prefetch_policy` | `none` (`next_burst`) |
-| `l2_prefetch_policy` | `none` (`neighbour`/`neighbor`) | `prefetch_distance` | 0 |
-| `l2_prefetch_axis` | `cin` (`cout`,`kh`/`pos`,`kw`) | `l2_prefetch_distance` | 1 |
-| `l2_prefetch_up` / `_down` | 1 / 1 (integers) | `l2_demand_reserve` | -1 (= lines_per_burst) |
+| `inclusion` | `non_inclusive` (`inclusive`; `exclusive` refused) | `prefetch_policy` | `none` (`next_burst`, `neighbour`) alias for L1 |
+| `l1_prefetch_policy` | `none` (`next_burst`, `neighbour`/`neighbor`) | `prefetch_distance` / `l1_prefetch_distance` | 0 |
+| `l1_prefetch_axis` | `cin` (`cout`,`kh`/`pos`,`kw`) | `l1_prefetch_up` / `_down` | 1 / 1 (integers) |
+| `l2_prefetch_policy` | `none` (`next_burst`, `neighbour`/`neighbor`) | `l2_prefetch_distance` | 1 |
+| `l2_prefetch_axis` | `cin` (`cout`,`kh`/`pos`,`kw`) | `l2_prefetch_up` / `_down` | 1 / 1 (integers) |
+| `l2_demand_reserve` | -1 (= lines_per_burst) |  |  |
 
 Derived: `line_size_bytes = cin_block*cout_block*weight_bytes`; `l{1,2}_num_lines = size/line`;
-`num_sets = num_lines/assoc` (`src/config.cpp:388-394`). Warnings returned by `validate`:
+`num_sets = num_lines/assoc` (`src/config.cpp:438-444`). Warnings returned by `validate`:
 `W_MSHR_VS_LINES`, `W_FEW_SETS`, `W_CIN_LO_VS_SETS`, `W_PREFETCH_BUDGET`, `W_ZERO_II`
-(`src/config.cpp:657-686`); `make_mapper` adds `W_CIN_LO_UNREACHABLE` (`app_support.h:138`).
+(`src/config.cpp:738-768`); `make_mapper` adds `W_CIN_LO_UNREACHABLE` (`app_support.h:138`).
 
 The L2 MSHR floor: with `l2_demand_reserve` unset it resolves to `lines_per_burst`
-(`config.cpp:629`) and must stay below `l2_mshrs` whatever the L2 prefetch policy is
-(`config.cpp:634-639`). With the default `l2_mshrs = 20`, a 19-line burst passes and a 20-line burst
+(`config.cpp:702`) and must stay below `l2_mshrs` whatever the L2 prefetch policy is
+(`config.cpp:707-711`). With the default `l2_mshrs = 20`, a 19-line burst passes and a 20-line burst
 is refused; `tests/test_config.cpp:204` pins both and pins that the message does not mention
 prefetching.
 
@@ -345,9 +347,10 @@ is a line of the file the entry is named after (a source file, not the header na
 
 **core/request.h**
 - `Level`, `WaitReason` and `StallCause` are the shared request enums (`core/request.h:12-25`).
-- `struct Request` `core/request.h:27`: `core, line, burst, demand(=true), issued_at, refusal(=NoRefusal),
-  reason, level(=L1, where to RE-ENTER), mshr1 (L1 entry once forwarded), reserved, on_wait_index,
-  cause, line_resident_at_wake`.
+- `struct Request` `core/request.h:43`: `core, line, burst` `:44-46`; `demand(=true)` `:48-52`;
+  `issued_at` `:54-58`; `refusal(=NoRefusal)` `:60-64`; `reason` `:66-74`; `level(=L1, where to
+  RE-ENTER)` `:76-77`; `mshr1` (L1 entry once forwarded) `:79-87`; `reserved` `:89-92`,
+  `on_wait_index` `:94-111`, `cause` `:113-114`, and `line_resident_at_wake` `:116-124`.
 
 **core/mshr.h**
 - `struct Mshr` `core/mshr.h:48`: `line, core (unused at L2), demand (promoted by a merging demand),
@@ -396,28 +399,26 @@ is a line of the file the entry is named after (a source file, not the header na
   `:92` (fully-associative MIN, O(n * capacity)).
 
 **prefetch/prefetcher.h**
-- `enum class PrefetchKind {None, NextBurst}` `prefetch/prefetcher.h:34`.
-- `class PrefetchIssuer` `:44` (implemented by `Engine`): `n_bursts_in_tile(core)` `:51`,
-  `issue_prefetch(core, k, now) -> bool` `:63` (false = budget exhausted).
-- `class Prefetcher` `:74`: `on_demand_issue(mem, core, k, now)` `:82`, `on_tile_start(core)` `:92`.
-- `NoPrefetcher` `:108`; `NextBurstPrefetcher(distance>=1, n_cores)` `:122,128`, `distance()` `:133`,
-  `pf_cursor(core)` `:143`.
-- `make_prefetcher(kind, distance, n_cores)` `:156`.
-- `enum class L2PrefetchKind {None, Neighbour}` `:173`; `class L2Prefetcher` `:175` with
-  `suggest(mapper, line, out)` `:185` (appends); `NoL2Prefetcher` `:200`;
-  `NeighbourL2Prefetcher(axis, distance>=1, up, down)` `:213,218` + accessors `:223-226`;
-  `make_l2_prefetcher` `:235`.
+- `PrefetchContext` `prefetch/prefetcher.h:37` carries level, core, tile, burst, triggering line,
+  time, mapper and trace; `PrefetchTarget` `:48-54` carries a line and its burst tag.
+- `PrefetchKind {None, NextBurst, Neighbour}` `:56` and `PrefetchParams` `:58-63` are shared by
+  both levels. `Prefetcher` `:65` has `on_tile_start` `:71`, ordered `on_demand` `:76`, and
+  `on_issued` feedback `:81`; `make_prefetcher` `:91-93` constructs the selected policy.
+- `none.h`: `NoPrefetcher` `:7-10`; `next_burst.h`: `NextBurstPrefetcher(distance>=1, n_cores)`
+  `:14-30` with per-core `pf_cursor`; `neighbour.h`: `NeighbourPrefetcher(axis, distance>=1,
+  up, down)` `:9-25`.
 
 **core/cache_level.h**
 - `enum class TriageOutcome {Hit, Merged, BlockedTargets, BlockedPool, Forwarded, DroppedArrayHit,
   DroppedEntry, DroppedNoSlot, DroppedReserve}` `core/cache_level.h:74`; `is_dropped` `:88`.
 - `struct LevelParams` `:105`: `cache_size_bytes, associativity, policy, rrip_bits, latency, ii,
-  banks, bank_high_bits, mshrs, tgts_per_mshr, demand_reserve`.
-- `class CacheLevel` `:138`: ctor `(Level, mapper, LevelParams, RefusalCounter&)` `:151`;
-  `triage(r, granted)` `:176`; `install(line)` `:200`; `bank_of(line)` `:209`; `level`, `array`,
-  `policy` `:211-214`; `attach_next_use(oracle)` `:227`, `next_use_oracle` `:228`; `mshrs` `:229-230`;
-  `port(bank)` `:231`; `banks` `:232`; `num_sets` `:233`. Holds Belady occurrence counters
-  `occurrence_` and `pending_next_use_` (`:244,250`).
+  banks, bank_high_bits, mshrs, tgts_per_mshr, demand_reserve`, plus `prefetch_kind` and
+  `prefetch_params` `:137-138`.
+- `class CacheLevel` `:141`: ctor `(Level, mapper, LevelParams, RefusalCounter&, n_cores)` `:154-158`;
+  `triage(r, granted)` `:180`; `install(line)` `:204`; `bank_of(line)` `:213`; `level`, `array`,
+  `policy`, `prefetcher` `:215-220`; `attach_next_use(oracle)` `:233`, `next_use_oracle` `:234`;
+  `mshrs` `:235-236`; `port(bank)` `:237`; `banks` `:238`; `num_sets` `:239`. Holds Belady
+  occurrence counters `occurrence_` and `pending_next_use_` (`:251,257`).
 
 **core/engine.h**
 - `enum class Inclusion {NonInclusive, Inclusive}` `core/engine.h:59`; `enum class Phase {Computing,
@@ -431,17 +432,18 @@ is a line of the file the entry is named after (a source file, not the header na
 - Comments on the L2 block: the outcomes plus drops sum to **at most** `l2_pf_issued`
   because L2 lines still tagged at end of run are not charged (`:244-247`), and `l2_pf_timely` is
   always equal to `l2_pf_retriggers` (`:254-255`, `:265-267`): both are incremented at one site,
-  `src/core/engine.cpp:423-424`.
+  `src/core/engine.cpp:467-468`.
 - `struct EventPayload {Request* req; Mshr* entry; BurstIndex burst; int32 tile;}` `:308`;
   `using EngineQueue = EventQueue<EventPayload>` `:315`.
 - `struct EngineParams` `:331`: `l1, l2` LevelParams, `l2_to_l1_latency, dram_ii, l2_miss_latency,
-  core_accept_ii, inclusion, prefetch_policy/distance, l2_prefetch_*`. No validation by design.
-- `class Engine final : PrefetchIssuer` `core/engine.h:368`: ctor `:375`; `run` `:384`; `run_to_barrier` `:405`
-  (returns pending barrier's tile or -1); `step_tile` `:417`; `finish` `:429`; `tile_origin(t)` `:435`
-  (size n_tiles+1); `core` `:437`; `stats` `:438`; `queue` `:439`; `l1(c)` `:441`; `l2` `:442`;
-  `prefetcher` `:443`; `set_cache_state_log` `:459`, `set_line_trace` `:460`, `set_access_log` `:466`;
-  overrides `n_bursts_in_tile` `:469`, `issue_prefetch` `:470`. Private handlers listed `:474-574`.
-- `as_duration(LocalTick) -> SimTime` `:681`: the one trace-gap-to-duration crossing.
+  `core_accept_ii`, `inclusion`, and source-compatible L1 aliases `prefetch_policy/distance` plus
+  `l2_prefetch_*`. No validation by design.
+- `class Engine` `core/engine.h:370`: ctor `:377`; `run` `:386`; `run_to_barrier` `:407`
+  (returns pending barrier's tile or -1); `step_tile` `:419`; `finish` `:431`; `tile_origin(t)` `:437`
+  (size n_tiles+1); `core` `:439`; `stats` `:440`; `queue` `:441`; `l1(c)` `:443`; `l2` `:444`;
+  `set_cache_state_log` `:460`, `set_line_trace` `:461`, `set_access_log` `:467`; `n_bursts_in_tile`
+  `:469`. Private handlers listed `:477-646`.
+- `as_duration(LocalTick) -> SimTime` `:671`: the one trace-gap-to-duration crossing.
 
 **config.h**
 - `struct RunConfig` `config.h:27` (fields in 1.6) with `line_size_bytes, l1_num_lines, l1_num_sets,
@@ -532,55 +534,54 @@ the shared `src/layout/layout_common.h`.
   `read_string` (no escapes) `:70`, `read_value` (integer or string; rejects `.`/`e`) `:85`).
 - Key tables `kI32Fields` `:135` (`l2_demand_reserve` at `:147`), `kI64Fields` `:153`; `to_i32`
   `:167`, `to_i64` `:176`, `enum_text` `:181`.
-- `assign(cfg, key, value, pos)` `:186`: the single key dispatcher used by both parsers (comment
-  `:187-188` describes the table lookup); enum spellings `:202-301`; unknown key fails `:303`.
-- `reject` `:308`, `reject_below_one` `:312`, `reject_negative` `:318`, `check_level_geometry`
-  `:324` (size >= one set, whole lines, whole sets), `warn` `:343`.
-- `read_object_into(reader, cfg)` `:352` (duplicate keys refused); `struct GridAxis` `:378`.
-- `RunConfig::line_size_bytes` etc. `:388-394` (integer division; validated later).
-- `parse_config` `:398`; `parse_config_grid` `:408` (array form `:412-429`; base/axes form,
-  mixed-radix enumeration with last axis fastest `:502-515`).
-- `validate` `:521`: positivity `:523-541`; geometry `:543-545`; `cin_lo_blocks` resolved only under
-  split_cin, must stay -1 otherwise `:551-570`; `l2_policy` follows `policy` if unset `:572`; random
-  refused `:586,595`; rrip_bits in [1,8] `:592`; `lines_per_burst <= l1_mshrs` `:598`;
-  `core_accept_ii >= 1` `:602`; L2 prefetch consistency `:613-625`; `l2_demand_reserve` resolved to
-  lines_per_burst, must be `< l2_mshrs` `:629-639`, with the message "the reserve
-  (lines_per_burst when unset) must leave at least one L2 MSHR free" (`:634-639`); `next_burst` needs
-  distance > 0 `:641`; `l1_demand_reserve` resolved, must be `< l1_mshrs` `:646-655`; warnings
-  `:657-686`.
-- `to_engine_params` `:691`: copies fields; L1 has 1 bank; throws if not validated. The dead
-  `p.l2.demand_reserve = 0` store is gone; the reserve is copied once (`:724`).
+- `assign(cfg, key, value, pos)` `:185`: the single key dispatcher used by both parsers (comment
+  `:186-187` describes the table lookup); enum spellings `:201-351`; unknown key fails `:353`.
+- `reject` `:358`, `reject_below_one` `:362`, `reject_negative` `:368`, `check_level_geometry`
+  `:374` (size >= one set, whole lines, whole sets), `warn` `:393`.
+- `read_object_into(reader, cfg)` `:402` (duplicate keys refused); `struct GridAxis` `:428`.
+- `RunConfig::line_size_bytes` etc. `:438-444` (integer division; validated later).
+- `parse_config` `:448`; `parse_config_grid` `:458` (array form `:462-478`; base/axes form
+  `:481-548`; mixed-radix enumeration with last axis fastest `:549-565`).
+- `validate` `:571`: alias synchronization `:572-589`; positivity `:592-610`; geometry and
+  `cin_lo_blocks` `:612-639`; `l2_policy` follows `policy` if unset `:641`; random refused
+  `:655-665`; rrip_bits in [1,8] `:661-662`; `lines_per_burst <= l1_mshrs` `:667-670`;
+  `core_accept_ii >= 1` `:671-673`; L1/L2 prefetch distance and direction checks `:675-725`;
+  `l2_demand_reserve` resolved to lines_per_burst and must be `< l2_mshrs` `:699-711`;
+  `l1_demand_reserve` resolved and must be `< l1_mshrs` `:727-735`; warnings `:738-768`.
+- `to_engine_params` `:772`: copies both levels' prefetch kind/axis/distance/directions and the
+  legacy aliases; throws if not validated.
 
 **core/engine.cpp** (loop, memory-side handlers, inclusion, instruments)
 - anonymous `engine_error` `:18`, `idx` `:22`, `is_blocked` `:27`.
-- `Engine::Engine` `:33`: needs n_cores >= 1; `l1_.reserve` before emplace (CacheLevel holds refs)
-  `:49-52`; sizes per-core stats; `tile_origin_` sized n_tiles+1 `:84`.
-- `tile_origin` `:87`, `core` `:91`, `l1` `:93`.
-- `acquire` `:97` (reuse from free list, whole-struct assign), `release` `:112` (throws if still
+- `Engine::Engine` `:51`: needs n_cores >= 1; `l1_.reserve` before emplace (CacheLevel holds refs)
+  `:63-70`; sizes per-core stats; `tile_origin_` sized n_tiles+1 `:90`.
+- `tile_origin` `:93`, `core` `:97`, `l1` `:99`.
+- `acquire` `:103` (reuse from free list, whole-struct assign), `release` `:118` (throws if still
   referenced).
-- `run_to_barrier` `:128`, `run` `:156` (= loop of run_to_barrier), `step_tile` `:161`, `finish`
-  `:163` (= run), `check_no_work_outstanding` `:170`, `dispatch` `:196` (increments `events`).
-- `reinject` `:217` (re-enters at `r.level` through that level's port, keeps original stamp),
-  `reinject_all` `:238`.
-- `on_l1_probe` `:254`, `l2_prefetch_from` `:348` (acquire `demand=false`, `level=L2`, burst 0,
-  stamp NoRefusal), `on_l2_probe` `:369` (the one site that increments both `l2_pf_timely` and
-  `l2_pf_retriggers`, `:423-424`), `on_l2_fill` `:492` (L2 tag set `l2_prefetched_` update
-  `:505-518`), `on_l1_fill` `:555`.
-- Prefetch accounting: `demand_anchor_on_probe` `:624` (timely / pollution), `note_prefetch_resident`
-  `:648`, `note_line_left_l1` `:652` (wasted), `close_out_prefetch_stats` `:660` (L1 only; the
-  comment `:672-674` says so).
-- Instruments: `current_tile` `:679` (core 0's tile), `way_of` `:683` (`slot % assoc`), `note_fill`
-  `:698`, `note_leave` `:712`, `note_hit` `:723`.
-- `back_invalidate(line, now)` `:733`, under its section header `:731`:
+- `run_to_barrier` `:130`, `run` `:158` (= loop of run_to_barrier), `step_tile` `:163`, `finish`
+  `:165` (= run), `check_no_work_outstanding` `:172`, `dispatch` `:198` (increments `events`).
+- `reinject` `:219` (re-enters at `r.level` through that level's port, keeps original stamp),
+  `reinject_all` `:240`.
+- `on_l1_probe` `:267`, `prefetch_on_demand` `:356` (applies ordered targets through the selected
+  level's budget/port/triage path), `on_l2_probe` `:413` (the one site that increments both
+  `l2_pf_timely` and `l2_pf_retriggers`, `:467-468`), `on_l2_fill` `:536` (L2 tag set
+  `l2_prefetched_` update `:546-561`), `on_l1_fill` `:599`.
+- Prefetch accounting: `demand_anchor_on_probe` `:668` (timely / pollution), `note_prefetch_resident`
+  `:692`, `note_line_left_l1` `:696` (wasted), `close_out_prefetch_stats` `:704` (L1 only; the
+  comment `:712-714` says so).
+- Instruments: `current_tile` `:723` (core 0's tile), `way_of` `:727` (`slot % assoc`), `note_fill`
+  `:742`, `note_leave` `:756`, `note_hit` `:767`.
+- `back_invalidate(line, now)` `:777`, under its section header `:775`:
   scans all L1s by core id, invalidates + `on_invalidate`.
 
-**core/engine_core.cpp** (core state machine, barrier, prefetch sink)
+**core/engine_core.cpp** (core state machine and barrier)
 - `step_after(c, tile, k)` `:48` = `max(gap_k, core_accept_ii)`.
-- `start_tile` `:55`, `barrier_arrive` `:95`, `on_barrier` `:114`, `on_issue` `:148` (re-throws a
-  mapper `out_of_range` with tile/tick/core/burst context `:186-189`), `core_line_done` `:219`
-  (prefetch completes nobody), `serve` `:241`.
-- `n_bursts_in_tile` `:336`; `issue_prefetch` `:341`: budget `cap = l1_mshrs - l1_demand_reserve`
-  per core; stops mid-burst when exhausted (already-issued lines of that burst stay in flight).
+- `start_tile` `:55` resets every level-owned prefetcher per core; `barrier_arrive` `:96`,
+  `on_barrier` `:115`, `on_issue` `:149` (re-throws a mapper `out_of_range` with tile/tick/core/burst
+  context `:187-190`), `core_line_done` `:223` (prefetch completes nobody), `serve` `:245`.
+- `on_issue` asks the L1 prefetcher once per expanded demand line (`:214-220`); the common issue
+  mechanics live in `Engine::prefetch_on_demand` (`engine.cpp:356-410`). `n_bursts_in_tile` remains
+  the compatibility query at `:340-343`.
 
 **core/cache_level.cpp**
 - `refuse_if_waiting` `:32`; `charge_path(r, cause)` `:48` sets cause only if never refused.
@@ -632,13 +633,15 @@ the shared `src/layout/layout_common.h`.
 **replacement/rrip.cpp**
 - `RripPolicy` constructor `replacement/rrip.cpp:22`, RRPV updates `:45-53`, uniform aging and tie-break
   in `pick_victim` `:55-76`.
-**prefetch/prefetcher.cpp**
-- `NoPrefetcher` `:10-11`; `NextBurstPrefetcher` ctor `:13`, `pf_cursor` `:27`, `on_tile_start`
-  `:31` (cursor 0), `on_demand_issue` `:39`: cursor = max(cursor, k+1); issue bursts while `cursor <=
-  k+d` and `< n_bursts`; on budget failure returns WITHOUT advancing (retry next issue).
-- `make_prefetcher` `:64`.
-- `NoL2Prefetcher::suggest` `:92`; `NeighbourL2Prefetcher` ctor `:94`, `suggest` `:109` (order: +1,
-  -1, +2, -2, ...); `make_l2_prefetcher` `:127`.
+**prefetch/**
+- `prefetcher.cpp`: `make_prefetcher` `:12-29` constructs `NoPrefetcher`, `NextBurstPrefetcher`,
+  or `NeighbourPrefetcher` from the shared `PrefetchKind`/`PrefetchParams`.
+- `next_burst.cpp`: ctor `:9`, `pf_cursor` `:25`, `on_tile_start` `:29` (cursor 0), `on_demand`
+  `:36` expands ordered bursts while `cursor <= k+d` and `< n_bursts`; a budget-exhausted burst
+  leaves the cursor there until the next demand pulls it past the core's current burst; `on_issued`
+  `:66` advances only after a complete burst.
+- `neighbour.cpp`: ctor `:8`, `on_demand` `:22` emits nearest `+1, -1, +2, -2, ...` targets
+  through `mapper.neighbour`; `none.cpp` is the split source for the no-op implementation.
 
 **index/set_index.h**
 - `set_index(LineId, num_sets) -> Placement` `index/set_index.h:14`: shared modulo mapping, with
@@ -799,8 +802,9 @@ Unit test binaries (`Makefile:57`, one binary per `tests/test_*.cpp`):
 - `test_mshr.cpp`: MshrFile entries, targets, waits, refusal counter, grant loop.
 - `test_cache_level.cpp`: CacheLevel triage table branch by branch.
 - `test_engine.cpp`: event loop handlers, core state machine, tile barrier, inclusion.
-- `test_prefetcher.cpp`: prefetch interface and `none` vs `next_burst`; `test_prefetch_engine.cpp`:
-  engine integration and drop rules.
+- `prefetch/test_next_burst.cpp`: prefetch interface, `none` vs `next_burst`, engine integration and
+  L1 drop rules; `prefetch/test_neighbour.cpp`: line-order neighbour behavior, cross-level policy
+  placement, and L2 accounting.
 - `test_config.cpp`: RunConfig parse, defaults, validation rules, among them
   `test_the_l2_mshr_floor_holds_a_burst_with_one_to_spare` (`test_config.cpp:204`): default
   `l2_mshrs` is 20, `lines_per_burst` 19 passes and resolves the reserve to 19, 20 is refused with
@@ -888,8 +892,8 @@ Drivers:
    checks that it is a column (`tests/instrument/test_stats.cpp:155-156`). `test_stream_format.cpp:158` labels
    the v2 field-order check "v1 address field order".
 3. The comment above the L2 reserve rule still gives prefetching as its reason ("makes prefetching
-   unreachable while claiming to be on", `src/config.cpp:626-628`), while the message itself
-   describes an MSHR floor that holds whatever the prefetch policy is (`config.cpp:634-639`) and
+   unreachable while claiming to be on", `src/config.cpp:699-701`), while the message itself
+   describes an MSHR floor that holds whatever the prefetch policy is (`config.cpp:707-711`) and
    `test_config.cpp:204-226` asserts the message does not mention prefetching.
 4. References to an archive that is not in the repo: `src/layout/block_pack.cpp:167` ("the v1 lesson the archive
    preserved"), `tests/layout/test_block_pack.cpp:831`, `tests/index/test_set_associative.cpp:21`. Also
@@ -899,8 +903,8 @@ Drivers:
    at `src/layout/split_cin.cpp:303`, `src/layout/khkw_split.cpp:151`). Runs of three blank lines: `layout/block_pack.cpp:215-217`, `layout/split_cin.cpp:297-299`, `layout/khkw_split.cpp:145-147`.
 6. `EngineStats::pf_dropped_targets_full` (`include/cachesim/core/engine.h:214`) is never incremented
    anywhere in `src/`; it is always 0 by construction (read only at `src/instrument/stats.cpp:270,326`).
-   `Request::reason` (`include/cachesim/core/request.h:34`) is written (`src/core/mshr.cpp:64`) but never read in
-   `src/` or `apps/`. `CoreState::issued_at` is written (`src/core/engine_core.cpp:64,193`) and never read
+   `Request::reason` (`include/cachesim/core/request.h:66-74`) is written (`src/core/mshr.cpp:64`) but never read in
+   `src/` or `apps/`. `CoreState::issued_at` is written (`src/core/engine_core.cpp:64,194`) and never read
    in `src/`/`apps/`.
 7. `replacement/next_use.h:29` includes `<istream>`, which nothing in the file uses.
 8. `LevelParams::bank_high_bits` (`include/cachesim/core/cache_level.h:131`) has no config key (absent from
@@ -919,11 +923,11 @@ Drivers:
    extent); and the same `neighbour` range-check block in each mapper (`layout/block_pack.cpp:222-226`,
    `layout/split_cin.cpp:302-306`, `layout/khkw_split.cpp:150-154`). `neighbour` staying per mapper is by design
    (`layout/layout_common.h:5-6`).
-2. Enum spellings are written in several places: parse (`src/config.cpp:202-301`), emit
+2. Enum spellings are written in several places: parse (`src/config.cpp:201-351`), emit
    (`src/instrument/stats.cpp:16-51`), `layout_text` (`src/sweep.cpp:14-21`), a two-way ternary over the
-   three-valued `LayoutKind` (`config.cpp:560`, exactly the pattern `sweep.cpp:10-13` warns against;
-   correct today only because SplitCin is excluded by the branch), and an inline ternary for
-   `L2PrefetchKind` (`instrument/stats.cpp:344`).
+   three-valued `LayoutKind` (`config.cpp:629`, exactly the pattern `sweep.cpp:10-13` warns against;
+   correct today only because SplitCin is excluded by the branch), and the separate `PrefetchKind`
+   parser/emitter spellings (`config.cpp:262-351`, `instrument/stats.cpp:45-51`).
 3. Nearest-rank quantile twice: `include/cachesim/instrument/hist.h:85-92` and `src/instrument/stats.cpp:60-65`.
 4. `engine_error` / `idx` twice: `src/core/engine.cpp:18-22`, `src/core/engine_core.cpp:31-35`. Way-from-slot
    arithmetic twice: `core/engine.cpp:692-695` and `core/engine.cpp:755-758`.
@@ -961,8 +965,8 @@ Drivers:
 6. **H9** The header's `burst_span` is never checked against the bursts. `decode_header` only
    requires `burst_span >= 1` (`trace/stream_format.h:258-262`) and `advance` never reads it
    (`src/trace/stream_trace.cpp:176-335`), yet `lines_per_burst` (`app_support.h:163-169`) is computed
-   from it and sets the `l1_mshrs` check (`config.cpp:598`) and both demand-reserve defaults
-   (`config.cpp:629,646`). A header that understates the span passes validation. Separately,
+   from it and sets the `l1_mshrs` check (`config.cpp:667-670`) and both demand-reserve defaults
+   (`config.cpp:702,727`). A header that understates the span passes validation. Separately,
    `lines_per_burst` expands the burst at the origin; a burst whose anchor is not block-aligned can
    touch one more line than that (span 16 at `cout_block` 16 starting at cout 8 covers 2 lines, not
    1). Derived from the code; the engine's response to a burst wider than the reserve was not traced.
@@ -990,7 +994,7 @@ Drivers:
 - The grid defaults are fixed files: `configs/cache/base.json` and `configs/cache/khkw_sweep.json`
   (`src/cachesim/grid.py:8-9`), found from the repo root `ROOT` (`src/cachesim/grid.py:7`).
 - Magic numbers in code: `kPosLoRadix = 8` (`include/cachesim/layout/khkw_split.h:89`); RRIP width cap 8 twice
-  (`src/replacement/rrip.cpp:11`, `src/config.cpp:592`); `--max-engines` 256
+  (`src/replacement/rrip.cpp:11`, `src/config.cpp:661`); `--max-engines` 256
   (`apps/cachesim_sweep.cpp:84`); AccessLog record limits 32-bit line / 8-bit core
   (`instrument/access_log.h:135-136`).
 - `trace/stream_format.h:35-37` requires the GCC/Clang `__BYTE_ORDER__` macro.

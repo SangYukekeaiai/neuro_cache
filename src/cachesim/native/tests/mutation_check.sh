@@ -46,7 +46,8 @@ ulimit -c 0 2>/dev/null || true
 # is not mutation tested at all while the summary still reports a clean sweep.
 # Phase C adds all eight of ITS files: include/cachesim/trace/tile_trace.h, cache_level.h,
 # engine.h and prefetcher.h, and src/core/cache_level.cpp, engine.cpp,
-# engine_core.cpp and prefetcher.cpp. This omission has now bitten three times
+# engine_core.cpp and prefetcher.cpp. Phase 3 adds the concrete prefetch
+# headers and sources below. This omission has now bitten three times
 # (cache.h at A4a, set_associative.* at A4b, and all of Phase B), which is why
 # extending this line is the FIRST thing done to this file in a review round.
 # trace.h is the one worth naming: it is a pure interface with no executable
@@ -76,7 +77,7 @@ ulimit -c 0 2>/dev/null || true
 # naming: it is header-only AND was included by no translation unit at all until
 # tests/core/test_event.cpp existed, so before this round nothing in the tree either
 # compiled it or could mutate it.
-FILES="include/cachesim/types.h include/cachesim/layout/mapper.h include/cachesim/layout/block_pack.h include/cachesim/index/cache_array.h include/cachesim/index/set_associative.h include/cachesim/index/set_index.h include/cachesim/replacement/policy.h include/cachesim/replacement/stamp.h include/cachesim/replacement/belady.h include/cachesim/replacement/lfu.h include/cachesim/replacement/rrip.h include/cachesim/core/port.h include/cachesim/core/event.h include/cachesim/core/request.h include/cachesim/core/mshr.h include/cachesim/trace/tile_trace.h include/cachesim/core/cache_level.h include/cachesim/core/engine.h include/cachesim/prefetch/prefetcher.h src/layout/block_pack.cpp src/layout/layout_common.h src/layout/layout_common.cpp src/index/set_associative.cpp src/replacement/policy.cpp src/replacement/stamp.cpp src/replacement/belady.cpp src/replacement/lfu.cpp src/replacement/rrip.cpp src/core/port.cpp src/core/mshr.cpp src/core/cache_level.cpp src/core/engine.cpp src/core/engine_core.cpp src/prefetch/prefetcher.cpp include/cachesim/config.h src/config.cpp include/cachesim/trace/stream_format.h include/cachesim/trace/byte_source.h include/cachesim/trace/stream_trace.h src/trace/stream_trace.cpp include/cachesim/instrument/stats.h src/instrument/stats.cpp include/cachesim/instrument/hist.h apps/cachesim_run.cpp include/cachesim/sweep.h src/sweep.cpp apps/app_support.h apps/cachesim_sweep.cpp"
+FILES="include/cachesim/types.h include/cachesim/layout/mapper.h include/cachesim/layout/block_pack.h include/cachesim/index/cache_array.h include/cachesim/index/set_associative.h include/cachesim/index/set_index.h include/cachesim/replacement/policy.h include/cachesim/replacement/stamp.h include/cachesim/replacement/belady.h include/cachesim/replacement/lfu.h include/cachesim/replacement/rrip.h include/cachesim/core/port.h include/cachesim/core/event.h include/cachesim/core/request.h include/cachesim/core/mshr.h include/cachesim/trace/tile_trace.h include/cachesim/core/cache_level.h include/cachesim/core/engine.h include/cachesim/prefetch/prefetcher.h include/cachesim/prefetch/none.h include/cachesim/prefetch/next_burst.h include/cachesim/prefetch/neighbour.h src/layout/block_pack.cpp src/layout/layout_common.h src/layout/layout_common.cpp src/index/set_associative.cpp src/replacement/policy.cpp src/replacement/stamp.cpp src/replacement/belady.cpp src/replacement/lfu.cpp src/replacement/rrip.cpp src/core/port.cpp src/core/mshr.cpp src/core/cache_level.cpp src/core/engine.cpp src/core/engine_core.cpp src/prefetch/prefetcher.cpp src/prefetch/none.cpp src/prefetch/next_burst.cpp src/prefetch/neighbour.cpp include/cachesim/config.h src/config.cpp include/cachesim/trace/stream_format.h include/cachesim/trace/byte_source.h include/cachesim/trace/stream_trace.h src/trace/stream_trace.cpp include/cachesim/instrument/stats.h src/instrument/stats.cpp include/cachesim/instrument/hist.h apps/cachesim_run.cpp include/cachesim/sweep.h src/sweep.cpp apps/app_support.h apps/cachesim_sweep.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
@@ -272,6 +273,7 @@ mutate_eng() { mutate_in src/core/engine.cpp "$@"; }
 mutate_engc() { mutate_in src/core/engine_core.cpp "$@"; }
 mutate_pf_h() { mutate_in include/cachesim/prefetch/prefetcher.h "$@"; }
 mutate_pf() { mutate_in src/prefetch/prefetcher.cpp "$@"; }
+mutate_pf_next() { mutate_in src/prefetch/next_burst.cpp "$@"; }
 
 echo "== comparison operators"
 mutate kill '<= becomes <'   's|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() <= b|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() < b|'
@@ -1827,7 +1829,8 @@ mutate_req_h kill 'B3 Level widens' \
 # C1 is CacheLevel and triage, C2 the six event handlers plus retire/reinject,
 # C3 the core state machine and the tile barrier, C4 inclusion, C5 prefetching.
 # The suites are tests/core/test_cache_level.cpp, tests/core/test_engine.cpp and
-# tests/prefetch/test_prefetch_engine.cpp, sharing tests/engine_fixture.h.
+# tests/prefetch/test_next_burst.cpp plus test_neighbour.cpp, sharing
+# tests/engine_fixture.h.
 #
 # Two families dominate, and they are the two the plan itself says are
 # load-bearing:
@@ -1945,7 +1948,7 @@ mutate_eng kill 'C2 the engine sizes tile_origin without its final entry' \
 # equivalent mutant. The behaviour it guards IS tested: test_engine.cpp's V11
 # fixture drives a request through an L2 slot-wait and back.
 mutate_eng allow 'C2 the I6 guard at the L2 is removed' \
-    's@    if (r.level != Level::L2 || r.mshr1 == nullptr) {@    if (false) {@' \
+    's@    if (r.level != Level::L2 || (r.mshr1 == nullptr && r.demand)) {@    if (false) {@' \
     'a guard over a state I6 makes unreachable; removing it changes no run'
 
 # Task 4's park point. The whole value of `run_to_barrier` is WHERE it stops:
@@ -1982,7 +1985,7 @@ mutate_engc kill 'C3 the service floor does not stop at the tile seam' \
 mutate_engc kill 'C3 the cursor is not reset at a tile start' \
     's|        cs.cursor        = BurstIndex{0};||'
 mutate_engc kill 'C3 the prefetch cursor is not reset at a tile start' \
-    's|        prefetcher_->on_tile_start(cid);||'
+    's|        l1_\.at(c)\.prefetcher().on_tile_start(cid);||'
 mutate_engc kill 'C3 a core with no bursts never clears the barrier' \
     's|        if (trace_.n_bursts(cid, tile) == 0) {|        if (false) {|'
 mutate_engc kill 'C3 the barrier fires one core early' \
@@ -2009,37 +2012,37 @@ mutate_engc kill 'C3 the next issue carries no spacing (N14)' \
 mutate_engc kill 'C3 the service floor takes the minimum' \
     's|    return gap < params_.core_accept_ii ? params_.core_accept_ii : gap;|    return gap < params_.core_accept_ii ? gap : params_.core_accept_ii;|'
 
-echo "== C5: the prefetch sink (src/core/engine_core.cpp)"
+echo "== C5: the prefetch issue mechanics (src/core/engine_core.cpp)"
 mutate_engc kill 'C5 the prefetcher is never called' \
-    's|    prefetcher_->on_demand_issue(\*this, c, k, now);||'
-mutate_engc kill 'C5 the budget is off by one (I14)' \
-    's|        if (in_fly >= cap) {|        if (in_fly > cap) {|'
-mutate_engc kill 'C5 the demand reserve is not subtracted from the budget' \
-    's|    const std::int32_t cap = lvl.mshrs().capacity() - lvl.mshrs().demand_reserve();|    const std::int32_t cap = lvl.mshrs().capacity();|'
-mutate_engc kill 'C5 prefetch lines in flight are not counted' \
-    's|        ++in_fly;||'
-mutate_engc kill 'C5 a prefetch is issued as a demand request (I15)' \
-    's|        Request& r = acquire(core, line, k, false, now);|        Request\& r = acquire(core, line, k, true, now);|'
+    's|        prefetch_on_demand(Level::L1, c, cs.tile, k, line, now);||'
+mutate_eng kill 'C5 the budget is off by one (I14)' \
+    's|                if (in_fly >= cap) {|                if (in_fly > cap) {|'
+mutate_eng kill 'C5 the demand reserve is not subtracted from the budget' \
+    's|                const std::int32_t cap = lvl.mshrs().capacity() - lvl.mshrs().demand_reserve();|                const std::int32_t cap = lvl.mshrs().capacity();|'
+mutate_eng kill 'C5 prefetch lines in flight are not counted' \
+    's|                ++in_fly;||'
+mutate_eng kill 'C5 a prefetch is issued as a demand request (I15)' \
+    's|                Request& r = acquire(core, target.line, target.burst, false, now);|                Request\& r = acquire(core, target.line, target.burst, true, now);|'
 mutate_engc kill 'C5 the tile length is read from the next tile' \
     's|    return trace_.n_bursts(core, cs.tile);|    return trace_.n_bursts(core, cs.tile + 1);|'
 
-echo "== C5: next_burst(d) itself (src/prefetch/prefetcher.cpp)"
-mutate_pf kill 'C5 the cursor is allowed to fall behind the core' \
+echo "== C5: next_burst(d) itself (src/prefetch/next_burst.cpp)"
+mutate_pf_next kill 'C5 the cursor is allowed to fall behind the core' \
     's|    if (cursor < next) cursor = next;||'
-mutate_pf kill 'C5 the fetch-ahead is one burst short' \
-    's|    while (cursor <= last && cursor < n_burst) {|    while (cursor < last \&\& cursor < n_burst) {|'
-mutate_pf kill 'C5 the fetch-ahead runs one burst past the tile' \
-    's@    while (cursor <= last && cursor < n_burst) {@    while (cursor <= last \&\& cursor <= n_burst) {@'
-mutate_pf kill 'C5 a budget refusal is ignored (N16)' \
-    's|        if (!mem.issue_prefetch(core, BurstIndex{cursor}, now)) return;|        (void)mem.issue_prefetch(core, BurstIndex{cursor}, now);|'
-mutate_pf kill 'C5 on_tile_start does not reset the cursor' \
-    's|    pf_cursor_.at(static_cast<std::size_t>(core.get())) = 0;||'
-mutate_pf kill 'C5 distance 0 is accepted as next_burst' \
+mutate_pf_next kill 'C5 the fetch-ahead is one burst short' \
+    's|    for (std::int32_t burst = cursor; burst <= last && burst < n_bursts; ++burst) {|    for (std::int32_t burst = cursor; burst < last \&\& burst < n_bursts; ++burst) {|'
+mutate_pf_next kill 'C5 the fetch-ahead runs one burst past the tile' \
+    's|    for (std::int32_t burst = cursor; burst <= last && burst < n_bursts; ++burst) {|    for (std::int32_t burst = cursor; burst <= last \&\& burst <= n_bursts; ++burst) {|'
+mutate_pf_next kill 'C5 a budget-complete burst advances too far (N16)' \
+    's|    const std::int32_t next = last_complete_burst.get() + 1;|    const std::int32_t next = last_complete_burst.get() + 2;|'
+mutate_pf_next kill 'C5 on_tile_start does not reset the cursor' \
+    's|    pf_cursor_\.at(c) = 0;||'
+mutate_pf_next kill 'C5 distance 0 is accepted as next_burst' \
     's|    if (distance < 1) {|    if (distance < 0) {|'
 mutate_pf kill 'C5 none is built as next_burst' \
     's|            return std::make_unique<NoPrefetcher>();|            return std::make_unique<NextBurstPrefetcher>(1, n_cores);|'
-mutate_pf kill 'C5 the fetch-ahead distance is ignored' \
-    's|    const std::int32_t last    = k.get() + distance_;|    const std::int32_t last    = k.get() + 1;|'
+mutate_pf_next kill 'C5 the fetch-ahead distance is ignored' \
+    's|    const std::int32_t last = ctx.k.get() + distance_;|    const std::int32_t last = ctx.k.get() + 1;|'
 
 echo "== D2a: the stall breakdown and the Part 8 counters (src/core/engine_core.cpp)"
 mutate_engc kill 'D2a stall_total is not accumulated (V21)' \
@@ -2058,7 +2061,7 @@ mutate_engc kill 'D2a barrier slack is charged to the bucket only' \
     's|        stats_.stall_total\[c\] += slack;||'
 mutate_engc kill 'D2a the coverage ceiling counts the first burst too' \
     's|    if (k.get() > 0) ++stats_.pf_bursts_eligible;|    ++stats_.pf_bursts_eligible;|'
-mutate_engc kill 'D2a prefetches issued are not counted' \
+mutate_eng kill 'D2a prefetches issued are not counted' \
     's|        ++stats_.pf_issued;||'
 
 echo "== D2b: ruling R8, the line anchor (src/core/engine_core.cpp)"
@@ -2112,12 +2115,12 @@ mutate_mshr kill 'D2b the slot waiters are marked too (D4)' \
     's|    collect_grants(out.wake);|    collect_grants(out.wake); for (Request* g_ : out.wake) g_->line_resident_at_wake = true;|'
 
 echo "== C5: the interface (include/cachesim/prefetch/prefetcher.h)"
-mutate_pf_h kill 'C5 issue_prefetch stops reporting the budget' \
-    's|    virtual bool issue_prefetch(CoreId core, BurstIndex k, SimTime now) = 0;|    virtual void issue_prefetch(CoreId core, BurstIndex k, SimTime now) = 0;|'
+mutate_pf_h kill 'C5 on_issued stops reporting the completed burst' \
+    's|    virtual void on_issued(CoreId, BurstIndex) {}|    virtual void on_issued(CoreId) {}|'
 mutate_pf_h kill 'C5 on_tile_start loses the core it is about' \
-    's|    virtual void on_tile_start(CoreId core) = 0;|    virtual void on_tile_start() = 0;|'
+    's|    virtual void on_tile_start(CoreId) {}|    virtual void on_tile_start() {}|'
 mutate_pf_h kill 'C5 the prefetcher may read the memory system by value' \
-    's|    virtual void on_demand_issue(PrefetchIssuer& mem, CoreId core, BurstIndex k, SimTime now) = 0;|    virtual void on_demand_issue(PrefetchIssuer mem, CoreId core, BurstIndex k, SimTime now) = 0;|'
+    's|    virtual void on_demand(const PrefetchContext\&, std::vector<PrefetchTarget>\& out) = 0;|    virtual void on_demand(PrefetchContext, std::vector<PrefetchTarget>\& out) = 0;|'
 
 echo "== C3: the one crossing from trace time to simulated time (include/cachesim/core/engine.h)"
 mutate_eng_h kill 'C3 as_duration loses the offset' \

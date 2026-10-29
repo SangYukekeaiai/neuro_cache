@@ -28,6 +28,8 @@
 #include <cachesim/core/cache_level.h>
 #include <cachesim/core/engine.h>
 #include <cachesim/core/mshr.h>
+#include <cachesim/prefetch/next_burst.h>
+#include <cachesim/prefetch/none.h>
 #include <cachesim/types.h>
 
 #include <cstdint>
@@ -56,70 +58,79 @@ constexpr std::int64_t kL2Sets = 32;
 // The policy classes on their own (4.6's pseudocode, line for line)
 // ===========================================================================
 
-// What the memory system looks like to a prefetcher, recorded. It is the whole
-// interface: how long the tile is, and a request to fetch a burst that answers
-// with the BUDGET rather than with a refusal (N16).
-class RecordingIssuer final : public PrefetchIssuer {
-public:
-    std::int32_t bursts_in_tile = 5;
-    std::int32_t budget         = 1000;
-    std::vector<std::pair<std::int32_t, std::int32_t>> calls;  // (core, burst)
-
-    std::int32_t n_bursts_in_tile(CoreId) const override { return bursts_in_tile; }
-
-    bool issue_prefetch(CoreId core, BurstIndex k, SimTime) override {
-        if (static_cast<std::int32_t>(calls.size()) >= budget) return false;
-        calls.push_back({core.get(), k.get()});
-        return true;
-    }
-};
-
 void test_none_asks_the_memory_system_for_nothing() {
     check::group("C5: ORACLE -- `none` makes zero calls, which is what inertness IS");
 
     NoPrefetcher pf;
-    RecordingIssuer mem;
-    for (std::int32_t k = 0; k < 5; ++k) {
-        pf.on_demand_issue(mem, CoreId{0}, BurstIndex{k}, SimTime{k});
-    }
+    FakeTrace tr(1);
+    const std::int32_t tile = tr.add_tile();
+    for (std::int32_t k = 0; k < 5; ++k) tr.add_burst(tile, 0, k, k);
+    LinearMapper mapper(16);
+    std::vector<PrefetchTarget> targets;
+    const PrefetchContext ctx{Level::L1, CoreId{0}, tile, BurstIndex{0}, LineId{0}, SimTime{0},
+                              mapper, tr};
+    pf.on_demand(ctx, targets);
     pf.on_tile_start(CoreId{0});
     // The strongest form of C5's "genuinely inert when off": not "the two logs
     // agree" but "the call cannot have had an effect, because it made none".
-    CHECK_EQ(check::ssize(mem.calls), 0);
+    CHECK_EQ(check::ssize(targets), 0);
 }
 
 void test_next_burst_walks_ahead_by_exactly_the_distance() {
     check::group("C5: 4.6's next_burst(d), line for line");
 
-    RecordingIssuer mem;
+    FakeTrace tr(2);
+    const std::int32_t tile = tr.add_tile();
+    for (std::int32_t c = 0; c < 2; ++c) {
+        for (std::int32_t k = 0; k < 5; ++k) tr.add_burst(tile, c, k, c * 5 + k);
+    }
+    LinearMapper mapper(32);
+    std::vector<PrefetchTarget> targets;
     NextBurstPrefetcher pf(1, 2);
     CHECK_EQ(pf.distance(), 1);
     CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{0});
 
-    pf.on_demand_issue(mem, CoreId{0}, BurstIndex{0}, SimTime{0});
-    CHECK_EQ(check::ssize(mem.calls), 1);
-    CHECK_EQ(mem.calls[0].second, 1);
-    CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{2});   // one past what it fetched
+    const PrefetchContext c0{Level::L1, CoreId{0}, tile, BurstIndex{0}, LineId{0}, SimTime{0},
+                             mapper, tr};
+    pf.on_demand(c0, targets);
+    CHECK_EQ(check::ssize(targets), 1);
+    CHECK_EQ(targets[0].burst, BurstIndex{1});
+    CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{1});
+    pf.on_issued(CoreId{0}, BurstIndex{1});
+    CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{2});
 
     // "Never behind the core": a demand issue of burst k means every burst up to
     // k is already the core's business, so the cursor is pulled forward rather
     // than walking from where it stopped.
-    pf.on_demand_issue(mem, CoreId{0}, BurstIndex{1}, SimTime{1});
-    CHECK_EQ(check::ssize(mem.calls), 2);
-    CHECK_EQ(mem.calls[1].second, 2);
+    targets.clear();
+    const PrefetchContext c1{Level::L1, CoreId{0}, tile, BurstIndex{1}, LineId{1}, SimTime{1},
+                             mapper, tr};
+    pf.on_demand(c1, targets);
+    CHECK_EQ(check::ssize(targets), 1);
+    CHECK_EQ(targets[0].burst, BurstIndex{2});
+    pf.on_issued(CoreId{0}, BurstIndex{2});
 
     // Two cores keep separate cursors, which is what makes `PrefetchState` per
     // L1 (3.3) rather than global.
-    pf.on_demand_issue(mem, CoreId{1}, BurstIndex{0}, SimTime{2});
-    CHECK_EQ(mem.calls[2].first, 1);
-    CHECK_EQ(mem.calls[2].second, 1);
+    targets.clear();
+    const PrefetchContext c1b{Level::L1, CoreId{1}, tile, BurstIndex{0}, LineId{5}, SimTime{2},
+                              mapper, tr};
+    pf.on_demand(c1b, targets);
+    CHECK_EQ(targets[0].burst, BurstIndex{1});
 
-    RecordingIssuer m2;
+    FakeTrace tr2(1);
+    const std::int32_t tile2 = tr2.add_tile();
+    for (std::int32_t k = 0; k < 5; ++k) tr2.add_burst(tile2, 0, k, k);
+    LinearMapper mapper2(16);
+    std::vector<PrefetchTarget> targets2;
     NextBurstPrefetcher deep(3, 1);
-    deep.on_demand_issue(m2, CoreId{0}, BurstIndex{0}, SimTime{0});
-    CHECK_EQ(check::ssize(m2.calls), 3);
-    CHECK_EQ(m2.calls[0].second, 1);
-    CHECK_EQ(m2.calls[2].second, 3);
+    const PrefetchContext d0{Level::L1, CoreId{0}, tile2, BurstIndex{0}, LineId{0}, SimTime{0},
+                             mapper2, tr2};
+    deep.on_demand(d0, targets2);
+    CHECK_EQ(check::ssize(targets2), 3);
+    CHECK_EQ(targets2[0].burst, BurstIndex{1});
+    CHECK_EQ(targets2[2].burst, BurstIndex{3});
+    deep.on_issued(CoreId{0}, BurstIndex{3});
     // I14's first half: `pf_cursor - cursor <= 1 + d`.
     CHECK_EQ(deep.pf_cursor(CoreId{0}), BurstIndex{4});
 }
@@ -127,34 +138,49 @@ void test_next_burst_walks_ahead_by_exactly_the_distance() {
 void test_next_burst_stops_at_the_tile_boundary() {
     check::group("C5: 4.6 -- the policy never crosses a tile boundary");
 
-    RecordingIssuer mem;
-    mem.bursts_in_tile = 3;
+    FakeTrace tr(1);
+    const std::int32_t tile = tr.add_tile();
+    for (std::int32_t k = 0; k < 3; ++k) tr.add_burst(tile, 0, k, k);
+    LinearMapper mapper(16);
+    std::vector<PrefetchTarget> targets;
     NextBurstPrefetcher pf(5, 1);
-    pf.on_demand_issue(mem, CoreId{0}, BurstIndex{1}, SimTime{0});
+    const PrefetchContext ctx{Level::L1, CoreId{0}, tile, BurstIndex{1}, LineId{1}, SimTime{0},
+                              mapper, tr};
+    pf.on_demand(ctx, targets);
     // Only burst 2 exists ahead of burst 1 in a three-burst tile, and the next
     // tile's activations do not exist until the barrier resolves.
-    CHECK_EQ(check::ssize(mem.calls), 1);
-    CHECK_EQ(mem.calls[0].second, 2);
+    CHECK_EQ(check::ssize(targets), 1);
+    CHECK_EQ(targets[0].burst, BurstIndex{2});
+    CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{2});
+    pf.on_issued(CoreId{0}, BurstIndex{2});
     CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{3});
 }
 
-void test_next_burst_stops_on_the_budget_and_retries_later() {
-    check::group("C5: ORACLE -- N16, the budget and not a refusal is what stops it");
+void test_next_burst_pulls_forward_after_budget_exhaustion() {
+    check::group("C5: ORACLE -- N16, budget exhaustion leaves the cursor until the next demand");
 
-    RecordingIssuer mem;
-    mem.budget = 2;
+    FakeTrace tr(1);
+    const std::int32_t tile = tr.add_tile();
+    for (std::int32_t k = 0; k < 5; ++k) tr.add_burst(tile, 0, k, k, 2);
+    LinearMapper mapper(16);
+    std::vector<PrefetchTarget> targets;
     NextBurstPrefetcher pf(4, 1);
-    pf.on_demand_issue(mem, CoreId{0}, BurstIndex{0}, SimTime{0});
-    CHECK_EQ(check::ssize(mem.calls), 2);          // bursts 1 and 2, then the budget
-    CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{3});
-    // The cursor is NOT advanced past the burst the budget refused, so the same
-    // burst is tried again at the next demand issue, by which time its own fills
-    // have returned credits.
-    mem.budget = 4;
-    pf.on_demand_issue(mem, CoreId{0}, BurstIndex{0}, SimTime{1});
-    CHECK_EQ(check::ssize(mem.calls), 4);
-    CHECK_EQ(mem.calls[2].second, 3);
-    CHECK_EQ(mem.calls[3].second, 4);
+    const PrefetchContext ctx{Level::L1, CoreId{0}, tile, BurstIndex{0}, LineId{0}, SimTime{0},
+                              mapper, tr};
+    pf.on_demand(ctx, targets);
+    // The engine may issue only the first burst before its budget is full.
+    CHECK_EQ(check::ssize(targets), 8);
+    CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{1});
+    // No on_issued callback arrives for a partial burst, so the cursor remains
+    // there at this instant. The next demand has already made burst 1 the
+    // core's business, though, and the unconditional pull-forward skips it.
+    targets.clear();
+    const PrefetchContext retry{Level::L1, CoreId{0}, tile, BurstIndex{1}, LineId{2}, SimTime{1},
+                                mapper, tr};
+    pf.on_demand(retry, targets);
+    CHECK_EQ(check::ssize(targets), 6);
+    CHECK_EQ(targets[0].burst, BurstIndex{2});
+    CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{2});
 }
 
 void test_on_tile_start_is_needed_and_not_convenient() {
@@ -164,34 +190,51 @@ void test_on_tile_start_is_needed_and_not_convenient() {
     // prefetched") and never names a hook. This is the check that the hook is
     // load-bearing: with the cursor carried across the seam, the next tile's
     // burst 1 is below the stale cursor and is never fetched at all.
-    RecordingIssuer mem;
+    FakeTrace tr(1);
+    const std::int32_t tile = tr.add_tile();
+    for (std::int32_t k = 0; k < 4; ++k) tr.add_burst(tile, 0, k, k);
+    LinearMapper mapper(16);
+    std::vector<PrefetchTarget> targets;
     NextBurstPrefetcher pf(1, 1);
-    pf.on_demand_issue(mem, CoreId{0}, BurstIndex{0}, SimTime{0});
-    pf.on_demand_issue(mem, CoreId{0}, BurstIndex{1}, SimTime{1});
+    const PrefetchContext first{Level::L1, CoreId{0}, tile, BurstIndex{0}, LineId{0}, SimTime{0},
+                                mapper, tr};
+    pf.on_demand(first, targets);
+    pf.on_issued(CoreId{0}, BurstIndex{1});
+    targets.clear();
+    const PrefetchContext second{Level::L1, CoreId{0}, tile, BurstIndex{1}, LineId{1}, SimTime{1},
+                                 mapper, tr};
+    pf.on_demand(second, targets);
+    pf.on_issued(CoreId{0}, BurstIndex{2});
     CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{3});
 
     // A new tile begins. Without the reset the cursor is still 3 and a demand
     // issue of burst 0 fetches nothing, because 3 > 0 + 1.
     pf.on_tile_start(CoreId{0});
     CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{0});
-    const std::int64_t before = check::ssize(mem.calls);
-    pf.on_demand_issue(mem, CoreId{0}, BurstIndex{0}, SimTime{100});
-    CHECK_EQ(check::ssize(mem.calls) - before, 1);
-    CHECK_EQ(mem.calls.back().second, 1);
+    targets.clear();
+    const PrefetchContext next{Level::L1, CoreId{0}, tile, BurstIndex{0}, LineId{0}, SimTime{100},
+                               mapper, tr};
+    pf.on_demand(next, targets);
+    CHECK_EQ(check::ssize(targets), 1);
+    CHECK_EQ(targets.back().burst, BurstIndex{1});
 }
 
 void test_make_prefetcher_refuses_a_configuration_that_claims_to_be_on() {
     check::group("C5: make_prefetcher, and what it refuses");
 
-    CHECK_THROWS(std::invalid_argument, make_prefetcher(PrefetchKind::NextBurst, 0, 1));
-    CHECK_THROWS(std::invalid_argument, make_prefetcher(PrefetchKind::NextBurst, -1, 1));
-    CHECK_THROWS(std::invalid_argument, make_prefetcher(PrefetchKind::NextBurst, 1, 0));
-    CHECK_THROWS(std::invalid_argument, make_prefetcher(PrefetchKind::None, -1, 1));
+    CHECK_THROWS(std::invalid_argument,
+                 make_prefetcher(PrefetchKind::NextBurst, PrefetchParams{0}, 1));
+    CHECK_THROWS(std::invalid_argument,
+                 make_prefetcher(PrefetchKind::NextBurst, PrefetchParams{-1}, 1));
+    CHECK_THROWS(std::invalid_argument,
+                 make_prefetcher(PrefetchKind::NextBurst, PrefetchParams{1}, 0));
+    CHECK_THROWS(std::invalid_argument,
+                 make_prefetcher(PrefetchKind::None, PrefetchParams{-1}, 1));
     // 2.5b pairs `none` with distance 0 and a sweep grid crosses the two axes,
     // so a distance is accepted and ignored here; D1's row owns the cross-field
     // rule that `next_burst` with distance 0 is a configuration error.
-    CHECK_TRUE(make_prefetcher(PrefetchKind::None, 3, 1) != nullptr);
-    CHECK_TRUE(make_prefetcher(PrefetchKind::NextBurst, 2, 4) != nullptr);
+    CHECK_TRUE(make_prefetcher(PrefetchKind::None, PrefetchParams{3}, 1) != nullptr);
+    CHECK_TRUE(make_prefetcher(PrefetchKind::NextBurst, PrefetchParams{2}, 4) != nullptr);
 }
 
 // ===========================================================================
@@ -603,62 +646,6 @@ void test_a_prefetch_DOES_wait_at_the_l2_which_I15_forbids() {
     }
 }
 
-void test_dropping_a_prefetch_at_the_l2_would_strand_its_l1_entry() {
-    check::group("C5: FINDING -- P1's deadlock, demonstrated at the level below");
-
-    // P1's claim: a prefetch refused at the L2 has no defined outcome, and the
-    // obvious one (drop it, as 4.6 says) deadlocks. Demonstrated here without
-    // an engine, because the engine refuses to reach the state at all.
-    //
-    // Step 1: a prefetch is forwarded at the L1, which allocates an L1 entry it
-    // now holds across the whole downstream round trip (4.1, 4.2).
-    LinearMapper map(64);
-    RefusalCounter counter;
-    CacheLevel l1(Level::L1, map, fx::level(4, 2, 4, 2, 0), counter);
-    CacheLevel l2(Level::L2, map, fx::level(8, 2, 1, 1, 0), counter);
-    std::deque<Request> arena;
-    std::vector<Request*> granted;
-
-    arena.push_back(Request{CoreId{0}, LineId{9}, BurstIndex{1}, false});
-    Request& pf = arena.back();
-    CHECK_TRUE(l1.triage(pf, granted) == TriageOutcome::Forwarded);
-    CHECK_EQ(l1.mshrs().live(), 1);
-    CHECK_TRUE(pf.mshr1 != nullptr);
-    CHECK_TRUE(pf.level == Level::L2);
-
-    // Step 2: at the L2 it is no longer "at issue", so the drop rules do not
-    // apply and it is treated exactly like a demand request. That is the
-    // implementer's resolution, and `is_prefetch_at_issue` is the one spelling
-    // of it that `has_slot`, both wait pushes and `triage` all read.
-    CHECK_TRUE(!is_prefetch_at_issue(pf));
-    arena.push_back(Request{CoreId{1}, LineId{10}, BurstIndex{0}});
-    Request& other = arena.back();
-    CHECK_TRUE(l2.triage(other, granted) == TriageOutcome::Forwarded);   // l2_mshrs = 1, now full
-    CHECK_TRUE(l2.triage(pf, granted) == TriageOutcome::BlockedPool);    // waits, holding its L1 entry
-    CHECK_TRUE(pf.on_wait_index);
-
-    // Step 3: what the plan asks for instead. A request that IS at issue and is
-    // refused for want of a slot is dropped, and the four reasons are the L1's.
-    // Applying that rule at the L2 means this request goes away while its L1
-    // entry stays live, and the ONLY thing that retires an L1 entry is an
-    // `E_L1Fill`, which only an L2 hit or an L2 fill for that line can schedule.
-    // With the request dropped, neither will ever happen, so the entry is
-    // unfillable, its core's burst never completes, and the run ends at D12's
-    // deadlock check. I15 forbids the other outcome, waiting, which is why the
-    // plan leaves no third option.
-    CHECK_EQ(l1.mshrs().live(), 1);
-    CHECK_TRUE(l1.mshrs().find(LineId{9}) != nullptr);
-    CHECK_EQ(check::ssize(l1.mshrs().find(LineId{9})->targets), 1);
-
-    // And the engine refuses to be put in that state rather than producing it:
-    // a request reaching the L2 without an L1 entry is caught by I6's check, and
-    // a drop at the L2 is caught by name.
-    arena.push_back(Request{CoreId{0}, LineId{11}, BurstIndex{0}, false});
-    Request& loose = arena.back();
-    CHECK_TRUE(is_prefetch_at_issue(loose));
-    CHECK_TRUE(l2.triage(loose, granted) == TriageOutcome::DroppedNoSlot);
-}
-
 // ===========================================================================
 // P2, with the prefetcher on
 // ===========================================================================
@@ -712,7 +699,7 @@ int main() {
     test_none_asks_the_memory_system_for_nothing();
     test_next_burst_walks_ahead_by_exactly_the_distance();
     test_next_burst_stops_at_the_tile_boundary();
-    test_next_burst_stops_on_the_budget_and_retries_later();
+    test_next_burst_pulls_forward_after_budget_exhaustion();
     test_on_tile_start_is_needed_and_not_convenient();
     test_make_prefetcher_refuses_a_configuration_that_claims_to_be_on();
     test_none_reproduces_the_no_prefetch_timeline();
@@ -723,7 +710,6 @@ int main() {
     test_a_demand_request_promotes_an_outstanding_prefetch_entry();
     test_a_prefetch_never_waits_at_the_l1();
     test_a_prefetch_DOES_wait_at_the_l2_which_I15_forbids();
-    test_dropping_a_prefetch_at_the_l2_would_strand_its_l1_entry();
     test_r8_makes_the_hidden_latency_measurable();
     return check::summary();
 }

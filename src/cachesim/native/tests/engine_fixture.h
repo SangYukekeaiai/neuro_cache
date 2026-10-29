@@ -33,6 +33,7 @@
 #include <cachesim/core/cache_level.h>
 #include <cachesim/core/engine.h>
 #include <cachesim/layout/mapper.h>
+#include <cachesim/prefetch/next_burst.h>
 #include <cachesim/prefetch/prefetcher.h>
 #include <cachesim/trace/tile_trace.h>
 #include <cachesim/types.h>
@@ -376,7 +377,8 @@ public:
             // I14's first half, on the concrete policy, because `none` has no
             // cursor and inventing one would make this pass where it has nothing
             // to say.
-            if (const auto* nb = dynamic_cast<const NextBurstPrefetcher*>(&eng_->prefetcher())) {
+            if (const auto* nb =
+                    dynamic_cast<const NextBurstPrefetcher*>(&eng_->l1(cid).prefetcher())) {
                 const std::int32_t d = nb->pf_cursor(cid).get() - cs.cursor.get();
                 if (d < 0 || d > 1 + nb->distance()) fail("I14 pf_cursor - cursor");
                 max_run_ahead = std::max(max_run_ahead, d);

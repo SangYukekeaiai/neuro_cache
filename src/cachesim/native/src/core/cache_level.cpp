@@ -54,11 +54,13 @@ void charge_path(Request& r, StallCause c) {
 CacheLevel::CacheLevel(Level level,
                        const AddressMapper& mapper,
                        const LevelParams& params,
-                       RefusalCounter& counter)
+                       RefusalCounter& counter,
+                       std::int32_t n_cores)
     : level_(level),
       mapper_(mapper),
       array_(nullptr),
       policy_(nullptr),
+      prefetcher_(nullptr),
       mshrs_(params.mshrs, params.tgts_per_mshr, params.demand_reserve, counter),
       num_sets_(0),
       bank_high_bits_(params.bank_high_bits),
@@ -78,6 +80,7 @@ CacheLevel::CacheLevel(Level level,
     // After the array, so a policy is never sized from a geometry the array
     // refused. `make_policy` is what rejects Random (Q5, V29, decision B95).
     policy_ = make_policy(params.policy, slots, params.rrip_bits);
+    prefetcher_ = make_prefetcher(params.prefetch_kind, params.prefetch_params, n_cores);
 
     if (params.banks < 1) {
         throw std::invalid_argument("CacheLevel: banks must be >= 1, got " +
@@ -112,11 +115,12 @@ std::int32_t CacheLevel::bank_of(LineId line) const {
 TriageOutcome CacheLevel::triage(Request& r, std::vector<Request*>& granted) {
     granted.clear();
 
-    // 4.6's four differences apply to a prefetch AT ISSUE, which is the L1. By
-    // I6 a request at the L2 holds an L1 entry, so this is false there and the
-    // four drop branches below are unreachable at the L2: "identical below this
-    // point" (4.6's own last table row). See `is_prefetch_at_issue` in mshr.h
-    // for why dropping at the L2 is not an option the plan leaves open.
+    // 4.6's four differences apply to a prefetch AT ISSUE. A prefetch forwarded
+    // from the L1 holds an L1 entry by the time it reaches the L2, but a policy
+    // owned by the L2 issues requests without one; both cases use the same
+    // predicate. The latter is dropped here when the L2 cannot accept it, while
+    // a forwarded L1 prefetch remains a demand-like request so its L1 entry can
+    // still be filled. See `is_prefetch_at_issue` in mshr.h.
     const bool at_issue = is_prefetch_at_issue(r);
 
     // Belady's occurrence, consumed BEFORE the array is probed and therefore on

@@ -59,13 +59,14 @@ Where each part of the tree is described:
    `--no-header` turns it off (`src/cachesim/native/apps/cachesim_run.cpp:46-47`,
    :140; `src/cachesim/native/apps/cachesim_sweep.cpp:44-45`, :85);
    `l2_pf_timely` always equals `l2_pf_retriggers`, since
-   `src/cachesim/native/src/core/engine.cpp:423-424` increments both at one site
+   `src/cachesim/native/src/core/engine.cpp:468-469` increments both at one site
    (`src/cachesim/native/include/cachesim/core/engine.h:265`,
    `src/cachesim/native/src/instrument/stats.cpp:362`).
 5. L2 MSHR floor: an unset `l2_demand_reserve` (-1,
-   `src/cachesim/native/include/cachesim/config.h:104`) resolves to
+   `src/cachesim/native/include/cachesim/config.h:110`) resolves to
    `lines_per_burst` and must stay below `l2_mshrs` (default 20, :71), else
-   `validate` refuses the config (`src/cachesim/native/src/config.cpp:629-639`).
+   `validate` resolves the reserve (`src/cachesim/native/src/config.cpp:702`) and refuses the config
+   when it leaves no MSHR free (`src/cachesim/native/src/config.cpp:707-711`).
 6. The cache simulator's base point and sweep axes have one source each,
    `configs/cache/base.json` and `configs/cache/khkw_sweep.json`, read only
    through `src/cachesim/grid.py:8-17`. One `cachesim_sweep` call takes one
@@ -123,8 +124,8 @@ their "2. Bottom-up" entries:
 | 7 | `decode_header` | `src/cachesim/native/include/cachesim/trace/stream_format.h:208` |
 | 8 | `StreamingTileTrace::advance` | `src/cachesim/native/src/trace/stream_trace.cpp:176` |
 | 9 | `detail::expand_burst` | `src/cachesim/native/src/layout/layout_common.h:120` |
-| 10 | `validate` | `src/cachesim/native/src/config.cpp:521` |
-| 11 | `Engine::run_to_barrier` | `src/cachesim/native/src/core/engine.cpp:128` |
+| 10 | `validate` | `src/cachesim/native/src/config.cpp:571` |
+| 11 | `Engine::run_to_barrier` | `src/cachesim/native/src/core/engine.cpp:141` |
 | 12 | `CacheLevel::triage` | `src/cachesim/native/src/core/cache_level.cpp:112` |
 | 13 | `schedule_from_strategy` | `src/nocsim/schedule/decode.py:238` |
 | 14 | `iter_node_tiles` | `src/nocsim/schedule/tiles.py:98` |

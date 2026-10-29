@@ -1309,18 +1309,24 @@ tryEngine reject 'C2 an Engine is copied' \
 tryEngine accept 'C2 control: an Engine is referred to' \
     'void f(Engine& e) { Engine& r = e; (void)r; }'
 
-# 4.6: "One hook, called from E_Issue, returning NOTHING", and that is the whole
-# of "the PE is not changed": C5 is reachable from the core only through a call
-# that cannot affect it. A policy that wanted to report something back is the
-# plausible violation, and it is refused at the override rather than at the call.
+# 4.6: the policy receives a context and appends line targets. The hook is
+# deliberately one-way: the PE is not changed, and the policy cannot reserve a
+# port, allocate an MSHR, or enter a wait index. The level owns N16's credit
+# budget and reports a completed burst only after all of its targets were
+# accepted; if the budget stops a burst part way, the cursor remains there at
+# that instant and the next demand's pull-forward applies the core boundary.
+# I14 is split the same way: the policy owns the per-core fetch cursor, while
+# the engine owns the outstanding-credit bound. A policy that returns a status
+# instead of implementing that exact hook is the plausible interface violation,
+# and it is refused at the override.
 tryEngine reject 'C5 a prefetcher reports back from its hook' \
     'struct P : Prefetcher {
-       bool on_demand_issue(PrefetchIssuer&, CoreId, BurstIndex, SimTime) override { return true; }
+       bool on_demand(const PrefetchContext&, std::vector<PrefetchTarget>&) override { return true; }
        void on_tile_start(CoreId) override {} };
      int f() { P p; (void)p; return 0; }'
 tryEngine accept 'C5 control: a prefetcher that returns nothing' \
     'struct P : Prefetcher {
-       void on_demand_issue(PrefetchIssuer&, CoreId, BurstIndex, SimTime) override {}
+       void on_demand(const PrefetchContext&, std::vector<PrefetchTarget>&) override {}
        void on_tile_start(CoreId) override {} };
      int f() { P p; (void)p; return 0; }'
 

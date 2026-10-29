@@ -147,7 +147,6 @@ const I32Field kI32Fields[] = {
     {"l2_demand_reserve", &RunConfig::l2_demand_reserve},
     {"l2_prefetch_distance", &RunConfig::l2_prefetch_distance},
     {"l2_banks", &RunConfig::l2_banks},
-    {"prefetch_distance", &RunConfig::prefetch_distance},
 };
 
 const I64Field kI64Fields[] = {
@@ -197,6 +196,13 @@ void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t 
             cfg.*(f.member) = to_i64(key, v, pos);
             return;
         }
+    }
+
+    if (key == "prefetch_distance" || key == "l1_prefetch_distance") {
+        const std::int32_t distance = to_i32(key, v, pos);
+        cfg.prefetch_distance      = distance;
+        cfg.l1_prefetch_distance   = distance;
+        return;
     }
 
     if (key == "layout") {
@@ -257,10 +263,32 @@ void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t 
         const std::string& t = enum_text(key, v, pos);
         if (t == "none") {
             cfg.prefetch_policy = PrefetchKind::None;
+            cfg.l1_prefetch_policy = PrefetchKind::None;
         } else if (t == "next_burst") {
             cfg.prefetch_policy = PrefetchKind::NextBurst;
+            cfg.l1_prefetch_policy = PrefetchKind::NextBurst;
+        } else if (t == "neighbour" || t == "neighbor") {
+            cfg.prefetch_policy = PrefetchKind::Neighbour;
+            cfg.l1_prefetch_policy = PrefetchKind::Neighbour;
         } else {
             fail("unknown prefetch_policy \"" + t + "\"", pos);
+        }
+        return;
+    }
+
+    if (key == "l1_prefetch_policy") {
+        const std::string& t = enum_text(key, v, pos);
+        if (t == "none") {
+            cfg.l1_prefetch_policy = PrefetchKind::None;
+            cfg.prefetch_policy = PrefetchKind::None;
+        } else if (t == "next_burst") {
+            cfg.l1_prefetch_policy = PrefetchKind::NextBurst;
+            cfg.prefetch_policy = PrefetchKind::NextBurst;
+        } else if (t == "neighbour" || t == "neighbor") {
+            cfg.l1_prefetch_policy = PrefetchKind::Neighbour;
+            cfg.prefetch_policy = PrefetchKind::Neighbour;
+        } else {
+            fail("unknown l1_prefetch_policy \"" + t + "\"", pos);
         }
         return;
     }
@@ -268,12 +296,34 @@ void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t 
     if (key == "l2_prefetch_policy") {
         const std::string& t = enum_text(key, v, pos);
         if (t == "none") {
-            cfg.l2_prefetch_policy = L2PrefetchKind::None;
+            cfg.l2_prefetch_policy = PrefetchKind::None;
+        } else if (t == "next_burst") {
+            cfg.l2_prefetch_policy = PrefetchKind::NextBurst;
         } else if (t == "neighbour" || t == "neighbor") {
-            cfg.l2_prefetch_policy = L2PrefetchKind::Neighbour;
+            cfg.l2_prefetch_policy = PrefetchKind::Neighbour;
         } else {
             fail("unknown l2_prefetch_policy \"" + t + "\"", pos);
         }
+        return;
+    }
+
+    if (key == "l1_prefetch_axis") {
+        const std::string& t = enum_text(key, v, pos);
+        if (t == "cin")        cfg.l1_prefetch_axis = Axis::CIN;
+        else if (t == "cout")  cfg.l1_prefetch_axis = Axis::COUT;
+        else if (t == "kh" || t == "pos") cfg.l1_prefetch_axis = Axis::KH;
+        else if (t == "kw")    cfg.l1_prefetch_axis = Axis::KW;
+        else fail("unknown l1_prefetch_axis \"" + t + "\"", pos);
+        return;
+    }
+
+    if (key == "l1_prefetch_up") {
+        cfg.l1_prefetch_up = to_i32(key, v, pos) != 0;
+        return;
+    }
+
+    if (key == "l1_prefetch_down") {
+        cfg.l1_prefetch_down = to_i32(key, v, pos) != 0;
         return;
     }
 
@@ -519,6 +569,25 @@ std::vector<RunConfig> parse_config_grid(const std::string& json_text) {
 // --- validate -------------------------------------------------------------
 
 void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>& warnings) {
+    // The old unprefixed pair is an L1 alias. Keep both views synchronized for
+    // callers that construct RunConfig directly as well as parser input.
+    if (cfg.l1_prefetch_policy == PrefetchKind::None &&
+        cfg.prefetch_policy != PrefetchKind::None) {
+        cfg.l1_prefetch_policy = cfg.prefetch_policy;
+    }
+    if (cfg.prefetch_policy == PrefetchKind::None &&
+        cfg.l1_prefetch_policy != PrefetchKind::None) {
+        cfg.prefetch_policy = cfg.l1_prefetch_policy;
+    }
+    if (cfg.l1_prefetch_distance == 0 && cfg.prefetch_distance != 0) {
+        cfg.l1_prefetch_distance = cfg.prefetch_distance;
+    }
+    if (cfg.prefetch_distance == 0 && cfg.l1_prefetch_distance != 0) {
+        cfg.prefetch_distance = cfg.l1_prefetch_distance;
+    }
+    cfg.prefetch_policy   = cfg.l1_prefetch_policy;
+    cfg.prefetch_distance = cfg.l1_prefetch_distance;
+
     // Counts first, before anything divides by a line size or a set count.
     reject_below_one("lines_per_burst", lines_per_burst);
     reject_below_one("cin_block", cfg.cin_block);
@@ -603,18 +672,22 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
         reject("core_accept_ii = " + std::to_string(cfg.core_accept_ii) +
                " must be at least 1");
     }
-    if (cfg.prefetch_distance < 0) {
-        reject("prefetch_distance = " + std::to_string(cfg.prefetch_distance) +
+    if (cfg.l1_prefetch_distance < 0) {
+        reject("prefetch_distance = " + std::to_string(cfg.l1_prefetch_distance) +
                " must not be negative");
     }
     // The L2 policy, mirroring the L1 rule below: a policy that is on at
     // distance 0 would silently mean none, and two spellings of one behaviour
     // is what the L1 rule exists to refuse.
-    if (cfg.l2_prefetch_policy == L2PrefetchKind::Neighbour && cfg.l2_prefetch_distance == 0) {
+    if (cfg.l2_prefetch_policy == PrefetchKind::NextBurst && cfg.l2_prefetch_distance == 0) {
+        reject("l2_prefetch_policy = next_burst with l2_prefetch_distance = 0 would run as "
+               "none, so it is refused rather than silently disabled");
+    }
+    if (cfg.l2_prefetch_policy == PrefetchKind::Neighbour && cfg.l2_prefetch_distance == 0) {
         reject("l2_prefetch_policy = neighbour with l2_prefetch_distance = 0 would run as "
                "none; set the policy to none or the distance to at least 1");
     }
-    if (cfg.l2_prefetch_policy == L2PrefetchKind::Neighbour &&
+    if (cfg.l2_prefetch_policy == PrefetchKind::Neighbour &&
         !cfg.l2_prefetch_up && !cfg.l2_prefetch_down) {
         reject("l2_prefetch_policy = neighbour with both directions off would run as none; "
                "set the policy to none or turn a direction on");
@@ -638,9 +711,17 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
                "MSHR free");
     }
 
-    if (cfg.prefetch_policy == PrefetchKind::NextBurst && cfg.prefetch_distance == 0) {
+    if (cfg.l1_prefetch_policy == PrefetchKind::NextBurst && cfg.l1_prefetch_distance == 0) {
         reject("prefetch_policy = next_burst with prefetch_distance = 0 would run as "
                "none, so it is refused rather than silently disabled");
+    }
+    if (cfg.l1_prefetch_policy == PrefetchKind::Neighbour && cfg.l1_prefetch_distance == 0) {
+        reject("prefetch_policy = neighbour with prefetch_distance = 0 would run as "
+               "none; set the policy to none or the distance to at least 1");
+    }
+    if (cfg.l1_prefetch_policy == PrefetchKind::Neighbour &&
+        !cfg.l1_prefetch_up && !cfg.l1_prefetch_down) {
+        reject("prefetch_policy = neighbour with both directions off would run as none");
     }
 
     if (cfg.l1_demand_reserve == -1) cfg.l1_demand_reserve = lines_per_burst;
@@ -705,6 +786,9 @@ EngineParams to_engine_params(const RunConfig& cfg) {
     p.l1.mshrs            = cfg.l1_mshrs;
     p.l1.tgts_per_mshr    = cfg.l1_tgts_per_mshr;
     p.l1.demand_reserve   = cfg.l1_demand_reserve;
+    p.l1.prefetch_kind    = cfg.l1_prefetch_policy;
+    p.l1.prefetch_params  = PrefetchParams{cfg.l1_prefetch_distance, cfg.l1_prefetch_axis,
+                                           cfg.l1_prefetch_up, cfg.l1_prefetch_down};
 
     p.l2.cache_size_bytes = cfg.l2_size_bytes;
     p.l2.associativity    = cfg.l2_assoc;
@@ -722,12 +806,15 @@ EngineParams to_engine_params(const RunConfig& cfg) {
     p.core_accept_ii   = SimTime{cfg.core_accept_ii};
     p.inclusion        = cfg.inclusion;
     p.l2.demand_reserve   = cfg.l2_demand_reserve;
+    p.l2.prefetch_kind    = cfg.l2_prefetch_policy;
+    p.l2.prefetch_params  = PrefetchParams{cfg.l2_prefetch_distance, cfg.l2_prefetch_axis,
+                                           cfg.l2_prefetch_up, cfg.l2_prefetch_down};
     p.l2_prefetch_policy   = cfg.l2_prefetch_policy;
     p.l2_prefetch_axis     = cfg.l2_prefetch_axis;
     p.l2_prefetch_distance = cfg.l2_prefetch_distance;
     p.l2_prefetch_up       = cfg.l2_prefetch_up;
     p.l2_prefetch_down     = cfg.l2_prefetch_down;
-    p.prefetch_policy  = cfg.prefetch_policy;
+    p.prefetch_policy   = cfg.prefetch_policy;
     p.prefetch_distance = cfg.prefetch_distance;
     return p;
 }

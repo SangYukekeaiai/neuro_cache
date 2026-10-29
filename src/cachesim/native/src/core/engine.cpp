@@ -21,6 +21,24 @@ namespace {
 
 std::size_t idx(CoreId c) { return static_cast<std::size_t>(c.get()); }
 
+EngineParams normalize_params(EngineParams p) {
+    // Keep callers that still populate the pre-Phase-3 aliases working while
+    // the level-owned fields become the sole source used to construct policy
+    // objects. Config-generated params set both spellings already.
+    if (p.l1.prefetch_kind == PrefetchKind::None && p.prefetch_policy != PrefetchKind::None) {
+        p.l1.prefetch_kind        = p.prefetch_policy;
+        p.l1.prefetch_params.distance = p.prefetch_distance;
+    }
+    if (p.l2.prefetch_kind == PrefetchKind::None && p.l2_prefetch_policy != PrefetchKind::None) {
+        p.l2.prefetch_kind        = p.l2_prefetch_policy;
+        p.l2.prefetch_params.distance = p.l2_prefetch_distance;
+        p.l2.prefetch_params.axis     = p.l2_prefetch_axis;
+        p.l2.prefetch_params.up       = p.l2_prefetch_up;
+        p.l2.prefetch_params.down     = p.l2_prefetch_down;
+    }
+    return p;
+}
+
 // Whether a triage left the request on a wait index, which is the one thing
 // that grows the waiting population I11 bounds. Written once because the L1 and
 // the L2 halves of the check would otherwise be two copies that can disagree.
@@ -33,9 +51,9 @@ bool is_blocked(TriageOutcome result) {
 Engine::Engine(const AddressMapper& mapper, const TileTrace& trace, const EngineParams& params)
     : mapper_(mapper),
       trace_(trace),
-      params_(params),
-      l2_(Level::L2, mapper, params.l2, counter_),
-      dram_(params.dram_ii, params.l2_miss_latency) {
+      params_(normalize_params(params)),
+      l2_(Level::L2, mapper, params_.l2, counter_, trace.n_cores()),
+      dram_(params_.dram_ii, params_.l2_miss_latency) {
     const std::int32_t n_cores = trace.n_cores();
     if (n_cores < 1) {
         throw std::invalid_argument("Engine: the trace reports " + std::to_string(n_cores) +
@@ -48,13 +66,8 @@ Engine::Engine(const AddressMapper& mapper, const TileTrace& trace, const Engine
     // the addresses the levels hand out stable from the start.
     l1_.reserve(static_cast<std::size_t>(n_cores));
     for (std::int32_t c = 0; c < n_cores; ++c) {
-        l1_.emplace_back(Level::L1, mapper, params.l1, counter_);
+        l1_.emplace_back(Level::L1, mapper, params_.l1, counter_, n_cores);
     }
-
-    prefetcher_ = make_prefetcher(params.prefetch_policy, params.prefetch_distance, n_cores);
-    l2_prefetcher_ = make_l2_prefetcher(params.l2_prefetch_policy, params.l2_prefetch_axis,
-                                        params.l2_prefetch_distance, params.l2_prefetch_up,
-                                        params.l2_prefetch_down);
 
     const std::size_t n = static_cast<std::size_t>(n_cores);
     cores_.assign(n, CoreState{});
@@ -336,33 +349,65 @@ void Engine::on_l1_probe(Request& r, SimTime now) {
     reinject_all(granted_, now);
 }
 
-// The L2 policy's issue path (plan 0831-l2-cin-neighbour section 6b).
-//
-// Every suggestion costs exactly what a demand costs below the L1: an L2 bank
-// port slot here, an L2 MSHR entry inside `triage`, and on a miss a DRAM slot
-// and the bytes. Nothing is discounted, which is the whole reason the L1
-// policy lost cycles at 64-byte lines and is the standard this one is held to.
-//
-// It does NOT take an L1 port slot or an L1 entry, because it never touches the
-// L1. That is `mshr1 == nullptr` seen from the resource side.
-void Engine::l2_prefetch_from(LineId line, CoreId core, SimTime now) {
-    l2_pf_scratch_.clear();
-    l2_prefetcher_->suggest(mapper_, line, l2_pf_scratch_);
-    for (const LineId want : l2_pf_scratch_) {
-        // The direction, for the split the plan predicts will differ.
-        if (want.get() > line.get()) ++stats_.l2_pf_issued_up;
-        else                         ++stats_.l2_pf_issued_down;
-        ++stats_.l2_pf_issued;
+// One policy interface, with the level retaining all issue mechanics. L1
+// prefetches consume the level's reserved MSHR budget and a real L1 port slot;
+// L2 prefetches consume a bank port and are dropped by L2 triage when its
+// demand reserve or MSHR state refuses them.
+void Engine::prefetch_on_demand(Level level,
+                                CoreId core,
+                                std::int32_t tile,
+                                BurstIndex k,
+                                LineId line,
+                                SimTime now) {
+    CacheLevel& lvl = level == Level::L1 ? l1_.at(idx(core)) : l2_;
+    pf_targets_.clear();
+    const PrefetchContext ctx{level, core, tile, k, line, now, mapper_, trace_};
+    lvl.prefetcher().on_demand(ctx, pf_targets_);
 
-        // demand = false and no L1 entry: the two facts that make `triage`'s
-        // `is_prefetch_at_issue` true here, which is what routes this request
-        // down the four drop branches instead of ever letting it wait.
-        Request& pf = acquire(core, want, BurstIndex{0}, false, now);
-        pf.level = Level::L2;
-        const std::int32_t bank = l2_.bank_of(want);
-        const SimTime accept    = l2_.port(bank).reserve(now);
-        queue_.schedule(accept + l2_.port(bank).latency(), EventKind::L2Probe, NoRefusal, core,
-                        EventPayload{&pf, nullptr, BurstIndex{0}, 0});
+    std::size_t i = 0;
+    while (i < pf_targets_.size()) {
+        const BurstIndex burst = pf_targets_[i].burst;
+        bool complete            = true;
+
+        while (i < pf_targets_.size() && pf_targets_[i].burst == burst) {
+            const PrefetchTarget& target = pf_targets_[i];
+            if (level == Level::L1) {
+                std::int32_t& in_fly = stats_.pf_outstanding.at(idx(core));
+                const std::int32_t cap = lvl.mshrs().capacity() - lvl.mshrs().demand_reserve();
+                if (in_fly >= cap) {
+                    ++stats_.pf_budget_exhausted;
+                    complete = false;
+                    break;
+                }
+
+                Request& r = acquire(core, target.line, target.burst, false, now);
+                ++stats_.pf_issued;
+                const SimTime accept = lvl.port(0).reserve(now);
+                queue_.schedule(accept + lvl.port(0).latency(), EventKind::L1Probe,
+                                r.refusal, core,
+                                EventPayload{&r, nullptr, target.burst, tile});
+                ++in_fly;
+            } else {
+                if (target.line.get() > line.get()) ++stats_.l2_pf_issued_up;
+                else                               ++stats_.l2_pf_issued_down;
+                ++stats_.l2_pf_issued;
+
+                Request& r = acquire(core, target.line, target.burst, false, now);
+                r.level = Level::L2;
+                const std::int32_t bank = l2_.bank_of(target.line);
+                const SimTime accept    = l2_.port(bank).reserve(now);
+                queue_.schedule(accept + l2_.port(bank).latency(), EventKind::L2Probe,
+                                NoRefusal, core,
+                                EventPayload{&r, nullptr, target.burst, tile});
+            }
+            ++i;
+        }
+
+        if (!complete) break;
+        // Feedback is per fully issued burst. A partial L1 burst never reaches
+        // this callback, so NextBurst's cursor remains at that burst until the
+        // next demand applies its core-boundary pull-forward.
+        lvl.prefetcher().on_issued(core, burst);
     }
 }
 
@@ -412,7 +457,7 @@ void Engine::on_l2_probe(Request& r, SimTime now) {
     // with this row.
     if (r.demand) {
         if (result == TriageOutcome::Forwarded) {
-            l2_prefetch_from(r.line, r.core, now);
+            prefetch_on_demand(Level::L2, r.core, cores_.at(idx(r.core)).tile, r.burst, r.line, now);
         } else if (result == TriageOutcome::Hit) {
             const auto tag = l2_prefetched_.find(r.line.get());
             if (tag != l2_prefetched_.end()) {
@@ -422,7 +467,7 @@ void Engine::on_l2_probe(Request& r, SimTime now) {
                 l2_prefetched_.erase(tag);
                 ++stats_.l2_pf_timely;
                 ++stats_.l2_pf_retriggers;
-                l2_prefetch_from(r.line, r.core, now);
+                prefetch_on_demand(Level::L2, r.core, cores_.at(idx(r.core)).tile, r.burst, r.line, now);
             }
         }
     }

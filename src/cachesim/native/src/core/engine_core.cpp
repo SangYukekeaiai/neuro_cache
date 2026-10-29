@@ -71,10 +71,11 @@ void Engine::start_tile(std::int32_t tile, SimTime now) {
         // what that measures.
         pf_evicted_.at(c).clear();
 
-        // The fetch-ahead cursor starts over: the next tile's activations do not
-        // exist until the barrier resolves, so the first burst of every tile is
-        // never prefetched (4.6).
-        prefetcher_->on_tile_start(cid);
+        // Every level resets its policy state at the tile seam. The shared L2
+        // policy receives every core so a per-core cursor has the same reset
+        // semantics as the private L1 policies.
+        l1_.at(c).prefetcher().on_tile_start(cid);
+        l2_.prefetcher().on_tile_start(cid);
 
         // A core that contributes nothing to this tile still has to clear the
         // barrier, and it clears it at the tile origin. The plan does not name
@@ -212,8 +213,11 @@ void Engine::on_issue(CoreId c, BurstIndex k, SimTime now) {
 
     // 4.6, and the last line of 3.4b. Below the port; the core does not wait for
     // it and cannot observe it. Everything above would be identical if
-    // prefetching did not exist.
-    prefetcher_->on_demand_issue(*this, c, k, now);
+    // prefetching did not exist. Ask once per demand line so Neighbour can be
+    // spatial at either level; NextBurst suppresses repeated calls for a burst.
+    for (const LineId line : lines_) {
+        prefetch_on_demand(Level::L1, c, cs.tile, k, line, now);
+    }
 }
 
 void Engine::core_line_done(Request& r, SimTime now, SimTime anchor) {
@@ -331,49 +335,11 @@ void Engine::serve(CoreId c, SimTime now, StallCause cause) {
                     EventPayload{nullptr, nullptr, cs.cursor, cs.tile});
 }
 
-// --- C5's sink ---------------------------------------------------------------
+// --- C5's compatibility query ------------------------------------------------
 
 std::int32_t Engine::n_bursts_in_tile(CoreId core) const {
     const CoreState& cs = cores_.at(idx(core));
     return trace_.n_bursts(core, cs.tile);
-}
-
-bool Engine::issue_prefetch(CoreId core, BurstIndex k, SimTime now) {
-    const CoreState& cs = cores_.at(idx(core));
-
-    pf_lines_.clear();
-    // No context wrap here, and that is deliberate rather than an omission: a
-    // prefetch walks the same address run the core will walk, so a coordinate
-    // that leaves the layer here would leave it at the demand issue too, where
-    // `on_issue`'s catch names the tile, tick and core. Wrapping it twice would
-    // report the failure against a burst the core has not reached yet.
-    mapper_.expand(trace_.burst(core, cs.tile, k), pf_lines_);
-
-    CacheLevel& lvl        = l1_.at(idx(core));
-    std::int32_t& in_fly   = stats_.pf_outstanding.at(idx(core));
-    const std::int32_t cap = lvl.mshrs().capacity() - lvl.mshrs().demand_reserve();
-
-    for (const LineId line : pf_lines_) {
-        // The budget, and nothing downstream, is what stops the prefetcher
-        // (N16, I14). It is `l1_mshrs - l1_demand_reserve`, so at
-        // `l1_mshrs == lines_per_burst` it is zero and prefetching is off no
-        // matter what `prefetch_distance` says (4.2).
-        if (in_fly >= cap) {
-            ++stats_.pf_budget_exhausted;
-            return false;
-        }
-        Request& r = acquire(core, line, k, false, now);
-        // 4.6's denominator: the four outcome states below sum to this.
-        ++stats_.pf_issued;
-        // A REAL port slot: at `l1_ii = 1` every prefetch takes a cycle the
-        // demand stream could have used, which is one of the four things 4.6
-        // says this costs.
-        const SimTime accept = lvl.port(0).reserve(now);
-        queue_.schedule(accept + lvl.port(0).latency(), EventKind::L1Probe, r.refusal, core,
-                        EventPayload{&r, nullptr, k, cs.tile});
-        ++in_fly;
-    }
-    return true;
 }
 
 }  // namespace cachesim
