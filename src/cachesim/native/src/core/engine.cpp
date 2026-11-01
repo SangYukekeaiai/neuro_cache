@@ -372,6 +372,30 @@ void Engine::prefetch_on_demand(Level level,
         while (i < pf_targets_.size() && pf_targets_[i].burst == burst) {
             const PrefetchTarget& target = pf_targets_[i];
             if (level == Level::L1) {
+                // Redundancy filter, gem5's QueuedPrefetcher `cacheSnoop`
+                // (inCache/inMissQueue): a line already resident or already in
+                // flight is dropped HERE, before it reserves a port slot the
+                // Port class never gives back. `probe` is const and side-effect
+                // free, so this filter cannot rewrite LRU order (4.6). The
+                // outcome lands in the same drop counters as a triage drop,
+                // which keeps "the four prefetch states sum to pf_issued"
+                // (Part 8) without a schema change; triage keeps the same two
+                // drops as the backstop for a line that becomes resident while
+                // the prefetch waits in the port queue. The filtered target is
+                // handled, not refused, so it neither consumes budget nor
+                // blocks the burst's on_issued feedback.
+                if (lvl.array().probe(target.line) != NoSlot) {
+                    ++stats_.pf_issued;
+                    ++stats_.pf_dropped_array_hit;
+                    ++i;
+                    continue;
+                }
+                if (lvl.mshrs().find(target.line) != nullptr) {
+                    ++stats_.pf_issued;
+                    ++stats_.pf_dropped_entry;
+                    ++i;
+                    continue;
+                }
                 std::int32_t& in_fly = stats_.pf_outstanding.at(idx(core));
                 const std::int32_t cap = lvl.mshrs().capacity() - lvl.mshrs().demand_reserve();
                 if (in_fly >= cap) {
