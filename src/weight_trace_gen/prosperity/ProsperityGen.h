@@ -5,8 +5,8 @@
 // ProSparsity compression, two parts (reconstruct.py's own docstring,
 // Wei et al. HPCA 2025):
 //
-//   1. Temporal ordering: the tile's M = ho_n*wo_n rows (row-major, ho
-//      outer wo inner; each row's k = kh_n*kw_n bits, kh outer kw inner,
+//   1. Temporal ordering: the tile's M = ho_n*wo_n*t_n rows (row-major, ho
+//      outer, wo middle, t inner; each row's k = kh_n*kw_n bits, kh outer kw inner,
 //      bit_idx = kh*kw_n+kw) are processed in ASCENDING popcount order,
 //      STABLE (ties keep ascending original row index).
 //
@@ -22,7 +22,7 @@
 //
 // CRITICAL ordering detail: reconstruct.py's `ProsperityReconstructed.rows`
 // -- and therefore event_to_address's emitted addresses -- are in
-// PROCESSING order (ascending popcount), NOT original (ho, wo) row-major
+// PROCESSING order (ascending popcount), NOT original (ho, wo, t) row-major
 // order. This port replicates that: rows are built row-major first (for
 // bit extraction), then iterated/emitted in the popcount-sorted order.
 //
@@ -56,7 +56,7 @@ struct TileSpec {
     int32_t wo_off, wo_n;
     int32_t kh_n, kw_n;
     int32_t cin;               // single fixed channel (CIN barred from NodeLevel)
-    int32_t t;                 // single fixed tick (T barred from NodeLevel)
+    int32_t t_off, t_n;
     int32_t cout_off, cout_n;
 };
 
@@ -93,29 +93,32 @@ inline SampleResult reconstruct_sample(
     const int32_t pad_h = (tile.kh_n - 1) / 2;
     const int32_t pad_w = (tile.kw_n - 1) / 2;
     const int32_t k = tile.kh_n * tile.kw_n;
-    const int32_t m = tile.ho_n * tile.wo_n;
+    const int32_t m = tile.ho_n * tile.wo_n * tile.t_n;
 
-    // Row-major (ho, wo) bit extraction, one uint64_t bitmask per row.
+    // Row-major (ho, wo, t) bit extraction, one uint64_t bitmask per row.
     std::vector<uint64_t> row_bits(m, 0);
     for (int32_t ho_local = 0; ho_local < tile.ho_n; ++ho_local) {
         const int32_t ho = tile.ho_off + ho_local;
         for (int32_t wo_local = 0; wo_local < tile.wo_n; ++wo_local) {
             const int32_t wo = tile.wo_off + wo_local;
-            const int32_t row = ho_local * tile.wo_n + wo_local;
-            uint64_t bits = 0;
-            for (int32_t kh = 0; kh < tile.kh_n; ++kh) {
-                const int32_t hin = ho + kh - pad_h;
-                if (hin < 0 || hin >= shape.Hin_full) continue;
-                for (int32_t kw = 0; kw < tile.kw_n; ++kw) {
-                    const int32_t win = wo + kw - pad_w;
-                    if (win < 0 || win >= shape.Win_full) continue;
-                    const int64_t idx = shape.index(tile.t, sample_idx, tile.cin, hin, win);
-                    if (trace[idx] != 0) {
-                        bits |= (uint64_t)1 << (kh * tile.kw_n + kw);
+            for (int32_t t_local = 0; t_local < tile.t_n; ++t_local) {
+                const int32_t t = tile.t_off + t_local;
+                const int32_t row = (ho_local * tile.wo_n + wo_local) * tile.t_n + t_local;
+                uint64_t bits = 0;
+                for (int32_t kh = 0; kh < tile.kh_n; ++kh) {
+                    const int32_t hin = ho + kh - pad_h;
+                    if (hin < 0 || hin >= shape.Hin_full) continue;
+                    for (int32_t kw = 0; kw < tile.kw_n; ++kw) {
+                        const int32_t win = wo + kw - pad_w;
+                        if (win < 0 || win >= shape.Win_full) continue;
+                        const int64_t idx = shape.index(t, sample_idx, tile.cin, hin, win);
+                        if (trace[idx] != 0) {
+                            bits |= (uint64_t)1 << (kh * tile.kw_n + kw);
+                        }
                     }
                 }
+                row_bits[row] = bits;
             }
-            row_bits[row] = bits;
         }
     }
 

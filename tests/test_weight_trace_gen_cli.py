@@ -168,3 +168,26 @@ def test_stream_is_byte_identical_to_snapshot(tmp_path):
             cwd=REPO, stdout=fh, stderr=subprocess.PIPE, text=False)
     assert r.returncode == 0, r.stderr.decode()
     assert hashlib.sha256(out.read_bytes()).hexdigest() == R9_SAMPLE0_STREAM_SHA256
+
+
+def test_prosperity_sorts_and_reuses_rows_across_t():
+    bridge = pathlib.Path(gwt.__file__).parent / "prosperity" / "prosperitygen"
+    if not bridge.exists():
+        pytest.skip("prosperitygen not built")
+    np = pytest.importorskip("numpy")
+    from parsers.layer import DIM_COUT, DIM_CIN, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
+    from weight_trace_gen import NodeTileSpec
+    from weight_trace_gen.weight_trace import reconstruct_samples
+
+    trace = np.zeros((2, 1, 1, 4, 4), np.uint8)  # [T, B, Cin, Hin, Win]
+    trace[0, 0, 0, 0, 0] = trace[0, 0, 0, 1, 1] = 1  # t=0 row: bits {4, 8}
+    trace[1, 0, 0, 1, 1] = 1                         # t=1 row: bits {8}
+    tile = NodeTileSpec(0, {DIM_HO: 1, DIM_WO: 1, DIM_KH: 3, DIM_KW: 3, DIM_CIN: 1, DIM_COUT: 8, DIM_T: 2},
+                        {DIM_T: 0, DIM_HO: 0, DIM_WO: 0}, True)
+
+    result = reconstruct_samples("prosperity", trace, [tile], [0], "x", "y", {}, 1)[0].tiles[0]
+
+    # t=1 has fewer spikes, so it runs first, then t=0 reuses it and fetches only bit 4.
+    addresses = [a[:2] for e in result.ticks for c in e.cores for a in c.weight_addresses]
+    assert addresses == [(2, 2), (1, 1)]
+    assert result.mac_cycles == 2

@@ -131,7 +131,7 @@ Formats crossing each boundary:
    `src/weight_trace_gen/loas/main.cpp:6-20`, packer
    `src/weight_trace_gen/loas/native_bridge.py:26`): `task.bin` =
    `T,B,Cin,Hin,Win`, `num_tiles`, `num_samples`, then 11 int32 per tile (12
-   for GustavSNN, `src/weight_trace_gen/gustavsnn/native_bridge.py:38`), then
+   for prosperity and GustavSNN, `src/weight_trace_gen/gustavsnn/native_bridge.py:38`), then
    sample indices; `trace.bin` = uint8 row-major `[T,B,Cin,Hin,Win]` of only the
    requested samples; `out.bin` = per sample (outer) per tile (inner):
    `tile_idx, sample_idx, mac_cycles, num_ticks`, then per tick
@@ -484,7 +484,7 @@ Python:
   indices 0..n-1 (:104) but the returned traces carry the caller's indices.
   Per-arch tile record: loas/ptb/spinalflow `dram_i, ho, wo, kh_n, kw_n,
   cin_off, cin_n, t_off, t_n, cout_off, cout_n` (`src/weight_trace_gen/loas/native_bridge.py:31-39`);
-  prosperity `dram_i, ho_off, ho_n, wo_off, wo_n, kh_n, kw_n, cin, t,
+  prosperity `dram_i, ho_off, ho_n, wo_off, wo_n, kh_n, kw_n, cin, t_off, t_n,
   cout_off, cout_n` (`src/weight_trace_gen/prosperity/native_bridge.py:32-41`);
   gustavsnn 12 fields with a T offset and HO/WO ranges
   (`src/weight_trace_gen/gustavsnn/native_bridge.py:38`).

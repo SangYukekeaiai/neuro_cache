@@ -8,7 +8,7 @@
 //   num_tiles
 //   num_samples
 //   per tile (num_tiles times): dram_i, ho_off, ho_n, wo_off, wo_n,
-//     kh_n, kw_n, cin, t, cout_off, cout_n  (11 int32)
+//     kh_n, kw_n, cin, t_off, t_n, cout_off, cout_n  (12 int32)
 //   per sample (num_samples times): sample_idx
 //
 // trace.bin: flat uint8, row-major [T, B_full, Cin_full, Hin_full, Win_full].
@@ -85,7 +85,8 @@ int main(int argc, char** argv) {
         tile.kh_n = read_i32(task_fh);
         tile.kw_n = read_i32(task_fh);
         tile.cin = read_i32(task_fh);
-        tile.t = read_i32(task_fh);
+        tile.t_off = read_i32(task_fh);
+        tile.t_n = read_i32(task_fh);
         tile.cout_off = read_i32(task_fh);
         tile.cout_n = read_i32(task_fh);
     }

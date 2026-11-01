@@ -30,13 +30,13 @@ def _pack_task(trace_shape: Sequence[int], tiles: Sequence[NodeTileSpec], sample
     parts.append(struct.pack("<2i", len(tiles), len(sample_indices)))
     for tile in tiles:
         parts.append(struct.pack(
-            "<11i",
+            "<12i",
             tile.dram_i,
             tile.tile_offset.get(DIM_HO, 0), tile.node_bound[DIM_HO],
             tile.tile_offset.get(DIM_WO, 0), tile.node_bound[DIM_WO],
             tile.node_bound[DIM_KH], tile.node_bound[DIM_KW],
             tile.tile_offset.get(DIM_CIN, 0),
-            tile.tile_offset.get(DIM_T, 0),
+            tile.tile_offset.get(DIM_T, 0), tile.node_bound[DIM_T],
             tile.tile_offset.get(DIM_COUT, 0), tile.node_bound[DIM_COUT],
         ))
     for s in sample_indices:
