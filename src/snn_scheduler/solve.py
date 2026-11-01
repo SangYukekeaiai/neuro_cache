@@ -77,6 +77,8 @@ def solve_schedule(
         model.Params.TimeLimit = float(time_limit)
     if mip_gap is not None:
         model.Params.MIPGap = float(mip_gap)
+    model.Params.Threads = 8  # The ~37 GiB user slice cannot fit 128 threads on big layers.
+    model.Params.NodefileStart = 2  # GB: spill branch-and-bound nodes to disk.
 
     x, y, perm_levels, total_levels, dram_start = create_schedule_vars(
         model, prob, arch, SNN_GB_START_LEVEL
