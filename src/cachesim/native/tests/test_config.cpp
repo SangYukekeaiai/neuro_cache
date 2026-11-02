@@ -402,6 +402,38 @@ void test_l2_min_touches_negative_is_rejected() {
     CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
 }
 
+void test_l2_min_touches_two_or_more_with_next_tile_warns() {
+    check::group("next_tile filter: min_touches >= 2 suppresses every trigger, so it warns");
+    RunConfig c = parse_config(R"({"l2_prefetch_policy": "next_tile",
+                                  "l2_prefetch_distance": 1,
+                                  "l2_prefetch_min_touches": 3})");
+    std::vector<Warning> w;
+    validate(c, 1, w);                       // must NOT throw: the config stays valid
+    CHECK_TRUE(has_warning(w, "W_MIN_TOUCHES_FILTERS_ALL"));
+
+    // 0 and 1 leave the filter without effect, so they stay silent.
+    for (const int x : {0, 1}) {
+        RunConfig d = parse_config(R"({"l2_prefetch_policy": "next_tile",
+                                      "l2_prefetch_distance": 1,
+                                      "l2_prefetch_min_touches": )" +
+                                   std::to_string(x) + "}");
+        std::vector<Warning> v;
+        validate(d, 1, v);
+        CHECK_TRUE(!has_warning(v, "W_MIN_TOUCHES_FILTERS_ALL"));
+    }
+
+    // Only next_tile reads the filter, so other policies stay silent at 3.
+    for (const char* policy : {"none", "neighbour"}) {
+        RunConfig d = parse_config(std::string(R"({"l2_prefetch_policy": ")") +
+                                   policy +
+                                   R"(", "l2_prefetch_distance": 1,
+                                        "l2_prefetch_min_touches": 3})");
+        std::vector<Warning> v;
+        validate(d, 1, v);
+        CHECK_TRUE(!has_warning(v, "W_MIN_TOUCHES_FILTERS_ALL"));
+    }
+}
+
 void test_a_demand_reserve_at_or_above_the_mshr_count_is_rejected() {
     check::group("Task 10: l1_demand_reserve >= l1_mshrs is rejected");
     RunConfig c = parse_config(R"({"l1_mshrs": 4, "l1_demand_reserve": 4})");
@@ -787,6 +819,7 @@ int main() {
     test_next_tile_with_zero_distance_is_rejected();
     test_l2_min_touches_defaults_parses_and_reaches_the_engine();
     test_l2_min_touches_negative_is_rejected();
+    test_l2_min_touches_two_or_more_with_next_tile_warns();
     test_a_demand_reserve_at_or_above_the_mshr_count_is_rejected();
     test_every_count_below_one_is_rejected();
     test_every_negative_time_is_rejected();

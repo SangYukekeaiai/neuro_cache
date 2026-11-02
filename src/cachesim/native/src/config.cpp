@@ -729,6 +729,15 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
                  " MSHRs is under a burst of " + std::to_string(lines_per_burst) +
                  " lines, so the run measures the pool rather than the policy");
     }
+    if (cfg.l2_prefetch_policy == PrefetchKind::NextTile &&
+        cfg.l2_prefetch_min_touches >= 2) {
+        warn(warnings, "W_MIN_TOUCHES_FILTERS_ALL",
+             "with the per-tile touch window a line's triggering L2 miss is typically "
+             "its first touch of the tile, so l2_prefetch_min_touches = " +
+                 std::to_string(cfg.l2_prefetch_min_touches) +
+                 " is expected to suppress every trigger and run as policy none; "
+                 "0 or 1 disables the filter's effect");
+    }
     if (cfg.l1_ii == 0 || cfg.l2_ii == 0) {
         warn(warnings, "W_ZERO_II",
              "an initiation interval of 0 is an unbounded port, which is a baseline "
