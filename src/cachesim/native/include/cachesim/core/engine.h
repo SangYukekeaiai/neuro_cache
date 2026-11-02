@@ -58,6 +58,14 @@ namespace cachesim {
 // lines and it is a result to report. `exclusive` is not offered (G1, Q7).
 enum class Inclusion : std::uint8_t { NonInclusive = 0, Inclusive = 1 };
 
+// How the L2 prefetch policy is triggered (plan 2026-11-01): `Touch` fires at
+// the touch threshold -- NextTile's `on_access` returning true, typically on
+// an L1 hit -- and `Miss` is the legacy L2-demand-miss trigger, which must
+// reproduce the pre-plan engine bit for bit. The config knob lands in T12;
+// until then only the params struct carries it, and a non-NextTile L2 policy
+// is normalized to `Miss`, since no other policy ever fires on a touch.
+enum class L2Trigger : std::uint8_t { Touch = 0, Miss = 1 };
+
 // 3.3's `CoreState.phase`, the four states of the compute stage.
 //
 // A state field rather than a time field, which 2.1 argues at length: at the
@@ -246,7 +254,7 @@ struct EngineStats {
     std::int64_t l2_pf_issued = 0;
     std::int64_t l2_pf_issued_up = 0, l2_pf_issued_down = 0;
     std::int64_t l2_pf_timely = 0;   // a demand hit the line this prefetch put there;
-                                     // always equal to `l2_pf_retriggers` (see below)
+                                     // equal to `l2_pf_retriggers` in miss mode (see below)
     std::int64_t l2_pf_late   = 0;   // a demand merged onto the entry before it filled
     std::int64_t l2_pf_wasted = 0;   // evicted still tagged, so never used
     std::int64_t l2_pf_dropped_array_hit = 0;
@@ -256,9 +264,11 @@ struct EngineStats {
     // Fired from a demand hit on a tagged line rather than from a miss. The
     // difference between this and zero is what U4 bought.
     //
-    // Always equal to `l2_pf_timely`: engine.cpp increments both at one site,
-    // the demand L2 hit that finds and clears the tag, and that hit always
-    // calls the trigger. Both are kept as separate CSV columns.
+    // In MISS mode always equal to `l2_pf_timely`: engine.cpp increments both
+    // at one site, the demand L2 hit that finds and clears the tag, and that
+    // hit always calls the trigger. In TOUCH mode the retrigger chain is off
+    // (plan 2026-11-01), so this legitimately reads 0 while `l2_pf_timely`
+    // still counts. Both are kept as separate CSV columns.
     std::int64_t l2_pf_retriggers = 0;
     // Triggers the L2 policy's own touch filter suppressed (NextTile's
     // `min_touches`, plan 2026-11-01). Copied from the policy at close-out;
@@ -364,6 +374,9 @@ struct EngineParams {
     std::int32_t   l2_prefetch_distance = 1;
     bool           l2_prefetch_up       = true;
     bool           l2_prefetch_down     = true;
+
+    // The plan's default is the touch trigger; `Miss` is the legacy behavior.
+    L2Trigger      l2_prefetch_trigger  = L2Trigger::Touch;
 };
 
 class Engine final {

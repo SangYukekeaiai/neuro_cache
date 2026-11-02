@@ -30,6 +30,7 @@
 #include <cachesim/core/cache_level.h>
 #include <cachesim/core/event.h>
 #include <cachesim/core/mshr.h>
+#include <cachesim/layout/khkw_split.h>
 #include <cachesim/replacement/next_use.h>
 #include <cachesim/types.h>
 
@@ -1753,6 +1754,119 @@ void test_a_per_core_oracle_matches_the_l1_stream_it_was_built_from() {
     CHECK_EQ(references, std::int64_t{12});   // the fixture's own count, hand added
 }
 
+// ===========================================================================
+// The L2 touch trigger (plan 2026-11-01, T11)
+// ===========================================================================
+//
+// These use KhkwSplitMapper rather than LinearMapper because NextTile's
+// targets come from `mapper.neighbour(COUT)`, which LinearMapper declines.
+// Geometry: `digit_stride(COUT) == 16`, so line 0's distance-1 target is
+// line 16.
+
+EngineParams touch_params(const KhkwSplitMapper& mapper, std::int32_t min_touches) {
+    EngineParams p;
+    p.l1 = fx::level(16, 2, 8, 4);
+    p.l2 = fx::level(32, 2, 8, 4);
+    p.l1.cache_size_bytes *= mapper.line_size_bytes();
+    p.l2.cache_size_bytes *= mapper.line_size_bytes();
+    p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, min_touches};
+    p.l2_miss_latency    = SimTime{1};
+    // `l2_prefetch_trigger` is left at its default, which the plan fixes as
+    // TOUCH; the miss-mode test below sets Miss explicitly.
+    return p;
+}
+
+// One core, one tile: line 0 demand-touched at ticks 0/10/20, so the 2nd and
+// 3rd touches are L1 hits the L2 never sees.
+FakeTrace three_touches(bool then_demand_the_target) {
+    FakeTrace trace(1);
+    const std::int32_t tile = trace.add_tile();
+    trace.add_burst(tile, 0, 0, 0);
+    trace.add_burst(tile, 0, 10, 0);
+    trace.add_burst(tile, 0, 20, 0);
+    // `add_burst` names a COUT coordinate: cout 4 is cout block 1, line 16.
+    if (then_demand_the_target) trace.add_burst(tile, 0, 50, 4);
+    return trace;
+}
+
+void test_touch_mode_fires_without_an_l2_miss() {
+    check::group("T11a: touch mode issues the cout+1 prefetch from L1 hits alone");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    const FakeTrace trace = three_touches(false);
+    Engine engine(mapper, trace, touch_params(mapper, 3));
+    engine.run();
+    const EngineStats& s = engine.stats();
+    CHECK_EQ(s.l1_hits, 2);
+    CHECK_EQ(s.l2_pf_issued, 1);
+    CHECK_EQ(s.l2_pf_retriggers, 0);
+    // Only line 0's compulsory miss ever reached the L2 as a demand: the
+    // trigger needed no L2 miss. In miss mode this scenario issues NOTHING,
+    // because its one L2 miss carries count 1 < 3.
+    CHECK_EQ(s.l2_accesses, 1);
+    CHECK_EQ(s.dram_accesses, 2);  // line 0's demand plus line 16's prefetch
+}
+
+void test_touch_prefetch_fills_l2_only_and_counts_timely() {
+    check::group("T11b: the touch prefetch fills the L2 only; a later demand is timely");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    const FakeTrace trace = three_touches(true);
+    Engine engine(mapper, trace, touch_params(mapper, 3));
+    engine.run();
+    const EngineStats& s = engine.stats();
+    CHECK_EQ(s.l1_accesses, 4);
+    CHECK_EQ(s.l1_hits, 2);  // the demand on line 16 MISSED the L1 ...
+    CHECK_EQ(s.l2_accesses, 2);
+    CHECK_EQ(s.l2_hits, 1);  // ... and HIT the L2 the prefetch filled
+    CHECK_EQ(s.l2_pf_timely, 1);
+    // The retrigger CHAIN is off in touch mode: the timely hit above cleared
+    // the tag and counted, but fired no further prefetch.
+    CHECK_EQ(s.l2_pf_retriggers, 0);
+    CHECK_EQ(s.l2_pf_issued, 1);
+}
+
+void test_miss_mode_reproduces_the_legacy_trigger() {
+    check::group("T11c: explicit miss mode reproduces the miss-trigger numbers verbatim");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    FakeTrace trace(1);
+    const std::int32_t tile = trace.add_tile();
+    trace.add_burst(tile, 0, 0, 0);
+    trace.add_burst(tile, 0, 10, 0);
+    trace.add_burst(tile, 0, 20, 0);
+    trace.add_burst(tile, 0, 30, 4);
+    trace.add_burst(tile, 0, 40, 8);
+    trace.add_burst(tile, 0, 50, 0);
+    EngineParams p;
+    p.l1 = fx::level(1, 2, 8, 4);
+    p.l2 = fx::level(1, 2, 8, 4);
+    p.l1.cache_size_bytes *= mapper.line_size_bytes();
+    p.l2.cache_size_bytes *= mapper.line_size_bytes();
+    p.l2.prefetch_kind    = PrefetchKind::NextTile;
+    p.l2.prefetch_params  = PrefetchParams{1, Axis::CIN, false, false, 3};
+    p.l2_miss_latency     = SimTime{1};
+    p.l2_prefetch_trigger = L2Trigger::Miss;
+    Engine engine(mapper, trace, p);
+    engine.run();
+    // The constants of tests/prefetch/test_next_tile.cpp's
+    // test_l1_hits_feed_the_l2_touch_counter, verbatim: explicit miss mode is
+    // bit-for-bit the pre-T11 engine.
+    CHECK_TRUE(engine.stats().l1_hits >= 2);
+    CHECK_EQ(engine.stats().l2_pf_issued, 1);
+    CHECK_EQ(engine.stats().l2_pf_filtered, 3);
+}
+
+void test_touch_mode_with_unreachable_threshold_issues_nothing() {
+    check::group("T11d: touch mode with an unreachable min_touches issues nothing");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    const FakeTrace trace = three_touches(true);
+    Engine engine(mapper, trace, touch_params(mapper, 100));
+    engine.run();
+    CHECK_EQ(engine.stats().l2_pf_issued, 0);
+    // Nothing fired, so on_demand was never reached: not even a FILTERED
+    // trigger exists in touch mode below the threshold.
+    CHECK_EQ(engine.stats().l2_pf_filtered, 0);
+}
+
 int main() {
     test_unbounded_baseline_reproduces_the_trace();
     test_a_tile_whose_cores_all_idle_still_advances();
@@ -1795,5 +1909,9 @@ int main() {
     test_r8_hidden_latency_is_identically_zero_at_distance_zero();
     test_r8_hidden_latency_is_never_negative();
     test_a_per_core_oracle_matches_the_l1_stream_it_was_built_from();
+    test_touch_mode_fires_without_an_l2_miss();
+    test_touch_prefetch_fills_l2_only_and_counts_timely();
+    test_miss_mode_reproduces_the_legacy_trigger();
+    test_touch_mode_with_unreachable_threshold_issues_nothing();
     return check::summary();
 }

@@ -265,6 +265,9 @@ void test_l2_engine_issues_forward_and_drains() {
     p.l2.prefetch_kind = PrefetchKind::NextTile;
     p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false};
     p.l2_miss_latency = SimTime{1};
+    // These suites pin the legacy MISS trigger (plan 0831); the engine's
+    // default is now the touch trigger (plan 2026-11-01, T11).
+    p.l2_prefetch_trigger = L2Trigger::Miss;
     Engine engine(mapper, trace, p);
     engine.run();
     CHECK_TRUE(engine.stats().l2_pf_issued > 0);
@@ -307,6 +310,7 @@ void test_l1_hits_feed_the_l2_touch_counter() {
     EngineParams p = tiny_two_line_levels(mapper);
     p.l2.prefetch_kind   = PrefetchKind::NextTile;
     p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, 3};
+    p.l2_prefetch_trigger = L2Trigger::Miss;
     Engine engine(mapper, trace, p);
     engine.run();
     // Ticks 10 and 20 were L1 hits, invisible to the L2, yet they counted:
@@ -324,6 +328,7 @@ void test_fully_filtered_next_tile_degrades_to_none() {
     EngineParams p = tiny_two_line_levels(mapper);
     p.l2.prefetch_kind   = PrefetchKind::NextTile;
     p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, 100};
+    p.l2_prefetch_trigger = L2Trigger::Miss;
     Engine filtered(mapper, trace, p);
     filtered.run();
 
@@ -343,12 +348,14 @@ void test_min_touches_zero_reproduces_old_numbers() {
     EngineParams p = tiny_two_line_levels(mapper);
     p.l2.prefetch_kind   = PrefetchKind::NextTile;
     p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, 0};
+    p.l2_prefetch_trigger = L2Trigger::Miss;
     Engine zero(mapper, trace, p);
     zero.run();
 
     EngineParams old_p = tiny_two_line_levels(mapper);
     old_p.l2.prefetch_kind   = PrefetchKind::NextTile;
     old_p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false};
+    old_p.l2_prefetch_trigger = L2Trigger::Miss;
     Engine old(mapper, trace, old_p);
     old.run();
 

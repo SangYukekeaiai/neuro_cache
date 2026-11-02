@@ -36,6 +36,13 @@ EngineParams normalize_params(EngineParams p) {
         p.l2.prefetch_params.up       = p.l2_prefetch_up;
         p.l2.prefetch_params.down     = p.l2_prefetch_down;
     }
+    // Touch mode is NextTile's trigger: only NextTile's `on_access` ever
+    // fires, so any other L2 policy keeps the legacy miss trigger rather than
+    // silently never prefetching. T12's validate() owns refusing the
+    // combination outright at config load.
+    if (p.l2.prefetch_kind != PrefetchKind::NextTile) {
+        p.l2_prefetch_trigger = L2Trigger::Miss;
+    }
     return p;
 }
 
@@ -290,7 +297,15 @@ void Engine::on_l1_probe(Request& r, SimTime now) {
         // CORES do, so it is counted here, where every demand reaches the
         // hierarchy, rather than at the L2, which L1 hits never reach. Same
         // guard as `l1_accesses`, so the two counts cannot diverge.
-        l2_.prefetcher().on_access(r.line, cores_.at(idx(r.core)).tile);
+        //
+        // In touch mode the threshold crossing IS the trigger (T11): at fire
+        // time the line's count equals the threshold, so `on_demand`'s own
+        // filter passes by construction, and `retrigger` stays false.
+        const std::int32_t tile = cores_.at(idx(r.core)).tile;
+        const bool fired        = l2_.prefetcher().on_access(r.line, tile);
+        if (fired && params_.l2_prefetch_trigger == L2Trigger::Touch) {
+            prefetch_on_demand(Level::L2, r.core, tile, r.burst, r.line, now);
+        }
     }
 
     if (result == TriageOutcome::Hit) note_hit(Level::L1, r.core, r.line, r.demand);
@@ -486,8 +501,16 @@ void Engine::on_l2_probe(Request& r, SimTime now) {
     // caps at exactly half. Measured on V8: 50.0% miss-only against 96.9%
     // with this row.
     if (r.demand) {
+        // In touch mode (plan 2026-11-01) the trigger lives at the L1 touch
+        // feed instead, so BOTH the miss trigger and the retrigger chain are
+        // off here; the tag clear and the timely count below stay, because
+        // they are accounting, not triggering.
+        const bool miss_mode = params_.l2_prefetch_trigger == L2Trigger::Miss;
         if (result == TriageOutcome::Forwarded) {
-            prefetch_on_demand(Level::L2, r.core, cores_.at(idx(r.core)).tile, r.burst, r.line, now);
+            if (miss_mode) {
+                prefetch_on_demand(Level::L2, r.core, cores_.at(idx(r.core)).tile, r.burst,
+                                   r.line, now);
+            }
         } else if (result == TriageOutcome::Hit) {
             const auto tag = l2_prefetched_.find(r.line.get());
             if (tag != l2_prefetched_.end()) {
@@ -496,9 +519,11 @@ void Engine::on_l2_probe(Request& r, SimTime now) {
                 // an ordinary line and a later hit fires nothing.
                 l2_prefetched_.erase(tag);
                 ++stats_.l2_pf_timely;
-                ++stats_.l2_pf_retriggers;
-                prefetch_on_demand(Level::L2, r.core, cores_.at(idx(r.core)).tile, r.burst,
-                                   r.line, now, /*retrigger=*/true);
+                if (miss_mode) {
+                    ++stats_.l2_pf_retriggers;
+                    prefetch_on_demand(Level::L2, r.core, cores_.at(idx(r.core)).tile, r.burst,
+                                       r.line, now, /*retrigger=*/true);
+                }
             }
         }
     }
