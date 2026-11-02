@@ -5,8 +5,10 @@
 // remaining rules as covered when they were never reached.
 #include <cachesim/config.h>
 #include <cachesim/enum_names.h>
+#include <cachesim/replacement/pf_lru.h>
 
 #include <cstdint>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -137,7 +139,9 @@ void test_every_enum_spelling_round_trips() {
                == LayoutKind::BlockPack);
     CHECK_TRUE(parse_config(R"({"layout": "split_cin"})").layout
                == LayoutKind::SplitCin);
+    CHECK_TRUE(parse_config(R"({"l2_policy": "pf_lru"})").l2_policy == PolicyKind::PF_LRU);
     CHECK_THROWS(std::invalid_argument, parse_config(R"({"policy": "clock"})"));
+    CHECK_THROWS(std::invalid_argument, parse_config(R"({"l2_policy": "clock"})"));
     CHECK_THROWS(std::invalid_argument, parse_config(R"({"layout": "split_cout"})"));
     // A layout is a quoted spelling, never an integer: an enumerator's numeric
     // value is an implementation detail and a config that names it would keep
@@ -309,6 +313,47 @@ void test_l2_policy_belady_still_leaves_the_l1_on_lru() {
     const EngineParams p = to_engine_params(c);
     CHECK_TRUE(p.l1.policy == PolicyKind::LRU);
     CHECK_TRUE(p.l2.policy == PolicyKind::BELADY);
+}
+
+void test_l2_policy_pf_lru_round_trips_and_reaches_the_l2() {
+    check::group("pf_lru: accepted via l2_policy, round-trips, and the factory builds it");
+    RunConfig c = parse_config(R"({"policy": "lru", "l2_policy": "pf_lru"})");
+    CHECK_TRUE(c.l2_policy == PolicyKind::PF_LRU);
+    CHECK_TRUE(std::string(name_of(c.l2_policy)) == "pf_lru");
+    std::vector<Warning> w;
+    validate(c, 4, w);
+    const EngineParams p = to_engine_params(c);
+    CHECK_TRUE(p.l1.policy == PolicyKind::LRU);
+    CHECK_TRUE(p.l2.policy == PolicyKind::PF_LRU);
+    // The factory CacheLevel calls with exactly p.l2.policy really constructs
+    // PfLruPolicy, not a plain LRU that would silently ignore protection.
+    const std::unique_ptr<ReplacementPolicy> built = make_policy(p.l2.policy, 4);
+    CHECK_TRUE(dynamic_cast<PfLruPolicy*>(built.get()) != nullptr);
+}
+
+void test_policy_pf_lru_is_rejected_naming_the_policy_key() {
+    check::group("pf_lru: the plain policy key is refused naming policy, not l2_policy");
+    // At the L1 nothing ever sets protection, so `policy = pf_lru` would
+    // silently run as plain LRU, and this codebase refuses silently-inert
+    // configs. The inheritance edge is the point of the first case: with
+    // `l2_policy` unset it FOLLOWS `policy` (so the inherited L2 copy is
+    // legal), yet the refusal must still name the key the human typed. The
+    // prefix check pins the offender to `policy`: a message blaming
+    // "l2_policy = pf_lru" would not start there.
+    for (const char* cfg_text : {R"({"policy": "pf_lru"})",
+                                 R"({"policy": "pf_lru", "l2_policy": "lru"})"}) {
+        RunConfig c = parse_config(cfg_text);
+        bool named = false;
+        try {
+            std::vector<Warning> w;
+            validate(c, 4, w);
+        } catch (const std::invalid_argument& e) {
+            const std::string msg = e.what();
+            named = msg.find("config: policy = pf_lru") == 0 &&
+                    msg.find("set l2_policy = pf_lru") != std::string::npos;
+        }
+        CHECK_TRUE(named);
+    }
 }
 
 void test_a_burst_wider_than_the_l1_mshr_file_is_rejected() {
@@ -907,6 +952,8 @@ int main() {
     test_policy_random_is_rejected();
     test_policy_belady_is_accepted_and_names_both_levels();
     test_l2_policy_belady_still_leaves_the_l1_on_lru();
+    test_l2_policy_pf_lru_round_trips_and_reaches_the_l2();
+    test_policy_pf_lru_is_rejected_naming_the_policy_key();
     test_a_burst_wider_than_the_l1_mshr_file_is_rejected();
     test_core_accept_ii_below_one_is_rejected();
     test_a_negative_prefetch_distance_is_rejected();

@@ -39,6 +39,7 @@ inline const char* name_of(PolicyKind k) {
         case PolicyKind::BELADY: return "belady";
         case PolicyKind::RRIP:   return "rrip";
         case PolicyKind::LFU:    return "lfu";
+        case PolicyKind::PF_LRU: return "pf_lru";
     }
     return kUnknownEnumName;
 }
@@ -50,6 +51,7 @@ inline bool parse(const std::string& text, PolicyKind& out) {
     else if (text == "belady") out = PolicyKind::BELADY;
     else if (text == "rrip") out = PolicyKind::RRIP;
     else if (text == "lfu") out = PolicyKind::LFU;
+    else if (text == "pf_lru") out = PolicyKind::PF_LRU;
     else return false;
     return true;
 }

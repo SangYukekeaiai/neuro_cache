@@ -124,9 +124,12 @@ void test_the_column_list_is_pinned() {
     // 115 since `l2_prefetch_trigger` joined it (same plan, T12): the row
     // echoes the EFFECTIVE (post-normalize) trigger, so it describes the
     // engine that actually ran.
-    CHECK_EQ(check::ssize(cols), std::int64_t{115});
+    // 116 since `l2_policy` joined it (plan 2026-11-02, T20): a row that ran
+    // pf_lru at the L2 must say so even while the `policy` column reads lru,
+    // or two rows measuring different machines look configured the same way.
+    CHECK_EQ(check::ssize(cols), std::int64_t{116});
     CHECK_TRUE(cols.front() == "run_id");
-    CHECK_TRUE(cols.back() == "l2_prefetch_trigger");
+    CHECK_TRUE(cols.back() == "l2_policy");
     bool has_total = false, has_pad = false, has_hidden = false, has_sets = false;
     for (const std::string& c : cols) {
         if (c == "total_cycles")     has_total  = true;

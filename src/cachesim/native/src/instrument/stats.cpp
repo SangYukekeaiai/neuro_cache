@@ -222,7 +222,12 @@ const std::vector<std::string>& csv_columns() {
         // (post-validate, post-normalize) trigger, so the row describes the
         // engine that actually ran: a config with no next_tile policy reads
         // "miss" however the knob was left.
-        "l2_prefetch_trigger"};
+        "l2_prefetch_trigger",
+        // Appended after l2_prefetch_trigger for the same positional-stability
+        // reason (plan 2026-11-02, T20). The cell is the EFFECTIVE
+        // (post-inherit) L2 policy, so a row that ran pf_lru at the L2 says so
+        // even while the `policy` column still reads lru.
+        "l2_policy"};
     return cols;
 }
 
@@ -391,6 +396,7 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
     r.i64("l2_prefetch_min_touches", cfg.l2_prefetch_min_touches);
     r.i64("l2_pf_filtered", es.l2_pf_filtered);
     r.str("l2_prefetch_trigger", csv_name_of(cfg.l2_prefetch_trigger, "L2Trigger"));
+    r.str("l2_policy", csv_name_of(cfg.l2_policy, "PolicyKind"));
 
     cells_ = r.take();
 }

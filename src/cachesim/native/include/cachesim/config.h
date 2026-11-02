@@ -60,7 +60,9 @@ struct RunConfig {
     // meaning "same as `policy`", so every existing config is unchanged and no
     // committed result moves. Split from `policy` for Belady, which is an
     // offline bound worth measuring at one level while the other stays real
-    // (plan 0831-belady section 4).
+    // (plan 0831-belady section 4). pf_lru is accepted through this key only:
+    // on the plain `policy` key validate() refuses it as silently inert at
+    // the L1 (plan 2026-11-02-l2-pf-lru-replacement).
     PolicyKind l2_policy   = PolicyKind::RANDOM;  // RANDOM = "unset, follow `policy`"
     bool       l2_policy_set = false;   // true when l2_policy was given explicitly
     Inclusion    inclusion     = Inclusion::NonInclusive;

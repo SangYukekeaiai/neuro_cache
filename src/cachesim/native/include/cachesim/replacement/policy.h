@@ -148,7 +148,11 @@ enum class PolicyKind : std::uint8_t {
     RANDOM = 2,
     BELADY = 3,
     RRIP   = 4,
-    LFU    = 5
+    LFU    = 5,
+    // L2-only: config refuses it on the plain `policy` key, because at the L1
+    // nothing ever calls note_protected and it would silently run as plain
+    // LRU (plan 2026-11-02-l2-pf-lru-replacement).
+    PF_LRU = 6
 };
 
 std::unique_ptr<ReplacementPolicy> make_policy(PolicyKind kind, std::int32_t num_slots,
