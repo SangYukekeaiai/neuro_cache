@@ -33,6 +33,8 @@
 
 #include <cstdint>
 #include <memory>
+#include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "cachesim/index/cache_array.h"
@@ -216,6 +218,19 @@ public:
     CacheArray& array() { return *array_; }
     const CacheArray& array() const { return *array_; }
     ReplacementPolicy& policy() { return *policy_; }
+
+    // TEST SEAM (plan 2026-11-02, T19): replace the policy behind the same
+    // handle, before any traffic. `PfLruPolicy` gets its PolicyKind in T20;
+    // until then an engine test constructs it directly and swaps it in here,
+    // exactly as `attach_next_use` injects an oracle. Swapping mid-run would
+    // hand the new policy slots whose stamps it never saw, so callers swap on
+    // a freshly built engine only.
+    void set_policy(std::unique_ptr<ReplacementPolicy> p) {
+        if (p == nullptr) {
+            throw std::invalid_argument("CacheLevel::set_policy: null policy");
+        }
+        policy_ = std::move(p);
+    }
     Prefetcher& prefetcher() { return *prefetcher_; }
     const Prefetcher& prefetcher() const { return *prefetcher_; }
 

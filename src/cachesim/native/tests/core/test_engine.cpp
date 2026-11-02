@@ -32,11 +32,13 @@
 #include <cachesim/core/mshr.h>
 #include <cachesim/layout/khkw_split.h>
 #include <cachesim/replacement/next_use.h>
+#include <cachesim/replacement/pf_lru.h>
 #include <cachesim/types.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -1867,6 +1869,189 @@ void test_touch_mode_with_unreachable_threshold_issues_nothing() {
     CHECK_EQ(engine.stats().l2_pf_filtered, 0);
 }
 
+// ===========================================================================
+// pf_lru at the L2 (plan 2026-11-02, T19)
+// ===========================================================================
+//
+// `PfLruPolicy` has no PolicyKind until T20, so these inject the policy
+// through `CacheLevel::set_policy`, the seam that mirrors `attach_next_use`:
+// construct the engine, swap the L2 policy before any traffic, run.
+
+// `touch_params` with a one-set, two-way L2, so two demand fills are enough
+// eviction pressure to reach the prefetched line.
+EngineParams pressure_params(const KhkwSplitMapper& mapper, std::int32_t min_touches) {
+    EngineParams p = touch_params(mapper, min_touches);
+    p.l2           = fx::level(1, 2, 8, 4);
+    p.l2.cache_size_bytes *= mapper.line_size_bytes();
+    p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, min_touches};
+    return p;
+}
+
+void inject_pf_lru(Engine& engine) {
+    engine.l2().set_policy(std::make_unique<PfLruPolicy>(engine.l2().array().num_slots()));
+}
+
+// ORACLE for (a) and (b), hand-walked. One core, one tile, L2 = one set of two
+// ways. Lines: cout 0 -> 0, cout 4 -> 16, cout 8 -> 32, cout 12 -> 48. Three
+// touches of line 0 fire the cout+1 prefetch of line 16 at t20 (fill ~t22).
+//
+//   t30 demand 32: set {0, 16}, 0 is the LRU of the normal class either way.
+//   t40 demand 48: set {32, 16}, 16 is the plain-LRU victim; pf_lru protects
+//                  it and takes 32 instead.
+//   t70 demand 16: pf_lru hits the surviving line (timely); plain LRU refetches
+//                  it from DRAM (wasted at t40, a fifth DRAM access at t70).
+void test_pf_lru_keeps_an_unused_prefetch_through_eviction_pressure() {
+    check::group("T19a: an unused prefetched line outlives pressure that LRU loses it to");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    FakeTrace trace(1);
+    const std::int32_t tile = trace.add_tile();
+    trace.add_burst(tile, 0, 0, 0);
+    trace.add_burst(tile, 0, 10, 0);
+    trace.add_burst(tile, 0, 20, 0);
+    trace.add_burst(tile, 0, 30, 8);
+    trace.add_burst(tile, 0, 40, 12);
+    trace.add_burst(tile, 0, 70, 4);
+
+    // The LRU arm first, so the pressure is proven real and not assumed: the
+    // same trace under plain LRU evicts the unused line 16 at t40 and pays a
+    // miss for it at t70.
+    Engine lru(mapper, trace, pressure_params(mapper, 3));
+    lru.run();
+    CHECK_EQ(lru.stats().l2_pf_timely, 0);
+    CHECK_EQ(lru.stats().l2_pf_wasted, 1);
+    CHECK_EQ(lru.stats().l2_hits, 0);
+    CHECK_EQ(lru.stats().dram_accesses, 5);
+
+    Engine eng(mapper, trace, pressure_params(mapper, 3));
+    inject_pf_lru(eng);
+    eng.run();
+    const EngineStats& s = eng.stats();
+    CHECK_EQ(s.l2_pf_issued, 1);
+    CHECK_EQ(s.l2_pf_timely, 1);
+    CHECK_EQ(s.l2_pf_wasted, 0);
+    CHECK_EQ(s.l2_hits, 1);                 // the t70 demand hit the kept line
+    CHECK_EQ(s.dram_accesses, 4);           // 0, 16, 32, 48, and no refetch
+    CHECK_TRUE(eng.l2().array().probe(LineId{16}) != NoSlot);
+}
+
+void test_pf_lru_demotes_a_consumed_prefetch_to_the_normal_class() {
+    check::group("T19b: a demand hit consumes the protection; the line is evictable again");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    FakeTrace trace(1);
+    const std::int32_t tile = trace.add_tile();
+    trace.add_burst(tile, 0, 0, 0);
+    trace.add_burst(tile, 0, 10, 0);
+    trace.add_burst(tile, 0, 20, 0);   // fires the prefetch of line 16
+    trace.add_burst(tile, 0, 30, 4);   // demand 16: L2 hit, consumed, normal again
+    trace.add_burst(tile, 0, 40, 8);   // 32 evicts 0
+    trace.add_burst(tile, 0, 50, 12);  // 48: the victim must be the CONSUMED 16,
+                                       // not 32 -- protection ended at t30
+    Engine eng(mapper, trace, pressure_params(mapper, 3));
+    inject_pf_lru(eng);
+    eng.run();
+    CHECK_EQ(eng.stats().l2_pf_timely, 1);
+    CHECK_EQ(eng.stats().l2_pf_wasted, 0);  // the tag cleared with the protection
+    CHECK_TRUE(eng.l2().array().probe(LineId{16}) == NoSlot);
+    CHECK_TRUE(eng.l2().array().probe(LineId{32}) != NoSlot);
+    CHECK_TRUE(eng.l2().array().probe(LineId{48}) != NoSlot);
+}
+
+// ORACLE for (c), hand-walked. min_touches = 2, so the L2 prefetch of line 16
+// fires at t10 and fills by ~t12. NextBurst at distance 1 reaches burst 5
+// (line 16) only after burst 3 issues at t30, so the L1 prefetch probes the
+// L2 well after the fill and HITS it holding an L1 entry: `!demand` with
+// `mshr1 != nullptr`. That consumption is the case the accounting fix counts:
+// before it, the tag survived and timely read 0 although the line was used.
+void test_an_l1_prefetch_hit_consumes_the_tag_and_counts_timely_in_touch_mode() {
+    check::group("T19c: an L1-prefetch hit on a tagged L2 line is timely, not wasted");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    FakeTrace trace(1);
+    const std::int32_t tile = trace.add_tile();
+    trace.add_burst(tile, 0, 0, 0);
+    trace.add_burst(tile, 0, 10, 0);
+    trace.add_burst(tile, 0, 20, 0);
+    trace.add_burst(tile, 0, 30, 0);
+    trace.add_burst(tile, 0, 40, 0);
+    trace.add_burst(tile, 0, 80, 4);
+    EngineParams p      = touch_params(mapper, 2);
+    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_distance = 1;
+    Engine eng(mapper, trace, p);
+    eng.run();
+    const EngineStats& s = eng.stats();
+    CHECK_EQ(s.l2_pf_issued, 1);
+    CHECK_EQ(s.l2_pf_timely, 1);
+    CHECK_EQ(s.l2_pf_wasted, 0);
+    // The demand on line 16 was an L1 HIT on the line the L1 prefetch brought
+    // up, so no demand ever hit the L2 copy: the timely credit above can only
+    // have come from the L1-prefetch hit.
+    CHECK_EQ(s.l1_hits, 5);
+    CHECK_EQ(s.l2_hits, 0);
+    CHECK_EQ(s.dram_accesses, 2);  // line 0's demand and line 16's L2 prefetch
+}
+
+void test_miss_mode_stats_are_bit_identical_to_the_pre_t19_engine() {
+    check::group("T19d: miss mode's tag lifecycle and retrigger are untouched");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    FakeTrace trace(1);
+    const std::int32_t tile = trace.add_tile();
+    trace.add_burst(tile, 0, 0, 0);
+    trace.add_burst(tile, 0, 10, 0);
+    trace.add_burst(tile, 0, 20, 0);
+    trace.add_burst(tile, 0, 30, 4);
+    trace.add_burst(tile, 0, 40, 8);
+    trace.add_burst(tile, 0, 50, 0);
+    EngineParams p;
+    p.l1 = fx::level(1, 2, 8, 4);
+    p.l2 = fx::level(1, 2, 8, 4);
+    p.l1.cache_size_bytes *= mapper.line_size_bytes();
+    p.l2.cache_size_bytes *= mapper.line_size_bytes();
+    p.l2.prefetch_kind    = PrefetchKind::NextTile;
+    p.l2.prefetch_params  = PrefetchParams{1, Axis::CIN, false, false, 3};
+    p.l2_miss_latency     = SimTime{1};
+    p.l2_prefetch_trigger = L2Trigger::Miss;
+    Engine eng(mapper, trace, p);
+    eng.run();
+    // Every constant below is the pre-T19 engine's own output for this
+    // fixture (T11c's trace), captured at commit 318647c and asserted
+    // verbatim: the full stat row, not just the trigger counts.
+    const EngineStats& s = eng.stats();
+    CHECK_EQ(eng.tile_origin(trace.n_tiles()).get(), 55);
+    CHECK_EQ(s.l1_accesses, 6);
+    CHECK_EQ(s.l1_hits, 2);
+    CHECK_EQ(s.l2_accesses, 4);
+    CHECK_EQ(s.l2_hits, 0);
+    CHECK_EQ(s.dram_accesses, 5);
+    CHECK_EQ(s.l2_pf_issued, 1);
+    CHECK_EQ(s.l2_pf_timely, 0);
+    CHECK_EQ(s.l2_pf_wasted, 0);
+    CHECK_EQ(s.l2_pf_retriggers, 0);
+    CHECK_EQ(s.l2_pf_filtered, 3);
+}
+
+void test_l2_policy_lru_is_bit_identical_to_the_pre_t19_engine() {
+    check::group("T19e: with l2_policy lru the new calls are no-ops, stats unchanged");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    const FakeTrace trace = three_touches(true);
+    Engine eng(mapper, trace, touch_params(mapper, 3));
+    eng.run();
+    // T11b's fixture under the default LRU, with the full stat row captured
+    // from the pre-T19 engine at commit 318647c and asserted verbatim.
+    const EngineStats& s = eng.stats();
+    CHECK_EQ(eng.tile_origin(trace.n_tiles()).get(), 52);
+    CHECK_EQ(s.l1_accesses, 4);
+    CHECK_EQ(s.l1_hits, 2);
+    CHECK_EQ(s.l2_accesses, 2);
+    CHECK_EQ(s.l2_hits, 1);
+    CHECK_EQ(s.dram_accesses, 2);
+    CHECK_EQ(s.l2_pf_issued, 1);
+    CHECK_EQ(s.l2_pf_timely, 1);
+    CHECK_EQ(s.l2_pf_wasted, 0);
+    CHECK_EQ(s.l2_pf_retriggers, 0);
+    CHECK_EQ(s.l2_pf_filtered, 0);
+}
+
 int main() {
     test_unbounded_baseline_reproduces_the_trace();
     test_a_tile_whose_cores_all_idle_still_advances();
@@ -1913,5 +2098,10 @@ int main() {
     test_touch_prefetch_fills_l2_only_and_counts_timely();
     test_miss_mode_reproduces_the_legacy_trigger();
     test_touch_mode_with_unreachable_threshold_issues_nothing();
+    test_pf_lru_keeps_an_unused_prefetch_through_eviction_pressure();
+    test_pf_lru_demotes_a_consumed_prefetch_to_the_normal_class();
+    test_an_l1_prefetch_hit_consumes_the_tag_and_counts_timely_in_touch_mode();
+    test_miss_mode_stats_are_bit_identical_to_the_pre_t19_engine();
+    test_l2_policy_lru_is_bit_identical_to_the_pre_t19_engine();
     return check::summary();
 }

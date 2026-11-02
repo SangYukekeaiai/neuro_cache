@@ -155,6 +155,11 @@ TriageOutcome CacheLevel::triage(Request& r, std::vector<Request*>& granted) {
             policy_->note_next_use(slot, pending_next_use_[r.line.get()]);
         }
         policy_->on_hit(slot);
+        // Plan 2026-11-02 (T19): a hit means the line was just consumed toward
+        // the core, so any prefetch protection ends, at the same point the LRU
+        // stamp refreshes. Unconditional and mode-independent: for an
+        // unprotected line it is a no-op, and nothing ever protects at the L1.
+        policy_->note_protected(slot, false);
         // The hit still cost this level's port: its `ii` to be accepted and its
         // latency to answer, both already paid by the reservation that scheduled
         // this probe. At the L1 that was the one wait with no bucket, which is

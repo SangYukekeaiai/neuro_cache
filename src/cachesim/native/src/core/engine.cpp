@@ -526,6 +526,18 @@ void Engine::on_l2_probe(Request& r, SimTime now) {
                 }
             }
         }
+    } else if (params_.l2_prefetch_trigger == L2Trigger::Touch && r.mshr1 != nullptr &&
+               result == TriageOutcome::Hit) {
+        // The accounting fix of plan 2026-11-02 (T19), TOUCH MODE ONLY: an L2
+        // hit by an L1 prefetch (`!r.demand` with an L1 entry) consumes the
+        // line toward the L1 exactly as a demand hit does, so a tagged line is
+        // timely, not a later `l2_pf_wasted`. Miss mode keeps its demand-only
+        // lifecycle bit for bit, because its tag feeds the retrigger chain.
+        const auto tag = l2_prefetched_.find(r.line.get());
+        if (tag != l2_prefetched_.end()) {
+            l2_prefetched_.erase(tag);
+            ++stats_.l2_pf_timely;
+        }
     }
 
     switch (result) {
@@ -607,6 +619,12 @@ void Engine::on_l2_fill(Mshr& e, SimTime now) {
     const bool l2_pf_opened = is_prefetch_at_issue(*e.targets.front());
     if (l2_pf_opened && !e.demand) {
         l2_prefetched_.insert(line.get());
+        // The policy's protected bit, set under exactly the tag's condition
+        // (plan 2026-11-02, T19): the line is an unused L2 prefetch. `probe`
+        // right after `install` is the slot just filled, and the call is a
+        // no-op for every policy but PfLruPolicy. Eviction needs no clear:
+        // the evicting insert's own `on_fill` resets the slot's bit.
+        l2_.policy().note_protected(l2_.array().probe(line), true);
     } else if (l2_pf_opened && e.demand) {
         // A demand arrived while the prefetch was still in flight: it hid part
         // of the latency but not all of it.
