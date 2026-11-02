@@ -24,6 +24,7 @@
 #include "cachesim/layout/factory.h"
 #include "cachesim/trace/byte_source.h"
 #include "cachesim/instrument/access_log.h"
+#include "cachesim/instrument/barrier_log.h"
 #include "cachesim/replacement/next_use.h"
 #include "cachesim/instrument/cache_state_log.h"
 #include "cachesim/config.h"
@@ -105,6 +106,13 @@ const char* const kUsage =
     "                         l2_policy = belady and inert under any other\n"
     "                         policy. Only the L2 records of the log are read.\n"
     "\n"
+    "  --barrier-log PATH     one CSV row per (tile, core) at every tile barrier:\n"
+    "                         the core's arrival, the tile's end, and the per-core\n"
+    "                         stall and L2-probe counters, cumulative. This is the\n"
+    "                         per-core view the results row sums away. Off by\n"
+    "                         default; like the two above it changes no counter\n"
+    "                         and no column of the results row.\n"
+    "\n"
     "  --access-log PATH      the demand reference stream in time order, as\n"
     "                         fixed-width BINARY: 8 bytes per reference, carrying\n"
     "                         level, core and line id, after an 8-byte magic.\n"
@@ -125,6 +133,7 @@ struct Options {
 
     std::string  state_path;
     std::string  access_log_path;
+    std::string  barrier_log_path;
     std::string  oracle_path;
     std::string  l2_oracle_path;
     std::int32_t state_core  = -1;
@@ -158,6 +167,7 @@ bool parse_args(int argc, char** argv, Options& opt) {
         else if (flag == "--hist")       opt.hist_path      = value_of(argc, argv, i);
         else if (flag == "--cache-state") opt.state_path    = value_of(argc, argv, i);
         else if (flag == "--access-log") opt.access_log_path = value_of(argc, argv, i);
+        else if (flag == "--barrier-log") opt.barrier_log_path = value_of(argc, argv, i);
         else if (flag == "--oracle")    opt.oracle_path    = value_of(argc, argv, i);
         else if (flag == "--l2-oracle") opt.l2_oracle_path = value_of(argc, argv, i);
         else if (flag == "--cache-state-core")
@@ -355,6 +365,16 @@ void run(Options& opt) {
             engine.set_access_log(access_log.get());
         }
 
+        std::ofstream barrier_file;
+        std::unique_ptr<BarrierLog> barrier_log;
+        if (!opt.barrier_log_path.empty()) {
+            barrier_file.open(opt.barrier_log_path);
+            if (!barrier_file) throw std::runtime_error("cannot write " + opt.barrier_log_path);
+            barrier_log.reset(new BarrierLog(barrier_file, hdr.n_cores));
+            barrier_log->write_header();
+            engine.set_barrier_log(barrier_log.get());
+        }
+
         std::ofstream trace_file;
         std::unique_ptr<LineTrace> line_trace;
         if (!opt.trace_path_out.empty()) {
@@ -398,6 +418,11 @@ void run(Options& opt) {
             std::cerr << "cachesim_run: cache state " << opt.state_path << ", "
                       << state_log->written() << " rows"
                       << (state_log->truncated() ? " (truncated)\n" : "\n");
+        }
+        if (barrier_log) {
+            barrier_file << "# " << barrier_log->written() << " rows\n";
+            std::cerr << "cachesim_run: barrier log " << opt.barrier_log_path << ", "
+                      << barrier_log->written() << " rows\n";
         }
         if (line_trace) {
             trace_file << "# " << line_trace->written() << " episodes"

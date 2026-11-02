@@ -492,6 +492,13 @@ void Engine::on_l2_probe(Request& r, SimTime now) {
 
     if (result == TriageOutcome::Hit) note_hit(Level::L2, r.core, r.line, r.demand);
 
+    // T22's per-core L2 probe counts. L2-originated prefetches are excluded:
+    // they belong to no burst a core waits on, so charging one to `r.core`
+    // would attribute shared-policy traffic to whichever core triggered it.
+    if (barrier_log_ != nullptr && (r.demand || r.mshr1 != nullptr)) {
+        barrier_log_->observe_l2(r.core, r.demand, result == TriageOutcome::Hit);
+    }
+
     // The trigger (plan 0831 section 6). Fires on a DEMAND miss, and on a
     // demand hit to a line a prefetch put there and nobody has used yet.
     //

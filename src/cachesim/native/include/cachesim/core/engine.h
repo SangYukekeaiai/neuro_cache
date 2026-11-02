@@ -41,6 +41,7 @@
 
 #include "cachesim/core/cache_level.h"
 #include "cachesim/instrument/access_log.h"
+#include "cachesim/instrument/barrier_log.h"
 #include "cachesim/instrument/cache_state_log.h"
 #include "cachesim/core/event.h"
 #include "cachesim/layout/mapper.h"
@@ -478,6 +479,11 @@ public:
     // are different events: a hit changes nothing and is still a reference.
     void set_access_log(AccessLog* log) { access_log_ = log; }
 
+    // The fourth instrument (T22). Fed from two sites: the L2 probe that
+    // counts `l2_accesses`, and the barrier that charges `stall_barrier`,
+    // because which core a tile waits on is a fact only the barrier knows.
+    void set_barrier_log(BarrierLog* log) { barrier_log_ = log; }
+
     std::int32_t n_bursts_in_tile(CoreId core) const;
 
 private:
@@ -668,6 +674,7 @@ private:
     CacheStateLog* cache_state_ = nullptr;
     AccessLog*     access_log_  = nullptr;
     LineTrace*     line_trace_  = nullptr;
+    BarrierLog*    barrier_log_ = nullptr;
 };
 
 // The one place a trace SPACING becomes a simulated duration.

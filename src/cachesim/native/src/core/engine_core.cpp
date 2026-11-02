@@ -134,6 +134,14 @@ void Engine::on_barrier(std::int32_t tile, SimTime now) {
         const std::int64_t slack = (now - cores_[c].barrier_arrival).get();
         stats_.stall_barrier[c] += slack;
         stats_.stall_total[c] += slack;
+        if (barrier_log_ != nullptr) {
+            barrier_log_->record(tile, static_cast<std::int32_t>(c), cores_[c].barrier_arrival,
+                                 now, stats_.core_stall[c], stats_.fetch_latency[c],
+                                 stats_.stall_l1_slot[c], stats_.stall_l1_line[c],
+                                 stats_.stall_l1_port[c], stats_.stall_l2_slot[c],
+                                 stats_.stall_l2_line[c], stats_.stall_l2_port[c],
+                                 stats_.stall_channel[c]);
+        }
     }
 
     if (tile + 1 < trace_.n_tiles()) {
