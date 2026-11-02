@@ -28,6 +28,8 @@ std::unique_ptr<ReplacementPolicy> make_policy(PolicyKind kind, std::int32_t num
         case PolicyKind::RRIP:   return std::make_unique<RripPolicy>(num_slots, rrip_bits);
         case PolicyKind::LFU:    return std::make_unique<LfuPolicy>(num_slots);
         case PolicyKind::PF_LRU: return std::make_unique<PfLruPolicy>(num_slots);
+        case PolicyKind::PF_LRU_RAND:
+            return std::make_unique<PfLruPolicy>(num_slots, PfLruPolicy::Fallback::Rand);
         case PolicyKind::RANDOM:
             reject("make_policy",
                    "policy 'random' is a placeholder and is not implemented; use 'lru' or 'fifo'");

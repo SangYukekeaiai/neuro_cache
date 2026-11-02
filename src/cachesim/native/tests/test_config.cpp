@@ -140,6 +140,8 @@ void test_every_enum_spelling_round_trips() {
     CHECK_TRUE(parse_config(R"({"layout": "split_cin"})").layout
                == LayoutKind::SplitCin);
     CHECK_TRUE(parse_config(R"({"l2_policy": "pf_lru"})").l2_policy == PolicyKind::PF_LRU);
+    CHECK_TRUE(parse_config(R"({"l2_policy": "pf_lru_rand"})").l2_policy
+               == PolicyKind::PF_LRU_RAND);
     CHECK_THROWS(std::invalid_argument, parse_config(R"({"policy": "clock"})"));
     CHECK_THROWS(std::invalid_argument, parse_config(R"({"l2_policy": "clock"})"));
     CHECK_THROWS(std::invalid_argument, parse_config(R"({"layout": "split_cout"})"));
@@ -351,6 +353,56 @@ void test_policy_pf_lru_is_rejected_naming_the_policy_key() {
             const std::string msg = e.what();
             named = msg.find("config: policy = pf_lru") == 0 &&
                     msg.find("set l2_policy = pf_lru") != std::string::npos;
+        }
+        CHECK_TRUE(named);
+    }
+}
+
+void test_l2_policy_pf_lru_rand_round_trips_and_reaches_the_l2() {
+    check::group("pf_lru_rand: accepted via l2_policy, round-trips, factory builds the rand mode");
+    RunConfig c = parse_config(R"({"policy": "lru", "l2_policy": "pf_lru_rand"})");
+    CHECK_TRUE(c.l2_policy == PolicyKind::PF_LRU_RAND);
+    // The CSV cell is csv_name_of over this spelling, so the schema does not
+    // move: the existing l2_policy column just prints the new name.
+    CHECK_TRUE(std::string(name_of(c.l2_policy)) == "pf_lru_rand");
+    std::vector<Warning> w;
+    validate(c, 4, w);
+    const EngineParams p = to_engine_params(c);
+    CHECK_TRUE(p.l1.policy == PolicyKind::LRU);
+    CHECK_TRUE(p.l2.policy == PolicyKind::PF_LRU_RAND);
+    // The factory really builds the RAND mode, not pf_lru under a second
+    // name: a type check cannot see the mode, so the fallback behaviour is
+    // the witness. Over an all-protected 16-way set, pf_lru's fallback is a
+    // fixed victim; the rand mode's draws must hit more than one slot.
+    const std::unique_ptr<ReplacementPolicy> built = make_policy(p.l2.policy, 16);
+    CHECK_TRUE(dynamic_cast<PfLruPolicy*>(built.get()) != nullptr);
+    std::vector<Candidate> set;
+    for (std::int32_t s = 0; s < 16; ++s) {
+        built->on_fill(SlotId{s});
+        built->note_protected(SlotId{s}, true);
+        set.push_back(Candidate{SlotId{s}, LineId{1000 + s}});
+    }
+    const SlotId first = built->pick_victim(set);
+    bool moved = false;
+    for (int d = 0; d < 8 && !moved; ++d) moved = built->pick_victim(set) != first;
+    CHECK_TRUE(moved);
+}
+
+void test_policy_pf_lru_rand_is_rejected_naming_the_policy_key() {
+    check::group("pf_lru_rand: the plain policy key is refused naming policy, not l2_policy");
+    // The same refusal as pf_lru's, for the same reason: at the L1 nothing
+    // ever sets protection, so the policy would silently run as plain LRU.
+    for (const char* cfg_text : {R"({"policy": "pf_lru_rand"})",
+                                 R"({"policy": "pf_lru_rand", "l2_policy": "lru"})"}) {
+        RunConfig c = parse_config(cfg_text);
+        bool named = false;
+        try {
+            std::vector<Warning> w;
+            validate(c, 4, w);
+        } catch (const std::invalid_argument& e) {
+            const std::string msg = e.what();
+            named = msg.find("config: policy = pf_lru_rand") == 0 &&
+                    msg.find("set l2_policy = pf_lru_rand") != std::string::npos;
         }
         CHECK_TRUE(named);
     }
@@ -954,6 +1006,8 @@ int main() {
     test_l2_policy_belady_still_leaves_the_l1_on_lru();
     test_l2_policy_pf_lru_round_trips_and_reaches_the_l2();
     test_policy_pf_lru_is_rejected_naming_the_policy_key();
+    test_l2_policy_pf_lru_rand_round_trips_and_reaches_the_l2();
+    test_policy_pf_lru_rand_is_rejected_naming_the_policy_key();
     test_a_burst_wider_than_the_l1_mshr_file_is_rejected();
     test_core_accept_ii_below_one_is_rejected();
     test_a_negative_prefetch_distance_is_rejected();

@@ -634,15 +634,16 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
         reject("rrip_bits = " + std::to_string(cfg.rrip_bits) + " must be in [1, 8]");
     }
     check_policy_kind("policy", cfg.policy);
-    // pf_lru is L2-only: the engine sets protection only at the L2 prefetch
-    // fill, so at the L1 nothing ever calls note_protected and the policy
-    // would silently run as plain lru; silently-inert configs are refused
-    // (the l1_prefetch_policy = next_tile rule). Checked on cfg.policy AFTER
-    // the inheritance above, so a typed `policy = pf_lru` is named as policy
-    // even though the unset l2_policy legally inherited it.
-    if (cfg.policy == PolicyKind::PF_LRU) {
-        reject("policy = pf_lru is L2-only: at the L1 nothing ever sets protection, so "
-               "it would silently run as plain lru; set l2_policy = pf_lru instead");
+    // pf_lru and pf_lru_rand are L2-only: the engine sets protection only at
+    // the L2 prefetch fill, so at the L1 nothing ever calls note_protected
+    // and the policy would silently run as plain lru; silently-inert configs
+    // are refused (the l1_prefetch_policy = next_tile rule). Checked on
+    // cfg.policy AFTER the inheritance above, so a typed `policy = pf_lru` is
+    // named as policy even though the unset l2_policy legally inherited it.
+    if (cfg.policy == PolicyKind::PF_LRU || cfg.policy == PolicyKind::PF_LRU_RAND) {
+        const std::string n = name_of(cfg.policy);
+        reject("policy = " + n + " is L2-only: at the L1 nothing ever sets protection, so "
+               "it would silently run as plain lru; set l2_policy = " + n + " instead");
     }
     if (lines_per_burst > cfg.l1_mshrs) {
         reject("l1_mshrs = " + std::to_string(cfg.l1_mshrs) + " cannot hold a burst of " +
