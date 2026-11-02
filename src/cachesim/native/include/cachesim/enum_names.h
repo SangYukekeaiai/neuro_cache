@@ -73,6 +73,21 @@ inline bool parse(const std::string& text, PrefetchKind& out) {
     return true;
 }
 
+inline const char* name_of(L2Trigger k) {
+    switch (k) {
+        case L2Trigger::Touch: return "touch";
+        case L2Trigger::Miss:  return "miss";
+    }
+    return kUnknownEnumName;
+}
+
+inline bool parse(const std::string& text, L2Trigger& out) {
+    if (text == "touch") out = L2Trigger::Touch;
+    else if (text == "miss") out = L2Trigger::Miss;
+    else return false;
+    return true;
+}
+
 inline const char* name_of(Inclusion k) {
     switch (k) {
         case Inclusion::NonInclusive: return "non_inclusive";

@@ -216,7 +216,13 @@ const std::vector<std::string>& csv_columns() {
         // Appended after rrip_bits for the same positional-stability reason:
         // the NextTile touch filter's knob and its suppression count
         // (plan 2026-11-01).
-        "l2_prefetch_min_touches", "l2_pf_filtered"};
+        "l2_prefetch_min_touches", "l2_pf_filtered",
+        // Appended after l2_pf_filtered for the same positional-stability
+        // reason (plan 2026-11-01, T12). The cell is the EFFECTIVE
+        // (post-validate, post-normalize) trigger, so the row describes the
+        // engine that actually ran: a config with no next_tile policy reads
+        // "miss" however the knob was left.
+        "l2_prefetch_trigger"};
     return cols;
 }
 
@@ -384,6 +390,7 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
     r.i64("rrip_bits", cfg.rrip_bits);
     r.i64("l2_prefetch_min_touches", cfg.l2_prefetch_min_touches);
     r.i64("l2_pf_filtered", es.l2_pf_filtered);
+    r.str("l2_prefetch_trigger", csv_name_of(cfg.l2_prefetch_trigger, "L2Trigger"));
 
     cells_ = r.take();
 }

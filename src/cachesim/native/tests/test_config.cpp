@@ -403,17 +403,33 @@ void test_l2_min_touches_negative_is_rejected() {
 }
 
 void test_l2_min_touches_two_or_more_with_next_tile_warns() {
-    check::group("next_tile filter: min_touches >= 2 suppresses every trigger, so it warns");
+    check::group("next_tile filter: min_touches >= 2 under the MISS trigger warns");
     RunConfig c = parse_config(R"({"l2_prefetch_policy": "next_tile",
+                                  "l2_prefetch_trigger": "miss",
                                   "l2_prefetch_distance": 1,
                                   "l2_prefetch_min_touches": 3})");
     std::vector<Warning> w;
     validate(c, 1, w);                       // must NOT throw: the config stays valid
     CHECK_TRUE(has_warning(w, "W_MIN_TOUCHES_FILTERS_ALL"));
 
-    // 0 and 1 leave the filter without effect, so they stay silent.
+    // In touch mode min_touches >= 2 is the intended configuration: the line
+    // fires AT the threshold, so nothing is filtered and nothing warns. Both
+    // the explicit spelling and the next_tile default stay silent.
+    for (const char* trigger_key : {R"("l2_prefetch_trigger": "touch",)", ""}) {
+        RunConfig t = parse_config(std::string(R"({"l2_prefetch_policy": "next_tile",)") +
+                                   trigger_key +
+                                   R"("l2_prefetch_distance": 1,
+                                      "l2_prefetch_min_touches": 3})");
+        std::vector<Warning> v;
+        validate(t, 1, v);
+        CHECK_TRUE(!has_warning(v, "W_MIN_TOUCHES_FILTERS_ALL"));
+    }
+
+    // 0 and 1 leave the filter without effect, so they stay silent even in
+    // miss mode.
     for (const int x : {0, 1}) {
         RunConfig d = parse_config(R"({"l2_prefetch_policy": "next_tile",
+                                      "l2_prefetch_trigger": "miss",
                                       "l2_prefetch_distance": 1,
                                       "l2_prefetch_min_touches": )" +
                                    std::to_string(x) + "}");
@@ -432,6 +448,87 @@ void test_l2_min_touches_two_or_more_with_next_tile_warns() {
         validate(d, 1, v);
         CHECK_TRUE(!has_warning(v, "W_MIN_TOUCHES_FILTERS_ALL"));
     }
+}
+
+void test_l2_prefetch_trigger_defaults_and_round_trips() {
+    check::group("l2_prefetch_trigger: defaults to touch for next_tile and round-trips");
+    // Unset alongside next_tile: touch, surviving validation and reaching the
+    // engine params.
+    RunConfig d = parse_config(R"({"l2_prefetch_policy": "next_tile",
+                                  "l2_prefetch_distance": 1})");
+    CHECK_TRUE(d.l2_prefetch_trigger == L2Trigger::Touch);
+    std::vector<Warning> w;
+    validate(d, 1, w);
+    CHECK_TRUE(d.l2_prefetch_trigger == L2Trigger::Touch);
+    CHECK_TRUE(to_engine_params(d).l2_prefetch_trigger == L2Trigger::Touch);
+
+    // Both spellings round-trip alongside next_tile.
+    const struct { const char* text; L2Trigger kind; } spellings[] = {
+        {"touch", L2Trigger::Touch}, {"miss", L2Trigger::Miss}};
+    for (const auto& s : spellings) {
+        RunConfig c = parse_config(std::string(R"({"l2_prefetch_policy": "next_tile",
+                                                  "l2_prefetch_distance": 1,
+                                                  "l2_prefetch_trigger": ")") +
+                                   s.text + "\"}");
+        CHECK_TRUE(c.l2_prefetch_trigger == s.kind);
+        std::vector<Warning> v;
+        validate(c, 1, v);
+        CHECK_TRUE(c.l2_prefetch_trigger == s.kind);
+        CHECK_TRUE(to_engine_params(c).l2_prefetch_trigger == s.kind);
+    }
+}
+
+void test_l2_prefetch_trigger_unknown_value_is_refused() {
+    check::group("l2_prefetch_trigger: an unknown spelling is refused naming the key");
+    bool named = false;
+    try {
+        (void)parse_config(R"({"l2_prefetch_trigger": "sometimes"})");
+    } catch (const std::invalid_argument& e) {
+        const std::string msg = e.what();
+        named = msg.find("l2_prefetch_trigger") != std::string::npos &&
+                msg.find("sometimes") != std::string::npos;
+    }
+    CHECK_TRUE(named);
+}
+
+void test_l2_prefetch_trigger_touch_needs_next_tile() {
+    check::group("l2_prefetch_trigger: explicit touch needs next_tile; unset settles to miss");
+    // An EXPLICIT touch with a policy that never fires on a touch is refused,
+    // naming both keys.
+    for (const char* policy : {"none", "neighbour", "next_burst"}) {
+        RunConfig c = parse_config(std::string(R"({"l2_prefetch_policy": ")") + policy +
+                                   R"(", "l2_prefetch_distance": 1,
+                                       "l2_prefetch_trigger": "touch"})");
+        bool named = false;
+        try {
+            std::vector<Warning> v;
+            validate(c, 1, v);
+        } catch (const std::invalid_argument& e) {
+            const std::string msg = e.what();
+            named = msg.find("l2_prefetch_trigger") != std::string::npos &&
+                    msg.find("l2_prefetch_policy") != std::string::npos;
+        }
+        CHECK_TRUE(named);
+    }
+
+    // UNSET with those same policies keeps working exactly as today: it
+    // validates, and the effective trigger the row will echo is miss.
+    for (const char* policy : {"none", "neighbour", "next_burst"}) {
+        RunConfig c = parse_config(std::string(R"({"l2_prefetch_policy": ")") + policy +
+                                   R"(", "l2_prefetch_distance": 1})");
+        std::vector<Warning> v;
+        validate(c, 1, v);
+        CHECK_TRUE(c.l2_prefetch_trigger == L2Trigger::Miss);
+        CHECK_TRUE(to_engine_params(c).l2_prefetch_trigger == L2Trigger::Miss);
+    }
+
+    // An explicit "miss" is legal with any policy, next_tile included.
+    RunConfig m = parse_config(R"({"l2_prefetch_policy": "neighbour",
+                                  "l2_prefetch_distance": 1,
+                                  "l2_prefetch_trigger": "miss"})");
+    std::vector<Warning> v;
+    validate(m, 1, v);
+    CHECK_TRUE(m.l2_prefetch_trigger == L2Trigger::Miss);
 }
 
 void test_a_demand_reserve_at_or_above_the_mshr_count_is_rejected() {
@@ -820,6 +917,9 @@ int main() {
     test_l2_min_touches_defaults_parses_and_reaches_the_engine();
     test_l2_min_touches_negative_is_rejected();
     test_l2_min_touches_two_or_more_with_next_tile_warns();
+    test_l2_prefetch_trigger_defaults_and_round_trips();
+    test_l2_prefetch_trigger_unknown_value_is_refused();
+    test_l2_prefetch_trigger_touch_needs_next_tile();
     test_a_demand_reserve_at_or_above_the_mshr_count_is_rejected();
     test_every_count_below_one_is_rejected();
     test_every_negative_time_is_rejected();

@@ -266,6 +266,18 @@ void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t 
         return;
     }
 
+    if (key == "l2_prefetch_trigger") {
+        const std::string& t = enum_text(key, v, pos);
+        if (!parse(t, cfg.l2_prefetch_trigger)) {
+            fail("unknown l2_prefetch_trigger \"" + t + "\"", pos);
+        }
+        // Recorded as explicit, l2_policy_set's pattern: an explicit "touch"
+        // with a policy that never fires on a touch is refused by validate(),
+        // while the unset default quietly settles to the policy's trigger.
+        cfg.l2_prefetch_trigger_set = true;
+        return;
+    }
+
     if (key == "l1_prefetch_axis") {
         const std::string& t = enum_text(key, v, pos);
         if (t == "cin")        cfg.l1_prefetch_axis = Axis::CIN;
@@ -654,6 +666,21 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
         reject("l2_prefetch_policy = neighbour with both directions off would run as none; "
                "set the policy to none or turn a direction on");
     }
+    // The touch trigger only exists for next_tile: no other L2 policy ever
+    // fires on a touch. An EXPLICIT touch is refused rather than downgraded,
+    // because it names a machine the run cannot be; the unset default is
+    // settled to miss here, mirroring the engine's normalize_params, so the
+    // CSV row echoes the trigger the engine actually ran.
+    if (cfg.l2_prefetch_policy != PrefetchKind::NextTile &&
+        cfg.l2_prefetch_trigger == L2Trigger::Touch) {
+        if (cfg.l2_prefetch_trigger_set) {
+            reject("l2_prefetch_trigger = touch fires at next_tile's touch threshold, "
+                   "which l2_prefetch_policy = " + std::string(name_of(cfg.l2_prefetch_policy)) +
+                   " never reaches; set l2_prefetch_policy = next_tile or "
+                   "l2_prefetch_trigger = miss");
+        }
+        cfg.l2_prefetch_trigger = L2Trigger::Miss;
+    }
     if (cfg.l2_prefetch_min_touches < 0) {
         reject("l2_prefetch_min_touches = " + std::to_string(cfg.l2_prefetch_min_touches) +
                " must be >= 0 (0 disables the touch filter)");
@@ -729,7 +756,12 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
                  " MSHRs is under a burst of " + std::to_string(lines_per_burst) +
                  " lines, so the run measures the pool rather than the policy");
     }
+    // Only under the MISS trigger: there a line's triggering L2 miss is
+    // typically its first touch of the tile, so the filter starves. Under the
+    // touch trigger the line fires AT the threshold, so min_touches >= 2 is
+    // the intended configuration and stays silent.
     if (cfg.l2_prefetch_policy == PrefetchKind::NextTile &&
+        cfg.l2_prefetch_trigger == L2Trigger::Miss &&
         cfg.l2_prefetch_min_touches >= 2) {
         warn(warnings, "W_MIN_TOUCHES_FILTERS_ALL",
              "with the per-tile touch window a line's triggering L2 miss is typically "
@@ -788,6 +820,7 @@ EngineParams to_engine_params(const RunConfig& cfg) {
     p.l2.prefetch_params  = PrefetchParams{cfg.l2_prefetch_distance, cfg.l2_prefetch_axis,
                                            cfg.l2_prefetch_up, cfg.l2_prefetch_down,
                                            cfg.l2_prefetch_min_touches};
+    p.l2_prefetch_trigger  = cfg.l2_prefetch_trigger;
     p.l2_prefetch_policy   = cfg.l2_prefetch_policy;
     p.l2_prefetch_axis     = cfg.l2_prefetch_axis;
     p.l2_prefetch_distance = cfg.l2_prefetch_distance;

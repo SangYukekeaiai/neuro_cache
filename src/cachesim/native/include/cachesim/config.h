@@ -111,6 +111,17 @@ struct RunConfig {
     // the cores touched it >= this many times in the current tile. 0 = off;
     // read only by next_tile, echoed in the CSV for every policy.
     std::int32_t   l2_prefetch_min_touches = 3;
+    // How the L2 prefetch fires (plan 2026-11-01): the touch threshold, or
+    // the legacy L2 demand miss. The trigger only exists for next_tile -- no
+    // other policy ever fires on a touch -- so the default is policy-
+    // dependent: validate() keeps Touch for next_tile and settles an UNSET
+    // Touch to Miss for every other policy, mirroring the engine's
+    // normalize_params, so the CSV echoes the trigger the engine ran. The
+    // _set flag follows l2_policy_set's pattern: it distinguishes an explicit
+    // "touch", which validate() REFUSES with a non-next_tile policy, from
+    // the unset default, which it quietly settles.
+    L2Trigger      l2_prefetch_trigger     = L2Trigger::Touch;
+    bool           l2_prefetch_trigger_set = false;
     std::int32_t   l2_demand_reserve    = -1;   // resolved from lines_per_burst
 
     PrefetchKind prefetch_policy   = PrefetchKind::None;
