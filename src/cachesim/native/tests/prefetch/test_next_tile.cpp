@@ -197,6 +197,89 @@ void test_l2_engine_issues_forward_and_drains() {
     CHECK_EQ(engine.stats().pf_outstanding.at(0), 0);
 }
 
+// One core, one tile: line cout 0 touched at ticks 0/10/20 (the last two are
+// L1 hits the L2 never sees), then couts 4 and 8 evict it from the two-line
+// L1 and two-line L2, then cout 0 misses both levels again at tick 50.
+fx::FakeTrace touch_trace() {
+    fx::FakeTrace trace(1);
+    const auto tile = trace.add_tile();
+    trace.add_burst(tile, 0, 0, 0);
+    trace.add_burst(tile, 0, 10, 0);
+    trace.add_burst(tile, 0, 20, 0);
+    trace.add_burst(tile, 0, 30, 4);
+    trace.add_burst(tile, 0, 40, 8);
+    trace.add_burst(tile, 0, 50, 0);
+    return trace;
+}
+
+EngineParams tiny_two_line_levels(const KhkwSplitMapper& mapper) {
+    EngineParams p;
+    p.l1 = fx::level(1, 2, 8, 4);
+    p.l2 = fx::level(1, 2, 8, 4);
+    p.l1.cache_size_bytes *= mapper.line_size_bytes();
+    p.l2.cache_size_bytes *= mapper.line_size_bytes();
+    p.l2_miss_latency = SimTime{1};
+    return p;
+}
+
+void test_l1_hits_feed_the_l2_touch_counter() {
+    check::group("next_tile filter: L1 hits feed the counter, a later L2 miss emits");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    const fx::FakeTrace trace = touch_trace();
+    EngineParams p = tiny_two_line_levels(mapper);
+    p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, 3};
+    Engine engine(mapper, trace, p);
+    engine.run();
+    // Ticks 10 and 20 were L1 hits, invisible to the L2, yet they counted:
+    // the final miss on cout 0 carries count 4 >= 3 and emits cout 4.
+    CHECK_TRUE(engine.stats().l1_hits >= 2);
+    CHECK_EQ(engine.stats().l2_pf_issued, 1);
+    // The cold first touches of couts 0, 4 and 8 were filtered.
+    CHECK_EQ(engine.stats().l2_pf_filtered, 3);
+}
+
+void test_fully_filtered_next_tile_degrades_to_none() {
+    check::group("next_tile filter: an unreachable threshold degrades to policy none");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    const fx::FakeTrace trace = touch_trace();
+    EngineParams p = tiny_two_line_levels(mapper);
+    p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, 100};
+    Engine filtered(mapper, trace, p);
+    filtered.run();
+
+    EngineParams none_p = tiny_two_line_levels(mapper);
+    Engine none(mapper, trace, none_p);
+    none.run();
+
+    CHECK_EQ(filtered.stats().l2_pf_issued, 0);
+    CHECK_TRUE(filtered.stats().l2_pf_filtered > 0);
+    CHECK_EQ(filtered.tile_origin(1), none.tile_origin(1));
+}
+
+void test_min_touches_zero_reproduces_old_numbers() {
+    check::group("next_tile filter: min_touches 0 matches the pre-filter policy at the engine");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    const fx::FakeTrace trace = touch_trace();
+    EngineParams p = tiny_two_line_levels(mapper);
+    p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, 0};
+    Engine zero(mapper, trace, p);
+    zero.run();
+
+    EngineParams old_p = tiny_two_line_levels(mapper);
+    old_p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    old_p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false};
+    Engine old(mapper, trace, old_p);
+    old.run();
+
+    CHECK_EQ(zero.stats().l2_pf_filtered, 0);
+    CHECK_EQ(zero.stats().l2_pf_issued, old.stats().l2_pf_issued);
+    CHECK_TRUE(zero.stats().l2_pf_issued > 0);
+    CHECK_EQ(zero.tile_origin(1), old.tile_origin(1));
+}
+
 }  // namespace
 
 int main() {
@@ -209,5 +292,8 @@ int main() {
     test_retrigger_is_exempt();
     test_negative_min_touches_is_refused();
     test_l2_engine_issues_forward_and_drains();
+    test_l1_hits_feed_the_l2_touch_counter();
+    test_fully_filtered_next_tile_degrades_to_none();
+    test_min_touches_zero_reproduces_old_numbers();
     return check::summary();
 }

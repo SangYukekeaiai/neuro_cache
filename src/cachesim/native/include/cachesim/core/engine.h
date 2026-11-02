@@ -260,6 +260,11 @@ struct EngineStats {
     // the demand L2 hit that finds and clears the tag, and that hit always
     // calls the trigger. Both are kept as separate CSV columns.
     std::int64_t l2_pf_retriggers = 0;
+    // Triggers the L2 policy's own touch filter suppressed (NextTile's
+    // `min_touches`, plan 2026-11-01). Copied from the policy at close-out;
+    // not part of the `l2_pf_issued` accounting, since a filtered trigger
+    // never issued anything.
+    std::int64_t l2_pf_filtered = 0;
     std::int64_t dram_accesses = 0;
 
     // --- Part 8 "Model health".
@@ -634,7 +639,7 @@ private:
     // mechanics. L1 is capped by its prefetch MSHR budget; L2 relies on triage
     // drops and its bank port.
     void prefetch_on_demand(Level level, CoreId core, std::int32_t tile, BurstIndex k,
-                            LineId line, SimTime now);
+                            LineId line, SimTime now, bool retrigger = false);
     std::vector<Request*> free_;
 
     // Scratch, so no event handler allocates on a hot path. `lines_` is live

@@ -286,6 +286,11 @@ void Engine::on_l1_probe(Request& r, SimTime now) {
         // Plan 0831 U2, inside the SAME guard as the counter above so the log's
         // record count and `l1_accesses` cannot diverge (V1).
         if (access_log_ != nullptr) access_log_->observe(Level::L1, r.core, r.line);
+        // The L2 policy's touch feed (plan 2026-11-01 D1): a touch is what the
+        // CORES do, so it is counted here, where every demand reaches the
+        // hierarchy, rather than at the L2, which L1 hits never reach. Same
+        // guard as `l1_accesses`, so the two counts cannot diverge.
+        l2_.prefetcher().on_access(r.line, cores_.at(idx(r.core)).tile);
     }
 
     if (result == TriageOutcome::Hit) note_hit(Level::L1, r.core, r.line, r.demand);
@@ -358,10 +363,11 @@ void Engine::prefetch_on_demand(Level level,
                                 std::int32_t tile,
                                 BurstIndex k,
                                 LineId line,
-                                SimTime now) {
+                                SimTime now,
+                                bool retrigger) {
     CacheLevel& lvl = level == Level::L1 ? l1_.at(idx(core)) : l2_;
     pf_targets_.clear();
-    const PrefetchContext ctx{level, core, tile, k, line, now, mapper_, trace_};
+    const PrefetchContext ctx{level, core, tile, k, line, now, mapper_, trace_, retrigger};
     lvl.prefetcher().on_demand(ctx, pf_targets_);
 
     std::size_t i = 0;
@@ -491,7 +497,8 @@ void Engine::on_l2_probe(Request& r, SimTime now) {
                 l2_prefetched_.erase(tag);
                 ++stats_.l2_pf_timely;
                 ++stats_.l2_pf_retriggers;
-                prefetch_on_demand(Level::L2, r.core, cores_.at(idx(r.core)).tile, r.burst, r.line, now);
+                prefetch_on_demand(Level::L2, r.core, cores_.at(idx(r.core)).tile, r.burst,
+                                   r.line, now, /*retrigger=*/true);
             }
         }
     }
@@ -743,6 +750,11 @@ void Engine::close_out_prefetch_stats() {
     // Only the L1 prefetcher is closed out here. L2 lines still tagged in
     // `l2_prefetched_` when the run ends are not charged to `l2_pf_wasted`, so
     // the L2 outcomes plus drops can sum to less than `l2_pf_issued`.
+
+    // The touch filter's suppressions live in the policy (the one place that
+    // knows it filtered); copied rather than accumulated so a second call
+    // overwrites with the same value.
+    stats_.l2_pf_filtered = l2_.prefetcher().filtered_triggers();
 }
 
 // --- feeding the two instruments ---------------------------------------------
