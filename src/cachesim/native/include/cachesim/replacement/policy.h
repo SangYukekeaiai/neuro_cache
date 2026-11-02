@@ -81,6 +81,21 @@ public:
     // want the future is unchanged and no existing call site moves.
     virtual void note_next_use(SlotId /*slot*/, std::int64_t /*next_use*/) {}
 
+    // OPTIONAL. Whether the line now in `slot` belongs to a protected class
+    // that pick_victim passes over while an unprotected candidate exists.
+    // Called by the engine where it already knows the fact (an L2 fill tagged
+    // as an unused prefetch protects; the hit that consumes the line toward L1
+    // unprotects), and never by the array.
+    //
+    // A BIT, not a line and not an address, so 2.2's rule stands unchanged:
+    // the policy is still told nothing about sets, ways, associativity or
+    // line addresses.
+    //
+    // A default no-op rather than a pure virtual, for note_next_use's reason:
+    // every policy without priority classes is unchanged and no existing call
+    // site moves.
+    virtual void note_protected(SlotId /*slot*/, bool /*is_protected*/) {}
+
     // Which of `candidates` to evict, as a slot drawn from that set.
     //
     // Given a candidate SET, and no implementation may depend on its order.
