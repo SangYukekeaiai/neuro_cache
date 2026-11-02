@@ -147,6 +147,7 @@ const I32Field kI32Fields[] = {
     {"l1_demand_reserve", &RunConfig::l1_demand_reserve},
     {"l2_demand_reserve", &RunConfig::l2_demand_reserve},
     {"l2_prefetch_distance", &RunConfig::l2_prefetch_distance},
+    {"l2_prefetch_min_touches", &RunConfig::l2_prefetch_min_touches},
     {"l2_banks", &RunConfig::l2_banks},
 };
 
@@ -653,6 +654,10 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
         reject("l2_prefetch_policy = neighbour with both directions off would run as none; "
                "set the policy to none or turn a direction on");
     }
+    if (cfg.l2_prefetch_min_touches < 0) {
+        reject("l2_prefetch_min_touches = " + std::to_string(cfg.l2_prefetch_min_touches) +
+               " must be >= 0 (0 disables the touch filter)");
+    }
     if (cfg.l2_prefetch_distance < 0) {
         reject("l2_prefetch_distance = " + std::to_string(cfg.l2_prefetch_distance) +
                " must not be negative");
@@ -772,7 +777,8 @@ EngineParams to_engine_params(const RunConfig& cfg) {
     p.l2.demand_reserve   = cfg.l2_demand_reserve;
     p.l2.prefetch_kind    = cfg.l2_prefetch_policy;
     p.l2.prefetch_params  = PrefetchParams{cfg.l2_prefetch_distance, cfg.l2_prefetch_axis,
-                                           cfg.l2_prefetch_up, cfg.l2_prefetch_down};
+                                           cfg.l2_prefetch_up, cfg.l2_prefetch_down,
+                                           cfg.l2_prefetch_min_touches};
     p.l2_prefetch_policy   = cfg.l2_prefetch_policy;
     p.l2_prefetch_axis     = cfg.l2_prefetch_axis;
     p.l2_prefetch_distance = cfg.l2_prefetch_distance;

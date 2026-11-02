@@ -372,6 +372,36 @@ void test_next_tile_with_zero_distance_is_rejected() {
     CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
 }
 
+void test_l2_min_touches_defaults_parses_and_reaches_the_engine() {
+    check::group("next_tile filter: l2_prefetch_min_touches defaults to 3 and reaches the engine");
+    RunConfig d = parse_config(R"({})");
+    CHECK_EQ(d.l2_prefetch_min_touches, 3);
+
+    // Parses and is echoed regardless of the selected L2 policy.
+    RunConfig n = parse_config(R"({"l2_prefetch_policy": "neighbour",
+                                  "l2_prefetch_min_touches": 7})");
+    CHECK_EQ(n.l2_prefetch_min_touches, 7);
+
+    for (const int x : {0, 7}) {
+        RunConfig c = parse_config(R"({"l2_prefetch_policy": "next_tile",
+                                      "l2_prefetch_distance": 2,
+                                      "l2_prefetch_min_touches": )" +
+                                   std::to_string(x) + "}");
+        CHECK_EQ(c.l2_prefetch_min_touches, x);
+        std::vector<Warning> w;
+        validate(c, 1, w);
+        const auto p = to_engine_params(c);
+        CHECK_EQ(p.l2.prefetch_params.min_touches, x);
+    }
+}
+
+void test_l2_min_touches_negative_is_rejected() {
+    check::group("next_tile filter: a negative l2_prefetch_min_touches is rejected");
+    RunConfig c = parse_config(R"({"l2_prefetch_min_touches": -1})");
+    std::vector<Warning> w;
+    CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
+}
+
 void test_a_demand_reserve_at_or_above_the_mshr_count_is_rejected() {
     check::group("Task 10: l1_demand_reserve >= l1_mshrs is rejected");
     RunConfig c = parse_config(R"({"l1_mshrs": 4, "l1_demand_reserve": 4})");
@@ -755,6 +785,8 @@ int main() {
     test_next_tile_parses_and_validates_at_l2();
     test_next_tile_at_l1_is_rejected();
     test_next_tile_with_zero_distance_is_rejected();
+    test_l2_min_touches_defaults_parses_and_reaches_the_engine();
+    test_l2_min_touches_negative_is_rejected();
     test_a_demand_reserve_at_or_above_the_mshr_count_is_rejected();
     test_every_count_below_one_is_rejected();
     test_every_negative_time_is_rejected();

@@ -107,6 +107,10 @@ struct RunConfig {
     std::int32_t   l2_prefetch_distance = 1;
     bool           l2_prefetch_up       = true;
     bool           l2_prefetch_down     = true;
+    // NextTile's touch filter (plan 2026-11-01): a line triggers only once
+    // the cores touched it >= this many times in the current tile. 0 = off;
+    // read only by next_tile, echoed in the CSV for every policy.
+    std::int32_t   l2_prefetch_min_touches = 3;
     std::int32_t   l2_demand_reserve    = -1;   // resolved from lines_per_burst
 
     PrefetchKind prefetch_policy   = PrefetchKind::None;

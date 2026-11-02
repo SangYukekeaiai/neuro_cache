@@ -212,7 +212,11 @@ const std::vector<std::string>& csv_columns() {
         // the RRPV must say so in its own row, for the reason `layout` and
         // `cin_lo_blocks` are columns: two rows measuring different machines
         // must not look configured the same way.
-        "rrip_bits"};
+        "rrip_bits",
+        // Appended after rrip_bits for the same positional-stability reason:
+        // the NextTile touch filter's knob and its suppression count
+        // (plan 2026-11-01).
+        "l2_prefetch_min_touches", "l2_pf_filtered"};
     return cols;
 }
 
@@ -378,6 +382,8 @@ RunStats::RunStats(const RowIdentity& id, const RunConfig& cfg,
     r.i64("distinct_addr_per_core_tile_p50", distinct_p50);
     r.i64("distinct_addr_per_core_tile_max", distinct_max);
     r.i64("rrip_bits", cfg.rrip_bits);
+    r.i64("l2_prefetch_min_touches", cfg.l2_prefetch_min_touches);
+    r.i64("l2_pf_filtered", es.l2_pf_filtered);
 
     cells_ = r.take();
 }

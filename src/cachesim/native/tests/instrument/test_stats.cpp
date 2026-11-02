@@ -118,9 +118,12 @@ void test_the_column_list_is_pinned() {
     // L2 policy must say so in the row for the same reason `layout` had to.
     // 112 since `rrip_bits` joined it (plan 0907-linesize), appended at the END
     // so every column an existing result set is read by keeps its position.
-    CHECK_EQ(check::ssize(cols), std::int64_t{112});
+    // 114 since the NextTile touch filter joined it (plan 2026-11-01): its
+    // knob `l2_prefetch_min_touches` and its suppression count
+    // `l2_pf_filtered`, appended at the END for the same reason.
+    CHECK_EQ(check::ssize(cols), std::int64_t{114});
     CHECK_TRUE(cols.front() == "run_id");
-    CHECK_TRUE(cols.back() == "rrip_bits");
+    CHECK_TRUE(cols.back() == "l2_pf_filtered");
     bool has_total = false, has_pad = false, has_hidden = false, has_sets = false;
     for (const std::string& c : cols) {
         if (c == "total_cycles")     has_total  = true;
