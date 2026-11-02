@@ -69,6 +69,107 @@ void test_nonpositive_distance_is_refused() {
     CHECK_THROWS(std::invalid_argument, NextTilePrefetcher(-1));
 }
 
+// A context for line (1,1,16,4) of `tile`, whose distance-1 target is line 44.
+PrefetchContext filter_ctx(const KhkwSplitMapper& mapper, const fx::FakeTrace& trace, int tile,
+                           bool retrigger = false) {
+    return PrefetchContext{Level::L2,  CoreId{0}, tile,  BurstIndex{7},
+                           mapper.line_of(Coord{1, 1, 16, 4}), SimTime{0}, mapper, trace,
+                           retrigger};
+}
+
+void test_min_touches_zero_is_the_current_policy() {
+    check::group("next_tile filter: min_touches 0 is the current policy, with zero touches");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    fx::FakeTrace trace(1);
+    const auto tile = trace.add_tile();
+    NextTilePrefetcher pf(1, 0);
+    std::vector<PrefetchTarget> out;
+    pf.on_demand(filter_ctx(mapper, trace, tile), out);
+    CHECK_EQ(check::ssize(out), 1);
+    if (out.size() == 1) CHECK_EQ(out[0].line, LineId{44});
+    CHECK_EQ(pf.filtered_triggers(), 0);
+}
+
+void test_filter_opens_at_min_touches_inclusive() {
+    check::group("next_tile filter: emission opens at count >= min_touches");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    fx::FakeTrace trace(1);
+    const auto tile = trace.add_tile();
+    const PrefetchContext ctx = filter_ctx(mapper, trace, tile);
+    NextTilePrefetcher pf(1, 3);
+    std::vector<PrefetchTarget> out;
+
+    for (int touch = 1; touch <= 2; ++touch) {
+        pf.on_access(ctx.line, tile);
+        pf.on_demand(ctx, out);
+        CHECK_EQ(check::ssize(out), 0);
+        CHECK_EQ(pf.filtered_triggers(), touch);
+    }
+    pf.on_access(ctx.line, tile);  // third touch: >= 3 opens the filter
+    pf.on_demand(ctx, out);
+    CHECK_EQ(check::ssize(out), 1);
+    if (out.size() == 1) CHECK_EQ(out[0].line, LineId{44});
+    CHECK_EQ(pf.filtered_triggers(), 2);
+}
+
+void test_counts_are_per_line() {
+    check::group("next_tile filter: counts are per line");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    fx::FakeTrace trace(1);
+    const auto tile = trace.add_tile();
+    const PrefetchContext hot = filter_ctx(mapper, trace, tile);
+    PrefetchContext cold      = hot;
+    cold.line                 = mapper.line_of(Coord{0, 0, 0, 0});
+    NextTilePrefetcher pf(1, 3);
+    for (int touch = 0; touch < 3; ++touch) pf.on_access(hot.line, tile);
+    pf.on_access(cold.line, tile);
+
+    std::vector<PrefetchTarget> out;
+    pf.on_demand(hot.line == cold.line ? cold : hot, out);
+    CHECK_EQ(check::ssize(out), 1);
+    out.clear();
+    pf.on_demand(cold, out);
+    CHECK_EQ(check::ssize(out), 0);
+}
+
+void test_counts_reset_at_the_tile_boundary() {
+    check::group("next_tile filter: a new tile starts the line's count over");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    fx::FakeTrace trace(1);
+    const auto tile0 = trace.add_tile();
+    const auto tile1 = trace.add_tile();
+    NextTilePrefetcher pf(1, 3);
+    const PrefetchContext in0 = filter_ctx(mapper, trace, tile0);
+    for (int touch = 0; touch < 3; ++touch) pf.on_access(in0.line, tile0);
+
+    std::vector<PrefetchTarget> out;
+    PrefetchContext in1 = filter_ctx(mapper, trace, tile1);
+    pf.on_access(in1.line, tile1);  // first touch of tile1 resets, then counts 1
+    pf.on_demand(in1, out);
+    CHECK_EQ(check::ssize(out), 0);
+    pf.on_access(in1.line, tile1);
+    pf.on_access(in1.line, tile1);
+    pf.on_demand(in1, out);
+    CHECK_EQ(check::ssize(out), 1);
+}
+
+void test_retrigger_is_exempt() {
+    check::group("next_tile filter: a retrigger bypasses the filter at any count");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    fx::FakeTrace trace(1);
+    const auto tile = trace.add_tile();
+    NextTilePrefetcher pf(1, 3);
+    std::vector<PrefetchTarget> out;
+    pf.on_demand(filter_ctx(mapper, trace, tile, /*retrigger=*/true), out);
+    CHECK_EQ(check::ssize(out), 1);
+    CHECK_EQ(pf.filtered_triggers(), 0);
+}
+
+void test_negative_min_touches_is_refused() {
+    check::group("next_tile filter: a negative min_touches is refused");
+    CHECK_THROWS(std::invalid_argument, NextTilePrefetcher(1, -1));
+}
+
 void test_l2_engine_issues_forward_and_drains() {
     check::group("next_tile: L2 issues forward targets and drains all MSHRs");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
@@ -101,6 +202,12 @@ void test_l2_engine_issues_forward_and_drains() {
 int main() {
     test_exact_targets_and_boundaries();
     test_nonpositive_distance_is_refused();
+    test_min_touches_zero_is_the_current_policy();
+    test_filter_opens_at_min_touches_inclusive();
+    test_counts_are_per_line();
+    test_counts_reset_at_the_tile_boundary();
+    test_retrigger_is_exempt();
+    test_negative_min_touches_is_refused();
     test_l2_engine_issues_forward_and_drains();
     return check::summary();
 }

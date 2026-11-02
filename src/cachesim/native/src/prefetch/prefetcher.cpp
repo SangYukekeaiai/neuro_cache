@@ -23,7 +23,7 @@ std::unique_ptr<Prefetcher> make_prefetcher(PrefetchKind kind,
         case PrefetchKind::NextBurst:
             return std::make_unique<NextBurstPrefetcher>(params.distance, n_cores);
         case PrefetchKind::NextTile:
-            return std::make_unique<NextTilePrefetcher>(params.distance);
+            return std::make_unique<NextTilePrefetcher>(params.distance, params.min_touches);
         case PrefetchKind::Neighbour:
             return std::make_unique<NeighbourPrefetcher>(params.axis, params.distance, params.up,
                                                          params.down);

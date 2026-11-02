@@ -43,6 +43,11 @@ struct PrefetchContext {
     SimTime              now;
     const AddressMapper& mapper;
     const TileTrace&     trace;
+    // True only for the L2 retrigger (a demand hit on a still-unused
+    // prefetched line). NextTile's touch filter exempts it: the filter gates
+    // which lines start a prefetch chain, and a started chain sustains itself
+    // through retriggers (the miss-only pathology at engine.cpp's trigger).
+    bool                 retrigger = false;
 };
 
 struct PrefetchTarget {
@@ -60,6 +65,10 @@ struct PrefetchParams {
     Axis         axis     = Axis::CIN;
     bool         up       = true;
     bool         down     = true;
+    // NextTile's touch filter: a line may trigger only once the cores have
+    // touched it at least this many times in the current tile. 0 = off.
+    // Read only by NextTile; every other policy ignores it.
+    std::int32_t min_touches = 0;
 };
 
 class Prefetcher {
@@ -79,6 +88,16 @@ public:
     // partial issue, including one stopped by N16's budget, deliberately has
     // no completion callback.
     virtual void on_issued(CoreId, BurstIndex) {}
+
+    // One demand touch of `line` in `tile`, as the CORES see it: the engine
+    // calls this on every demand L1 probe (the same guard as `l1_accesses`),
+    // so L1 hits count and an L2 eviction cannot erase a line's evidence of
+    // reuse. Wired for the L2 policy only; the default is a no-op.
+    virtual void on_access(LineId, std::int32_t /*tile*/) {}
+
+    // How many on_demand triggers a policy's own filter suppressed, for the
+    // run's close-out (`l2_pf_filtered`). 0 for every unfiltered policy.
+    virtual std::int64_t filtered_triggers() const { return 0; }
 
 protected:
     Prefetcher()                             = default;
