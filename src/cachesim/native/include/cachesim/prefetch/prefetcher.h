@@ -92,8 +92,10 @@ public:
     // One demand touch of `line` in `tile`, as the CORES see it: the engine
     // calls this on every demand L1 probe (the same guard as `l1_accesses`),
     // so L1 hits count and an L2 eviction cannot erase a line's evidence of
-    // reuse. Wired for the L2 policy only; the default is a no-op.
-    virtual void on_access(LineId, std::int32_t /*tile*/) {}
+    // reuse. Returns true when this touch fires the policy's trigger (once
+    // per line and tile); the base is a no-op that never fires. Wired for
+    // the L2 policy only.
+    virtual bool on_access(LineId, std::int32_t /*tile*/) { return false; }
 
     // How many on_demand triggers a policy's own filter suppressed, for the
     // run's close-out (`l2_pf_filtered`). 0 for every unfiltered policy.

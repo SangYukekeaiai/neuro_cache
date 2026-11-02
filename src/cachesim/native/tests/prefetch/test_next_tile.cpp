@@ -165,6 +165,84 @@ void test_retrigger_is_exempt() {
     CHECK_EQ(pf.filtered_triggers(), 0);
 }
 
+void test_on_access_fires_exactly_at_the_threshold() {
+    check::group("next_tile trigger: on_access returns true only on the min_touches-th touch");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    fx::FakeTrace trace(1);
+    const auto tile = trace.add_tile();
+    const LineId line = mapper.line_of(Coord{1, 1, 16, 4});
+    NextTilePrefetcher pf(1, 3);
+    const bool expected[5] = {false, false, true, false, false};
+    for (int touch = 0; touch < 5; ++touch) CHECK_EQ(pf.on_access(line, tile), expected[touch]);
+}
+
+void test_on_access_fires_per_line() {
+    check::group("next_tile trigger: interleaved lines each fire on their own 3rd touch");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    fx::FakeTrace trace(1);
+    const auto tile = trace.add_tile();
+    const LineId a = mapper.line_of(Coord{1, 1, 16, 4});
+    const LineId b = mapper.line_of(Coord{0, 0, 0, 0});
+    NextTilePrefetcher pf(1, 3);
+    for (int touch = 0; touch < 2; ++touch) {
+        CHECK_TRUE(!pf.on_access(a, tile));
+        CHECK_TRUE(!pf.on_access(b, tile));
+    }
+    CHECK_TRUE(pf.on_access(a, tile));
+    CHECK_TRUE(pf.on_access(b, tile));
+    CHECK_TRUE(!pf.on_access(a, tile));
+    CHECK_TRUE(!pf.on_access(b, tile));
+}
+
+void test_on_access_rearms_at_the_tile_boundary() {
+    check::group("next_tile trigger: a new tile re-arms the line");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    fx::FakeTrace trace(1);
+    const auto tile0 = trace.add_tile();
+    const auto tile1 = trace.add_tile();
+    const LineId line = mapper.line_of(Coord{1, 1, 16, 4});
+    NextTilePrefetcher pf(1, 3);
+    pf.on_access(line, tile0);
+    pf.on_access(line, tile0);
+    CHECK_TRUE(pf.on_access(line, tile0));
+    CHECK_TRUE(!pf.on_access(line, tile1));
+    CHECK_TRUE(!pf.on_access(line, tile1));
+    CHECK_TRUE(pf.on_access(line, tile1));
+}
+
+void test_min_touches_zero_and_one_fire_on_first_touch() {
+    check::group("next_tile trigger: min_touches 0 and 1 both fire on the first touch");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    fx::FakeTrace trace(1);
+    const auto tile = trace.add_tile();
+    const LineId line = mapper.line_of(Coord{1, 1, 16, 4});
+    for (std::int32_t mt = 0; mt <= 1; ++mt) {
+        NextTilePrefetcher pf(1, mt);
+        CHECK_TRUE(pf.on_access(line, tile));
+        CHECK_TRUE(!pf.on_access(line, tile));
+    }
+}
+
+void test_on_demand_at_fire_time_emits_targets() {
+    check::group("next_tile trigger: on_demand at fire time passes the filter and emits");
+    KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
+    fx::FakeTrace trace(1);
+    const auto tile = trace.add_tile();
+    const PrefetchContext ctx = filter_ctx(mapper, trace, tile);
+    NextTilePrefetcher pf(1, 3);
+    pf.on_access(ctx.line, tile);
+    pf.on_access(ctx.line, tile);
+    CHECK_TRUE(pf.on_access(ctx.line, tile));
+    std::vector<PrefetchTarget> out;
+    pf.on_demand(ctx, out);
+    CHECK_EQ(check::ssize(out), 1);
+    if (out.size() == 1) {
+        CHECK_EQ(out[0].line, LineId{44});
+        CHECK_EQ(out[0].burst, ctx.k);
+    }
+    CHECK_EQ(pf.filtered_triggers(), 0);
+}
+
 void test_negative_min_touches_is_refused() {
     check::group("next_tile filter: a negative min_touches is refused");
     CHECK_THROWS(std::invalid_argument, NextTilePrefetcher(1, -1));
@@ -290,6 +368,11 @@ int main() {
     test_counts_are_per_line();
     test_counts_reset_at_the_tile_boundary();
     test_retrigger_is_exempt();
+    test_on_access_fires_exactly_at_the_threshold();
+    test_on_access_fires_per_line();
+    test_on_access_rearms_at_the_tile_boundary();
+    test_min_touches_zero_and_one_fire_on_first_touch();
+    test_on_demand_at_fire_time_emits_targets();
     test_negative_min_touches_is_refused();
     test_l2_engine_issues_forward_and_drains();
     test_l1_hits_feed_the_l2_touch_counter();

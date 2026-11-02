@@ -23,7 +23,10 @@ public:
     explicit NextTilePrefetcher(std::int32_t distance, std::int32_t min_touches = 0);
 
     void on_demand(const PrefetchContext&, std::vector<PrefetchTarget>& out) override;
-    void on_access(LineId line, std::int32_t tile) override;
+    // Returns true exactly when the post-increment count for (line, tile)
+    // equals max(min_touches, 1): once per line per tile, re-armed by the
+    // lazy reset at a tile change.
+    bool on_access(LineId line, std::int32_t tile) override;
     std::int64_t filtered_triggers() const override { return filtered_; }
 
 private:

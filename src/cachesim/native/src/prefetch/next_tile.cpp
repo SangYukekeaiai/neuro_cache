@@ -1,5 +1,6 @@
 #include "cachesim/prefetch/next_tile.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 
@@ -17,13 +18,14 @@ NextTilePrefetcher::NextTilePrefetcher(std::int32_t distance, std::int32_t min_t
     }
 }
 
-void NextTilePrefetcher::on_access(LineId line, std::int32_t tile) {
+bool NextTilePrefetcher::on_access(LineId line, std::int32_t tile) {
     TouchRecord& rec = touches_[line.get()];
     if (rec.tile != tile) {
         rec.tile  = tile;
         rec.count = 0;
     }
     ++rec.count;
+    return rec.count == std::max(min_touches_, std::int32_t{1});
 }
 
 void NextTilePrefetcher::on_demand(const PrefetchContext& ctx,
