@@ -48,7 +48,7 @@ def test_summary_is_geomean_per_config_in_first_seen_order():
 
 
 def write_bench(root, layers=(("layer_01_a", [4, 5, 8, 4, 4]),), npy=True, params=None):
-    """input_trace/<bench>/t/ under `root`: a meta.json and, if `npy`, one uint8 .npy
+    """examples/input_trace/<bench>/t/ under `root`: a meta.json and, if `npy`, one uint8 .npy
     per layer. Every layer is a 3x3 stride-1 conv unless `params` says otherwise."""
     d = root / "loas" / "t"
     d.mkdir(parents=True)
@@ -202,7 +202,7 @@ def test_check_bench_lists_what_an_empty_dir_lacks(tmp_path):
     (tmp_path / "nobench").mkdir()
     problems, _ = pipeline.check_bench(str(tmp_path / "nobench"))
     assert any("no trace dirs" in p for p in problems)
-    assert any("configs/arch/nobench.yaml" in p for p in problems)
+    assert any("examples/arch/nobench.yaml" in p for p in problems)
     assert any("ARCH_NATIVE_BRIDGES" in p for p in problems)
 
 

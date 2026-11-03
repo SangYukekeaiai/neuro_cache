@@ -34,8 +34,8 @@ from lays.nocsim.schedule.steps import StepInfo
 from lays.parsers.layer import SNNProb
 from lays.weight_trace_gen.trace import build_workload_from_trace
 
-SCHED = ROOT / "configs/schedules/loas"
-TRACES = ROOT / "input_trace/loas"
+SCHED = ROOT / "examples/schedules/loas"
+TRACES = ROOT / "examples/input_trace/loas"
 
 CASES = [
     ("V8",  SCHED / "vgg16_T4_n5/layer_08_features_27.json",        9 * 512 * 512),

@@ -18,7 +18,7 @@ from lays.weight_trace_gen.weight_trace import (CoreEntry, LayerWeightTrace,  # 
                                            TickEntry, TileWeightTrace)
 
 FIXED_HEADER_BYTES = 56
-EXAMPLES = REPO / "src" / "lays" / "cachesim" / "examples"
+EXAMPLES = REPO / "examples" / "cachesim"
 
 
 def tiny_trace():

@@ -69,16 +69,16 @@ PY
 
 # `expect` is the whole slice, `expect1` the one-tile prefix.
 check() {  # fixture expect expect1
-    "$py" "$root/src/lays/cachesim/examples/to_stream.py" \
-        "$root/src/lays/cachesim/examples/$1.json" 2>/dev/null > "$tmp/$1.wcts"
+    "$py" "$root/examples/cachesim/to_stream.py" \
+        "$root/examples/cachesim/$1.json" 2>/dev/null > "$tmp/$1.wcts"
     "$bin" --config "$tmp/unbounded.json" --trace - --header \
         < "$tmp/$1.wcts" 2>/dev/null > "$tmp/$1.csv"
     "$py" "$tmp/check_v1.py" "$tmp/$1.csv" "$1"
     grep -q ",$2,$2,0," "$tmp/$1.csv" ||
         { echo "$1: expected total_cycles $2" >&2; exit 1; }
 
-    "$py" "$root/src/lays/cachesim/examples/to_stream.py" \
-        "$root/src/lays/cachesim/examples/$1.json" 1 2>/dev/null > "$tmp/$1.1.wcts"
+    "$py" "$root/examples/cachesim/to_stream.py" \
+        "$root/examples/cachesim/$1.json" 1 2>/dev/null > "$tmp/$1.1.wcts"
     "$bin" --config "$tmp/unbounded.json" --trace - --header \
         < "$tmp/$1.1.wcts" 2>/dev/null > "$tmp/$1.1.csv"
     "$py" "$tmp/check_v1.py" "$tmp/$1.1.csv" "$1 tile 0 only"

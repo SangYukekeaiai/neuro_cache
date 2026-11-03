@@ -2,18 +2,18 @@
 """End to end: nocsim and wcache on the same layers and samples of one
 benchmark, joined into one table.
 
-Steps: check the inputs under input_trace/<bench>/; take the tracked schedules
-from configs/schedules, solving the missing ones with `python -m lays.scheduler
+Steps: check the inputs under examples/input_trace/<bench>/; take the tracked schedules
+from examples/schedules, solving the missing ones with `python -m lays.scheduler
 solve-trace` into <out>/schedules; build the native tools; `python -m
 lays.weight_trace_gen gen` the step cycles and the WCTS streams; run `python -m
 lays.nocsim --simulate` and `python -m lays.cachesim sweep` over a config grid (default:
-the khkw grid of configs/cache/, or --grid, a JSON array of wcache configs);
+the khkw grid of examples/cache/, or --grid, a JSON array of wcache configs);
 write <out>/results.csv (one row per layer, sample and config) and
 <out>/summary.md (geomean speedup per config, and every command run).
 
   python scripts/pipeline.py [--bench loas] [--layers all | V8 R9 ... | DIR/LAYER] [--jobs N]
   python scripts/pipeline.py --verify-baseline [DIR]   check <out>/results.csv against DIR
-  python scripts/pipeline.py --check-bench BENCH       check input_trace/BENCH (or a directory)
+  python scripts/pipeline.py --check-bench BENCH       check examples/input_trace/BENCH (or a directory)
                                                        against the contract in docs/REPRODUCE.md
 """
 import argparse
@@ -37,12 +37,12 @@ from lays.weight_trace_gen import ARCH_NATIVE_BRIDGES
 from lays.weight_trace_gen.trace import exclusion_reason, layer_params, valid_layer_names
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-# One directory per benchmark: input_trace/<bench>/<trace_dir>/{meta.json,<layer>.npy}.
-INPUT_TRACE = ROOT / "input_trace"
-# Tracked schedules: configs/schedules/<bench>/<trace_dir>/<layer>.json.
-SCHEDULES = ROOT / "configs/schedules"
+# One directory per benchmark: examples/input_trace/<bench>/<trace_dir>/{meta.json,<layer>.npy}.
+INPUT_TRACE = ROOT / "examples/input_trace"
+# Tracked schedules: examples/schedules/<bench>/<trace_dir>/<layer>.json.
+SCHEDULES = ROOT / "examples/schedules"
 # The nocsim arch each benchmark is simulated on; only loas has one in the repo.
-NOCSIM_ARCH = {"loas": ROOT / "configs/arch/loas_inst16_node32kb.yaml"}
+NOCSIM_ARCH = {"loas": ROOT / "examples/arch/loas_inst16_node32kb.yaml"}
 # The layers run by default: the four with tracked schedules.
 TAGS = ["V8", "V9", "R9", "R16"]
 # (tag prefix, trace dir) of the workloads that have layer tags.
@@ -104,7 +104,7 @@ def run_all(cmds, record, jobs, capture=False):
 
 def tags(bench="loas"):
     """(tag, trace_dir, layer) for every valid layer of the `_n5` workloads
-    present under input_trace/<bench>/; the tag is V<n> or R<n>."""
+    present under examples/input_trace/<bench>/; the tag is V<n> or R<n>."""
     out = []
     for prefix, trace_dir in WORKLOADS:
         path = INPUT_TRACE / bench / trace_dir / "meta.json"
@@ -116,7 +116,7 @@ def tags(bench="loas"):
 
 def resolve_layers(bench, specs):
     """(trace_dir, layer) for each spec: `trace_dir/layer`, a tag such as V8
-    of a workload under input_trace/<bench>/, or `all` for every tag."""
+    of a workload under examples/input_trace/<bench>/, or `all` for every tag."""
     known = None
     out = []
     for s in specs:
@@ -169,15 +169,15 @@ def check_inputs(bench, layers, samples):
 
 def check_bench(spec):
     """(problems, notes) for a benchmark directory against the input-trace
-    contract (docs/REPRODUCE.md): `spec` is a name under input_trace/ or a
+    contract (docs/REPRODUCE.md): `spec` is a name under examples/input_trace/ or a
     directory path. Empty problems means every trace dir, meta.json and .npy
     is complete and the code knows the benchmark."""
     import numpy as np
     root = pathlib.Path(spec) if os.sep in spec or pathlib.Path(spec).is_dir() else INPUT_TRACE / spec
     bench = root.name
     problems, notes = [], []
-    for what, path in (("arch config", ROOT / "configs/arch" / f"{bench}.yaml"),
-                       ("dataflow config", ROOT / "configs/node_mapspace" / f"{bench}.yaml"),
+    for what, path in (("arch config", ROOT / "examples/arch" / f"{bench}.yaml"),
+                       ("dataflow config", ROOT / "examples/node_mapspace" / f"{bench}.yaml"),
                        ("native model", ROOT / "src/lays/weight_trace_gen" / bench / "Makefile")):
         if not path.is_file():
             problems.append(f"no {what} for bench {bench!r}: missing {path.relative_to(ROOT)}")
@@ -463,7 +463,7 @@ def main():
     p.add_argument("--verify-baseline", nargs="?", const=str(ROOT / ".baseline/after"),
                    metavar="DIR", help="only compare <out>/results.csv with DIR's reference CSVs")
     p.add_argument("--check-bench", metavar="BENCH",
-                   help="only check input_trace/BENCH (or the directory BENCH) against the input contract")
+                   help="only check examples/input_trace/BENCH (or the directory BENCH) against the input contract")
     a = p.parse_args()
     if a.check_bench:
         problems, notes = check_bench(a.check_bench)

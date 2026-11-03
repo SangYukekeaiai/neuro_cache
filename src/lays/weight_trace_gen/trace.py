@@ -1,7 +1,7 @@
 """Loads real captured spike traces and builds matching workload problem
 dicts directly from their metadata.
 
-input_trace/loas/<workload>/ holds one meta.json plus one <layer_name>.npy
+examples/input_trace/loas/<workload>/ holds one meta.json plus one <layer_name>.npy
 per captured layer, binary uint8 (0/1 spikes). meta.json's "layers" maps
 layer name -> real input-tensor shape [T, B, Cin, Hin, Win]; its
 "layer_params" maps the same names -> {"cout", "kernel", "stride"} of that
@@ -37,7 +37,7 @@ PAD = 1       # "same" padding for a 3x3/stride-1 conv (the standard VGG/
 
 
 def load_layer_trace(trace_dir: pathlib.Path, layer_name: str, mmap: bool = False) -> np.ndarray:
-    """Load one captured layer's trace, e.g. trace_dir=input_trace/loas/vgg16_T4_B1.
+    """Load one captured layer's trace, e.g. trace_dir=examples/input_trace/loas/vgg16_T4_B1.
 
     Args:
         trace_dir: directory containing meta.json + <layer_name>.npy.

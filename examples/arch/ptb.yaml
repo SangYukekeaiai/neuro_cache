@@ -1,5 +1,5 @@
 arch:
-  # RECONSTRUCTED 2026-07-20: the original configs/arch/ptb.yaml was lost
+  # RECONSTRUCTED 2026-07-20: the original ptb.yaml was lost
   # from disk (it was always gitignore'd, never committed). Rebuilt from
   # the ptb pilot log's field-by-field documentation of every value below;
   # not verified byte-identical to the original file. If a fresh solve

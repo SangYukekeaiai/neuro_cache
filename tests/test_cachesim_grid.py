@@ -1,4 +1,4 @@
-"""python -m lays.cachesim grid: the khkw grid built from configs/cache/*.json writes
+"""python -m lays.cachesim grid: the khkw grid built from examples/cache/*.json writes
 the files the demo writes."""
 import pathlib
 import subprocess

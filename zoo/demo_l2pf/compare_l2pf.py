@@ -10,10 +10,13 @@ import pathlib
 import sys
 import time
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
+ROOT = pathlib.Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+SCRIPTS = ROOT / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
 
 from lays.cachesim.grid import full_grid, load_sweep, write_grid  # noqa: E402
 from lays.util import data_root  # noqa: E402
@@ -280,8 +283,8 @@ def main():
     parser.add_argument("--sample-count", type=int, default=5)
     parser.add_argument("--jobs", type=int, default=pipeline.DEFAULT_JOBS)
     parser.add_argument("--out", help="default $NEURO_CACHE_DATA/demo_l2pf/<bench>")
-    parser.add_argument("--grid", default=str(ROOT / "configs/cache/l2pf_demo.json"),
-                        help="sweep JSON (default: configs/cache/l2pf_demo.json)")
+    parser.add_argument("--grid", default=str(pathlib.Path(__file__).with_name("l2pf_demo.json")),
+                        help="sweep JSON (default: zoo/demo_l2pf/l2pf_demo.json)")
     args = parser.parse_args()
     if args.sample_count < 1 or args.jobs < 1:
         parser.error("--sample-count and --jobs must be at least 1")

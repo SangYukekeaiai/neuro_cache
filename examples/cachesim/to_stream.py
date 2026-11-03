@@ -16,8 +16,8 @@ import pathlib
 import sys
 import types
 
-# src/, four levels up from this file, holds the lays package.
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
+# The repo's src/ directory holds the lays package.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "src"))
 
 try:
     import lays.weight_trace_gen.trace  # noqa: F401

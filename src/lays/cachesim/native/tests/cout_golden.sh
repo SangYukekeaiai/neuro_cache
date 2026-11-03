@@ -13,8 +13,8 @@ sweep=$native/build/fixture/cachesim_sweep
 py=${PYTHON:-python3}
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
-"$py" "$root/src/lays/cachesim/examples/to_stream.py" \
-    "$root/src/lays/cachesim/examples/loas_vgg16_layer01_v2.json" > "$tmp/fixture.wcts"
+"$py" "$root/examples/cachesim/to_stream.py" \
+    "$root/examples/cachesim/loas_vgg16_layer01_v2.json" > "$tmp/fixture.wcts"
 
 # Four runs: L1 2048 and 8192 bytes, each without and with next_burst prefetch.
 "$py" - > "$tmp/grid.json" <<'PY'

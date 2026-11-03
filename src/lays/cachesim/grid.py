@@ -1,12 +1,12 @@
-"""The khkw cache grid: the base config in configs/cache/base.json crossed with
-the sweep axes in configs/cache/khkw_sweep.json, and the grid files
+"""The khkw cache grid: the base config in examples/cache/base.json crossed with
+the sweep axes in examples/cache/khkw_sweep.json, and the grid files
 cachesim_sweep reads."""
 import json
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
-BASE_JSON = ROOT / "configs/cache/base.json"
-SWEEP_JSON = ROOT / "configs/cache/khkw_sweep.json"
+BASE_JSON = ROOT / "examples/cache/base.json"
+SWEEP_JSON = ROOT / "examples/cache/khkw_sweep.json"
 
 
 def load_base(path=BASE_JSON):

@@ -8,7 +8,7 @@ import pytest
 from lays.weight_trace_gen.trace import (build_workload_from_trace, exclusion_reason,
                                     layer_params, valid_layer_names)
 
-INPUT_TRACE = pathlib.Path(__file__).resolve().parents[1] / "input_trace/loas"
+INPUT_TRACE = pathlib.Path(__file__).resolve().parents[1] / "examples/input_trace/loas"
 
 
 def meta(**params):

@@ -11,8 +11,8 @@ bin=$native/build/fixture/cachesim_run
 py=${PYTHON:-python3}
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
-"$py" "$root/src/lays/cachesim/examples/to_stream.py" \
-    "$root/src/lays/cachesim/examples/loas_vgg16_layer01_v2.json" > "$tmp/fixture.wcts"
+"$py" "$root/examples/cachesim/to_stream.py" \
+    "$root/examples/cachesim/loas_vgg16_layer01_v2.json" > "$tmp/fixture.wcts"
 
 cat > "$tmp/cfg.json" <<'JSON'
 {"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
@@ -130,8 +130,8 @@ test "$(wc -l < "$tmp/hist.csv")" -eq 17   # 1 header + 2 tiles * 8 cores
 # dram_bytes moves: measured on V8 at 4.32 MB under block_pack against 6.40 MB
 # under split_cin. Sizing this L2 down until the layer stopped fitting would
 # turn this check red without anything being wrong, so it stays large.
-"$py" "$root/src/lays/cachesim/examples/to_stream.py" \
-    "$root/src/lays/cachesim/examples/ptb_resnet19_layer01_v2.json" > "$tmp/reuse.wcts"
+"$py" "$root/examples/cachesim/to_stream.py" \
+    "$root/examples/cachesim/ptb_resnet19_layer01_v2.json" > "$tmp/reuse.wcts"
 for layout in block_pack split_cin; do
     cat > "$tmp/lay.json" <<JSON
 {"cin_block": 1, "cout_block": 16, "weight_bytes": 1,

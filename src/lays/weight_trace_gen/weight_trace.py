@@ -193,13 +193,13 @@ def reconstruct_samples(
 
 
 _CANONICAL_N = 100
-_CANONICAL_SEED = 0  # the seed configs/sampling/sample_indices.json was generated with
+_CANONICAL_SEED = 0  # the seed the cached sample-index list was generated with
 
 
 def sample_indices(n: int = 100, seed: int = 0, n_total: int = 10000) -> List[int]:
     """A fixed, reproducible n-sample subset of range(n_total), drawn live
     via random.Random -- no stored/hardcoded index list (replaces the now-
-    deleted configs/sampling/sample_indices.json and the old
+    deleted sample-index JSON file and the old
     canonical_sample_indices()/random_sample_indices() pair).
 
     `sample_indices()` (n=100, seed=0) is THE canonical 100-sample subset

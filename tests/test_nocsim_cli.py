@@ -36,9 +36,9 @@ def test_cli_bad_weight_trace_exits_2(tmp_path, capsys):
     with gzip.open(path, "wt") as fh:
         json.dump({"format": "weight_trace_v1", "tiles": []}, fh)
     rc = main([
-        "--schedule", str(REPO / "configs/schedules/loas/vgg16_T4_n5/layer_08_features_27.json"),
-        "--layer", str(REPO / "configs/workloads/sample_snn_layer.yaml"),
-        "--arch", str(REPO / "configs/arch/loas_inst16_node32kb.yaml"),
+        "--schedule", str(REPO / "examples/schedules/loas/vgg16_T4_n5/layer_08_features_27.json"),
+        "--layer", str(REPO / "examples/workloads/sample_snn_layer.yaml"),
+        "--arch", str(REPO / "examples/arch/loas_inst16_node32kb.yaml"),
         "--out", str(tmp_path / "out.csv"),
         "--weight-trace", str(path),
     ])

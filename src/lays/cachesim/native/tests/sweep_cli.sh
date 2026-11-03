@@ -15,8 +15,8 @@ run=$native/build/fixture/cachesim_run
 py=${PYTHON:-python3}
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
-"$py" "$root/src/lays/cachesim/examples/to_stream.py" \
-    "$root/src/lays/cachesim/examples/loas_vgg16_layer01_v2.json" > "$tmp/fixture.wcts"
+"$py" "$root/examples/cachesim/to_stream.py" \
+    "$root/examples/cachesim/loas_vgg16_layer01_v2.json" > "$tmp/fixture.wcts"
 
 # A four-point grid: two L1 sizes crossed with two prefetch distances. The
 # first declared axis varies slowest, so the rows come out
@@ -226,8 +226,8 @@ PADPY
 # uses: with a cache large enough to hold the layer nothing is ever evicted, so
 # an optimal replacement policy and LRU give the identical row and the check
 # would pass on a broken oracle.
-"$py" "$root/src/lays/cachesim/examples/to_stream.py" \
-    "$root/src/lays/cachesim/examples/ptb_resnet19_layer01_v2.json" > "$tmp/reuse.wcts"
+"$py" "$root/examples/cachesim/to_stream.py" \
+    "$root/examples/cachesim/ptb_resnet19_layer01_v2.json" > "$tmp/reuse.wcts"
 cat > "$tmp/tight.json" <<'JSON'
 {"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
  "l1_size_bytes": 256, "l1_assoc": 2, "l2_size_bytes": 4096, "l2_assoc": 4}

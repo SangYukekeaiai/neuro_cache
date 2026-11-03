@@ -55,8 +55,8 @@ from lays.nocsim.schedule.decode import schedule_from_strategy
 
 # The in-repo traces are a 5-sample subset cut from the full captures
 # on Delta; pass --trace-root to use a full capture (see
-# input_trace/README.md).
-DEFAULT_TRACE_ROOT = ROOT / "input_trace/loas"
+# examples/input_trace/README.md).
+DEFAULT_TRACE_ROOT = ROOT / "examples/input_trace/loas"
 DEFAULT_TRACE_DIRS = ["resnet19_T4_n5", "vgg16_T4_n5"]
 
 # --all-layers only: chunk size for regenerate_layer's inner loop (bounds
@@ -363,7 +363,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p.add_argument("--trace-dirs", nargs="+", default=DEFAULT_TRACE_DIRS,
                    help="--all-layers mode only (default: both).")
     p.add_argument("--trace-root", default=str(DEFAULT_TRACE_ROOT))
-    p.add_argument("--schedule-cache", default=str(ROOT / "configs/schedules"))
+    p.add_argument("--schedule-cache", default=str(ROOT / "examples/schedules"))
     p.add_argument("--out-dir", default=str(ROOT / "outputs/weight_traces"))
     p.add_argument("--combo-tag", default="",
                    help="Optional path segment inserted as <out-dir>/<arch>/<combo-tag>/<trace-dir>/<layer>/ "

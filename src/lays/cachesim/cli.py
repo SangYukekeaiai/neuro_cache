@@ -1,6 +1,6 @@
 """python -m lays.cachesim {grid, sweep, run}.
 
-  grid   write the khkw config grid (configs/cache/base.json x khkw_sweep.json)
+  grid   write the khkw config grid (examples/cache/base.json x khkw_sweep.json)
          as one JSON file per cin_block and print their paths
   sweep  run the native cachesim_sweep with every later argument passed as is
   run    run the native cachesim_run the same way

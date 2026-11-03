@@ -5,7 +5,7 @@ trace, then derives the pipeline cycle count and the ordered weight-address
 stream / weight_access_count from it, in PTBGen.h (a port of
 the former pure-Python reconstruct/cycles/address modules).
 Standalone-verified against a real captured LoAS trace
-(input_trace/loas/) used purely as sample spike data, and against hand-
+(examples/input_trace/loas/) used purely as sample spike data, and against hand-
 built examples for the stSAP compression and pipeline-latency formulas
 that the (currently T=4) real trace is too short to exercise fully.
 

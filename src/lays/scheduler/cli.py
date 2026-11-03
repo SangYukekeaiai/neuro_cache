@@ -19,9 +19,9 @@ from lays.weight_trace_gen import ARCH_NATIVE_BRIDGES
 # skip-cached path of solve-trace run without a Gurobi license.
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
-DEFAULT_LAYER = "configs/workloads/sample_snn_layer.yaml"
-DEFAULT_ARCH = "configs/arch/spinalflow.yaml"
-DEFAULT_DATAFLOW = "configs/node_mapspace/spinalflow.yaml"
+DEFAULT_LAYER = "examples/workloads/sample_snn_layer.yaml"
+DEFAULT_ARCH = "examples/arch/spinalflow.yaml"
+DEFAULT_DATAFLOW = "examples/node_mapspace/spinalflow.yaml"
 DEFAULT_OUT = "outputs/schedule.json"
 
 
@@ -103,17 +103,17 @@ def _build_parser() -> argparse.ArgumentParser:
     st.add_argument("--arch", required=True, choices=sorted(ARCH_NATIVE_BRIDGES))
     st.add_argument(
         "--arch-yaml", default=None,
-        help="hardware configuration (default: configs/arch/loas_inst16_node32kb.yaml "
-             "for loas, else configs/arch/<arch>.yaml)",
+        help="hardware configuration (default: examples/arch/loas_inst16_node32kb.yaml "
+             "for loas, else examples/arch/<arch>.yaml)",
     )
     st.add_argument(
         "--node-mapspace", default=None,
-        help="node mapspace YAML (default: configs/node_mapspace/<arch>.yaml)",
+        help="node mapspace YAML (default: examples/node_mapspace/<arch>.yaml)",
     )
     # The in-repo traces are a 5-sample subset cut from the full captures
     # on Delta; pass --trace-root to use a full capture (see
-    # input_trace/README.md).
-    st.add_argument("--trace-root", default=str(ROOT / "input_trace/loas"))
+    # examples/input_trace/README.md).
+    st.add_argument("--trace-root", default=str(ROOT / "examples/input_trace/loas"))
     st.add_argument("--trace-dirs", nargs="+", default=["vgg16_T4_n5", "resnet19_T4_n5"])
     st.add_argument(
         "--layers", nargs="+", default=None,
@@ -184,9 +184,9 @@ def _default_arch_yaml(args: argparse.Namespace) -> pathlib.Path:
     if args.arch_yaml:
         return pathlib.Path(args.arch_yaml)
     # The 16-node loas arch the tracked schedules were solved with;
-    # configs/arch/loas.yaml is the single-node one.
+    # examples/arch/loas.yaml is the single-node one.
     name = "loas_inst16_node32kb" if args.arch == "loas" else args.arch
-    return ROOT / "configs/arch" / f"{name}.yaml"
+    return ROOT / "examples/arch" / f"{name}.yaml"
 
 
 def _run_solve_trace(args: argparse.Namespace) -> int:
@@ -195,7 +195,7 @@ def _run_solve_trace(args: argparse.Namespace) -> int:
 
     arch = args.arch
     arch_yaml = str(_default_arch_yaml(args))
-    node_mapspace = args.node_mapspace or str(ROOT / f"configs/node_mapspace/{arch}.yaml")
+    node_mapspace = args.node_mapspace or str(ROOT / f"examples/node_mapspace/{arch}.yaml")
     trace_root = pathlib.Path(args.trace_root)
     cache_dir = pathlib.Path(args.cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)

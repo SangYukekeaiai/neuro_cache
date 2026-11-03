@@ -9,7 +9,7 @@ the former pure-Python reconstruct/cycles/address modules).
 Standalone-verified against the pilot's own
 hand-built worked example (reproducing Wei et al.'s own Fig. 1(d)/Fig. 2
 canonical 6-row/4-column illustration exactly) and against a real
-captured LoAS trace (input_trace/loas/) used purely as sample spike data.
+captured LoAS trace (examples/input_trace/loas/) used purely as sample spike data.
 
 This deployment uses: tile size m=ho_n*wo_n*t_n with full-T residency (HO=16, WO=16), k=16 (KH=4, KW=4,
 CIN barred -- one input channel per node visit), n=128 (COUT), per Wei,
@@ -22,6 +22,6 @@ unlike GustavSNN's HO, neither HO nor WO is a spatial (parallel-PE) axis:
 Prosperity's row-wise dataflow (Section V-E) processes the tile's rows
 strictly SEQUENTIALLY through one shared 128-wide PE array (parallel only
 across COUT/N), so HO and WO are both plain capped, non-spatial
-node_dim_capacity entries -- see configs/node_mapspace/prosperity.yaml for
+node_dim_capacity entries -- see examples/node_mapspace/prosperity.yaml for
 the mapping.
 """

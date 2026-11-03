@@ -162,8 +162,8 @@ def test_stream_is_byte_identical_to_snapshot(tmp_path):
     with open(out, "wb") as fh:
         r = subprocess.run(
             [sys.executable, "-m", "lays.weight_trace_gen", "gen", "--arch", "loas",
-             "--trace-root", "input_trace/loas", "--trace-dir", "resnet19_T4_n5",
-             "--layer", "layer_09_layer2_0_conv2", "--schedule-cache", "configs/schedules",
+             "--trace-root", "examples/input_trace/loas", "--trace-dir", "resnet19_T4_n5",
+             "--layer", "layer_09_layer2_0_conv2", "--schedule-cache", "examples/schedules",
              "--sample-start", "0", "--sample-count", "1", "--stream"],
             cwd=REPO, stdout=fh, stderr=subprocess.PIPE, text=False)
     assert r.returncode == 0, r.stderr.decode()
