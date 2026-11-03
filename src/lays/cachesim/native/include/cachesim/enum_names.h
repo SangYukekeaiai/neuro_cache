@@ -61,8 +61,8 @@ inline bool parse(const std::string& text, PolicyKind& out) {
 inline const char* name_of(PrefetchKind k) {
     switch (k) {
         case PrefetchKind::None:      return "none";
-        case PrefetchKind::NextBurst: return "next_burst";
-        case PrefetchKind::NextTile:  return "next_tile";
+        case PrefetchKind::NextAccess: return "next_access";
+        case PrefetchKind::DistanceAware:  return "distance_aware";
         case PrefetchKind::Neighbour: return "neighbour";
     }
     return kUnknownEnumName;
@@ -70,8 +70,8 @@ inline const char* name_of(PrefetchKind k) {
 
 inline bool parse(const std::string& text, PrefetchKind& out) {
     if (text == "none") out = PrefetchKind::None;
-    else if (text == "next_burst") out = PrefetchKind::NextBurst;
-    else if (text == "next_tile") out = PrefetchKind::NextTile;
+    else if (text == "next_access") out = PrefetchKind::NextAccess;
+    else if (text == "distance_aware") out = PrefetchKind::DistanceAware;
     else if (text == "neighbour" || text == "neighbor") out = PrefetchKind::Neighbour;
     else return false;
     return true;

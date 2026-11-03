@@ -23,14 +23,14 @@ tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 # (2048,2) (2048,4) (8192,2) (8192,4).
 #
 # The plan's own axis is `prefetch_distance` and it is swept here. Distance 0 is
-# not one of the points: `prefetch_policy = next_burst` with distance 0 is
+# not one of the points: `prefetch_policy = next_access` with distance 0 is
 # refused at config load rather than silently run as `none`, and the no-prefetch
 # case is what tests/run_cli.sh already covers.
 cat > "$tmp/grid.json" <<'JSON'
 {"base": {"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
           "l1_assoc": 8, "l2_size_bytes": 524288, "l2_assoc": 16,
           "l1_latency": 0, "l2_latency": 10, "l2_miss_latency": 100,
-          "prefetch_policy": "next_burst"},
+          "prefetch_policy": "next_access"},
  "axes": {"l1_size_bytes": [2048, 8192],
           "prefetch_distance": [2, 4]}}
 JSON
@@ -80,7 +80,7 @@ print(f"sweep: {len(data)} rows, {len(head)} columns")
 PY
 
 # A second golden for the Phase 3 equivalence hazards: one point with the L2
-# neighbour prefetcher enabled. Keep this separate from the L1 next-burst grid
+# neighbour prefetcher enabled. Keep this separate from the L1 next-access grid
 # so the row isolates the L2 issue order and up/down accounting.
 cat > "$tmp/l2_grid.json" <<'JSON'
 [{"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
@@ -127,7 +127,7 @@ cat > "$tmp/point.json" <<'JSON'
 {"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
  "l1_assoc": 8, "l2_size_bytes": 524288, "l2_assoc": 16,
  "l1_latency": 0, "l2_latency": 10, "l2_miss_latency": 100,
- "prefetch_policy": "next_burst",
+ "prefetch_policy": "next_access",
  "l1_size_bytes": 8192, "prefetch_distance": 2}
 JSON
 "$run" --config "$tmp/point.json" --trace "$tmp/fixture.wcts" \

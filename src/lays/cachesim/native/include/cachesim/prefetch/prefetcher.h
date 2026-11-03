@@ -29,7 +29,7 @@ namespace cachesim {
 // burst does not advance its cursor. This keeps the budget boundary out of the
 // policy interface and leaves the level responsible for all resource effects.
 //
-// I14 has the corresponding split responsibility: NextBurst's cursor obeys
+// I14 has the corresponding split responsibility: NextAccess's cursor obeys
 // `0 <= pf_cursor(c) - cursor(c) <= 1 + prefetch_distance`, while the engine
 // bounds outstanding L1 work by the credit budget. Keeping those two facts in
 // separate objects prevents a policy from accidentally changing timing or
@@ -44,7 +44,7 @@ struct PrefetchContext {
     const AddressMapper& mapper;
     const TileTrace&     trace;
     // True only for the L2 retrigger (a demand hit on a still-unused
-    // prefetched line). NextTile's touch filter exempts it: the filter gates
+    // prefetched line). DistanceAware's touch filter exempts it: the filter gates
     // which lines start a prefetch chain, and a started chain sustains itself
     // through retriggers (the miss-only pathology at engine.cpp's trigger).
     bool                 retrigger = false;
@@ -52,22 +52,22 @@ struct PrefetchContext {
 
 struct PrefetchTarget {
     // The burst tag is retained even for line-oriented policies so the engine
-    // can apply timely/late accounting and complete NextBurst feedback at a
+    // can apply timely/late accounting and complete NextAccess feedback at a
     // whole-burst boundary.
     LineId     line;
     BurstIndex burst;
 };
 
-enum class PrefetchKind : std::uint8_t { None = 0, NextBurst = 1, Neighbour = 2, NextTile = 3 };
+enum class PrefetchKind : std::uint8_t { None = 0, NextAccess = 1, Neighbour = 2, DistanceAware = 3 };
 
 struct PrefetchParams {
     std::int32_t distance = 0;
     Axis         axis     = Axis::CIN;
     bool         up       = true;
     bool         down     = true;
-    // NextTile's touch filter: a line may trigger only once the cores have
+    // DistanceAware's touch filter: a line may trigger only once the cores have
     // touched it at least this many times in the current tile. 0 = off.
-    // Read only by NextTile; every other policy ignores it.
+    // Read only by DistanceAware; every other policy ignores it.
     std::int32_t min_touches = 0;
 };
 

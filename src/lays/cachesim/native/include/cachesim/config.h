@@ -109,18 +109,18 @@ struct RunConfig {
     std::int32_t   l2_prefetch_distance = 1;
     bool           l2_prefetch_up       = true;
     bool           l2_prefetch_down     = true;
-    // NextTile's touch filter (plan 2026-11-01): a line triggers only once
+    // DistanceAware's touch filter (plan 2026-11-01): a line triggers only once
     // the cores touched it >= this many times in the current tile. 0 = off;
-    // read only by next_tile, echoed in the CSV for every policy.
+    // read only by distance_aware, echoed in the CSV for every policy.
     std::int32_t   l2_prefetch_min_touches = 3;
     // How the L2 prefetch fires (plan 2026-11-01): the touch threshold, or
-    // the legacy L2 demand miss. The trigger only exists for next_tile -- no
+    // the legacy L2 demand miss. The trigger only exists for distance_aware -- no
     // other policy ever fires on a touch -- so the default is policy-
-    // dependent: validate() keeps Touch for next_tile and settles an UNSET
+    // dependent: validate() keeps Touch for distance_aware and settles an UNSET
     // Touch to Miss for every other policy, mirroring the engine's
     // normalize_params, so the CSV echoes the trigger the engine ran. The
     // _set flag follows l2_policy_set's pattern: it distinguishes an explicit
-    // "touch", which validate() REFUSES with a non-next_tile policy, from
+    // "touch", which validate() REFUSES with a non-distance_aware policy, from
     // the unset default, which it quietly settles.
     L2Trigger      l2_prefetch_trigger     = L2Trigger::Touch;
     bool           l2_prefetch_trigger_set = false;

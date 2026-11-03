@@ -322,7 +322,7 @@ void test_core_stall_and_fetch_latency_are_equal_by_construction() {
     // prefetch runs, so ruling R8's line anchor never moves off the burst's own
     // issue and the two integrals agree term by term.
     //
-    // The prefetch-specific half is covered by test_next_burst.cpp and
+    // The prefetch-specific half is covered by test_next_access.cpp and
     // test_neighbour.cpp; this engine
     // check keeps the no-prefetch equality explicit.
     FakeTrace tr = three_core_two_tile_trace();
@@ -1207,7 +1207,7 @@ void test_finish_after_the_run_has_ended_changes_nothing() {
     p.l1                = fx::level(1, 2, 4, 2, 1);
     p.l1.ii             = SimTime{0};
     p.l2.latency        = SimTime{10};
-    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_policy   = PrefetchKind::NextAccess;
     p.prefetch_distance = 2;
     Engine e(map, tr, p);
     e.run();
@@ -1271,7 +1271,7 @@ EngineParams r8_params(std::int32_t distance) {
     // and the prefetcher.
     EngineParams p      = fx::unbounded_params();
     p.l2.latency        = SimTime{10};
-    p.prefetch_policy   = distance == 0 ? PrefetchKind::None : PrefetchKind::NextBurst;
+    p.prefetch_policy   = distance == 0 ? PrefetchKind::None : PrefetchKind::NextAccess;
     p.prefetch_distance = distance;
     return p;
 }
@@ -1473,7 +1473,7 @@ void test_the_four_prefetch_states_sum_to_issued() {
     // always allocate however far ahead the prefetcher has run (4.2, B12).
     p.l1.mshrs          = 8;
     p.l1.demand_reserve = 4;
-    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_policy   = PrefetchKind::NextAccess;
     p.prefetch_distance = 2;
     Engine e(map, tr, p);
     e.run();
@@ -1532,7 +1532,7 @@ void test_a_prefetch_evicted_before_use_is_waste_and_then_pollution() {
     p.l1                = fx::level(1, 2, 4, 2, 1);
     p.l1.ii             = SimTime{0};
     p.l2.latency        = SimTime{10};
-    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_policy   = PrefetchKind::NextAccess;
     p.prefetch_distance = 2;
     Engine e(map, tr, p);
     e.run();
@@ -1673,7 +1673,7 @@ void test_r8_hidden_latency_is_never_negative() {
     for (std::int32_t d : {0, 1, 2, 4, 8}) {
         LinearMapper map(64);
         EngineParams p      = contended_params();
-        p.prefetch_policy   = (d == 0) ? PrefetchKind::None : PrefetchKind::NextBurst;
+        p.prefetch_policy   = (d == 0) ? PrefetchKind::None : PrefetchKind::NextAccess;
         p.prefetch_distance = d;
         Engine e(map, tr, p);
         e.run();
@@ -1760,7 +1760,7 @@ void test_a_per_core_oracle_matches_the_l1_stream_it_was_built_from() {
 // The L2 touch trigger (plan 2026-11-01, T11)
 // ===========================================================================
 //
-// These use KhkwSplitMapper rather than LinearMapper because NextTile's
+// These use KhkwSplitMapper rather than LinearMapper because DistanceAware's
 // targets come from `mapper.neighbour(COUT)`, which LinearMapper declines.
 // Geometry: `digit_stride(COUT) == 16`, so line 0's distance-1 target is
 // line 16.
@@ -1771,7 +1771,7 @@ EngineParams touch_params(const KhkwSplitMapper& mapper, std::int32_t min_touche
     p.l2 = fx::level(32, 2, 8, 4);
     p.l1.cache_size_bytes *= mapper.line_size_bytes();
     p.l2.cache_size_bytes *= mapper.line_size_bytes();
-    p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    p.l2.prefetch_kind   = PrefetchKind::DistanceAware;
     p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, min_touches};
     p.l2_miss_latency    = SimTime{1};
     // `l2_prefetch_trigger` is left at its default, which the plan fixes as
@@ -1843,13 +1843,13 @@ void test_miss_mode_reproduces_the_legacy_trigger() {
     p.l2 = fx::level(1, 2, 8, 4);
     p.l1.cache_size_bytes *= mapper.line_size_bytes();
     p.l2.cache_size_bytes *= mapper.line_size_bytes();
-    p.l2.prefetch_kind    = PrefetchKind::NextTile;
+    p.l2.prefetch_kind    = PrefetchKind::DistanceAware;
     p.l2.prefetch_params  = PrefetchParams{1, Axis::CIN, false, false, 3};
     p.l2_miss_latency     = SimTime{1};
     p.l2_prefetch_trigger = L2Trigger::Miss;
     Engine engine(mapper, trace, p);
     engine.run();
-    // The constants of tests/prefetch/test_next_tile.cpp's
+    // The constants of tests/prefetch/test_distance_aware.cpp's
     // test_l1_hits_feed_the_l2_touch_counter, verbatim: explicit miss mode is
     // bit-for-bit the pre-T11 engine.
     CHECK_TRUE(engine.stats().l1_hits >= 2);
@@ -1883,7 +1883,7 @@ EngineParams pressure_params(const KhkwSplitMapper& mapper, std::int32_t min_tou
     EngineParams p = touch_params(mapper, min_touches);
     p.l2           = fx::level(1, 2, 8, 4);
     p.l2.cache_size_bytes *= mapper.line_size_bytes();
-    p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    p.l2.prefetch_kind   = PrefetchKind::DistanceAware;
     p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, min_touches};
     return p;
 }
@@ -1958,7 +1958,7 @@ void test_pf_lru_demotes_a_consumed_prefetch_to_the_normal_class() {
 }
 
 // ORACLE for (c), hand-walked. min_touches = 2, so the L2 prefetch of line 16
-// fires at t10 and fills by ~t12. NextBurst at distance 1 reaches burst 5
+// fires at t10 and fills by ~t12. NextAccess at distance 1 reaches burst 5
 // (line 16) only after burst 3 issues at t30, so the L1 prefetch probes the
 // L2 well after the fill and HITS it holding an L1 entry: `!demand` with
 // `mshr1 != nullptr`. That consumption is the case the accounting fix counts:
@@ -1975,7 +1975,7 @@ void test_an_l1_prefetch_hit_consumes_the_tag_and_counts_timely_in_touch_mode() 
     trace.add_burst(tile, 0, 40, 0);
     trace.add_burst(tile, 0, 80, 4);
     EngineParams p      = touch_params(mapper, 2);
-    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_policy   = PrefetchKind::NextAccess;
     p.prefetch_distance = 1;
     Engine eng(mapper, trace, p);
     eng.run();
@@ -2007,7 +2007,7 @@ void test_miss_mode_stats_are_bit_identical_to_the_pre_t19_engine() {
     p.l2 = fx::level(1, 2, 8, 4);
     p.l1.cache_size_bytes *= mapper.line_size_bytes();
     p.l2.cache_size_bytes *= mapper.line_size_bytes();
-    p.l2.prefetch_kind    = PrefetchKind::NextTile;
+    p.l2.prefetch_kind    = PrefetchKind::DistanceAware;
     p.l2.prefetch_params  = PrefetchParams{1, Axis::CIN, false, false, 3};
     p.l2_miss_latency     = SimTime{1};
     p.l2_prefetch_trigger = L2Trigger::Miss;

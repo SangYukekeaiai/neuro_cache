@@ -170,7 +170,7 @@ const char* const kConfigs[] = {
         "l1_mshrs": 8, "l2_miss_latency": 40})",
     R"({"cout_block": 16, "l1_size_bytes": 8192, "l1_assoc": 4,
         "l2_size_bytes": 65536, "l2_assoc": 16, "l2_latency": 20,
-        "l2_miss_latency": 200, "prefetch_policy": "next_burst",
+        "l2_miss_latency": 200, "prefetch_policy": "next_access",
         "prefetch_distance": 2})"};
 
 std::vector<RunConfig> parse_and_validate(const AddressMapper&         mapper,

@@ -77,7 +77,7 @@ ulimit -c 0 2>/dev/null || true
 # naming: it is header-only AND was included by no translation unit at all until
 # tests/core/test_event.cpp existed, so before this round nothing in the tree either
 # compiled it or could mutate it.
-FILES="include/cachesim/types.h include/cachesim/layout/mapper.h include/cachesim/layout/factory.h include/cachesim/enum_names.h include/cachesim/layout/block_pack.h include/cachesim/index/cache_array.h include/cachesim/index/set_associative.h include/cachesim/index/set_index.h include/cachesim/replacement/policy.h include/cachesim/replacement/stamp.h include/cachesim/replacement/belady.h include/cachesim/replacement/lfu.h include/cachesim/replacement/rrip.h include/cachesim/core/port.h include/cachesim/core/event.h include/cachesim/core/request.h include/cachesim/core/mshr.h include/cachesim/trace/tile_trace.h include/cachesim/core/cache_level.h include/cachesim/core/engine.h include/cachesim/prefetch/prefetcher.h include/cachesim/prefetch/none.h include/cachesim/prefetch/next_burst.h include/cachesim/prefetch/next_tile.h include/cachesim/prefetch/neighbour.h src/layout/block_pack.cpp src/layout/factory.cpp src/layout/layout_common.h src/layout/layout_common.cpp src/index/set_associative.cpp src/replacement/policy.cpp src/replacement/stamp.cpp src/replacement/belady.cpp src/replacement/lfu.cpp src/replacement/rrip.cpp src/core/port.cpp src/core/mshr.cpp src/core/cache_level.cpp src/core/engine.cpp src/core/engine_core.cpp src/prefetch/prefetcher.cpp src/prefetch/none.cpp src/prefetch/next_burst.cpp src/prefetch/next_tile.cpp src/prefetch/neighbour.cpp include/cachesim/config.h src/config.cpp include/cachesim/trace/stream_format.h include/cachesim/trace/byte_source.h include/cachesim/trace/stream_trace.h src/trace/stream_trace.cpp include/cachesim/instrument/stats.h src/instrument/stats.cpp include/cachesim/instrument/hist.h apps/cachesim_run.cpp apps/cli_args.h apps/oracle_io.h apps/output.h include/cachesim/sweep.h src/sweep.cpp apps/cachesim_sweep.cpp"
+FILES="include/cachesim/types.h include/cachesim/layout/mapper.h include/cachesim/layout/factory.h include/cachesim/enum_names.h include/cachesim/layout/block_pack.h include/cachesim/index/cache_array.h include/cachesim/index/set_associative.h include/cachesim/index/set_index.h include/cachesim/replacement/policy.h include/cachesim/replacement/stamp.h include/cachesim/replacement/belady.h include/cachesim/replacement/lfu.h include/cachesim/replacement/rrip.h include/cachesim/core/port.h include/cachesim/core/event.h include/cachesim/core/request.h include/cachesim/core/mshr.h include/cachesim/trace/tile_trace.h include/cachesim/core/cache_level.h include/cachesim/core/engine.h include/cachesim/prefetch/prefetcher.h include/cachesim/prefetch/none.h include/cachesim/prefetch/next_access.h include/cachesim/prefetch/distance_aware.h include/cachesim/prefetch/neighbour.h src/layout/block_pack.cpp src/layout/factory.cpp src/layout/layout_common.h src/layout/layout_common.cpp src/index/set_associative.cpp src/replacement/policy.cpp src/replacement/stamp.cpp src/replacement/belady.cpp src/replacement/lfu.cpp src/replacement/rrip.cpp src/core/port.cpp src/core/mshr.cpp src/core/cache_level.cpp src/core/engine.cpp src/core/engine_core.cpp src/prefetch/prefetcher.cpp src/prefetch/none.cpp src/prefetch/next_access.cpp src/prefetch/distance_aware.cpp src/prefetch/neighbour.cpp include/cachesim/config.h src/config.cpp include/cachesim/trace/stream_format.h include/cachesim/trace/byte_source.h include/cachesim/trace/stream_trace.h src/trace/stream_trace.cpp include/cachesim/instrument/stats.h src/instrument/stats.cpp include/cachesim/instrument/hist.h apps/cachesim_run.cpp apps/cli_args.h apps/oracle_io.h apps/output.h include/cachesim/sweep.h src/sweep.cpp apps/cachesim_sweep.cpp"
 BAKDIR=$(mktemp -d)
 for f in $FILES; do cp "$f" "$BAKDIR/$(basename "$f")"; done
 restore() { for f in $FILES; do cp "$BAKDIR/$(basename "$f")" "$f"; done; }
@@ -273,8 +273,8 @@ mutate_eng() { mutate_in src/core/engine.cpp "$@"; }
 mutate_engc() { mutate_in src/core/engine_core.cpp "$@"; }
 mutate_pf_h() { mutate_in include/cachesim/prefetch/prefetcher.h "$@"; }
 mutate_pf() { mutate_in src/prefetch/prefetcher.cpp "$@"; }
-mutate_pf_next() { mutate_in src/prefetch/next_burst.cpp "$@"; }
-mutate_pf_tile() { mutate_in src/prefetch/next_tile.cpp "$@"; }
+mutate_pf_next() { mutate_in src/prefetch/next_access.cpp "$@"; }
+mutate_pf_dist() { mutate_in src/prefetch/distance_aware.cpp "$@"; }
 
 echo "== comparison operators"
 mutate kill '<= becomes <'   's|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() <= b|operator<=(Tagged<Rep, Tag> a, Tagged<Rep, Tag> b) { return a.get() < b|'
@@ -1830,7 +1830,7 @@ mutate_req_h kill 'B3 Level widens' \
 # C1 is CacheLevel and triage, C2 the six event handlers plus retire/reinject,
 # C3 the core state machine and the tile barrier, C4 inclusion, C5 prefetching.
 # The suites are tests/core/test_cache_level.cpp, tests/core/test_engine.cpp and
-# tests/prefetch/test_next_burst.cpp plus test_neighbour.cpp, sharing
+# tests/prefetch/test_next_access.cpp plus test_neighbour.cpp, sharing
 # tests/engine_fixture.h.
 #
 # Two families dominate, and they are the two the plan itself says are
@@ -2025,12 +2025,12 @@ mutate_eng kill 'C5 a prefetch is issued as a demand request (I15)' \
 mutate_engc kill 'C5 the tile length is read from the next tile' \
     's|    return trace_.n_bursts(core, cs.tile);|    return trace_.n_bursts(core, cs.tile + 1);|'
 
-echo "== C5: next_burst(d) itself (src/prefetch/next_burst.cpp)"
+echo "== C5: next_access(d) itself (src/prefetch/next_access.cpp)"
 # Isolate on_demand's pull-forward; on_issued is covered by the recipe below.
 mutate_pf_next kill 'C5 the cursor is allowed to fall behind the core' \
     '0,/^    if (cursor < next) cursor = next;$/s|^    if (cursor < next) cursor = next;$||'
 mutate_pf_next kill 'C5 on_issued does not advance the cursor' \
-    '/^void NextBurstPrefetcher::on_issued/,$ s|^    if (cursor < next) cursor = next;$||'
+    '/^void NextAccessPrefetcher::on_issued/,$ s|^    if (cursor < next) cursor = next;$||'
 mutate_pf_next kill 'C5 the fetch-ahead is one burst short' \
     's|    for (std::int32_t burst = cursor; burst <= last && burst < n_bursts; ++burst) {|    for (std::int32_t burst = cursor; burst < last \&\& burst < n_bursts; ++burst) {|'
 mutate_pf_next kill 'C5 the fetch-ahead runs one burst past the tile' \
@@ -2039,21 +2039,21 @@ mutate_pf_next kill 'C5 a budget-complete burst advances too far (N16)' \
     's|    const std::int32_t next = last_complete_burst.get() + 1;|    const std::int32_t next = last_complete_burst.get() + 2;|'
 mutate_pf_next kill 'C5 on_tile_start does not reset the cursor' \
     's|    pf_cursor_\.at(c) = 0;||'
-mutate_pf_next kill 'C5 distance 0 is accepted as next_burst' \
+mutate_pf_next kill 'C5 distance 0 is accepted as next_access' \
     's|    if (distance < 1) {|    if (distance < 0) {|'
-mutate_pf kill 'C5 none is built as next_burst' \
-    's|            return std::make_unique<NoPrefetcher>();|            return std::make_unique<NextBurstPrefetcher>(1, n_cores);|'
+mutate_pf kill 'C5 none is built as next_access' \
+    's|            return std::make_unique<NoPrefetcher>();|            return std::make_unique<NextAccessPrefetcher>(1, n_cores);|'
 mutate_pf_next kill 'C5 the fetch-ahead distance is ignored' \
     's|    const std::int32_t last = ctx.k.get() + distance_;|    const std::int32_t last = ctx.k.get() + 1;|'
 
-echo "== C5: next_tile forward COUT blocks (src/prefetch/next_tile.cpp)"
-mutate_pf_tile kill 'C5 next_tile emits its own block instead of the next' \
+echo "== C5: distance_aware forward COUT blocks (src/prefetch/distance_aware.cpp)"
+mutate_pf_dist kill 'C5 distance_aware emits its own block instead of the next' \
     's|Axis::COUT, i + 1|Axis::COUT, i + 0|'
-mutate_pf_tile kill 'C5 next_tile emits no targets' \
+mutate_pf_dist kill 'C5 distance_aware emits no targets' \
     's|i < distance_|i < 0|'
-mutate_pf_tile kill 'C5 next_tile ignores the nullopt boundary guard' \
+mutate_pf_dist kill 'C5 distance_aware ignores the nullopt boundary guard' \
     's|if (const auto line = ctx.mapper.neighbour(ctx.line, Axis::COUT, i + 1)) {|if (const auto line = ctx.mapper.neighbour(ctx.line, Axis::COUT, i + 1); true) {|'
-mutate_pf_tile kill 'C5 next_tile accepts a nonpositive distance' \
+mutate_pf_dist kill 'C5 distance_aware accepts a nonpositive distance' \
     's|    if (distance < 1) {|    if (false) {|'
 
 echo "== C5/H4: L2-fill prefetch-origin accounting (src/core/engine.cpp)"
@@ -2113,7 +2113,7 @@ mutate_eng kill 'D2a the pollution term is not charged' \
     's|    if (pf_evicted_.at(idx(r.core)).erase(r.line) != 0) ++stats_.pf_pollution_evictions;||'
 mutate_eng allow 'D2a a surviving prefetch is not charged as waste' \
     's|        stats_.pf_wasted += static_cast<std::int64_t>(resident.size());||' \
-    'no fixture leaves one: next_burst(d) never fetches a burst the core does not reach, so every prefetched line is demanded or evicted first. The branch is what makes the four-state sum total rather than conditional on that argument'
+    'no fixture leaves one: next_access(d) never fetches a burst the core does not reach, so every prefetched line is demanded or evicted first. The branch is what makes the four-state sum total rather than conditional on that argument'
 mutate_eng kill 'D2b a demand hit on a prefetched line loses the anchor (R8)' \
     's|        return first_request;|        return r.issued_at;|'
 mutate_eng kill 'D2b the fill anchor ignores who opened the entry (R8)' \

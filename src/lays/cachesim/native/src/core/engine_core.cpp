@@ -220,7 +220,7 @@ void Engine::on_issue(CoreId c, BurstIndex k, SimTime now) {
     // 4.6, and the last line of 3.4b. Below the port; the core does not wait for
     // it and cannot observe it. Everything above would be identical if
     // prefetching did not exist. Ask once per demand line so Neighbour can be
-    // spatial at either level; NextBurst suppresses repeated calls for a burst.
+    // spatial at either level; NextAccess suppresses repeated calls for a burst.
     for (const LineId line : lines_) {
         prefetch_on_demand(Level::L1, c, cs.tile, k, line, now);
     }

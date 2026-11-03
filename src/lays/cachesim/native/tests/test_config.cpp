@@ -73,7 +73,7 @@ void test_every_default_is_overridden_when_the_key_is_present() {
             "l2_to_l1_latency": 3, "l2_miss_latency": 200,
             "l2_banks": 4, "l2_ii": 6, "dram_ii": 8, "core_accept_ii": 2,
             "policy": "fifo", "inclusion": "inclusive",
-            "prefetch_policy": "next_burst", "prefetch_distance": 4,
+            "prefetch_policy": "next_access", "prefetch_distance": 4,
             "layout": "split_cin", "cin_lo_blocks": 64})");
     CHECK_EQ(c.cin_block, 2);
     CHECK_EQ(c.cout_block, 32);
@@ -98,7 +98,7 @@ void test_every_default_is_overridden_when_the_key_is_present() {
     CHECK_EQ(c.core_accept_ii, std::int64_t{2});
     CHECK_TRUE(c.policy == PolicyKind::FIFO);
     CHECK_TRUE(c.inclusion == Inclusion::Inclusive);
-    CHECK_TRUE(c.prefetch_policy == PrefetchKind::NextBurst);
+    CHECK_TRUE(c.prefetch_policy == PrefetchKind::NextAccess);
     CHECK_EQ(c.prefetch_distance, 4);
     CHECK_TRUE(c.layout == LayoutKind::SplitCin);
     CHECK_EQ(c.cin_lo_blocks, std::int64_t{64});
@@ -132,9 +132,9 @@ void test_every_enum_spelling_round_trips() {
                == Inclusion::Inclusive);
     CHECK_TRUE(parse_config(R"({"prefetch_policy": "none"})").prefetch_policy
                == PrefetchKind::None);
-    CHECK_TRUE(parse_config(R"({"prefetch_policy": "next_burst",
+    CHECK_TRUE(parse_config(R"({"prefetch_policy": "next_access",
                                 "prefetch_distance": 4})").prefetch_policy
-               == PrefetchKind::NextBurst);
+               == PrefetchKind::NextAccess);
     CHECK_TRUE(parse_config(R"({"layout": "block_pack"})").layout
                == LayoutKind::BlockPack);
     CHECK_TRUE(parse_config(R"({"layout": "split_cin"})").layout
@@ -429,48 +429,48 @@ void test_a_negative_prefetch_distance_is_rejected() {
     CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
 }
 
-void test_next_burst_with_zero_distance_is_rejected() {
-    check::group("Task 10: prefetch_policy = next_burst with distance 0 is rejected");
-    RunConfig c = parse_config(R"({"prefetch_policy": "next_burst"})");
+void test_next_access_with_zero_distance_is_rejected() {
+    check::group("Task 10: prefetch_policy = next_access with distance 0 is rejected");
+    RunConfig c = parse_config(R"({"prefetch_policy": "next_access"})");
     std::vector<Warning> w;
     CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
 }
 
-void test_next_tile_parses_and_validates_at_l2() {
-    check::group("next_tile: L2 policy spelling and distance reach the engine");
-    RunConfig c = parse_config(R"({"l2_prefetch_policy": "next_tile",
+void test_distance_aware_parses_and_validates_at_l2() {
+    check::group("distance_aware: L2 policy spelling and distance reach the engine");
+    RunConfig c = parse_config(R"({"l2_prefetch_policy": "distance_aware",
                                   "l2_prefetch_distance": 2,
                                   "l2_prefetch_axis": "cin",
                                   "l2_prefetch_up": 0, "l2_prefetch_down": 0})");
-    CHECK_TRUE(c.l2_prefetch_policy == PrefetchKind::NextTile);
-    CHECK_TRUE(std::string(name_of(c.l2_prefetch_policy)) == "next_tile");
+    CHECK_TRUE(c.l2_prefetch_policy == PrefetchKind::DistanceAware);
+    CHECK_TRUE(std::string(name_of(c.l2_prefetch_policy)) == "distance_aware");
     std::vector<Warning> w;
     validate(c, 1, w);
     const auto p = to_engine_params(c);
-    CHECK_TRUE(p.l2.prefetch_kind == PrefetchKind::NextTile);
+    CHECK_TRUE(p.l2.prefetch_kind == PrefetchKind::DistanceAware);
     CHECK_EQ(p.l2.prefetch_params.distance, 2);
 }
 
-void test_next_tile_at_l1_is_rejected() {
-    check::group("next_tile: both L1 policy keys are refused");
+void test_distance_aware_at_l1_is_rejected() {
+    check::group("distance_aware: both L1 policy keys are refused");
     for (const char* key : {"prefetch_policy", "l1_prefetch_policy"}) {
         RunConfig c = parse_config(std::string("{\"") + key +
-                                   "\": \"next_tile\", \"l1_prefetch_distance\": 1}");
+                                   "\": \"distance_aware\", \"l1_prefetch_distance\": 1}");
         std::vector<Warning> w;
         CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
     }
 }
 
-void test_next_tile_with_zero_distance_is_rejected() {
-    check::group("next_tile: L2 distance zero is refused");
-    RunConfig c = parse_config(R"({"l2_prefetch_policy": "next_tile",
+void test_distance_aware_with_zero_distance_is_rejected() {
+    check::group("distance_aware: L2 distance zero is refused");
+    RunConfig c = parse_config(R"({"l2_prefetch_policy": "distance_aware",
                                   "l2_prefetch_distance": 0})");
     std::vector<Warning> w;
     CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
 }
 
 void test_l2_min_touches_defaults_parses_and_reaches_the_engine() {
-    check::group("next_tile filter: l2_prefetch_min_touches defaults to 3 and reaches the engine");
+    check::group("distance_aware filter: l2_prefetch_min_touches defaults to 3 and reaches the engine");
     RunConfig d = parse_config(R"({})");
     CHECK_EQ(d.l2_prefetch_min_touches, 3);
 
@@ -480,7 +480,7 @@ void test_l2_min_touches_defaults_parses_and_reaches_the_engine() {
     CHECK_EQ(n.l2_prefetch_min_touches, 7);
 
     for (const int x : {0, 7}) {
-        RunConfig c = parse_config(R"({"l2_prefetch_policy": "next_tile",
+        RunConfig c = parse_config(R"({"l2_prefetch_policy": "distance_aware",
                                       "l2_prefetch_distance": 2,
                                       "l2_prefetch_min_touches": )" +
                                    std::to_string(x) + "}");
@@ -493,15 +493,15 @@ void test_l2_min_touches_defaults_parses_and_reaches_the_engine() {
 }
 
 void test_l2_min_touches_negative_is_rejected() {
-    check::group("next_tile filter: a negative l2_prefetch_min_touches is rejected");
+    check::group("distance_aware filter: a negative l2_prefetch_min_touches is rejected");
     RunConfig c = parse_config(R"({"l2_prefetch_min_touches": -1})");
     std::vector<Warning> w;
     CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
 }
 
-void test_l2_min_touches_two_or_more_with_next_tile_warns() {
-    check::group("next_tile filter: min_touches >= 2 under the MISS trigger warns");
-    RunConfig c = parse_config(R"({"l2_prefetch_policy": "next_tile",
+void test_l2_min_touches_two_or_more_with_distance_aware_warns() {
+    check::group("distance_aware filter: min_touches >= 2 under the MISS trigger warns");
+    RunConfig c = parse_config(R"({"l2_prefetch_policy": "distance_aware",
                                   "l2_prefetch_trigger": "miss",
                                   "l2_prefetch_distance": 1,
                                   "l2_prefetch_min_touches": 3})");
@@ -511,9 +511,9 @@ void test_l2_min_touches_two_or_more_with_next_tile_warns() {
 
     // In touch mode min_touches >= 2 is the intended configuration: the line
     // fires AT the threshold, so nothing is filtered and nothing warns. Both
-    // the explicit spelling and the next_tile default stay silent.
+    // the explicit spelling and the distance_aware default stay silent.
     for (const char* trigger_key : {R"("l2_prefetch_trigger": "touch",)", ""}) {
-        RunConfig t = parse_config(std::string(R"({"l2_prefetch_policy": "next_tile",)") +
+        RunConfig t = parse_config(std::string(R"({"l2_prefetch_policy": "distance_aware",)") +
                                    trigger_key +
                                    R"("l2_prefetch_distance": 1,
                                       "l2_prefetch_min_touches": 3})");
@@ -525,7 +525,7 @@ void test_l2_min_touches_two_or_more_with_next_tile_warns() {
     // 0 and 1 leave the filter without effect, so they stay silent even in
     // miss mode.
     for (const int x : {0, 1}) {
-        RunConfig d = parse_config(R"({"l2_prefetch_policy": "next_tile",
+        RunConfig d = parse_config(R"({"l2_prefetch_policy": "distance_aware",
                                       "l2_prefetch_trigger": "miss",
                                       "l2_prefetch_distance": 1,
                                       "l2_prefetch_min_touches": )" +
@@ -535,7 +535,7 @@ void test_l2_min_touches_two_or_more_with_next_tile_warns() {
         CHECK_TRUE(!has_warning(v, "W_MIN_TOUCHES_FILTERS_ALL"));
     }
 
-    // Only next_tile reads the filter, so other policies stay silent at 3.
+    // Only distance_aware reads the filter, so other policies stay silent at 3.
     for (const char* policy : {"none", "neighbour"}) {
         RunConfig d = parse_config(std::string(R"({"l2_prefetch_policy": ")") +
                                    policy +
@@ -548,10 +548,10 @@ void test_l2_min_touches_two_or_more_with_next_tile_warns() {
 }
 
 void test_l2_prefetch_trigger_defaults_and_round_trips() {
-    check::group("l2_prefetch_trigger: defaults to touch for next_tile and round-trips");
-    // Unset alongside next_tile: touch, surviving validation and reaching the
+    check::group("l2_prefetch_trigger: defaults to touch for distance_aware and round-trips");
+    // Unset alongside distance_aware: touch, surviving validation and reaching the
     // engine params.
-    RunConfig d = parse_config(R"({"l2_prefetch_policy": "next_tile",
+    RunConfig d = parse_config(R"({"l2_prefetch_policy": "distance_aware",
                                   "l2_prefetch_distance": 1})");
     CHECK_TRUE(d.l2_prefetch_trigger == L2Trigger::Touch);
     std::vector<Warning> w;
@@ -559,11 +559,11 @@ void test_l2_prefetch_trigger_defaults_and_round_trips() {
     CHECK_TRUE(d.l2_prefetch_trigger == L2Trigger::Touch);
     CHECK_TRUE(to_engine_params(d).l2_prefetch_trigger == L2Trigger::Touch);
 
-    // Both spellings round-trip alongside next_tile.
+    // Both spellings round-trip alongside distance_aware.
     const struct { const char* text; L2Trigger kind; } spellings[] = {
         {"touch", L2Trigger::Touch}, {"miss", L2Trigger::Miss}};
     for (const auto& s : spellings) {
-        RunConfig c = parse_config(std::string(R"({"l2_prefetch_policy": "next_tile",
+        RunConfig c = parse_config(std::string(R"({"l2_prefetch_policy": "distance_aware",
                                                   "l2_prefetch_distance": 1,
                                                   "l2_prefetch_trigger": ")") +
                                    s.text + "\"}");
@@ -588,11 +588,11 @@ void test_l2_prefetch_trigger_unknown_value_is_refused() {
     CHECK_TRUE(named);
 }
 
-void test_l2_prefetch_trigger_touch_needs_next_tile() {
-    check::group("l2_prefetch_trigger: explicit touch needs next_tile; unset settles to miss");
+void test_l2_prefetch_trigger_touch_needs_distance_aware() {
+    check::group("l2_prefetch_trigger: explicit touch needs distance_aware; unset settles to miss");
     // An EXPLICIT touch with a policy that never fires on a touch is refused,
     // naming both keys.
-    for (const char* policy : {"none", "neighbour", "next_burst"}) {
+    for (const char* policy : {"none", "neighbour", "next_access"}) {
         RunConfig c = parse_config(std::string(R"({"l2_prefetch_policy": ")") + policy +
                                    R"(", "l2_prefetch_distance": 1,
                                        "l2_prefetch_trigger": "touch"})");
@@ -610,7 +610,7 @@ void test_l2_prefetch_trigger_touch_needs_next_tile() {
 
     // UNSET with those same policies keeps working exactly as today: it
     // validates, and the effective trigger the row will echo is miss.
-    for (const char* policy : {"none", "neighbour", "next_burst"}) {
+    for (const char* policy : {"none", "neighbour", "next_access"}) {
         RunConfig c = parse_config(std::string(R"({"l2_prefetch_policy": ")") + policy +
                                    R"(", "l2_prefetch_distance": 1})");
         std::vector<Warning> v;
@@ -619,7 +619,7 @@ void test_l2_prefetch_trigger_touch_needs_next_tile() {
         CHECK_TRUE(to_engine_params(c).l2_prefetch_trigger == L2Trigger::Miss);
     }
 
-    // An explicit "miss" is legal with any policy, next_tile included.
+    // An explicit "miss" is legal with any policy, distance_aware included.
     RunConfig m = parse_config(R"({"l2_prefetch_policy": "neighbour",
                                   "l2_prefetch_distance": 1,
                                   "l2_prefetch_trigger": "miss"})");
@@ -841,7 +841,7 @@ void test_to_engine_params_carries_every_knob() {
             "l2_ii": 1, "dram_ii": 1, "core_accept_ii": 1, "l1_mshrs": 16,
             "l1_tgts_per_mshr": 20, "l2_mshrs": 20, "l2_tgts_per_mshr": 12,
             "policy": "fifo", "inclusion": "inclusive",
-            "prefetch_policy": "next_burst", "prefetch_distance": 4})");
+            "prefetch_policy": "next_access", "prefetch_distance": 4})");
     std::vector<Warning> w;
     validate(c, 1, w);
     const EngineParams p = to_engine_params(c);
@@ -870,7 +870,7 @@ void test_to_engine_params_carries_every_knob() {
     CHECK_EQ(p.core_accept_ii, SimTime{1});
     CHECK_TRUE(p.inclusion == Inclusion::Inclusive);
     CHECK_EQ(p.prefetch_distance, 4);
-    CHECK_TRUE(p.prefetch_policy == PrefetchKind::NextBurst);
+    CHECK_TRUE(p.prefetch_policy == PrefetchKind::NextAccess);
 }
 
 // --- Task 18: the sweep grid ---------------------------------------------
@@ -908,10 +908,10 @@ void test_an_axis_takes_a_quoted_spelling_too() {
     check::group("Task 18: an axis carries whatever a config value can be");
     const std::vector<RunConfig> g = parse_config_grid(
         R"({"base": {"prefetch_distance": 2},
-            "axes": {"prefetch_policy": ["none", "next_burst"]}})");
+            "axes": {"prefetch_policy": ["none", "next_access"]}})");
     CHECK_EQ(check::ssize(g), std::int64_t{2});
     CHECK_TRUE(g[0].prefetch_policy == PrefetchKind::None);
-    CHECK_TRUE(g[1].prefetch_policy == PrefetchKind::NextBurst);
+    CHECK_TRUE(g[1].prefetch_policy == PrefetchKind::NextAccess);
 }
 
 void test_an_axis_overrides_the_same_key_in_base() {
@@ -1011,16 +1011,16 @@ int main() {
     test_a_burst_wider_than_the_l1_mshr_file_is_rejected();
     test_core_accept_ii_below_one_is_rejected();
     test_a_negative_prefetch_distance_is_rejected();
-    test_next_burst_with_zero_distance_is_rejected();
-    test_next_tile_parses_and_validates_at_l2();
-    test_next_tile_at_l1_is_rejected();
-    test_next_tile_with_zero_distance_is_rejected();
+    test_next_access_with_zero_distance_is_rejected();
+    test_distance_aware_parses_and_validates_at_l2();
+    test_distance_aware_at_l1_is_rejected();
+    test_distance_aware_with_zero_distance_is_rejected();
     test_l2_min_touches_defaults_parses_and_reaches_the_engine();
     test_l2_min_touches_negative_is_rejected();
-    test_l2_min_touches_two_or_more_with_next_tile_warns();
+    test_l2_min_touches_two_or_more_with_distance_aware_warns();
     test_l2_prefetch_trigger_defaults_and_round_trips();
     test_l2_prefetch_trigger_unknown_value_is_refused();
-    test_l2_prefetch_trigger_touch_needs_next_tile();
+    test_l2_prefetch_trigger_touch_needs_distance_aware();
     test_a_demand_reserve_at_or_above_the_mshr_count_is_rejected();
     test_every_count_below_one_is_rejected();
     test_every_negative_time_is_rejected();

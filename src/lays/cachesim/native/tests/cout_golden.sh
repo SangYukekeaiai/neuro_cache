@@ -16,7 +16,7 @@ tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 "$py" "$root/examples/cachesim/to_stream.py" \
     "$root/examples/cachesim/loas_vgg16_layer01_v2.json" > "$tmp/fixture.wcts"
 
-# Four runs: L1 2048 and 8192 bytes, each without and with next_burst prefetch.
+# Four runs: L1 2048 and 8192 bytes, each without and with next_access prefetch.
 "$py" - > "$tmp/grid.json" <<'PY'
 import json
 base = {"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
@@ -24,7 +24,7 @@ base = {"cin_block": 1, "cout_block": 16, "weight_bytes": 1,
         "l1_latency": 0, "l2_latency": 10, "l2_miss_latency": 100}
 print(json.dumps([dict(base, l1_size_bytes=l1, **pf)
                   for l1 in (2048, 8192)
-                  for pf in ({}, {"prefetch_policy": "next_burst", "prefetch_distance": 2})]))
+                  for pf in ({}, {"prefetch_policy": "next_access", "prefetch_distance": 2})]))
 PY
 
 "$sweep" --config-grid "$tmp/grid.json" --trace "$tmp/fixture.wcts" \

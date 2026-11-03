@@ -208,7 +208,7 @@ public:
     // `lines_per_burst`, so at `l1_mshrs == lines_per_burst` the prefetch budget
     // is exactly zero and prefetching is off however `prefetch_distance` is set
     // (4.2). D1's stricter rule, that `demand_reserve >= mshrs` throws, is a
-    // rule about a config that ALSO claims `prefetch_policy = next_burst`, which
+    // rule about a config that ALSO claims `prefetch_policy = next_access`, which
     // is a field this class never sees.
     //
     // Throws std::invalid_argument, naming the offending value.

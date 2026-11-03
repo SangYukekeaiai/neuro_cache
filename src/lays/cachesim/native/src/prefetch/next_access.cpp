@@ -1,4 +1,4 @@
-#include "cachesim/prefetch/next_burst.h"
+#include "cachesim/prefetch/next_access.h"
 
 #include <cstddef>
 #include <stdexcept>
@@ -6,14 +6,14 @@
 
 namespace cachesim {
 
-NextBurstPrefetcher::NextBurstPrefetcher(std::int32_t distance, std::int32_t n_cores)
+NextAccessPrefetcher::NextAccessPrefetcher(std::int32_t distance, std::int32_t n_cores)
     : distance_(distance) {
     if (distance < 1) {
-        throw std::invalid_argument("NextBurstPrefetcher: distance must be >= 1, got " +
+        throw std::invalid_argument("NextAccessPrefetcher: distance must be >= 1, got " +
                                     std::to_string(distance));
     }
     if (n_cores < 1) {
-        throw std::invalid_argument("NextBurstPrefetcher: n_cores must be >= 1, got " +
+        throw std::invalid_argument("NextAccessPrefetcher: n_cores must be >= 1, got " +
                                     std::to_string(n_cores));
     }
     const std::size_t n = static_cast<std::size_t>(n_cores);
@@ -22,22 +22,22 @@ NextBurstPrefetcher::NextBurstPrefetcher(std::int32_t distance, std::int32_t n_c
     last_burst_.assign(n, -1);
 }
 
-BurstIndex NextBurstPrefetcher::pf_cursor(CoreId core) const {
+BurstIndex NextAccessPrefetcher::pf_cursor(CoreId core) const {
     return BurstIndex{pf_cursor_.at(static_cast<std::size_t>(core.get()))};
 }
 
-void NextBurstPrefetcher::on_tile_start(CoreId core) {
+void NextAccessPrefetcher::on_tile_start(CoreId core) {
     const std::size_t c = static_cast<std::size_t>(core.get());
     pf_cursor_.at(c) = 0;
     last_tile_.at(c) = -1;
     last_burst_.at(c) = -1;
 }
 
-void NextBurstPrefetcher::on_demand(const PrefetchContext& ctx,
+void NextAccessPrefetcher::on_demand(const PrefetchContext& ctx,
                                     std::vector<PrefetchTarget>& out) {
     const std::size_t c = static_cast<std::size_t>(ctx.core.get());
     // A burst has several lines. The engine asks once per line so the same
-    // policy also supports Neighbour at either level; NextBurst emits each
+    // policy also supports Neighbour at either level; NextAccess emits each
     // burst in its once-per-burst issue order.
     if (last_tile_.at(c) == ctx.tile && last_burst_.at(c) == ctx.k.get()) return;
     last_tile_.at(c)  = ctx.tile;
@@ -65,7 +65,7 @@ void NextBurstPrefetcher::on_demand(const PrefetchContext& ctx,
     }
 }
 
-void NextBurstPrefetcher::on_issued(CoreId core, BurstIndex last_complete_burst) {
+void NextAccessPrefetcher::on_issued(CoreId core, BurstIndex last_complete_burst) {
     std::int32_t& cursor = pf_cursor_.at(static_cast<std::size_t>(core.get()));
     const std::int32_t next = last_complete_burst.get() + 1;
     if (cursor < next) cursor = next;

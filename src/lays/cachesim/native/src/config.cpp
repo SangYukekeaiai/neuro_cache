@@ -637,7 +637,7 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
     // pf_lru and pf_lru_rand are L2-only: the engine sets protection only at
     // the L2 prefetch fill, so at the L1 nothing ever calls note_protected
     // and the policy would silently run as plain lru; silently-inert configs
-    // are refused (the l1_prefetch_policy = next_tile rule). Checked on
+    // are refused (the l1_prefetch_policy = distance_aware rule). Checked on
     // cfg.policy AFTER the inheritance above, so a typed `policy = pf_lru` is
     // named as policy even though the unset l2_policy legally inherited it.
     if (cfg.policy == PolicyKind::PF_LRU || cfg.policy == PolicyKind::PF_LRU_RAND) {
@@ -660,16 +660,16 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
     // The L2 policy, mirroring the L1 rule below: a policy that is on at
     // distance 0 would silently mean none, and two spellings of one behaviour
     // is what the L1 rule exists to refuse.
-    if (cfg.l2_prefetch_policy == PrefetchKind::NextBurst && cfg.l2_prefetch_distance == 0) {
-        reject("l2_prefetch_policy = next_burst with l2_prefetch_distance = 0 would run as "
+    if (cfg.l2_prefetch_policy == PrefetchKind::NextAccess && cfg.l2_prefetch_distance == 0) {
+        reject("l2_prefetch_policy = next_access with l2_prefetch_distance = 0 would run as "
                "none, so it is refused rather than silently disabled");
     }
     if (cfg.l2_prefetch_policy == PrefetchKind::Neighbour && cfg.l2_prefetch_distance == 0) {
         reject("l2_prefetch_policy = neighbour with l2_prefetch_distance = 0 would run as "
                "none; set the policy to none or the distance to at least 1");
     }
-    if (cfg.l2_prefetch_policy == PrefetchKind::NextTile && cfg.l2_prefetch_distance == 0) {
-        reject("l2_prefetch_policy = next_tile with l2_prefetch_distance = 0 would run as "
+    if (cfg.l2_prefetch_policy == PrefetchKind::DistanceAware && cfg.l2_prefetch_distance == 0) {
+        reject("l2_prefetch_policy = distance_aware with l2_prefetch_distance = 0 would run as "
                "none; set the policy to none or the distance to at least 1");
     }
     if (cfg.l2_prefetch_policy == PrefetchKind::Neighbour &&
@@ -677,17 +677,17 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
         reject("l2_prefetch_policy = neighbour with both directions off would run as none; "
                "set the policy to none or turn a direction on");
     }
-    // The touch trigger only exists for next_tile: no other L2 policy ever
+    // The touch trigger only exists for distance_aware: no other L2 policy ever
     // fires on a touch. An EXPLICIT touch is refused rather than downgraded,
     // because it names a machine the run cannot be; the unset default is
     // settled to miss here, mirroring the engine's normalize_params, so the
     // CSV row echoes the trigger the engine actually ran.
-    if (cfg.l2_prefetch_policy != PrefetchKind::NextTile &&
+    if (cfg.l2_prefetch_policy != PrefetchKind::DistanceAware &&
         cfg.l2_prefetch_trigger == L2Trigger::Touch) {
         if (cfg.l2_prefetch_trigger_set) {
-            reject("l2_prefetch_trigger = touch fires at next_tile's touch threshold, "
+            reject("l2_prefetch_trigger = touch fires at distance_aware's touch threshold, "
                    "which l2_prefetch_policy = " + std::string(name_of(cfg.l2_prefetch_policy)) +
-                   " never reaches; set l2_prefetch_policy = next_tile or "
+                   " never reaches; set l2_prefetch_policy = distance_aware or "
                    "l2_prefetch_trigger = miss");
         }
         cfg.l2_prefetch_trigger = L2Trigger::Miss;
@@ -715,11 +715,11 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
                "MSHR free");
     }
 
-    if (cfg.l1_prefetch_policy == PrefetchKind::NextTile) {
-        reject("l1_prefetch_policy = next_tile is L2-only; set l2_prefetch_policy instead");
+    if (cfg.l1_prefetch_policy == PrefetchKind::DistanceAware) {
+        reject("l1_prefetch_policy = distance_aware is L2-only; set l2_prefetch_policy instead");
     }
-    if (cfg.l1_prefetch_policy == PrefetchKind::NextBurst && cfg.l1_prefetch_distance == 0) {
-        reject("prefetch_policy = next_burst with prefetch_distance = 0 would run as "
+    if (cfg.l1_prefetch_policy == PrefetchKind::NextAccess && cfg.l1_prefetch_distance == 0) {
+        reject("prefetch_policy = next_access with prefetch_distance = 0 would run as "
                "none, so it is refused rather than silently disabled");
     }
     if (cfg.l1_prefetch_policy == PrefetchKind::Neighbour && cfg.l1_prefetch_distance == 0) {
@@ -771,7 +771,7 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
     // typically its first touch of the tile, so the filter starves. Under the
     // touch trigger the line fires AT the threshold, so min_touches >= 2 is
     // the intended configuration and stays silent.
-    if (cfg.l2_prefetch_policy == PrefetchKind::NextTile &&
+    if (cfg.l2_prefetch_policy == PrefetchKind::DistanceAware &&
         cfg.l2_prefetch_trigger == L2Trigger::Miss &&
         cfg.l2_prefetch_min_touches >= 2) {
         warn(warnings, "W_MIN_TOUCHES_FILTERS_ALL",

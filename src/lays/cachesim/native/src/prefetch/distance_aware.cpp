@@ -1,4 +1,4 @@
-#include "cachesim/prefetch/next_tile.h"
+#include "cachesim/prefetch/distance_aware.h"
 
 #include <algorithm>
 #include <stdexcept>
@@ -6,19 +6,19 @@
 
 namespace cachesim {
 
-NextTilePrefetcher::NextTilePrefetcher(std::int32_t distance, std::int32_t min_touches)
+DistanceAwarePrefetcher::DistanceAwarePrefetcher(std::int32_t distance, std::int32_t min_touches)
     : distance_(distance), min_touches_(min_touches) {
     if (distance < 1) {
-        throw std::invalid_argument("NextTilePrefetcher: distance must be >= 1, got " +
+        throw std::invalid_argument("DistanceAwarePrefetcher: distance must be >= 1, got " +
                                     std::to_string(distance));
     }
     if (min_touches < 0) {
-        throw std::invalid_argument("NextTilePrefetcher: min_touches must be >= 0, got " +
+        throw std::invalid_argument("DistanceAwarePrefetcher: min_touches must be >= 0, got " +
                                     std::to_string(min_touches));
     }
 }
 
-bool NextTilePrefetcher::on_access(LineId line, std::int32_t tile) {
+bool DistanceAwarePrefetcher::on_access(LineId line, std::int32_t tile) {
     TouchRecord& rec = touches_[line.get()];
     if (rec.tile != tile) {
         rec.tile  = tile;
@@ -28,7 +28,7 @@ bool NextTilePrefetcher::on_access(LineId line, std::int32_t tile) {
     return rec.count == std::max(min_touches_, std::int32_t{1});
 }
 
-void NextTilePrefetcher::on_demand(const PrefetchContext& ctx,
+void DistanceAwarePrefetcher::on_demand(const PrefetchContext& ctx,
                                   std::vector<PrefetchTarget>& out) {
     if (!ctx.retrigger && min_touches_ > 0) {
         const auto rec = touches_.find(ctx.line.get());

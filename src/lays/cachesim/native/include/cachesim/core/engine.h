@@ -60,10 +60,10 @@ namespace cachesim {
 enum class Inclusion : std::uint8_t { NonInclusive = 0, Inclusive = 1 };
 
 // How the L2 prefetch policy is triggered (plan 2026-11-01): `Touch` fires at
-// the touch threshold -- NextTile's `on_access` returning true, typically on
+// the touch threshold -- DistanceAware's `on_access` returning true, typically on
 // an L1 hit -- and `Miss` is the legacy L2-demand-miss trigger, which must
 // reproduce the pre-plan engine bit for bit. The config knob lands in T12;
-// until then only the params struct carries it, and a non-NextTile L2 policy
+// until then only the params struct carries it, and a non-DistanceAware L2 policy
 // is normalized to `Miss`, since no other policy ever fires on a touch.
 enum class L2Trigger : std::uint8_t { Touch = 0, Miss = 1 };
 
@@ -271,7 +271,7 @@ struct EngineStats {
     // (plan 2026-11-01), so this legitimately reads 0 while `l2_pf_timely`
     // still counts. Both are kept as separate CSV columns.
     std::int64_t l2_pf_retriggers = 0;
-    // Triggers the L2 policy's own touch filter suppressed (NextTile's
+    // Triggers the L2 policy's own touch filter suppressed (DistanceAware's
     // `min_touches`, plan 2026-11-01). Copied from the policy at close-out;
     // not part of the `l2_pf_issued` accounting, since a filtered trigger
     // never issued anything.
@@ -330,7 +330,7 @@ using EngineQueue = EventQueue<EventPayload>;
 // validation, single source of truth for the parameter set" (Part 7), including
 // every cross-field rule its row names: `lines_per_burst > l1_mshrs` throws,
 // `inclusion = exclusive` is rejected, `core_accept_ii < 1` throws,
-// `prefetch_policy = next_burst` with `prefetch_distance = 0` throws,
+// `prefetch_policy = next_access` with `prefetch_distance = 0` throws,
 // `demand_reserve >= mshrs` throws, and a prefetch budget below
 // `lines_per_burst` warns. Duplicating any of that here would be the second
 // source of truth that row exists to prevent.

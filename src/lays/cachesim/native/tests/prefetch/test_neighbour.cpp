@@ -2,7 +2,7 @@
 #include <cachesim/core/engine.h>
 #include <cachesim/layout/block_pack.h>
 #include <cachesim/prefetch/neighbour.h>
-#include <cachesim/prefetch/next_burst.h>
+#include <cachesim/prefetch/next_access.h>
 
 #include <cstdint>
 #include <vector>
@@ -63,14 +63,14 @@ void test_each_policy_runs_at_the_other_level() {
         CHECK_EQ(engine.stats().pf_outstanding.at(0), 0);
     }
 
-    // NextBurst at L2: the same cursor policy is driven by the L2 demand
+    // NextAccess at L2: the same cursor policy is driven by the L2 demand
     // trigger, while target issue uses the bank port and L2 triage drops.
     {
         BlockPackMapper mapper(WeightShape{1, 1, 1, 16}, 1, 1, 1);
         EngineParams p;
         p.l1 = fx::level(16, 2, 8, 4);
         p.l2 = fx::level(32, 2, 8, 4);
-        p.l2.prefetch_kind = PrefetchKind::NextBurst;
+        p.l2.prefetch_kind = PrefetchKind::NextAccess;
         p.l2.prefetch_params = PrefetchParams{1, Axis::COUT, true, true};
         p.l2_miss_latency = SimTime{1};
         Engine engine(mapper, trace, p);
@@ -94,7 +94,7 @@ void test_l1_prefetch_fills_are_not_l2_policy_outcomes() {
     EngineParams p;
     p.l1 = fx::level(16, 2, 8, 4);
     p.l2 = fx::level(1, 1, 8, 4);
-    p.l1.prefetch_kind = PrefetchKind::NextBurst;
+    p.l1.prefetch_kind = PrefetchKind::NextAccess;
     p.l1.prefetch_params.distance = 1;
     p.l2_miss_latency = SimTime{1};
     Engine engine(mapper, trace, p);
@@ -124,7 +124,7 @@ void test_l1_prefetch_use_by_another_core_is_not_an_l2_outcome() {
         EngineParams p;
         p.l1 = fx::level(16, 2, 8, 4);
         p.l2 = fx::level(32, 2, 8, 4);
-        p.l1.prefetch_kind = PrefetchKind::NextBurst;
+        p.l1.prefetch_kind = PrefetchKind::NextAccess;
         p.l1.prefetch_params.distance = 1;
         p.l2_miss_latency = SimTime{10};
         Engine engine(mapper, trace, p);

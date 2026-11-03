@@ -1,6 +1,6 @@
 #include <cachesim/core/engine.h>
 #include <cachesim/layout/khkw_split.h>
-#include <cachesim/prefetch/next_tile.h>
+#include <cachesim/prefetch/distance_aware.h>
 
 #include <stdexcept>
 #include <vector>
@@ -13,7 +13,7 @@ using namespace cachesim;
 namespace {
 
 void test_exact_targets_and_boundaries() {
-    check::group("next_tile: forward COUT blocks preserve the burst tag and other coordinates");
+    check::group("distance_aware: forward COUT blocks preserve the burst tag and other coordinates");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile = trace.add_tile();
@@ -23,7 +23,7 @@ void test_exact_targets_and_boundaries() {
     CHECK_EQ(mapper.digit_stride(KhkwSplitMapper::Digit::COUT), 16);
 
     // Neither a CIN axis nor disabled directions changes this fixed policy.
-    auto pf = make_prefetcher(PrefetchKind::NextTile,
+    auto pf = make_prefetcher(PrefetchKind::DistanceAware,
                               PrefetchParams{1, Axis::CIN, false, false}, 16);
     std::vector<PrefetchTarget> out;
     pf->on_demand(ctx, out);
@@ -33,7 +33,7 @@ void test_exact_targets_and_boundaries() {
         CHECK_EQ(out[0].burst, ctx.k);
     }
 
-    NextTilePrefetcher two(2);
+    DistanceAwarePrefetcher two(2);
     out.clear();
     two.on_demand(ctx, out);
     CHECK_EQ(check::ssize(out), 2);
@@ -64,9 +64,9 @@ void test_exact_targets_and_boundaries() {
 }
 
 void test_nonpositive_distance_is_refused() {
-    check::group("next_tile: a nonpositive distance is refused");
-    CHECK_THROWS(std::invalid_argument, NextTilePrefetcher(0));
-    CHECK_THROWS(std::invalid_argument, NextTilePrefetcher(-1));
+    check::group("distance_aware: a nonpositive distance is refused");
+    CHECK_THROWS(std::invalid_argument, DistanceAwarePrefetcher(0));
+    CHECK_THROWS(std::invalid_argument, DistanceAwarePrefetcher(-1));
 }
 
 // A context for line (1,1,16,4) of `tile`, whose distance-1 target is line 44.
@@ -78,11 +78,11 @@ PrefetchContext filter_ctx(const KhkwSplitMapper& mapper, const fx::FakeTrace& t
 }
 
 void test_min_touches_zero_is_the_current_policy() {
-    check::group("next_tile filter: min_touches 0 is the current policy, with zero touches");
+    check::group("distance_aware filter: min_touches 0 is the current policy, with zero touches");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile = trace.add_tile();
-    NextTilePrefetcher pf(1, 0);
+    DistanceAwarePrefetcher pf(1, 0);
     std::vector<PrefetchTarget> out;
     pf.on_demand(filter_ctx(mapper, trace, tile), out);
     CHECK_EQ(check::ssize(out), 1);
@@ -91,12 +91,12 @@ void test_min_touches_zero_is_the_current_policy() {
 }
 
 void test_filter_opens_at_min_touches_inclusive() {
-    check::group("next_tile filter: emission opens at count >= min_touches");
+    check::group("distance_aware filter: emission opens at count >= min_touches");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile = trace.add_tile();
     const PrefetchContext ctx = filter_ctx(mapper, trace, tile);
-    NextTilePrefetcher pf(1, 3);
+    DistanceAwarePrefetcher pf(1, 3);
     std::vector<PrefetchTarget> out;
 
     for (int touch = 1; touch <= 2; ++touch) {
@@ -113,14 +113,14 @@ void test_filter_opens_at_min_touches_inclusive() {
 }
 
 void test_counts_are_per_line() {
-    check::group("next_tile filter: counts are per line");
+    check::group("distance_aware filter: counts are per line");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile = trace.add_tile();
     const PrefetchContext hot = filter_ctx(mapper, trace, tile);
     PrefetchContext cold      = hot;
     cold.line                 = mapper.line_of(Coord{0, 0, 0, 0});
-    NextTilePrefetcher pf(1, 3);
+    DistanceAwarePrefetcher pf(1, 3);
     for (int touch = 0; touch < 3; ++touch) pf.on_access(hot.line, tile);
     pf.on_access(cold.line, tile);
 
@@ -133,12 +133,12 @@ void test_counts_are_per_line() {
 }
 
 void test_counts_reset_at_the_tile_boundary() {
-    check::group("next_tile filter: a new tile starts the line's count over");
+    check::group("distance_aware filter: a new tile starts the line's count over");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile0 = trace.add_tile();
     const auto tile1 = trace.add_tile();
-    NextTilePrefetcher pf(1, 3);
+    DistanceAwarePrefetcher pf(1, 3);
     const PrefetchContext in0 = filter_ctx(mapper, trace, tile0);
     for (int touch = 0; touch < 3; ++touch) pf.on_access(in0.line, tile0);
 
@@ -154,11 +154,11 @@ void test_counts_reset_at_the_tile_boundary() {
 }
 
 void test_retrigger_is_exempt() {
-    check::group("next_tile filter: a retrigger bypasses the filter at any count");
+    check::group("distance_aware filter: a retrigger bypasses the filter at any count");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile = trace.add_tile();
-    NextTilePrefetcher pf(1, 3);
+    DistanceAwarePrefetcher pf(1, 3);
     std::vector<PrefetchTarget> out;
     pf.on_demand(filter_ctx(mapper, trace, tile, /*retrigger=*/true), out);
     CHECK_EQ(check::ssize(out), 1);
@@ -166,24 +166,24 @@ void test_retrigger_is_exempt() {
 }
 
 void test_on_access_fires_exactly_at_the_threshold() {
-    check::group("next_tile trigger: on_access returns true only on the min_touches-th touch");
+    check::group("distance_aware trigger: on_access returns true only on the min_touches-th touch");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile = trace.add_tile();
     const LineId line = mapper.line_of(Coord{1, 1, 16, 4});
-    NextTilePrefetcher pf(1, 3);
+    DistanceAwarePrefetcher pf(1, 3);
     const bool expected[5] = {false, false, true, false, false};
     for (int touch = 0; touch < 5; ++touch) CHECK_EQ(pf.on_access(line, tile), expected[touch]);
 }
 
 void test_on_access_fires_per_line() {
-    check::group("next_tile trigger: interleaved lines each fire on their own 3rd touch");
+    check::group("distance_aware trigger: interleaved lines each fire on their own 3rd touch");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile = trace.add_tile();
     const LineId a = mapper.line_of(Coord{1, 1, 16, 4});
     const LineId b = mapper.line_of(Coord{0, 0, 0, 0});
-    NextTilePrefetcher pf(1, 3);
+    DistanceAwarePrefetcher pf(1, 3);
     for (int touch = 0; touch < 2; ++touch) {
         CHECK_TRUE(!pf.on_access(a, tile));
         CHECK_TRUE(!pf.on_access(b, tile));
@@ -195,13 +195,13 @@ void test_on_access_fires_per_line() {
 }
 
 void test_on_access_rearms_at_the_tile_boundary() {
-    check::group("next_tile trigger: a new tile re-arms the line");
+    check::group("distance_aware trigger: a new tile re-arms the line");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile0 = trace.add_tile();
     const auto tile1 = trace.add_tile();
     const LineId line = mapper.line_of(Coord{1, 1, 16, 4});
-    NextTilePrefetcher pf(1, 3);
+    DistanceAwarePrefetcher pf(1, 3);
     pf.on_access(line, tile0);
     pf.on_access(line, tile0);
     CHECK_TRUE(pf.on_access(line, tile0));
@@ -211,25 +211,25 @@ void test_on_access_rearms_at_the_tile_boundary() {
 }
 
 void test_min_touches_zero_and_one_fire_on_first_touch() {
-    check::group("next_tile trigger: min_touches 0 and 1 both fire on the first touch");
+    check::group("distance_aware trigger: min_touches 0 and 1 both fire on the first touch");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile = trace.add_tile();
     const LineId line = mapper.line_of(Coord{1, 1, 16, 4});
     for (std::int32_t mt = 0; mt <= 1; ++mt) {
-        NextTilePrefetcher pf(1, mt);
+        DistanceAwarePrefetcher pf(1, mt);
         CHECK_TRUE(pf.on_access(line, tile));
         CHECK_TRUE(!pf.on_access(line, tile));
     }
 }
 
 void test_on_demand_at_fire_time_emits_targets() {
-    check::group("next_tile trigger: on_demand at fire time passes the filter and emits");
+    check::group("distance_aware trigger: on_demand at fire time passes the filter and emits");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile = trace.add_tile();
     const PrefetchContext ctx = filter_ctx(mapper, trace, tile);
-    NextTilePrefetcher pf(1, 3);
+    DistanceAwarePrefetcher pf(1, 3);
     pf.on_access(ctx.line, tile);
     pf.on_access(ctx.line, tile);
     CHECK_TRUE(pf.on_access(ctx.line, tile));
@@ -244,12 +244,12 @@ void test_on_demand_at_fire_time_emits_targets() {
 }
 
 void test_negative_min_touches_is_refused() {
-    check::group("next_tile filter: a negative min_touches is refused");
-    CHECK_THROWS(std::invalid_argument, NextTilePrefetcher(1, -1));
+    check::group("distance_aware filter: a negative min_touches is refused");
+    CHECK_THROWS(std::invalid_argument, DistanceAwarePrefetcher(1, -1));
 }
 
 void test_l2_engine_issues_forward_and_drains() {
-    check::group("next_tile: L2 issues forward targets and drains all MSHRs");
+    check::group("distance_aware: L2 issues forward targets and drains all MSHRs");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     fx::FakeTrace trace(1);
     const auto tile = trace.add_tile();
@@ -262,7 +262,7 @@ void test_l2_engine_issues_forward_and_drains() {
     p.l2 = fx::level(32, 2, 8, 4);
     p.l1.cache_size_bytes *= mapper.line_size_bytes();
     p.l2.cache_size_bytes *= mapper.line_size_bytes();
-    p.l2.prefetch_kind = PrefetchKind::NextTile;
+    p.l2.prefetch_kind = PrefetchKind::DistanceAware;
     p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false};
     p.l2_miss_latency = SimTime{1};
     // These suites pin the legacy MISS trigger (plan 0831); the engine's
@@ -304,11 +304,11 @@ EngineParams tiny_two_line_levels(const KhkwSplitMapper& mapper) {
 }
 
 void test_l1_hits_feed_the_l2_touch_counter() {
-    check::group("next_tile filter: L1 hits feed the counter, a later L2 miss emits");
+    check::group("distance_aware filter: L1 hits feed the counter, a later L2 miss emits");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     const fx::FakeTrace trace = touch_trace();
     EngineParams p = tiny_two_line_levels(mapper);
-    p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    p.l2.prefetch_kind   = PrefetchKind::DistanceAware;
     p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, 3};
     p.l2_prefetch_trigger = L2Trigger::Miss;
     Engine engine(mapper, trace, p);
@@ -321,12 +321,12 @@ void test_l1_hits_feed_the_l2_touch_counter() {
     CHECK_EQ(engine.stats().l2_pf_filtered, 3);
 }
 
-void test_fully_filtered_next_tile_degrades_to_none() {
-    check::group("next_tile filter: an unreachable threshold degrades to policy none");
+void test_fully_filtered_distance_aware_degrades_to_none() {
+    check::group("distance_aware filter: an unreachable threshold degrades to policy none");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     const fx::FakeTrace trace = touch_trace();
     EngineParams p = tiny_two_line_levels(mapper);
-    p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    p.l2.prefetch_kind   = PrefetchKind::DistanceAware;
     p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, 100};
     p.l2_prefetch_trigger = L2Trigger::Miss;
     Engine filtered(mapper, trace, p);
@@ -342,18 +342,18 @@ void test_fully_filtered_next_tile_degrades_to_none() {
 }
 
 void test_min_touches_zero_reproduces_old_numbers() {
-    check::group("next_tile filter: min_touches 0 matches the pre-filter policy at the engine");
+    check::group("distance_aware filter: min_touches 0 matches the pre-filter policy at the engine");
     KhkwSplitMapper mapper(WeightShape{3, 3, 32, 16}, 16, 4, 1);
     const fx::FakeTrace trace = touch_trace();
     EngineParams p = tiny_two_line_levels(mapper);
-    p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    p.l2.prefetch_kind   = PrefetchKind::DistanceAware;
     p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false, 0};
     p.l2_prefetch_trigger = L2Trigger::Miss;
     Engine zero(mapper, trace, p);
     zero.run();
 
     EngineParams old_p = tiny_two_line_levels(mapper);
-    old_p.l2.prefetch_kind   = PrefetchKind::NextTile;
+    old_p.l2.prefetch_kind   = PrefetchKind::DistanceAware;
     old_p.l2.prefetch_params = PrefetchParams{1, Axis::CIN, false, false};
     old_p.l2_prefetch_trigger = L2Trigger::Miss;
     Engine old(mapper, trace, old_p);
@@ -383,7 +383,7 @@ int main() {
     test_negative_min_touches_is_refused();
     test_l2_engine_issues_forward_and_drains();
     test_l1_hits_feed_the_l2_touch_counter();
-    test_fully_filtered_next_tile_degrades_to_none();
+    test_fully_filtered_distance_aware_degrades_to_none();
     test_min_touches_zero_reproduces_old_numbers();
     return check::summary();
 }

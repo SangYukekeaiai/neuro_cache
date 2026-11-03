@@ -1,4 +1,4 @@
-// Plan unit C5: the `Prefetcher` interface, `none`, `next_burst(d)`, the
+// Plan unit C5: the `Prefetcher` interface, `none`, `next_access(d)`, the
 // `demand = false` triage rules and the drop rule (4.6, N15, N16).
 //
 // Exit criterion, Part 7 line 1356: "`none` reproduces C3's event log
@@ -28,7 +28,7 @@
 #include <cachesim/core/cache_level.h>
 #include <cachesim/core/engine.h>
 #include <cachesim/core/mshr.h>
-#include <cachesim/prefetch/next_burst.h>
+#include <cachesim/prefetch/next_access.h>
 #include <cachesim/prefetch/none.h>
 #include <cachesim/types.h>
 
@@ -76,8 +76,8 @@ void test_none_asks_the_memory_system_for_nothing() {
     CHECK_EQ(check::ssize(targets), 0);
 }
 
-void test_next_burst_walks_ahead_by_exactly_the_distance() {
-    check::group("C5: 4.6's next_burst(d), line for line");
+void test_next_access_walks_ahead_by_exactly_the_distance() {
+    check::group("C5: 4.6's next_access(d), line for line");
 
     FakeTrace tr(2);
     const std::int32_t tile = tr.add_tile();
@@ -86,7 +86,7 @@ void test_next_burst_walks_ahead_by_exactly_the_distance() {
     }
     LinearMapper mapper(32);
     std::vector<PrefetchTarget> targets;
-    NextBurstPrefetcher pf(1, 2);
+    NextAccessPrefetcher pf(1, 2);
     CHECK_EQ(pf.distance(), 1);
     CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{0});
 
@@ -123,7 +123,7 @@ void test_next_burst_walks_ahead_by_exactly_the_distance() {
     for (std::int32_t k = 0; k < 5; ++k) tr2.add_burst(tile2, 0, k, k);
     LinearMapper mapper2(16);
     std::vector<PrefetchTarget> targets2;
-    NextBurstPrefetcher deep(3, 1);
+    NextAccessPrefetcher deep(3, 1);
     const PrefetchContext d0{Level::L1, CoreId{0}, tile2, BurstIndex{0}, LineId{0}, SimTime{0},
                              mapper2, tr2};
     deep.on_demand(d0, targets2);
@@ -135,7 +135,7 @@ void test_next_burst_walks_ahead_by_exactly_the_distance() {
     CHECK_EQ(deep.pf_cursor(CoreId{0}), BurstIndex{4});
 }
 
-void test_next_burst_stops_at_the_tile_boundary() {
+void test_next_access_stops_at_the_tile_boundary() {
     check::group("C5: 4.6 -- the policy never crosses a tile boundary");
 
     FakeTrace tr(1);
@@ -143,7 +143,7 @@ void test_next_burst_stops_at_the_tile_boundary() {
     for (std::int32_t k = 0; k < 3; ++k) tr.add_burst(tile, 0, k, k);
     LinearMapper mapper(16);
     std::vector<PrefetchTarget> targets;
-    NextBurstPrefetcher pf(5, 1);
+    NextAccessPrefetcher pf(5, 1);
     const PrefetchContext ctx{Level::L1, CoreId{0}, tile, BurstIndex{1}, LineId{1}, SimTime{0},
                               mapper, tr};
     pf.on_demand(ctx, targets);
@@ -156,7 +156,7 @@ void test_next_burst_stops_at_the_tile_boundary() {
     CHECK_EQ(pf.pf_cursor(CoreId{0}), BurstIndex{3});
 }
 
-void test_next_burst_pulls_forward_after_budget_exhaustion() {
+void test_next_access_pulls_forward_after_budget_exhaustion() {
     check::group("C5: ORACLE -- N16, budget exhaustion leaves the cursor until the next demand");
 
     FakeTrace tr(1);
@@ -164,7 +164,7 @@ void test_next_burst_pulls_forward_after_budget_exhaustion() {
     for (std::int32_t k = 0; k < 5; ++k) tr.add_burst(tile, 0, k, k, 2);
     LinearMapper mapper(16);
     std::vector<PrefetchTarget> targets;
-    NextBurstPrefetcher pf(4, 1);
+    NextAccessPrefetcher pf(4, 1);
     const PrefetchContext ctx{Level::L1, CoreId{0}, tile, BurstIndex{0}, LineId{0}, SimTime{0},
                               mapper, tr};
     pf.on_demand(ctx, targets);
@@ -195,7 +195,7 @@ void test_on_tile_start_is_needed_and_not_convenient() {
     for (std::int32_t k = 0; k < 4; ++k) tr.add_burst(tile, 0, k, k);
     LinearMapper mapper(16);
     std::vector<PrefetchTarget> targets;
-    NextBurstPrefetcher pf(1, 1);
+    NextAccessPrefetcher pf(1, 1);
     const PrefetchContext first{Level::L1, CoreId{0}, tile, BurstIndex{0}, LineId{0}, SimTime{0},
                                 mapper, tr};
     pf.on_demand(first, targets);
@@ -223,18 +223,18 @@ void test_make_prefetcher_refuses_a_configuration_that_claims_to_be_on() {
     check::group("C5: make_prefetcher, and what it refuses");
 
     CHECK_THROWS(std::invalid_argument,
-                 make_prefetcher(PrefetchKind::NextBurst, PrefetchParams{0}, 1));
+                 make_prefetcher(PrefetchKind::NextAccess, PrefetchParams{0}, 1));
     CHECK_THROWS(std::invalid_argument,
-                 make_prefetcher(PrefetchKind::NextBurst, PrefetchParams{-1}, 1));
+                 make_prefetcher(PrefetchKind::NextAccess, PrefetchParams{-1}, 1));
     CHECK_THROWS(std::invalid_argument,
-                 make_prefetcher(PrefetchKind::NextBurst, PrefetchParams{1}, 0));
+                 make_prefetcher(PrefetchKind::NextAccess, PrefetchParams{1}, 0));
     CHECK_THROWS(std::invalid_argument,
                  make_prefetcher(PrefetchKind::None, PrefetchParams{-1}, 1));
     // 2.5b pairs `none` with distance 0 and a sweep grid crosses the two axes,
     // so a distance is accepted and ignored here; D1's row owns the cross-field
-    // rule that `next_burst` with distance 0 is a configuration error.
+    // rule that `next_access` with distance 0 is a configuration error.
     CHECK_TRUE(make_prefetcher(PrefetchKind::None, PrefetchParams{3}, 1) != nullptr);
-    CHECK_TRUE(make_prefetcher(PrefetchKind::NextBurst, PrefetchParams{2}, 4) != nullptr);
+    CHECK_TRUE(make_prefetcher(PrefetchKind::NextAccess, PrefetchParams{2}, 4) != nullptr);
 }
 
 // ===========================================================================
@@ -333,7 +333,7 @@ void test_on_the_unbounded_baseline_every_distance_agrees() {
         p.l1.ii             = SimTime{0};
         p.l2                = fx::level(kL2Sets, 4, 8, 4, 1);
         p.l2.ii             = SimTime{0};
-        p.prefetch_policy   = d == 0 ? PrefetchKind::None : PrefetchKind::NextBurst;
+        p.prefetch_policy   = d == 0 ? PrefetchKind::None : PrefetchKind::NextAccess;
         p.prefetch_distance = d == 0 ? 0 : d;
 
         InvariantProbe probe(16, 1);
@@ -379,11 +379,11 @@ void test_the_worked_example_of_4_6() {
         CHECK_EQ(eng.tile_origin(1), SimTime{222});   // served(b2) = 221
     }
 
-    // --- column 2: next_burst(1), timely ------------------------------------
+    // --- column 2: next_access(1), timely ------------------------------------
     {
         LinearMapper map(64);
         EngineParams p      = miss_params();
-        p.prefetch_policy   = PrefetchKind::NextBurst;
+        p.prefetch_policy   = PrefetchKind::NextAccess;
         p.prefetch_distance = 1;
         InvariantProbe probe(64, 1);
         map.set_recorder(&probe);
@@ -404,7 +404,7 @@ void test_the_worked_example_of_4_6() {
         CHECK_EQ(eng.stats().core_stall.at(0), 110);
     }
 
-    // --- column 3: next_burst(1), evicted before use ------------------------
+    // --- column 3: next_access(1), evicted before use ------------------------
     {
         // A one-set, one-way L1 and L2, and burst 2's line already in the L2 so
         // the prefetch lands early. Burst 1's fill at 110 then evicts it from
@@ -418,7 +418,7 @@ void test_the_worked_example_of_4_6() {
         p.l1.ii             = SimTime{1};
         p.l2.ii             = SimTime{1};
         p.l2.latency        = SimTime{10};
-        p.prefetch_policy   = PrefetchKind::NextBurst;
+        p.prefetch_policy   = PrefetchKind::NextAccess;
         p.prefetch_distance = 1;
         Engine eng(map, tr, p);
         eng.l2().install(LineId{1});
@@ -439,7 +439,7 @@ void test_deeper_prefetching_shortens_the_run() {
     for (std::int32_t d : {0, 1, 2}) {
         LinearMapper map(64);
         EngineParams p      = miss_params();
-        p.prefetch_policy   = d == 0 ? PrefetchKind::None : PrefetchKind::NextBurst;
+        p.prefetch_policy   = d == 0 ? PrefetchKind::None : PrefetchKind::NextAccess;
         p.prefetch_distance = d;
         InvariantProbe probe(64, 1);
         map.set_recorder(&probe);
@@ -490,7 +490,7 @@ void test_prefetching_restarts_at_every_tile() {
 
     LinearMapper map(64);
     EngineParams p      = miss_params();
-    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_policy   = PrefetchKind::NextAccess;
     p.prefetch_distance = 2;
     Engine eng(map, tr, p);
     eng.run();
@@ -517,7 +517,7 @@ void test_a_demand_request_promotes_an_outstanding_prefetch_entry() {
 
     LinearMapper map(64);
     EngineParams p      = miss_params();
-    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_policy   = PrefetchKind::NextAccess;
     p.prefetch_distance = 1;
     InvariantProbe probe(64, 1);
     map.set_recorder(&probe);
@@ -561,7 +561,7 @@ void test_a_prefetch_never_waits_at_the_l1() {
     p.l2                = fx::level(8, 2, 4, 2, 2);
     p.l1.ii             = SimTime{1};
     p.l2.ii             = SimTime{1};
-    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_policy   = PrefetchKind::NextAccess;
     p.prefetch_distance = 2;
     InvariantProbe probe(16, 2);
     map.set_recorder(&probe);
@@ -620,7 +620,7 @@ void test_a_prefetch_DOES_wait_at_the_l2_which_I15_forbids() {
     p.l2                = fx::level(8, 2, 4, 1, 1);   // l2_tgts_per_mshr = 1
     p.l1.ii             = SimTime{1};
     p.l2.ii             = SimTime{1};
-    p.prefetch_policy   = PrefetchKind::NextBurst;
+    p.prefetch_policy   = PrefetchKind::NextAccess;
     p.prefetch_distance = 1;
     InvariantProbe probe(16, 1);
     map.set_recorder(&probe);
@@ -664,7 +664,7 @@ void test_r8_makes_the_hidden_latency_measurable() {
     for (std::int32_t d : {0, 1, 2, 4, 8}) {
         LinearMapper map(64);
         EngineParams p      = miss_params();
-        p.prefetch_policy   = d == 0 ? PrefetchKind::None : PrefetchKind::NextBurst;
+        p.prefetch_policy   = d == 0 ? PrefetchKind::None : PrefetchKind::NextAccess;
         p.prefetch_distance = d;
         Engine eng(map, tr, p);
         eng.run();
@@ -690,9 +690,9 @@ void test_r8_makes_the_hidden_latency_measurable() {
 
 int main() {
     test_none_asks_the_memory_system_for_nothing();
-    test_next_burst_walks_ahead_by_exactly_the_distance();
-    test_next_burst_stops_at_the_tile_boundary();
-    test_next_burst_pulls_forward_after_budget_exhaustion();
+    test_next_access_walks_ahead_by_exactly_the_distance();
+    test_next_access_stops_at_the_tile_boundary();
+    test_next_access_pulls_forward_after_budget_exhaustion();
     test_on_tile_start_is_needed_and_not_convenient();
     test_make_prefetcher_refuses_a_configuration_that_claims_to_be_on();
     test_none_reproduces_the_no_prefetch_timeline();

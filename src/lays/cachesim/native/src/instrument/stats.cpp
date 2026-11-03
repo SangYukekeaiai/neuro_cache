@@ -214,13 +214,13 @@ const std::vector<std::string>& csv_columns() {
         // must not look configured the same way.
         "rrip_bits",
         // Appended after rrip_bits for the same positional-stability reason:
-        // the NextTile touch filter's knob and its suppression count
+        // the DistanceAware touch filter's knob and its suppression count
         // (plan 2026-11-01).
         "l2_prefetch_min_touches", "l2_pf_filtered",
         // Appended after l2_pf_filtered for the same positional-stability
         // reason (plan 2026-11-01, T12). The cell is the EFFECTIVE
         // (post-validate, post-normalize) trigger, so the row describes the
-        // engine that actually ran: a config with no next_tile policy reads
+        // engine that actually ran: a config with no distance_aware policy reads
         // "miss" however the knob was left.
         "l2_prefetch_trigger",
         // Appended after l2_prefetch_trigger for the same positional-stability

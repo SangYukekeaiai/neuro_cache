@@ -1,7 +1,7 @@
 // Two-class LRU for the L2: protected lines outlive unprotected ones.
 //
 // Plan docs/plans/2026-11-02-l2-pf-lru-replacement.md: lines filled by the L2
-// next_tile prefetch and not yet consumed are the protected class; everything
+// distance_aware prefetch and not yet consumed are the protected class; everything
 // else is the normal class. The victim is the LRU line of the normal class;
 // only a set whose candidates are all protected victimizes a protected line,
 // again by LRU. The stamps are StampPolicy's, so within each class the order

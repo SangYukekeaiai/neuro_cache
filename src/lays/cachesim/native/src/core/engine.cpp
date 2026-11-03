@@ -36,11 +36,11 @@ EngineParams normalize_params(EngineParams p) {
         p.l2.prefetch_params.up       = p.l2_prefetch_up;
         p.l2.prefetch_params.down     = p.l2_prefetch_down;
     }
-    // Touch mode is NextTile's trigger: only NextTile's `on_access` ever
+    // Touch mode is DistanceAware's trigger: only DistanceAware's `on_access` ever
     // fires, so any other L2 policy keeps the legacy miss trigger rather than
     // silently never prefetching. T12's validate() owns refusing the
     // combination outright at config load.
-    if (p.l2.prefetch_kind != PrefetchKind::NextTile) {
+    if (p.l2.prefetch_kind != PrefetchKind::DistanceAware) {
         p.l2_prefetch_trigger = L2Trigger::Miss;
     }
     return p;
@@ -450,7 +450,7 @@ void Engine::prefetch_on_demand(Level level,
 
         if (!complete) break;
         // Feedback is per fully issued burst. A partial L1 burst never reaches
-        // this callback, so NextBurst's cursor remains at that burst until the
+        // this callback, so NextAccess's cursor remains at that burst until the
         // next demand applies its core-boundary pull-forward.
         lvl.prefetcher().on_issued(core, burst);
     }

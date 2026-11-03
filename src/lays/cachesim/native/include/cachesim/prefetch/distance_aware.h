@@ -18,9 +18,9 @@ namespace cachesim {
 // comparison is `count >= min_touches`, so 0 disables the filter and is the
 // pre-filter policy exactly; a retrigger (ctx.retrigger) bypasses the filter
 // so a chain started by a qualifying line stays alive.
-class NextTilePrefetcher final : public Prefetcher {
+class DistanceAwarePrefetcher final : public Prefetcher {
 public:
-    explicit NextTilePrefetcher(std::int32_t distance, std::int32_t min_touches = 0);
+    explicit DistanceAwarePrefetcher(std::int32_t distance, std::int32_t min_touches = 0);
 
     void on_demand(const PrefetchContext&, std::vector<PrefetchTarget>& out) override;
     // Returns true exactly when the post-increment count for (line, tile)

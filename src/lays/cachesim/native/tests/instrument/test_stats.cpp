@@ -118,7 +118,7 @@ void test_the_column_list_is_pinned() {
     // L2 policy must say so in the row for the same reason `layout` had to.
     // 112 since `rrip_bits` joined it (plan 0907-linesize), appended at the END
     // so every column an existing result set is read by keeps its position.
-    // 114 since the NextTile touch filter joined it (plan 2026-11-01): its
+    // 114 since the DistanceAware touch filter joined it (plan 2026-11-01): its
     // knob `l2_prefetch_min_touches` and its suppression count
     // `l2_pf_filtered`, appended at the END for the same reason.
     // 115 since `l2_prefetch_trigger` joined it (same plan, T12): the row
