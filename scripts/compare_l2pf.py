@@ -15,8 +15,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from cachesim.grid import full_grid, load_sweep, write_grid  # noqa: E402
-from util import data_root  # noqa: E402
+from lays.cachesim.grid import full_grid, load_sweep, write_grid  # noqa: E402
+from lays.util import data_root  # noqa: E402
 
 import pipeline  # noqa: E402
 from pipeline import join_results, resolve_layers, run_all  # noqa: E402
@@ -147,15 +147,15 @@ def compare(args):
     schedule_root = pipeline.schedules_for(args.bench, layers, out, commands)
 
     builds = [
-        ["make", "-C", str(ROOT / "src/cachesim/native"), "MODE=release", "apps"],
-        ["make", "-C", str(ROOT / "src/nocsim/eventsim")],
+        ["make", "-C", str(ROOT / "src/lays/cachesim/native"), "MODE=release", "apps"],
+        ["make", "-C", str(ROOT / "src/lays/nocsim/eventsim")],
     ]
-    if (ROOT / "src/weight_trace_gen" / args.bench / "Makefile").is_file():
-        builds.append(["make", "-C", str(ROOT / "src/weight_trace_gen" / args.bench)])
+    if (ROOT / "src/lays/weight_trace_gen" / args.bench / "Makefile").is_file():
+        builds.append(["make", "-C", str(ROOT / "src/lays/weight_trace_gen" / args.bench)])
     run_all(builds, commands, 1)
 
     gen = [
-        sys.executable, "-m", "weight_trace_gen", "gen", "--arch", args.bench,
+        sys.executable, "-m", "lays.weight_trace_gen", "gen", "--arch", args.bench,
         "--trace-root", str(pipeline.INPUT_TRACE / args.bench),
         "--schedule-cache", str(schedule_root), "--workers", "1",
     ]
@@ -197,7 +197,7 @@ def compare(args):
             output = out / "nocsim" / trace_dir / f"{layer}_s{sample:05d}.csv"
             output.parent.mkdir(parents=True, exist_ok=True)
             nocsim_commands.append([
-                sys.executable, "-m", "nocsim", "--schedule", str(schedule),
+                sys.executable, "-m", "lays.nocsim", "--schedule", str(schedule),
                 "--layer", str(layer_yaml), "--arch", str(pipeline.NOCSIM_ARCH[args.bench]),
                 "--weight-trace", str(
                     out / "weight_traces" / args.bench / trace_dir / layer /
@@ -220,7 +220,7 @@ def compare(args):
     ]
     wcache_commands = [
         [
-            sys.executable, "-m", "cachesim", "sweep",
+            sys.executable, "-m", "lays.cachesim", "sweep",
             "--config-grid", str(grid_file), "--trace", str(streams[(trace_dir, layer, sample)]),
             "--arm", "cache", "--tier", grid_name,
             "--run-id", f"l2pf-{layer}-s{sample}-{grid_file.stem}", "--header",

@@ -1,4 +1,4 @@
-"""python -m weight_trace_gen: the gen CLI, its schedule/trace consistency
+"""python -m lays.weight_trace_gen: the gen CLI, its schedule/trace consistency
 check, and its --stream output."""
 import argparse
 import dataclasses
@@ -11,12 +11,12 @@ import sys
 
 import pytest
 
-from nocsim.step_cycles import load_step_cycles, save_step_cycles  # noqa: E402
-from snn_scheduler.artifact import check_schedule_matches_trace  # noqa: E402
-from weight_trace_gen import ComputeCycles  # noqa: E402
-from weight_trace_gen.weight_trace import (CoreEntry, LayerWeightTrace, TickEntry,  # noqa: E402
+from lays.nocsim.step_cycles import load_step_cycles, save_step_cycles  # noqa: E402
+from lays.scheduler.artifact import check_schedule_matches_trace  # noqa: E402
+from lays.weight_trace_gen import ComputeCycles  # noqa: E402
+from lays.weight_trace_gen.weight_trace import (CoreEntry, LayerWeightTrace, TickEntry,  # noqa: E402
                                            TileWeightTrace)
-import weight_trace_gen.cli as gwt  # noqa: E402
+import lays.weight_trace_gen.cli as gwt  # noqa: E402
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 
@@ -156,12 +156,12 @@ def test_stream_is_byte_identical_to_snapshot(tmp_path):
     """`gen --stream` on R9 sample 0 writes the same bytes as the tracked
     stream: the hash equals `sha256sum
     data/demo/loas/streams/resnet19_T4_n5/layer_09_layer2_0_conv2_s00000.wcts`."""
-    if not (REPO / "src/weight_trace_gen/loas/loasgen").exists():
+    if not (REPO / "src/lays/weight_trace_gen/loas/loasgen").exists():
         pytest.skip("loasgen not built")
     out = tmp_path / "stream.wcts"
     with open(out, "wb") as fh:
         r = subprocess.run(
-            [sys.executable, "-m", "weight_trace_gen", "gen", "--arch", "loas",
+            [sys.executable, "-m", "lays.weight_trace_gen", "gen", "--arch", "loas",
              "--trace-root", "input_trace/loas", "--trace-dir", "resnet19_T4_n5",
              "--layer", "layer_09_layer2_0_conv2", "--schedule-cache", "configs/schedules",
              "--sample-start", "0", "--sample-count", "1", "--stream"],
@@ -175,9 +175,9 @@ def test_prosperity_sorts_and_reuses_rows_across_t():
     if not bridge.exists():
         pytest.skip("prosperitygen not built")
     np = pytest.importorskip("numpy")
-    from parsers.layer import DIM_COUT, DIM_CIN, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
-    from weight_trace_gen import NodeTileSpec
-    from weight_trace_gen.weight_trace import reconstruct_samples
+    from lays.parsers.layer import DIM_COUT, DIM_CIN, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
+    from lays.weight_trace_gen import NodeTileSpec
+    from lays.weight_trace_gen.weight_trace import reconstruct_samples
 
     trace = np.zeros((2, 1, 1, 4, 4), np.uint8)  # [T, B, Cin, Hin, Win]
     trace[0, 0, 0, 0, 0] = trace[0, 0, 0, 1, 1] = 1  # t=0 row: bits {4, 8}

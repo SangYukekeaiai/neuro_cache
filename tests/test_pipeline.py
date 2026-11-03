@@ -280,13 +280,13 @@ def test_summary_lists_module_commands(tmp_path, traces, monkeypatch):
 
     def fake_run(cmd, capture=False):
         module = cmd[2] if cmd[1:2] == ["-m"] else None
-        if module == "snn_scheduler":
+        if module == "lays.scheduler":
             sched = pathlib.Path(cmd[cmd.index("--cache-dir") + 1]) / "loas/t/layer_01_a.json"
             sched.parent.mkdir(parents=True, exist_ok=True)
             sched.write_text(json.dumps({"workload": {"problem": problem}}))
-        if module == "nocsim":
+        if module == "lays.nocsim":
             return "total_cycles: 100\n"
-        if module == "cachesim":
+        if module == "lays.cachesim":
             n = len(json.loads(pathlib.Path(cmd[cmd.index("--config-grid") + 1]).read_text()))
             fields = [*pipeline.KEY_FIELDS, "total_cycles"]
             return "\n".join([",".join(fields)] + [",".join(["1"] * len(fields))] * n) + "\n"
@@ -305,11 +305,11 @@ def test_summary_lists_module_commands(tmp_path, traces, monkeypatch):
             continue
         assert c[0] == sys.executable and c[1] == "-m", c
         modules.add(c[2])
-    assert modules == {"snn_scheduler", "weight_trace_gen", "nocsim", "cachesim"}
+    assert modules == {"lays.scheduler", "lays.weight_trace_gen", "lays.nocsim", "lays.cachesim"}
 
 
 def test_layers_all_expands_to_every_valid_layer():
-    from weight_trace_gen.trace import valid_layer_names
+    from lays.weight_trace_gen.trace import valid_layer_names
     got = pipeline.resolve_layers("loas", ["all"])
     want = set()
     for d in ("vgg16_T4_n5", "resnet19_T4_n5"):

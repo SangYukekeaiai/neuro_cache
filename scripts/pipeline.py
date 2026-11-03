@@ -3,10 +3,10 @@
 benchmark, joined into one table.
 
 Steps: check the inputs under input_trace/<bench>/; take the tracked schedules
-from configs/schedules, solving the missing ones with `python -m snn_scheduler
+from configs/schedules, solving the missing ones with `python -m lays.scheduler
 solve-trace` into <out>/schedules; build the native tools; `python -m
-weight_trace_gen gen` the step cycles and the WCTS streams; run `python -m
-nocsim --simulate` and `python -m cachesim sweep` over a config grid (default:
+lays.weight_trace_gen gen` the step cycles and the WCTS streams; run `python -m
+lays.nocsim --simulate` and `python -m lays.cachesim sweep` over a config grid (default:
 the khkw grid of configs/cache/, or --grid, a JSON array of wcache configs);
 write <out>/results.csv (one row per layer, sample and config) and
 <out>/summary.md (geomean speedup per config, and every command run).
@@ -30,11 +30,11 @@ import time
 
 import yaml
 
-from cachesim.grid import full_grid, write_grid
-from snn_scheduler.artifact import check_schedule_matches_trace
-from util import data_root
-from weight_trace_gen import ARCH_NATIVE_BRIDGES
-from weight_trace_gen.trace import exclusion_reason, layer_params, valid_layer_names
+from lays.cachesim.grid import full_grid, write_grid
+from lays.scheduler.artifact import check_schedule_matches_trace
+from lays.util import data_root
+from lays.weight_trace_gen import ARCH_NATIVE_BRIDGES
+from lays.weight_trace_gen.trace import exclusion_reason, layer_params, valid_layer_names
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 # One directory per benchmark: input_trace/<bench>/<trace_dir>/{meta.json,<layer>.npy}.
@@ -178,11 +178,11 @@ def check_bench(spec):
     problems, notes = [], []
     for what, path in (("arch config", ROOT / "configs/arch" / f"{bench}.yaml"),
                        ("dataflow config", ROOT / "configs/node_mapspace" / f"{bench}.yaml"),
-                       ("native model", ROOT / "src/weight_trace_gen" / bench / "Makefile")):
+                       ("native model", ROOT / "src/lays/weight_trace_gen" / bench / "Makefile")):
         if not path.is_file():
             problems.append(f"no {what} for bench {bench!r}: missing {path.relative_to(ROOT)}")
     if bench not in ARCH_NATIVE_BRIDGES:
-        problems.append(f"bench {bench!r} is not in weight_trace_gen.ARCH_NATIVE_BRIDGES "
+        problems.append(f"bench {bench!r} is not in lays.weight_trace_gen.ARCH_NATIVE_BRIDGES "
                         f"(known: {sorted(ARCH_NATIVE_BRIDGES)})")
     if bench not in NOCSIM_ARCH:
         problems.append(f"no nocsim arch for bench {bench!r} in pipeline.NOCSIM_ARCH (known: {sorted(NOCSIM_ARCH)})")
@@ -277,7 +277,7 @@ def schedules_for(bench, layers, out, record):
         names = list(dict.fromkeys(p.stem for p in missing))
         # One call so summary.csv holds every row; solve-trace applies each layer
         # name only to the dirs whose meta.json has it and skips cached schedules.
-        run_all([[sys.executable, "-m", "snn_scheduler", "solve-trace", "--arch", bench,
+        run_all([[sys.executable, "-m", "lays.scheduler", "solve-trace", "--arch", bench,
                   "--trace-root", str(INPUT_TRACE / bench), "--trace-dirs", *dirs,
                   "--layers", *names, "--cache-dir", str(root)]],
                 record, 1)
@@ -330,13 +330,13 @@ def demo(a):
     cmds = []
     sched_root = schedules_for(a.bench, layers, out, cmds)
 
-    builds = [["make", "-C", str(ROOT / "src/cachesim/native"), "MODE=release", "apps"],
-              ["make", "-C", str(ROOT / "src/nocsim/eventsim")]]
-    if (ROOT / "src/weight_trace_gen" / a.bench / "Makefile").is_file():
-        builds.append(["make", "-C", str(ROOT / "src/weight_trace_gen" / a.bench)])
+    builds = [["make", "-C", str(ROOT / "src/lays/cachesim/native"), "MODE=release", "apps"],
+              ["make", "-C", str(ROOT / "src/lays/nocsim/eventsim")]]
+    if (ROOT / "src/lays/weight_trace_gen" / a.bench / "Makefile").is_file():
+        builds.append(["make", "-C", str(ROOT / "src/lays/weight_trace_gen" / a.bench)])
     run_all(builds, cmds, 1)
 
-    gen = [sys.executable, "-m", "weight_trace_gen", "gen", "--arch", a.bench,
+    gen = [sys.executable, "-m", "lays.weight_trace_gen", "gen", "--arch", a.bench,
            "--trace-root", str(INPUT_TRACE / a.bench),
            "--schedule-cache", str(sched_root), "--workers", "1"]
     streams = {(d, l, s): out / "streams" / d / f"{l}_s{s:05d}.wcts"
@@ -360,7 +360,7 @@ def demo(a):
             tc = out / "nocsim" / d / f"{l}_s{s:05d}.csv"
             tc.parent.mkdir(parents=True, exist_ok=True)
             nocsim_cmds.append(
-                [sys.executable, "-m", "nocsim", "--schedule", str(sched),
+                [sys.executable, "-m", "lays.nocsim", "--schedule", str(sched),
                  "--layer", str(lyaml), "--arch", str(NOCSIM_ARCH[a.bench]),
                  "--weight-trace", str(out / "weight_traces" / a.bench / d / l / f"sample_{s:05d}.json.gz"),
                  "--out", str(tc), "--simulate"])
@@ -370,7 +370,7 @@ def demo(a):
     grid_files = [(g, [f"{grid_name}_{i:02d}" for i, p in enumerate(grid) if p.get("cin_block") == cb])
                   for cb, g in write_grid(out / "grid", grid, grid_name).items()]
     wc_work = [(d, l, s, g, names) for (d, l, s) in streams for g, names in grid_files]
-    wc_cmds = [[sys.executable, "-m", "cachesim", "sweep",
+    wc_cmds = [[sys.executable, "-m", "lays.cachesim", "sweep",
                 "--config-grid", str(g), "--trace", str(streams[(d, l, s)]),
                 "--arm", "cache", "--tier", grid_name, "--run-id", f"demo-{l}-s{s}-{g.stem}", "--header"]
                for d, l, s, g, _ in wc_work]

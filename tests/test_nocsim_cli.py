@@ -1,4 +1,4 @@
-"""python -m nocsim: the entry point runs, and the --weight-trace reader
+"""python -m lays.nocsim: the entry point runs, and the --weight-trace reader
 refuses a file whose `format` is not step_cycles_v1."""
 import gzip
 import json
@@ -9,14 +9,14 @@ import pathlib
 
 import pytest
 
-from nocsim.sim import main
-from nocsim.step_cycles import load_step_cycles
+from lays.nocsim.sim import main
+from lays.nocsim.step_cycles import load_step_cycles
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 
 
 def test_dash_m_nocsim_help():
-    r = subprocess.run([sys.executable, "-m", "nocsim", "--help"], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, "-m", "lays.nocsim", "--help"], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     assert "--weight-trace" in r.stdout
 

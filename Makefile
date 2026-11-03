@@ -3,9 +3,9 @@ PYTHON ?= $(if $(wildcard $(ROOT).baseline/venv/bin/python),$(ROOT).baseline/ven
 
 .PHONY: build demo test
 build:
-	$(MAKE) -C $(ROOT)src/cachesim/native MODE=release apps
-	$(MAKE) -C $(ROOT)src/nocsim/eventsim
-	$(MAKE) -C $(ROOT)src/weight_trace_gen/loas
+	$(MAKE) -C $(ROOT)src/lays/cachesim/native MODE=release apps
+	$(MAKE) -C $(ROOT)src/lays/nocsim/eventsim
+	$(MAKE) -C $(ROOT)src/lays/weight_trace_gen/loas
 
 demo:
 	$(PYTHON) $(ROOT)scripts/pipeline.py

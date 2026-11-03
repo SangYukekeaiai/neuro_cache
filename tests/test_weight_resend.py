@@ -29,10 +29,10 @@ import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
-from nocsim.schedule.decode import LoopItem, Schedule, schedule_from_strategy
-from nocsim.schedule.steps import StepInfo
-from parsers.layer import SNNProb
-from weight_trace_gen.trace import build_workload_from_trace
+from lays.nocsim.schedule.decode import LoopItem, Schedule, schedule_from_strategy
+from lays.nocsim.schedule.steps import StepInfo
+from lays.parsers.layer import SNNProb
+from lays.weight_trace_gen.trace import build_workload_from_trace
 
 SCHED = ROOT / "configs/schedules/loas"
 TRACES = ROOT / "input_trace/loas"
@@ -79,7 +79,7 @@ def test_campaign(tmp_path):
 # A DRAM loop of COUT x 2 outside HO x 2 outside WO x 2. Weights change only
 # when COUT ticks, so 2 sends are owed and the old code emitted 8.
 def test_synthetic():
-    from parsers.layer import DIM_COUT, DIM_HO, DIM_WO
+    from lays.parsers.layer import DIM_COUT, DIM_HO, DIM_WO
 
     class FakeProb:
         pass

@@ -31,11 +31,11 @@ input_trace/
 # extension rules above do not apply to it.
 !configs/**
 
-# src/cachesim/examples/ holds committed example traces: source-controlled
+# src/lays/cachesim/examples/ holds committed example traces: source-controlled
 # fixtures, not captured data, so the *.json rule above does not apply to them
 # either. Scoped to the fixture extension rather than to `**`, which would also
 # re-include the __pycache__/ that line 2 ignores.
-!src/cachesim/examples/*.json
+!src/lays/cachesim/examples/*.json
 
 # input_trace/ is ignored above as captured data, but the loas subset under it
 # is a deliberate 13.6 MB fold of 5 samples (of 10,000) cut from the full
@@ -53,12 +53,12 @@ gurobi.lic
 *.lic
 
 # Compiled native binaries (build with: cd <dir> && make)
-src/nocsim/eventsim/eventsim
-src/weight_trace_gen/gustavsnn/gustavgen
-src/weight_trace_gen/loas/loasgen
-src/weight_trace_gen/prosperity/prosperitygen
-src/weight_trace_gen/ptb/ptbgen
-src/weight_trace_gen/spinalflow/spinalflowgen
+src/lays/nocsim/eventsim/eventsim
+src/lays/weight_trace_gen/gustavsnn/gustavgen
+src/lays/weight_trace_gen/loas/loasgen
+src/lays/weight_trace_gen/prosperity/prosperitygen
+src/lays/weight_trace_gen/ptb/ptbgen
+src/lays/weight_trace_gen/spinalflow/spinalflowgen
 
 # Local editor and OS files
 .idea/
@@ -80,5 +80,5 @@ core.*
 # local baseline outputs for the cleanup sprint (not tracked)
 .baseline/
 
-# Default NEURO_CACHE_DATA (src/util.py data_root): data kept outside git
+# Default NEURO_CACHE_DATA (src/lays/util.py data_root): data kept outside git
 /data/

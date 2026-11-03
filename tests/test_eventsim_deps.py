@@ -24,10 +24,10 @@ import subprocess
 import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
-BINARY = REPO / "src/nocsim/eventsim/eventsim"
+BINARY = REPO / "src/lays/nocsim/eventsim/eventsim"
 
 pytestmark = pytest.mark.skipif(
-    not BINARY.exists(), reason=f"no eventsim binary at {BINARY} (cd src/nocsim/eventsim && make)")
+    not BINARY.exists(), reason=f"no eventsim binary at {BINARY} (cd src/lays/nocsim/eventsim && make)")
 
 
 def run(rows, tmp, name):

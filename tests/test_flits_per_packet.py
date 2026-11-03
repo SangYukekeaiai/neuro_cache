@@ -1,7 +1,7 @@
 """FLITS_PER_PACKET: Python and the compiled eventsim must use one value.
 
-The value is defined once in src/nocsim/eventsim/constants.h; EventSim.h
-includes it and nocsim.core.transaction parses it. This test drives the
+The value is defined once in src/lays/nocsim/eventsim/constants.h; EventSim.h
+includes it and lays.nocsim.core.transaction parses it. This test drives the
 built binary, so it also catches a binary that is stale against the header.
 
 A unicast that does not touch the DRAM port costs `hops + size *
@@ -17,10 +17,10 @@ import subprocess
 
 import pytest
 
-from nocsim.core.transaction import FLITS_PER_PACKET
+from lays.nocsim.core.transaction import FLITS_PER_PACKET
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
-BINARY = REPO / "src/nocsim/eventsim/eventsim"
+BINARY = REPO / "src/lays/nocsim/eventsim/eventsim"
 
 
 def _unicast_cycles(size, tmp_path):
@@ -35,6 +35,6 @@ def _unicast_cycles(size, tmp_path):
 
 def test_eventsim_uses_python_flits_per_packet(tmp_path):
     if not BINARY.exists():
-        pytest.skip(f"no eventsim binary at {BINARY} (make -C src/nocsim/eventsim)")
+        pytest.skip(f"no eventsim binary at {BINARY} (make -C src/lays/nocsim/eventsim)")
     per_packet = (_unicast_cycles(20, tmp_path) - _unicast_cycles(10, tmp_path)) // 10
     assert per_packet == FLITS_PER_PACKET

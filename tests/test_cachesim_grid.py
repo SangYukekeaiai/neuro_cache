@@ -1,4 +1,4 @@
-"""python -m cachesim grid: the khkw grid built from configs/cache/*.json writes
+"""python -m lays.cachesim grid: the khkw grid built from configs/cache/*.json writes
 the files the demo writes."""
 import pathlib
 import subprocess
@@ -6,7 +6,7 @@ import sys
 
 import pytest
 
-from cachesim.grid import write_grid
+from lays.cachesim.grid import write_grid
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 DEMO_GRID = REPO / "data/demo/loas/grid"
@@ -30,7 +30,7 @@ def test_grid_files_equal_demo_grid(tmp_path):
 
 
 def test_cli_grid_writes_three_files(tmp_path):
-    r = subprocess.run([sys.executable, "-m", "cachesim", "grid", "--out", str(tmp_path)],
+    r = subprocess.run([sys.executable, "-m", "lays.cachesim", "grid", "--out", str(tmp_path)],
                        capture_output=True, text=True, cwd="/")
     assert r.returncode == 0, r.stderr
     names = ["khkw_0.json", "khkw_1.json", "khkw_2.json"]

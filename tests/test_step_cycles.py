@@ -2,9 +2,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from nocsim.step_cycles import load_step_cycles, save_step_cycles
-from weight_trace_gen import ComputeCycles
-from weight_trace_gen.weight_trace import (CoreEntry, LayerWeightTrace, TickEntry,
+from lays.nocsim.step_cycles import load_step_cycles, save_step_cycles
+from lays.weight_trace_gen import ComputeCycles
+from lays.weight_trace_gen.weight_trace import (CoreEntry, LayerWeightTrace, TickEntry,
                                            TileWeightTrace)
 
 DIMS = {"KH": 3, "KW": 3, "CIN": 8, "COUT": 4, "HO": 2, "WO": 2, "T": 4,
