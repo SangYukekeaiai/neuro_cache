@@ -6,13 +6,15 @@ compares all five.
 
 Written against commit `67420ba`. Every output below comes from running the code,
 with the binaries built in a scratch copy, except where a line says it was only
-read from the code.
+read from the code. The paths and line numbers in this document were later
+re-pointed to the src-layout tree at `0c55f2f`; the recorded outputs are still
+the ones produced at `67420ba`.
 
 ## The short version
 
 The input is the captured spike trace plus a solved schedule. No Prosperity or
 GustavSNN spike trace exists: both models replay the **spikes captured for LoAS**
-(`input_trace/loas/`) and re-derive which weights their own hardware would fetch.
+(`examples/input_trace/loas/`) and re-derive which weights their own hardware would fetch.
 
 1. The schedule says which slice of the layer each **tile** covers.
 2. A small C++ program per arch walks that slice of spikes and applies the arch's
@@ -36,17 +38,17 @@ but no GustavSNN address stream can be written today. See
 ## 1. The data flow
 
 ```
-python -m weight_trace_gen gen --arch ...       cli.py:128 (files) or :301 (--stream)
+python -m lays.weight_trace_gen gen --arch ...  cli.py:128 (files) or :301 (--stream)
   check_schedule_matches_trace                  layer shape must match meta.json
-  load_schedule -> tiles                        weight_trace.py:23, nocsim/schedule/tiles.py:98
+  load_schedule -> tiles                        weight_trace.py:23, src/lays/nocsim/schedule/tiles.py:98
   load_layer_trace -> [T, B, Cin, Hin, Win]     trace.py:39
   reconstruct_samples                           weight_trace.py:163, picks the arch's bridge
     native_bridge.py                            writes trace.bin + task.bin, runs the binary
       prosperitygen / gustavgen                 loops sample -> tile, calls reconstruct_sample
       write_tick_grouped                        tick_output.h:34, groups addresses by tick
     assemble_layer_traces                       weight_trace.py:109, merges cores per tile
-  save_step_cycles   -> sample_NNNNN.json.gz    nocsim/step_cycles.py:27, cycles only
-  stream_weight_trace -> WCTS on stdout         cachesim/stream.py:178, addresses
+  save_step_cycles   -> sample_NNNNN.json.gz    src/lays/nocsim/step_cycles.py:27, cycles only
+  stream_weight_trace -> WCTS on stdout         src/lays/cachesim/stream.py:178, addresses
 ```
 
 The Python side is shared. The per-arch parts are only `ProsperityGen.h`,
@@ -67,7 +69,7 @@ hin = ho + kh - 1        win = wo + kw - 1        (3x3 kernel, pad = 1)
 
 ## 2. From schedule to tiles
 
-`iter_node_tiles` (`nocsim/schedule/tiles.py:98`) turns the schedule into one
+`iter_node_tiles` (`src/lays/nocsim/schedule/tiles.py:98`) turns the schedule into one
 `NodeTileSpec` per `(dram_i, noc_i, core_id)`:
 
 - `node_bound[dim]` is how many values of `dim` the tile spans: the dim's total
@@ -269,23 +271,24 @@ Prosperity schedules must be re-solved to get it.
 ### `--stream` crashes on GustavSNN (real bug, not fixed)
 
 ```
-$ python -m weight_trace_gen gen --arch gustavsnn ... --stream
+$ python -m lays.weight_trace_gen gen --arch gustavsnn ... --stream
 ValueError: write_tile_frame: local_tick 0 not strictly ascending in core 0 of tile 0 (previous 0)
 exit code 1, 293 bytes already written to stdout
 ```
 
 - **Cause:** WCTS requires strictly ascending ticks within a core
-  (`cachesim/stream.py:120`, and `docs/atlas/cachesim_native.md:324`). GustavSNN's
+  (`src/lays/cachesim/stream.py:120`, and `docs/atlas/cachesim_native.md` section
+  1.7, WCTS v2 wire format). GustavSNN's
   parallel PEs are not cores, so its same-tick fetches all land on one core. The
-  merge at `stream.py:168` flattens them into equal ticks.
+  merge at `src/lays/cachesim/stream.py:168` flattens them into equal ticks.
 - **Reach:** it failed on all four single-node layers tried (`layer_01`, `04` and
   `10` through the writer, `07` through the CLI) and on multinode `layer_07`. Any
   tile with two fetches in one tick on a core triggers it. Prosperity streams fine
   in the same tests, because it never has two fetches in one tick on a core.
 - **Why tests miss it:** the repo's demo and tests do not stream real GustavSNN
   output. The only GustavSNN fixture is the legacy file that
-  `src/cachesim/examples/manifest.json:155-157` marks as unable to drive the engine.
-  `tests/test_stream_writer.py:118` asserts this rejection on purpose.
+  `examples/cachesim/manifest.json:155-157` marks as unable to drive the engine.
+  `tests/test_stream_writer.py:116-124` asserts this rejection on purpose.
 - **Direction for a fix:** either give each HO-row PE its own core id, or teach the
   format and the reader about same-tick bursts. The first keeps WCTS unchanged but
   changes `n_cores` and `spatial_factors`. Neither has been tried.
@@ -299,21 +302,21 @@ Generation works once these are handled:
 
 | Obstacle | Where | What to do |
 |---|---|---|
-| Binaries not built | `make build` only builds LoAS (`Makefile:8`) | `make -C src/weight_trace_gen/prosperity` and the same for `gustavsnn` |
-| No schedules in the repo | `configs/schedules/` has only `loas/` | Solve with Gurobi, or reuse `~/projects/neuro_cache/outputs/schedules/` |
+| Binaries not built | `make build` only builds LoAS (`Makefile:8`) | `make -C src/lays/weight_trace_gen/prosperity` and the same for `gustavsnn` |
+| No schedules in the repo | `examples/schedules/` has only `loas/` | Solve with Gurobi, or reuse `~/projects/neuro_cache/outputs/schedules/` |
 | Directory name mismatch | Those are under `vgg16_T4_all`, the traces under `vgg16_T4_n5` | Symlink, as below. The layer shapes matched in all checks run |
 | Default sample set fails | `--n-samples 100` draws indices up to 9999, and the in-repo traces have 5 samples: `IndexError: index 18 is out of bounds for axis 1 with size 5` | Pass `--sample-start 0 --sample-count 1` |
-| `scripts/pipeline.py` refuses them | Only LoAS has a nocsim arch (`scripts/pipeline.py:45`) | Call `python -m weight_trace_gen` directly |
+| `scripts/pipeline.py` refuses them | Only LoAS has a nocsim arch (`scripts/pipeline.py:45`) | Call `python -m lays.weight_trace_gen` directly |
 
 From reading the code, not from running it: the borrowed schedules also carry
 `trace_dir: vgg16_T4_all`, so `StepCycles.check_against`
-(`nocsim/step_cycles.py:115`) would reject them against a `vgg16_T4_n5` file in
+(`src/lays/nocsim/step_cycles.py:115`) would reject them against a `vgg16_T4_n5` file in
 `nocsim`. `check_schedule_matches_trace` compares only the layer shape, so it does
 not confirm that a borrowed schedule was solved with this repo's current mapspace.
 
 ### Misleading comments
 
-- `ProsperityGen.h:36-38` and `prosperity/__init__.py:14` describe `k=16` (KH=KW=4)
+- `prosperity/ProsperityGen.h:36-38` and `prosperity/__init__.py:14` describe `k=16` (KH=KW=4)
   and m=256. Real layers here have `k=9`, because only 3x3 convs are replayable
   (`trace.py:26`), and `m` varies with the schedule (16 on `layer_07`).
 - Both headers say they are ports "kept in lockstep" with Python modules such as
@@ -322,8 +325,8 @@ not confirm that a borrowed schedule was solved with this repo's current mapspac
 ## 7. Reproducing this
 
 ```bash
-make -C src/weight_trace_gen/prosperity
-make -C src/weight_trace_gen/gustavsnn          # binaries are git-ignored
+make -C src/lays/weight_trace_gen/prosperity
+make -C src/lays/weight_trace_gen/gustavsnn     # binaries are git-ignored
 
 SC=$(mktemp -d)                                 # schedule cache with the expected names
 for a in prosperity gustavsnn; do
@@ -331,7 +334,7 @@ for a in prosperity gustavsnn; do
   ln -s ~/projects/neuro_cache/outputs/schedules/$a/vgg16_T4_all $SC/$a/vgg16_T4_n5
 done
 
-python -m weight_trace_gen gen --arch prosperity \
+python -m lays.weight_trace_gen gen --arch prosperity \
   --trace-dir vgg16_T4_n5 --layer layer_07_features_24 \
   --schedule-cache $SC --sample-start 0 --sample-count 1 --out-dir /tmp/wt
 ```
@@ -382,13 +385,13 @@ All three fetch at most one address per tick, so they all stream.
 ### LoAS: skip silent positions
 
 Walk `kh`, then `kw`, then `cin`. If that input fired at any timestep, emit one
-fetch (`LoASGen.h:73-105`). The burst covers every timestep, so T never appears in
+fetch (`loas/LoASGen.h:73-105`). The burst covers every timestep, so T never appears in
 the address.
 
 ### PTB: LoAS's addresses, different timing
 
 **Pass 1** is LoAS's silence removal, and addresses come only from this pass
-(`PTBGen.h:153-162`), in the same order. **Pass 2** walks the survivors and merges a
+(`ptb/PTBGen.h:153-162`), in the same order. **Pass 2** walks the survivors and merges a
 line with the next one when their spike vectors never overlap (`:131-149`). A merged
 pair counts as one group, a line is merged at most once, and `ln` is the group count.
 `ln` only feeds the cycle formula:
@@ -406,7 +409,7 @@ overhead only sets the cycle count on tiles with few fetches.
 
 ### SpinalFlow: one fetch per spike, in time order
 
-Walk `t` first, then `kh`, `kw`, `cin` (`SpinalFlowGen.h:69-76`), and emit a fetch
+Walk `t` first, then `kh`, `kw`, `cin` (`spinalflow/SpinalFlowGen.h:69-76`), and emit a fetch
 for every spike. A weight is fetched again each time its input fires, and `t` is
 dropped from the address, so repeats are visible to the cache. Of the five, this is
 the only order that groups fetches by timestep.
@@ -481,10 +484,10 @@ offset would raise `KeyError` in the bridge. All 198 cached schedules for these
 archs, single-node and multinode, have `HO=WO=1`, KH and KW of 3 with no offset, and
 HO and WO offsets present.
 
-- **LoAS** is the supported path: `make build` builds it, `configs/schedules/loas/`
+- **LoAS** is the supported path: `make build` builds it, `examples/schedules/loas/`
   tracks four layers, and `scripts/pipeline.py` runs it. I did not re-run that
   pipeline for this doc.
 - **PTB and SpinalFlow** have the same obstacles as the table in section 6, and the
   commands in section 7 work with `--arch ptb` or `--arch spinalflow` once built
-  with `make -C src/weight_trace_gen/<arch>`. Their `--stream` output was checked
+  with `make -C src/lays/weight_trace_gen/<arch>`. Their `--stream` output was checked
   only as far as the writer, single-node, not through `cachesim`.

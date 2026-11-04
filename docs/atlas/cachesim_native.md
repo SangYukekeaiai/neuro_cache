@@ -1,18 +1,46 @@
-# Code atlas: `src/cachesim` (cache simulator)
+# Code atlas: `src/lays/cachesim` (cache simulator)
 
-Branch `wcache-rebuild-phase-a`, commit `1934fd4`. Written from code only: `.cpp`, `.h`, `.sh`,
+Branch `wcache-rebuild-phase-a`, commit `0c55f2f`.
+
+**Scope of this stamp.** Paths, module names and policy spellings are true at `0c55f2f`, and
+every line number was re-resolved across the three restructure commits (`aa6c593` src-layout,
+`ed926d1` `examples/`+`zoo/`, `0c55f2f` policy rename): in those, every edit to a cited file was an in-place substitution at the
+same line number, so no line number moved. Method: of the 305 entries in `git diff -M b2c4a88 0c55f2f`,
+git pairs 294 by rename or modification, and every hunk of those pairs starts at the same line and spans
+the same count on both sides; the 5 moves git reported as an unpaired add plus delete were checked the
+same way by hand (`khkw_sweep.json`, `l2pf_demo.json`, `parsers/__init__.py`, `scheduler/__main__.py`,
+`scheduler/objectives/traffic/__init__.py`, each one balanced hunk at an identical position), and the one
+genuinely new file, `src/lays/__init__.py` (1 line), is cited nowhere. The
+three exceptions - `.gitignore`, `pyproject.toml` and `zoo/demo_l2pf/compare_l2pf.py` - were
+re-resolved by content. Coverage claim: this applies to BOTH citation forms (`path:N` attached and
+bare `:N`) in BOTH backtick states.
+
+NOT re-verified here: citations into the files changed by the nineteen feature commits between
+`1934fd4` (this file's previous stamp) and `b2c4a88` - the touch filter, `pf_lru` and BarrierLog work,
+which landed after the last re-truing pass. 62 attached citations have cited text that changed between
+`1934fd4` and `b2c4a88`, measured by comparing the text at each cited line number in those two commits:
+`src/core/engine.cpp` (16), `src/config.cpp` (13), `apps/cachesim_run.cpp` (9),
+`src/instrument/stats.cpp` (8), `include/cachesim/core/engine.h` (4), `tests/test_config.cpp` (4),
+`src/core/engine_core.cpp` (3), `include/cachesim/core/cache_level.h` (2),
+`tests/instrument/test_stats.cpp` (2) and `src/replacement/policy.cpp` (1). Those 62 were last true at
+`1934fd4`. The count is per citation, not per file, and it is measured on the cited TEXT rather than on
+where hunks fall: a citation can sit far above every hunk in its file and be unaffected, and a citation
+in a file that never moved a line can still be stale because the line was rewritten in place. The bare
+`:N` runs of those entries are not measured individually; they inherit their entry's file.
+
+Written from code only: `.cpp`, `.h`, `.sh`,
 `.py`, `Makefile`, `.json`. No markdown, text or log file was read, so any design rationale below is
 what the code's own comments state.
 
 **Path and citation conventions.** Every path and every citation below obeys these six rules, and a
 resolver needs nothing else to read the file.
 
-1. **Repo-root paths.** A path that starts with `src/cachesim/native/`, `src/cachesim/`,
-   `src/weight_trace_gen/`, `configs/`, `scripts/` or `docs/` is relative to the repo root. So is a
+1. **Repo-root paths.** A path that starts with `src/lays/cachesim/native/`, `src/lays/cachesim/`,
+   `src/lays/weight_trace_gen/`, `examples/`, `scripts/` or `docs/` is relative to the repo root. So is a
    bare `.gitignore`, which always means the repo-root file; the two-line native twin is spelled in
-   full as `src/cachesim/native/.gitignore` wherever it is meant (3.5).
-2. **Every other path is relative to `src/cachesim/native/`**, including a bare `Makefile`, which is
-   the GNU make native build (`src/cachesim/native/Makefile`) and never the repo-root one, and every
+   full as `src/lays/cachesim/native/.gitignore` wherever it is meant (3.5).
+2. **Every other path is relative to `src/lays/cachesim/native/`**, including a bare `Makefile`, which is
+   the GNU make native build (`src/lays/cachesim/native/Makefile`) and never the repo-root one, and every
    `tests/` path: the repo-root `tests/` holds pytest `.py` files only and is never cited in this
    file, so `tests/run_cli.sh`, `tests/test_config.cpp` and `tests/layout/test_block_pack.cpp` are
    all native.
@@ -32,29 +60,35 @@ resolver needs nothing else to read the file.
    `include/`, from the public ones: `src/layout/layout_common.h` is a `src/` header, and
    `tests/stream_builder.h` a test one.
 5. **Bare file names.** A name with no directory component is the file of that name anywhere in
-   `src/cachesim/`, the tree this atlas covers and which contains `native/`. Every name there is
-   unique, so the lookup needs no section context: `cachesim_run.cpp` is `apps/cachesim_run.cpp`,
+   `src/lays/cachesim/`, the tree this atlas covers and which contains `native/`. Section 2.5's
+   example fixtures and their `to_stream.py` converter are the one part of this atlas that sits
+   OUTSIDE that tree, under the repo-root `examples/cachesim/`; they are resolved by the third
+   clause below, not by this one. Every name in the tree is unique, so the lookup needs no
+   section context: `cachesim_run.cpp` is `apps/cachesim_run.cpp`,
    `engine.cpp` is `src/core/engine.cpp`, `check.h` is `tests/check.h`, `test_block_pack.cpp` is
-   `tests/layout/test_block_pack.cpp`, and `stream.py` is `src/cachesim/stream.py`. A section or
+   `tests/layout/test_block_pack.cpp`, and `stream.py` is `src/lays/cachesim/stream.py`. A section or
    entry heading that names a directory (`apps/` in 2.3, `tests/` in 2.4, `prefetch/` in 2.2) says
    where that section's files sit; it does not change where a name resolves. Exactly one name occurs
    twice in the tree, and the second copy is always spelled with its directory: a bare
    `test_neighbour.cpp` is `tests/layout/test_neighbour.cpp`, and the prefetch one is written
-   `prefetch/test_neighbour.cpp`. Two kinds of bare name are not files of that tree and are never
-   cited: a config name (`base.json`, `khkw_sweep.json`, `l2pf_demo.json`) is the file under
-   `configs/cache/`, and a run output such as `results.csv` is written at run time and is not in
-   the repo at all. Nor are the POSIX headers `fcntl.h` and `unistd.h` named in 4, or the
-   `CMakeLists.txt` the repo does not have.
+   `prefetch/test_neighbour.cpp`. Three kinds of bare name are not files of that tree: a sweep
+   config name (`base.json`, `khkw_sweep.json`) is the file under `examples/cache/`, while
+   `l2pf_demo.json` is the campaign's own copy under `zoo/demo_l2pf/`; a run output such as
+   `results.csv` is written at run time and is not in the repo at all; and a `*_v2.json` or
+   `*_v1_legacy.json` fixture name, `manifest.json`, and `to_stream.py` are the files of those
+   names under `examples/cachesim/`. Nor are the POSIX headers `fcntl.h` and `unistd.h` named in
+   4, or the `CMakeLists.txt` the repo does not have, nor `libcachesim.a`, which `Makefile:45`
+   names as the library target and no commit tracks.
 6. **Citations.** `path:N` cites line N of that path, `path:A-B` a line range, and `path:A,B` two
    separate lines. A bare `:N` cites the file its entry is about: the file the entry heading names,
    or the file named by a bullet that opens with one of its own, until a later citation inside that
    entry names a different file, which the bare citations after it then follow. One bullet can hold
-   several entries this way, each with its own run of bares - 2.1 lists `none.h`, `next_burst.h`,
-   `neighbour.h` and `next_tile.h` in a single bullet.
+   several entries this way, each with its own run of bares - 2.1 lists `none.h`, `next_access.h`,
+   `neighbour.h` and `distance_aware.h` in a single bullet.
    Two things never retarget a bare `:N`: a name rule 5 places outside the tree (a config, a run
    output, a POSIX header), and a full path named in an entry's prose as a cross-reference to
    another entry - `include/cachesim/enum_names.h` in 2.2's `instrument/stats.cpp` and
-   `src/cachesim/stream.py` in 2.1's `trace/stream_format.h` are cross-references, so the bares
+   `src/lays/cachesim/stream.py` in 2.1's `trace/stream_format.h` are cross-references, so the bares
    around them stay on `src/instrument/stats.cpp` and
    `include/cachesim/trace/stream_format.h`.
    In an entry whose heading names a header and source pair, a bare `:N` is always the header and
@@ -67,11 +101,11 @@ resolver needs nothing else to read the file.
 
 > **The reader accepts WCTS version 2 only.** `decode_header` throws `std::invalid_argument` for any
 > `format_version` other than 2 and says in the message to regenerate the stream
-> (`src/cachesim/native/include/cachesim/trace/stream_format.h:221-228`, `kFormatVersion = 2` at
-> `trace/stream_format.h:42`). The writer is `cachesim.stream.stream_weight_trace`
-> (`src/cachesim/stream.py:177`), which writes `WCTS_VERSION = 2` (`src/cachesim/stream.py:43`).
+> (`src/lays/cachesim/native/include/cachesim/trace/stream_format.h:221-228`, `kFormatVersion = 2` at
+> `trace/stream_format.h:42`). The writer is `lays.cachesim.stream.stream_weight_trace`
+> (`src/lays/cachesim/stream.py:178`), which writes `WCTS_VERSION = 2` (`src/lays/cachesim/stream.py:44`).
 
-There is **no `CMakeLists.txt`**. The native build is `src/cachesim/native/Makefile` (GNU make).
+There is **no `CMakeLists.txt`**. The native build is `src/lays/cachesim/native/Makefile` (GNU make).
 
 ---
 
@@ -91,28 +125,28 @@ its next burst at `max(trace gap, core_accept_ii)` after its previous burst was 
 
 ### 1.2 Entry points
 
-**`python -m cachesim {grid, sweep, run}`** (`src/cachesim/__main__.py:1-4` calls `main` in
-`src/cachesim/cli.py`):
-- `grid --out DIR [--base PATH] [--sweep PATH]`: crosses the base config `configs/cache/base.json`
-  with the sweep axes `configs/cache/khkw_sweep.json` (`BASE_JSON`, `SWEEP_JSON`,
-  `src/cachesim/grid.py:8-9`) and writes one JSON array per `cin_block` to `DIR/khkw_<k>.json`
-  (`write_grid`, `src/cachesim/grid.py:51-65`), printing the paths. Each line size
+**`python -m lays.cachesim {grid, sweep, run}`** (`src/lays/cachesim/__main__.py:1-4` calls `main` in
+`src/lays/cachesim/cli.py`):
+- `grid --out DIR [--base PATH] [--sweep PATH]`: crosses the base config `examples/cache/base.json`
+  with the sweep axes `examples/cache/khkw_sweep.json` (`BASE_JSON`, `SWEEP_JSON`,
+  `src/lays/cachesim/grid.py:8-9`) and writes one JSON array per `cin_block` to `DIR/khkw_<k>.json`
+  (`write_grid`, `src/lays/cachesim/grid.py:51-65`), printing the paths. Each line size
   `line_bytes` sets `cin_block = line_bytes // (cout_block * weight_bytes)`
-  (`src/cachesim/grid.py:30`); a sweep without an `l2_prefetch` key gives points at one line size
+  (`src/lays/cachesim/grid.py:30`); a sweep without an `l2_prefetch` key gives points at one line size
   of `l2_banks x prefetch`, banks slowest, each carrying the base config's L2 settings
-  (`src/cachesim/grid.py:32-35`); a sweep that declares that key crosses in an L2-prefetch axis as
-  well, between the two (`src/cachesim/grid.py:36-41`). With the committed files that is 3 line sizes x 4 banks x 4
-  prefetch settings: three files of 16 points (`configs/cache/khkw_sweep.json:2-4`).
-- `sweep ARGS...` / `run ARGS...`: runs `src/cachesim/native/build/release/cachesim_sweep` /
+  (`src/lays/cachesim/grid.py:32-35`); a sweep that declares that key crosses in an L2-prefetch axis as
+  well, between the two (`src/lays/cachesim/grid.py:36-41`). With the committed files that is 3 line sizes x 4 banks x 4
+  prefetch settings: three files of 16 points (`examples/cache/khkw_sweep.json:2-4`).
+- `sweep ARGS...` / `run ARGS...`: runs `src/lays/cachesim/native/build/release/cachesim_sweep` /
   `cachesim_run` with every later argument passed unchanged (`--help` included) and returns its exit
-  code; if the binary is missing it first runs `make -C src/cachesim/native MODE=release apps`
-  (`native` in `src/cachesim/cli.py`).
+  code; if the binary is missing it first runs `make -C src/lays/cachesim/native MODE=release apps`
+  (`native` in `src/lays/cachesim/cli.py`).
 
-Two native programs, both `main()` in `src/cachesim/native/apps/`, sharing `apps/cli_args.h`,
+Two native programs, both `main()` in `src/lays/cachesim/native/apps/`, sharing `apps/cli_args.h`,
 `apps/oracle_io.h`, and `apps/output.h`. Exit codes: 0 ok, 2 usage error (`UsageError`,
 `cli_args.h:25-27`), 1 any other exception.
 
-**`cachesim_run`** (`src/cachesim/native/apps/cachesim_run.cpp:433`): one config, one trace, one CSV
+**`cachesim_run`** (`src/lays/cachesim/native/apps/cachesim_run.cpp:433`): one config, one trace, one CSV
 row. Flags parsed in `parse_args` (`cachesim_run.cpp:151`); help text `kUsage` (`cachesim_run.cpp:42`).
 
 | flag | default | meaning |
@@ -133,34 +167,34 @@ row. Flags parsed in `parse_args` (`cachesim_run.cpp:151`); help text `kUsage` (
 
 Narrowing flags without their file are refused (`cachesim_run.cpp:193-205`). The header does not
 depend on whether `--out` exists, so a rerun to the same path leaves one header and one row (pinned
-by `src/cachesim/native/tests/run_cli.sh:203-220`).
+by `src/lays/cachesim/native/tests/run_cli.sh:203-220`).
 
-**`cachesim_sweep`** (`src/cachesim/native/apps/cachesim_sweep.cpp:262`): one grid, one trace read once,
+**`cachesim_sweep`** (`src/lays/cachesim/native/apps/cachesim_sweep.cpp:262`): one grid, one trace read once,
 N engines in lock-step, one row per grid point. Flags (`cachesim_sweep.cpp:94`): `--config-grid PATH`
 (required; JSON array of configs, or `{"base":{...},"axes":{key:[values]}}` cross product, first axis
 slowest), `--trace` (required), `--out` (`-`), `--header`/`--no-header` (default **on**,
 `cachesim_sweep.cpp:88`), `--arm`, `--tier`, `--run-id`, `--git-commit`, `--hist`, `--oracle`,
 `--max-engines N` (default 256), `--progress`. No instruments, no `--l2-oracle`, no `--oracle-only`.
 
-**Build targets** (`src/cachesim/native/Makefile`): `make` = `lib apps` in `build/fixture` (`-O0 -g`,
+**Build targets** (`src/lays/cachesim/native/Makefile`): `make` = `lib apps` in `build/fixture` (`-O0 -g`,
 asserts live); `make test` = compile-fail driver + every `tests/test_*.cpp` binary;
 `make test-cli` = builds apps, runs `run_cli.sh`, `sweep_cli.sh`, `v1_pipe.sh`, `cout_golden.sh`
 (`Makefile:142-146`, needs python3); `make test-run` = test binaries only; `make release` =
 **library only** (`libcachesim.a`, `Makefile:45`) in `build/release` (`-O2 -DNDEBUG`,
-`Makefile:181-182`); `make MODE=release apps` builds the release programs that `python -m cachesim`
+`Makefile:181-182`); `make MODE=release apps` builds the release programs that `python -m lays.cachesim`
 runs; `make clean`.
 
 ### 1.3 Data flow (one `cachesim_run`)
 
-Inputs come from two Python producers. The configs: `python -m cachesim grid` turns
-`configs/cache/base.json` and `configs/cache/khkw_sweep.json` into grid files (1.2); `cachesim_run`
-takes one object, `cachesim_sweep` a whole file. The trace: `python -m weight_trace_gen gen --stream`
+Inputs come from two Python producers. The configs: `python -m lays.cachesim grid` turns
+`examples/cache/base.json` and `examples/cache/khkw_sweep.json` into grid files (1.2); `cachesim_run`
+takes one object, `cachesim_sweep` a whole file. The trace: `python -m lays.weight_trace_gen gen --stream`
 writes one layer-sample as a WCTS stream on stdout (`--stream` flag
-`src/weight_trace_gen/cli.py:383`, `emit_stream` `src/weight_trace_gen/cli.py:280`, which calls
-`cachesim.stream.stream_weight_trace` at `src/weight_trace_gen/cli.py:290`), and
-`python -m cachesim sweep --config-grid GRID --trace STREAM` replays it.
+`src/lays/weight_trace_gen/cli.py:383`, `emit_stream` `src/lays/weight_trace_gen/cli.py:280`, which calls
+`lays.cachesim.stream.stream_weight_trace` at `src/lays/weight_trace_gen/cli.py:290`), and
+`python -m lays.cachesim sweep --config-grid GRID --trace STREAM` replays it.
 
-1. **Config text -> `RunConfig`**: `parse_config` (`src/cachesim/native/src/config.cpp:406`), a strict
+1. **Config text -> `RunConfig`**: `parse_config` (`src/lays/cachesim/native/src/config.cpp:406`), a strict
    JSON subset (integers and quoted strings only, unknown or duplicate key = error).
 2. **Trace bytes -> `StreamHeader`**: `TraceFd` (`apps/cli_args.h:77-102`) -> `FdByteSource`
    (`include/cachesim/trace/byte_source.h:51`) -> `StreamingTileTrace` ctor reads and validates the header
@@ -185,14 +219,14 @@ writes one layer-sample as a WCTS stream on stdout (`--stream` flag
 `cachesim_sweep` is the same with steps 4-9 per grid point, `BroadcastSweep` (`src/sweep.cpp:32`)
 driving all engines over one window (`src/sweep.cpp:112`).
 
-**Upstream connection (visible in code).** The WCTS writer is `src/cachesim/stream.py` (2.5). The
-pieces that fix the wire format: `WCTS_VERSION = 2` (`src/cachesim/stream.py:43`),
-`WCTS_ADDR_FIELDS = (0, 1, 2, 3, 4)` (`:52`), `write_stream_header` (`:56`), `write_tile_frame` (`:98`,
-refuses a run that is empty along `burst_dim` at `:124`), `write_stream_trailer` (`:135`),
-`_wcts_tile_frames` (`:140`, measures `burst_span` as the largest `cout_end - cout_start` at `:166`)
-and `stream_weight_trace` (`:177`, refuses any `burst_dim != 3` at `:195`). `scripts/pipeline.py`
-writes each layer-sample's stream to a `.wcts` file with `python -m weight_trace_gen gen ... --stream`
-and runs `python -m cachesim sweep` on it once per grid file. `--access-log` output is read back
+**Upstream connection (visible in code).** The WCTS writer is `src/lays/cachesim/stream.py` (2.5). The
+pieces that fix the wire format: `WCTS_VERSION = 2` (`src/lays/cachesim/stream.py:44`),
+`WCTS_ADDR_FIELDS = (0, 1, 2, 3, 4)` (`:53`), `write_stream_header` (`:57`), `write_tile_frame` (`:99`,
+refuses a run that is empty along `burst_dim` at `:125`), `write_stream_trailer` (`:136`),
+`_wcts_tile_frames` (`:141`, measures `burst_span` as the largest `cout_end - cout_start` at `:167`)
+and `stream_weight_trace` (`:178`, refuses any `burst_dim != 3` at `:196`). `scripts/pipeline.py`
+writes each layer-sample's stream to a `.wcts` file with `python -m lays.weight_trace_gen gen ... --stream`
+and runs `python -m lays.cachesim sweep` on it once per grid file. `--access-log` output is read back
 only by `--oracle` / `--l2-oracle` (`read_oracle_lines`, `apps/oracle_io.h:46-88`).
 
 ### 1.4 Key abstractions
@@ -212,7 +246,7 @@ only by `--oracle` / `--l2-oracle` (`read_oracle_lines`, `apps/oracle_io.h:46-88
      |                           +-- MshrFile (entries_ line->Mshr, slot_wait_, RefusalCounter&)
      |                           +-- NextUseOracle* (Belady only)
      |-- dram_ : Port
-     |-- each CacheLevel.prefetcher_ : Prefetcher (None|NextBurst|Neighbour)
+     |-- each CacheLevel.prefetcher_ : Prefetcher (None|NextAccess|Neighbour)
      |-- optional: CacheStateLog*, LineTrace*, AccessLog*   (observers, never change results)
      `-- stats_ : EngineStats  --> RunStats --> CSV row
 ```
@@ -292,10 +326,10 @@ Issue(3); then refusal stamp (older refused first, never-refused last), core id,
 | `policy` | `lru` (`fifo`,`belady`,`rrip`,`lfu`; `random` refused) | `l2_miss_latency` | 100 |
 | `l2_policy` | unset -> `policy` | `l2_banks` | 1 |
 | `rrip_bits` | 2 (1..8) | `l2_ii`, `dram_ii`, `core_accept_ii` | 1, 1, 1 |
-| `inclusion` | `non_inclusive` (`inclusive`; `exclusive` refused) | `prefetch_policy` | `none` (`next_burst`, `neighbour`) alias for L1 |
-| `l1_prefetch_policy` | `none` (`next_burst`, `neighbour`/`neighbor`) | `prefetch_distance` / `l1_prefetch_distance` | 0 |
+| `inclusion` | `non_inclusive` (`inclusive`; `exclusive` refused) | `prefetch_policy` | `none` (`next_access`, `neighbour`) alias for L1 |
+| `l1_prefetch_policy` | `none` (`next_access`, `neighbour`/`neighbor`) | `prefetch_distance` / `l1_prefetch_distance` | 0 |
 | `l1_prefetch_axis` | `cin` (`cout`,`kh`/`pos`,`kw`) | `l1_prefetch_up` / `_down` | 1 / 1 (integers) |
-| `l2_prefetch_policy` | `none` (`next_burst`, `neighbour`/`neighbor`, `next_tile`) | `l2_prefetch_distance` | 1 |
+| `l2_prefetch_policy` | `none` (`next_access`, `neighbour`/`neighbor`, `distance_aware`) | `l2_prefetch_distance` | 1 |
 | `l2_prefetch_axis` | `cin` (`cout`,`kh`/`pos`,`kw`) | `l2_prefetch_up` / `_down` | 1 / 1 (integers) |
 | `l2_demand_reserve` | -1 (= lines_per_burst) |  |  |
 
@@ -336,7 +370,7 @@ for the version field; `tests/cout_golden.sh:2-8` states this and checks it end 
 
 ## 2. Bottom-up
 
-Paths below are under `src/cachesim/native/` unless a full path is given. Inside an entry, a bare `:N`
+Paths below are under `src/lays/cachesim/native/` unless a full path is given. Inside an entry, a bare `:N`
 is a line of the file the entry is named after (a source file, not the header named beside it), and
 `.cpp:N` is the paired `.cpp`.
 
@@ -463,12 +497,12 @@ is a line of the file the entry is named after (a source file, not the header na
 **prefetch/prefetcher.h**
 - `PrefetchContext` `prefetch/prefetcher.h:37` carries level, core, tile, burst, triggering line,
   time, mapper and trace; `PrefetchTarget` `:48-54` carries a line and its burst tag.
-- `PrefetchKind {None, NextBurst, Neighbour, NextTile}` `:56` and `PrefetchParams` `:58-63` are shared by
+- `PrefetchKind {None, NextAccess, Neighbour, DistanceAware}` `:56` and `PrefetchParams` `:58-63` are shared by
   both levels. `Prefetcher` `:65` has `on_tile_start` `:71`, ordered `on_demand` `:76`, and
   `on_issued` feedback `:81`; `make_prefetcher` `:91-93` constructs the selected policy.
-- `none.h`: `NoPrefetcher` `:7-10`; `next_burst.h`: `NextBurstPrefetcher(distance>=1, n_cores)`
+- `none.h`: `NoPrefetcher` `:7-10`; `next_access.h`: `NextAccessPrefetcher(distance>=1, n_cores)`
   `:14-30` with per-core `pf_cursor`; `neighbour.h`: `NeighbourPrefetcher(axis, distance>=1,
-  up, down)` `:9-25`; `next_tile.h`: `NextTilePrefetcher(distance>=1)` `:12-20`, stateless and
+  up, down)` `:9-25`; `distance_aware.h`: `DistanceAwarePrefetcher(distance>=1)` `:12-20`, stateless and
   fixed to `Axis::COUT` forward, which the header states ignores `axis`, `up` and `down` `:9-11`.
 
 **core/cache_level.h**
@@ -522,7 +556,7 @@ is a line of the file the entry is named after (a source file, not the header na
   cfg), `to_engine_params(cfg)` `:168`.
 
 **trace/stream_format.h** (namespace `cachesim::stream`, header-only; file comment `:1-3` says WCTS v2 and
-`:10-12` names `src/cachesim/stream.py` as the producer)
+`:10-12` names `src/lays/cachesim/stream.py` as the producer)
 - Constants `kMagic` `:41`, `kFormatVersion = 2` `:42`, `kFixedHeaderBytes`=56 `:46`, `kEndMagic`=-1
   `:47`, `kAddrFields`=5 `:48`, `kDims`=7 `:49`; `enum DimCode` `:53`, `enum FieldCode {KH, KW, CIN,
   COUT, RunEnd}` `:54`; `kHostIsLittleEndian` `:56` (requires
@@ -534,7 +568,7 @@ is a line of the file the entry is named after (a source file, not the header na
 - `encode_header(h, out)` `:174` (no validation; for tests; writes `kFormatVersion`, so it can only
   produce v2 headers); `decode_header(buf, len)` `:208` validates every field (see 1.7). Version
   check `:221-228`: any value other than 2 throws, and the message says that v1 records cannot hold a
-  non-COUT anchor and to regenerate with `src/cachesim/stream.py`. `burst_span >= 1` is the only check on
+  non-COUT anchor and to regenerate with `src/lays/cachesim/stream.py`. `burst_span >= 1` is the only check on
   the span (`:258-262`).
 
 **trace/byte_source.h** (header-only)
@@ -618,7 +652,7 @@ the shared `src/layout/layout_common.h`.
   `cin_lo_blocks` `:570-596`; `l2_policy` follows `policy` if unset `:598`; random refused
   `:605-616`; rrip_bits in [1,8] `:620-621`; `lines_per_burst <= l1_mshrs` `:624-626`;
   `core_accept_ii >= 1` `:628-630`; L1/L2 prefetch distance and direction checks `:632-689`,
-  among them `next_tile` refused at distance 0 `:647-650` and refused as an L1 policy at all
+  among them `distance_aware` refused at distance 0 `:647-650` and refused as an L1 policy at all
   `:675-677`; `l2_demand_reserve` resolved to lines_per_burst and must be `< l2_mshrs` `:660-672`;
   `l1_demand_reserve` resolved and must be `< l1_mshrs` `:691-700`; warnings `:702-732`.
 - `to_engine_params` `:736`: copies both levels' prefetch kind/axis/distance/directions and the
@@ -707,17 +741,17 @@ the shared `src/layout/layout_common.h`.
 - `RripPolicy` constructor `replacement/rrip.cpp:19`, RRPV updates `:45-53`, uniform aging and tie-break
   in `pick_victim` `:55-71`.
 **prefetch/**
-- `prefetcher.cpp`: `make_prefetcher` `:13-32` constructs `NoPrefetcher`, `NextBurstPrefetcher`,
-  `NextTilePrefetcher`, or `NeighbourPrefetcher` from the shared `PrefetchKind`/`PrefetchParams`;
-  the `NextTile` case passes `params.distance` alone `:25-26`, where the `Neighbour` case passes all
+- `prefetcher.cpp`: `make_prefetcher` `:13-32` constructs `NoPrefetcher`, `NextAccessPrefetcher`,
+  `DistanceAwarePrefetcher`, or `NeighbourPrefetcher` from the shared `PrefetchKind`/`PrefetchParams`;
+  the `DistanceAware` case passes `params.distance` alone `:25-26`, where the `Neighbour` case passes all
   four fields `:27-29`.
-- `next_burst.cpp`: ctor `:9`, `pf_cursor` `:25`, `on_tile_start` `:29` (cursor 0), `on_demand`
+- `next_access.cpp`: ctor `:9`, `pf_cursor` `:25`, `on_tile_start` `:29` (cursor 0), `on_demand`
   `:36` expands ordered bursts while `cursor <= k+d` and `< n_bursts`; a budget-exhausted burst
   leaves the cursor there until the next demand pulls it past the core's current burst; `on_issued`
   `:66` advances only after a complete burst.
 - `neighbour.cpp`: ctor `:8`, `on_demand` `:22` emits nearest `+1, -1, +2, -2, ...` targets
   through `mapper.neighbour`; `none.cpp` is the split source for the no-op implementation.
-- `next_tile.cpp`: ctor `:8` refuses `distance < 1`, `on_demand` `:15` emits
+- `distance_aware.cpp`: ctor `:8` refuses `distance < 1`, `on_demand` `:15` emits
   `mapper.neighbour(line, Axis::COUT, i+1)` for `i = 0 .. distance-1` `:17-21`, keeping `ctx.k` as
   the burst tag and skipping a `nullopt` target. At distance 1 this is the `neighbour` stream with
   axis `cout` and `down` off, with the axis and direction fixed in the type instead of in config.
@@ -891,9 +925,9 @@ Unit test binaries (`Makefile:57`, one binary per `tests/test_*.cpp`):
 - `test_mshr.cpp`: MshrFile entries, targets, waits, refusal counter, grant loop.
 - `test_cache_level.cpp`: CacheLevel triage table branch by branch.
 - `test_engine.cpp`: event loop handlers, core state machine, tile barrier, inclusion.
-- `prefetch/test_next_burst.cpp`: prefetch interface, `none` vs `next_burst`, engine integration and
+- `prefetch/test_next_access.cpp`: prefetch interface, `none` vs `next_access`, engine integration and
   L1 drop rules; `prefetch/test_neighbour.cpp`: line-order neighbour behavior, cross-level policy
-  placement, and L2 accounting; `prefetch/test_next_tile.cpp`: exact forward COUT targets and the
+  placement, and L2 accounting; `prefetch/test_distance_aware.cpp`: exact forward COUT targets and the
   cout-extent boundary `:15`, a nonpositive distance refused `:66`, and an L2 engine run that issues
   forward and drains every MSHR `:72`.
 - `test_config.cpp`: RunConfig parse, defaults, validation rules, among them
@@ -915,7 +949,7 @@ Drivers:
 - `mutation_check.sh`: mutates library files in place, expects `make test` to go red; restores from
   backups. Its file list and the A2b mutations target `src/layout/layout_common.h` / `.cpp`
   (`mutation_check.sh:80`, helpers `mutate_lc_h` / `mutate_lc` at `:227-228`).
-- `run_cli.sh`: `cachesim_run` end to end on a fixture converted by `examples/to_stream.py`. Step
+- `run_cli.sh`: `cachesim_run` end to end on a fixture converted by `examples/cachesim/to_stream.py`. Step
   11 (`run_cli.sh:203-220`): `--out` gets a header by default on a new and on an overwritten file,
   and `--no-header` drops it.
 - `sweep_cli.sh`: `cachesim_sweep` end to end, compares with `cachesim_run` rows.
@@ -928,37 +962,37 @@ Drivers:
   (`:12,30-31`), and requires the CSV to equal the golden captured from the v1 reader on the same
   stream, ignoring only `git_commit` and `sim_wall_seconds` (`:38-48`).
 
-### 2.5 `src/cachesim/*.py` and `src/cachesim/examples/`
+### 2.5 `src/lays/cachesim/*.py` and `examples/cachesim/`
 
-- `src/cachesim/__init__.py`: docstring only (`src/cachesim/__init__.py:1`).
-- `src/cachesim/__main__.py`: `python -m cachesim` runs `cachesim.cli.main` (`src/cachesim/__main__.py:1-4`).
-- `src/cachesim/cli.py`: the `grid` / `sweep` / `run` dispatcher of 1.2. `sweep` and `run` are dispatched before
+- `src/lays/cachesim/__init__.py`: docstring only (`src/lays/cachesim/__init__.py:1`).
+- `src/lays/cachesim/__main__.py`: `python -m lays.cachesim` runs `lays.cachesim.cli.main` (`src/lays/cachesim/__main__.py:1-4`).
+- `src/lays/cachesim/cli.py`: the `grid` / `sweep` / `run` dispatcher of 1.2. `sweep` and `run` are dispatched before
   argparse sees the arguments, so every native flag (and `--help`) reaches the binary unchanged.
-- `src/cachesim/grid.py`: `ROOT` = repo root from `__file__` (`src/cachesim/grid.py:7`), `BASE_JSON` /
+- `src/lays/cachesim/grid.py`: `ROOT` = repo root from `__file__` (`src/lays/cachesim/grid.py:7`), `BASE_JSON` /
   `SWEEP_JSON` (`:8-9`); `load_base` `:12`, `load_sweep` `:16`; `grid_for(line_bytes, base, sweep)`
   `:20` (the points at one line size; keys stay in `base.json` order); `full_grid` `:44` (line size
   slowest); `write_grid(out_dir, grid, name="khkw")` `:51` (one file per `cin_block` in order of first
   appearance, because `cachesim_sweep` builds one mapper per grid file; returns `{cin_block: path}`).
-- `src/cachesim/stream.py`: the WCTS v2 writer (module docstring `:1-5`; byte layout comment `:28-39`). Constants
-  `WCTS_MAGIC` `:42`, `WCTS_VERSION = 2` `:43`, `WCTS_FIXED_HEADER_BYTES = 56` `:44`,
-  `WCTS_END_MAGIC = -1` `:45`, `WCTS_DIM_CODES` `:49`, `WCTS_ADDR_FIELDS` `:52`.
-  `write_stream_header` `:56`; `write_tile_frame` `:98` (core ids strictly ascending `:111`, no empty
-  core `:113`, ticks strictly ascending `:119`, non-empty run `:124`); `write_stream_trailer` `:135`;
-  `_wcts_tile_frames(tiles, n_cores)` `:140` (tick-major to core-major, core id range check `:154`,
-  `burst_span` = largest `cout_end - cout_start` `:166`, no bursts refused `:172`);
+- `src/lays/cachesim/stream.py`: the WCTS v2 writer (module docstring `:1-5`; byte layout comment `:29-40`). Constants
+  `WCTS_MAGIC` `:43`, `WCTS_VERSION = 2` `:44`, `WCTS_FIXED_HEADER_BYTES = 56` `:45`,
+  `WCTS_END_MAGIC = -1` `:46`, `WCTS_DIM_CODES` `:50`, `WCTS_ADDR_FIELDS` `:53`.
+  `write_stream_header` `:57`; `write_tile_frame` `:99` (core ids strictly ascending `:112`, no empty
+  core `:114`, ticks strictly ascending `:120`, non-empty run `:125`); `write_stream_trailer` `:136`;
+  `_wcts_tile_frames(tiles, n_cores)` `:141` (tick-major to core-major, core id range check `:155`,
+  `burst_span` = largest `cout_end - cout_start` `:167`, no bursts refused `:173`);
   `stream_weight_trace(trace, fh, *, n_cores, spatial_factors, burst_dim=3, burst_stride=1,
-  weight_bytes=1, max_tiles=None)` `:177` (only `burst_dim = 3` `:195`; `max_tiles` cut before the
-  header `:201`; returns the burst count `:219`).
-- `src/cachesim/examples/to_stream.py`: `python3 to_stream.py <fixture.json> [max_tiles] > slice.wcts`
-  (docstring `:3`). `load(path)` `:41` turns a v2 example JSON into `weight_trace_gen.weight_trace`
+  weight_bytes=1, max_tiles=None)` `:178` (only `burst_dim = 3` `:196`; `max_tiles` cut before the
+  header `:202`; returns the burst count `:220`).
+- `examples/cachesim/to_stream.py`: `python3 to_stream.py <fixture.json> [max_tiles] > slice.wcts`
+  (docstring `:3`). `load(path)` `:41` turns a v2 example JSON into `lays.weight_trace_gen.weight_trace`
   dataclasses; `main` `:60` calls `stream_weight_trace(..., n_cores=N_CORES, spatial_factors={3:
   N_CORES}, max_tiles=...)` (`:64-65`, `N_CORES = 8` at `:38`) to stdout. Adds `src/` to `sys.path`
-  (`:20`) and stubs `weight_trace_gen.trace` when its import fails (numpy absent, `:22-32`). Used by
+  (`:20`) and stubs `lays.weight_trace_gen.trace` when its import fails (numpy absent, `:22-32`). Used by
   the four CLI test scripts.
 - Data: `loas_vgg16_layer01_v2.json`, `ptb_resnet19_layer01_v2.json`,
   `prosperity_vgg16_layer01_v2.json`, `spinalflow_vgg16_layer01_v2.json` (JSON v2: tiles -> ticks ->
   cores -> `weight_addresses` `[kh,kw,cin,cout_start,cout_end]`),
-  `gustavsnn_vgg16_layer01_v1_legacy.json` (JSON v1, cannot drive the engine, `src/cachesim/examples/to_stream.py:5-6`),
+  `gustavsnn_vgg16_layer01_v1_legacy.json` (JSON v1, cannot drive the engine, `examples/cachesim/to_stream.py:5-6`),
   `manifest.json` (provenance). The `_v1` / `_v2` in the file names is the weight-trace JSON shape,
   not the WCTS version.
 
@@ -969,7 +1003,7 @@ Drivers:
 ### 3.1 Dead code, stale comments, stale references
 1. **`src/layout/khkw_split.cpp` comments state a false premise about the sort and the max loop.** The comment
    above `expand` says the sort in `expand_burst` is load-bearing because "line_of is NOT monotone in
-   pos" and a wrap "can move the line down" (`src/cachesim/native/src/layout/khkw_split.cpp:131-134`). By the
+   pos" and a wrap "can move the line down" (`src/lays/cachesim/native/src/layout/khkw_split.cpp:131-134`). By the
    code's own arithmetic it cannot: the position term is `(pos / L) * S + pos % L` with
    `L = n_pos_lo` and `S = stride[POS_HI] = n_cout_blocks * n_cin_blocks * L >= L`
    (`src/layout/khkw_split.cpp:40-46,124,127`). Stepping `pos` inside a group adds 1; a wrap adds
@@ -1003,7 +1037,7 @@ Drivers:
 9. Output still names the simulator `wcache`: the comment line the line trace writes
    (`include/cachesim/instrument/line_trace.h:71`) and the one the cache-state log writes
    (`include/cachesim/instrument/cache_state_log.h:60`). The writer's comment points at a plan and a ruling that
-   are not in the repo (`src/cachesim/stream.py:21`, `:25`).
+   are not in the repo (`src/lays/cachesim/stream.py:22`, `:26`).
 
 ### 3.2 Duplicated logic
 1. Mapper helpers: the checks, `expand`, `locate` and `line_size_terms` live in
@@ -1052,14 +1086,14 @@ Drivers:
      the gate's comment says (`src/core/engine.cpp:547-550`). Eviction of a still-tagged line
      charges `l2_pf_wasted` (`:559-564`) and a demand hit on one charges `l2_pf_timely`, clears the
      tag and retriggers (`:462-469`), so every L2 outcome counter belongs to a prefetch the L2
-     policy issued. `tests/prefetch/test_neighbour.cpp:86-113` pins it: an L1 `next_burst` run with
+     policy issued. `tests/prefetch/test_neighbour.cpp:86-113` pins it: an L1 `next_access` run with
      `pf_issued > 0` and `pf_timely > 0` has `l2_pf_issued`, `l2_pf_timely`, `l2_pf_late`,
      `l2_pf_wasted` and `l2_pf_retriggers` all 0; `:115-143` repeats it for an L1-prefetched line
      used by a second core.
    - **The surface the invariant is checkable on.** Only the simulator's own per-run CSV carries the
      four `l2_pf_dropped_*` columns (`src/instrument/stats.cpp:201-203`), so the sum can be checked
      there. The demo's `results.csv` is 32 columns and carries `l2_pf_issued`, `l2_pf_timely`,
-     `l2_pf_late`, `l2_pf_wasted` and `l2_pf_coverage` only (`scripts/compare_l2pf.py:25-34`), with
+     `l2_pf_late`, `l2_pf_wasted` and `l2_pf_coverage` only (`zoo/demo_l2pf/compare_l2pf.py:28-37`), with
      no drop counters, so the invariant cannot be checked on that file.
 3. **H6** MSHR occupancy samples are appended on every forward and retire
    (`src/core/engine.cpp:280,439,580,649`) and kept for the whole run per engine; memory grows with miss
@@ -1070,9 +1104,9 @@ Drivers:
    (`src/layout/layout_common.h:138-139`). For stride `s > 1` a run `[start, end)` holds
    `ceil((end - start) / s)` elements, but the decoder asks for `end - start` of them, so the walk
    runs past `run_end` (or is refused as out of range). The writer does the same: `burst_span` is the
-   largest `cout_end - cout_start` (`src/cachesim/stream.py:167`) and `lines_per_burst` expands
+   largest `cout_end - cout_start` (`src/lays/cachesim/stream.py:167`) and `lines_per_burst` expands
    `burst_span` elements at `burst_stride` (`apps/output.h:38-44`). Unreachable today because
-   `stream_weight_trace` defaults `burst_stride=1` (`src/cachesim/stream.py:178`) and every test uses 1
+   `stream_weight_trace` defaults `burst_stride=1` (`src/lays/cachesim/stream.py:178`) and every test uses 1
    (`tests/stream_builder.h:110`).
 6. **H9** The header's `burst_span` is never checked against the bursts. `decode_header` only
    requires `burst_span >= 1` (`trace/stream_format.h:258-262`) and `advance` never reads it
@@ -1090,7 +1124,7 @@ Drivers:
    (`tests/mutation_check.sh:80-82`); an interrupted run can leave mutated sources behind.
 
 ### 3.4 Hardcoded values, paths, host assumptions
-- `CXX := g++` pinned, ignoring the environment (`src/cachesim/native/Makefile:24`, rationale about the
+- `CXX := g++` pinned, ignoring the environment (`src/lays/cachesim/native/Makefile:24`, rationale about the
   Delta Cray wrapper at `:19-22`), while `compile_fail.sh` honours `${CXX:-g++}`
   (`tests/compile_fail.sh:21`).
 - `JOBS` default 32 = the dev machine's `nproc` (`tests/compile_fail.sh:35,56`,
@@ -1099,12 +1133,12 @@ Drivers:
   `make MODE=release test-cli` builds release apps and then tests the fixture binary (or fails if
   it was never built).
 - `to_stream.py` hardcodes 8 cores and `spatial_factors={3: 8}`
-  (`src/cachesim/examples/to_stream.py:38,64-65`).
-- `python -m cachesim sweep` / `run` always run the `build/release` binaries and build them only when
-  the file is missing (`native` in `src/cachesim/cli.py`), so a binary older than the sources is run
+  (`examples/cachesim/to_stream.py:38,64-65`).
+- `python -m lays.cachesim sweep` / `run` always run the `build/release` binaries and build them only when
+  the file is missing (`native` in `src/lays/cachesim/cli.py`), so a binary older than the sources is run
   as is.
-- The grid defaults are fixed files: `configs/cache/base.json` and `configs/cache/khkw_sweep.json`
-  (`src/cachesim/grid.py:8-9`), found from the repo root `ROOT` (`src/cachesim/grid.py:7`).
+- The grid defaults are fixed files: `examples/cache/base.json` and `examples/cache/khkw_sweep.json`
+  (`src/lays/cachesim/grid.py:8-9`), found from the repo root `ROOT` (`src/lays/cachesim/grid.py:7`).
 - Magic numbers in code: `kPosLoRadix = 8` (`include/cachesim/layout/khkw_split.h:89`); RRIP width cap 8 twice
   (`src/replacement/rrip.cpp:11`, `src/config.cpp:620`); `--max-engines` 256
   (`apps/cachesim_sweep.cpp:87`); AccessLog record limits 32-bit line / 8-bit core
@@ -1114,12 +1148,12 @@ Drivers:
   `/projects/`, `/scratch`, `delta`, `ncsa` hits comments only).
 
 ### 3.5 Build products in git
-None: `git ls-files src/cachesim/native/build` is empty; `build/` is ignored by
-`src/cachesim/native/.gitignore:1`; `__pycache__/` by the root `.gitignore:2`. Local
-`src/cachesim/native/build/fixture/` and `build/release/` exist (untracked). Note the repo-wide `*.json`
-ignore (`.gitignore:23`) with exceptions only for `configs/**` (`.gitignore:32`) and
-`src/cachesim/examples/*.json` (`.gitignore:38`): a run config written anywhere else is silently
-untracked.
+None: `git ls-files src/lays/cachesim/native/build` is empty; `build/` is ignored by
+`src/lays/cachesim/native/.gitignore:1`; `__pycache__/` by the root `.gitignore:2`. Local
+`src/lays/cachesim/native/build/fixture/` and `build/release/` exist (untracked). Note the repo-wide `*.json`
+ignore (`.gitignore:23`) with exceptions only for the five config directories under `examples/`
+(`.gitignore:32-36`) and `examples/cachesim/*.json` (`.gitignore:42`): a run config written anywhere
+else is silently untracked.
 
 ---
 
@@ -1133,16 +1167,16 @@ What the code needs:
   `ar` for the archive. Minimum g++ version is not pinned anywhere. `src/layout/layout_common.cpp` is picked
   up by `SRCS := $(sort $(shell find src -type f -name '*.cpp' -print))` (`Makefile:42`).
 - **Release programs**: `make release` builds only `libcachesim.a` (`Makefile:181-182`).
-  `python -m cachesim sweep` / `run` need `build/release/cachesim_sweep` / `cachesim_run` and build
-  them with `make MODE=release apps` when they are missing (`src/cachesim/cli.py`).
+  `python -m lays.cachesim sweep` / `run` need `build/release/cachesim_sweep` / `cachesim_run` and build
+  them with `make MODE=release apps` when they are missing (`src/lays/cachesim/cli.py`).
 - **Tests**: `make test` needs only the compiler and bash; `wait -n` in `compile_fail.sh:109` needs
-  bash >= 4.3. `make test-cli` needs `python3` (override with `PYTHON`) and importable `cachesim.stream`
-  and `weight_trace_gen.weight_trace` (`src/cachesim/examples/to_stream.py:20`, `:34-36`); numpy is optional thanks to the
+  bash >= 4.3. `make test-cli` needs `python3` (override with `PYTHON`) and importable `lays.cachesim.stream`
+  and `lays.weight_trace_gen.weight_trace` (`examples/cachesim/to_stream.py:20`, `:34-36`); numpy is optional thanks to the
   stub.
-- **Inputs**: real runs need WCTS **v2** streams, written by `python -m weight_trace_gen gen --stream`
-  (`stream_weight_trace`, `src/cachesim/stream.py:178`) from a schedule and the input traces under
-  `input_trace/`; `scripts/pipeline.py` writes them under its output directory. Only the five small
-  example slices are committed (`src/cachesim/examples/`). A version-1 stream is refused (top note).
+- **Inputs**: real runs need WCTS **v2** streams, written by `python -m lays.weight_trace_gen gen --stream`
+  (`stream_weight_trace`, `src/lays/cachesim/stream.py:178`) from a schedule and the input traces under
+  `examples/input_trace/`; `scripts/pipeline.py` writes them under its output directory. Only the five small
+  example slices are committed (`examples/cachesim/`). A version-1 stream is refused (top note).
   For COUT streams a v2 stream gives the same rows as the v1 reader did (`tests/cout_golden.sh` checks
   this on one fixture).
 - **Two-pass Belady**: `policy/l2_policy = belady` needs `--oracle` / `--l2-oracle` from a prior
@@ -1156,8 +1190,8 @@ What the code needs:
 - **Binary formats**: the AccessLog is written in host byte order with no endianness marker
   (`include/cachesim/instrument/access_log.h:129-130`), unlike WCTS, which is explicitly little-endian. The WCTS magic did not
   change between v1 and v2 (`trace/stream_format.h:41`); only the version field tells them apart.
-- **Paths**: `src/cachesim/cli.py` and `scripts/pipeline.py` locate the binaries and configs from the
-  repo root (`ROOT`, `src/cachesim/grid.py:7`), not through absolute paths.
+- **Paths**: `src/lays/cachesim/cli.py` and `scripts/pipeline.py` locate the binaries and configs from the
+  repo root (`ROOT`, `src/lays/cachesim/grid.py:7`), not through absolute paths.
 
 ---
 
@@ -1184,9 +1218,9 @@ What the code needs:
 ### Not covered
 - `tests/*.cpp` and the two big shell drivers were summarised from their header comments and
   targeted greps, not read line by line.
-- `src/cachesim/native/compile_flags.txt` was not read (`.txt` is excluded by the reading rules).
-- `src/weight_trace_gen`, which builds the `LayerWeightTrace` that `stream.py` writes, is covered in
+- `src/lays/cachesim/native/compile_flags.txt` was not read (`.txt` is excluded by the reading rules).
+- `src/lays/weight_trace_gen`, which builds the `LayerWeightTrace` that `stream.py` writes, is covered in
   `docs/atlas/pipeline.md`.
-- `src/cachesim/cli.py` is described without line numbers.
-- `python -m cachesim grid`, `sweep` and `run` were run once on one stream (resnet19 layer 9,
+- `src/lays/cachesim/cli.py` is described without line numbers.
+- `python -m lays.cachesim grid`, `sweep` and `run` were run once on one stream (resnet19 layer 9,
   sample 0) to check 1.2; every other behaviour claim comes from reading the code.

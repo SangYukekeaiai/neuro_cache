@@ -3,7 +3,7 @@
 `loas/<workload>/` holds one `meta.json` (layer name -> input-tensor shape
 `[T, B, Cin, Hin, Win]`) plus one `<layer_name>.npy` per captured layer, binary
 `uint8` spikes over CIFAR-10. Read them through
-`weight_trace_gen.trace.load_layer_trace` (`src/weight_trace_gen/trace.py:39`),
+`lays.weight_trace_gen.trace.load_layer_trace` (`src/lays/weight_trace_gen/trace.py:39`),
 which validates each array against the shape `meta.json` declares.
 
 ## What is committed here, and what is not
@@ -55,10 +55,10 @@ needs), `tests/`, and the original `README.md` and slurm script, so a re-capture
 is possible without the snapshot.
 
 To solve schedules for the full 10,000 samples instead of the committed five,
-point `--trace-root` of `python -m snn_scheduler solve-trace` at that path:
+point `--trace-root` of `python -m lays.scheduler solve-trace` at that path:
 
 ```
-python -m snn_scheduler solve-trace --arch loas \
+python -m lays.scheduler solve-trace --arch loas \
     --trace-root /work/hdd/bebv/yyu9/neuro_cache_trace/input_trace/loas \
     --trace-dirs vgg16_T4_all resnet19_T4_all --cache-dir data/schedules
 ```
