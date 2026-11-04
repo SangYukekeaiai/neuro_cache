@@ -1,6 +1,6 @@
 # Code atlas: `src/lays/cachesim` (cache simulator)
 
-Branch `wcache-rebuild-phase-a`, commit `0c55f2f`.
+Branch `wcache-rebuild-phase-a`, commit `6e9aca1`, re-stamped from `0c55f2f` on 2026-11-04.
 
 **Scope of this stamp.** Paths, module names and policy spellings are true at `0c55f2f`, and
 every line number was re-resolved across the three restructure commits (`aa6c593` src-layout,
@@ -33,6 +33,30 @@ list and not a defect list in either direction: it cannot see a citation that wa
 cannot see one that shifted onto a coincidentally identical line - a blank, a `};`, a comment.
 Reading the target is the only detector for "was this ever right", so every citation above was
 read, not merely repointed.
+
+**Re-stamp 2026-11-04, `0c55f2f` -> `6e9aca1`.** Everything above was true at `0c55f2f` and stands
+as written. `6e9aca1` added the fourth layout mapper and its tests; between the two commits eleven
+non-documentation files changed - `.gitignore` and ten under `src/lays/cachesim/native/`, of which
+`include/cachesim/layout/cin_khkw_concat.h`, `src/layout/cin_khkw_concat.cpp` and
+`tests/layout/test_cin_khkw_concat.cpp` are new - plus eleven new files under `zoo/` that this file
+cites nowhere; the intervening commit `aaedfe7` touched documentation only. Of the changed files,
+the ones cited here are `.gitignore`, `Makefile`, `include/cachesim/enum_names.h`,
+`include/cachesim/layout/mapper.h`, `src/config.cpp`, `src/layout/factory.cpp`, the two new
+`cin_khkw_concat` files and `tests/layout/test_layout_golden.cpp`; `tests/layout/test_neighbour.cpp`
+and `tests/layout/test_cin_khkw_concat.cpp` are named in 2.4 but carry no line citation. Every
+citation into all of them has been read at `6e9aca1`, not repointed by arithmetic, and the ones whose
+target had moved were repointed: the whole `include/cachesim/layout/mapper.h` entry in 2.1 (the new
+enumerator and the two comment lines describing it moved the enum declaration by two and everything
+below it by three), the `enum_names.h` entry in 2.1 (one line added to each of its `name_of` and
+`parse` pairs for `LayoutKind`), and all eight `Makefile` citations at or below that file's new line
+42 - one in convention 5, three in 1.2, two in 2.4 and two in section 4 - by one. Also repointed:
+`make_mapper`'s range in 1.3, which `6e9aca1` moved when it rewrote `src/layout/factory.cpp`'s header
+comment, and every citation in 2.4's `test_layout_golden.cpp` bullet - its grid, its refusal cases,
+its set counts, `kGolden` and `--print-golden` - which moved when the fourth layout's cases and
+golden rows were added to that file. `src/config.cpp` changed only by an in-place substitution of two
+comment lines, `:592,594`, and kept its 845 lines, so no citation into it moved. The four-mapper
+facts and the new 2.2 entry cite the new files at `6e9aca1` directly. Every code file cited in this
+file is committed at `6e9aca1`.
 
 Written from code only: `.cpp`, `.h`, `.sh`,
 `.py`, `Makefile`, `.json`. No markdown, text or log file was read, so any design rationale below is

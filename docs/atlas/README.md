@@ -1,6 +1,6 @@
 # Code atlas index
 
-Commit `0c55f2f` (branch `wcache-rebuild-phase-a`).
+Commit `6e9aca1` (branch `wcache-rebuild-phase-a`), re-stamped from `0c55f2f` on 2026-11-04.
 
 **Scope of this stamp.** Paths, module names and policy spellings are true at `0c55f2f`, and
 every line number was re-resolved across the three restructure commits (`aa6c593` src-layout,
@@ -27,13 +27,24 @@ that never moved a line as well; a file carrying two citations counts twice. Tex
 candidate list: it cannot see a citation that was never right, nor one that shifted onto a
 coincidentally identical line, so each of the 13 was read against the code rather than repointed by
 arithmetic.
-Every code file cited here is committed at `0c55f2f` except one: the new layout
-mapper `src/lays/cachesim/native/src/layout/cin_khkw_concat.cpp`, cited in fact 3,
-is untracked, so its citation was read against the working tree rather than that
-commit. Whether the documentation around a cited file has been committed yet does
-not affect this.
-The only `.gitignore` line this atlas does not cover is an ignore rule at the end
-of the file, below every line of it cited here.
+**Re-stamp 2026-11-04, `0c55f2f` -> `6e9aca1`.** Everything above was true at
+`0c55f2f` and stands as written. Eleven non-documentation files changed between the
+two commits (`.gitignore` and ten under `src/lays/cachesim/native/`, three of them
+new), plus eleven new files under `zoo/` that this atlas cites nowhere; the
+intervening commit `aaedfe7` touched documentation only. The changed files this atlas
+cites are `.gitignore`, `src/lays/cachesim/native/Makefile`,
+`src/lays/cachesim/native/include/cachesim/enum_names.h`,
+`src/lays/cachesim/native/include/cachesim/layout/mapper.h`,
+`src/lays/cachesim/native/src/config.cpp`,
+`src/lays/cachesim/native/src/layout/factory.cpp`,
+`src/lays/cachesim/native/src/layout/cin_khkw_concat.cpp` (new, cited in fact 3) and
+`src/lays/cachesim/native/tests/layout/test_layout_golden.cpp`. Every citation into
+them has been read at `6e9aca1`: in this file only the `Makefile` citation in fact 10
+had moved, repointed to `:182-183`. So every code file cited here is committed at
+`6e9aca1`, and no citation in this file reads against an uncommitted tree.
+The `.gitignore` lines this atlas does not cover all sit below every line of it cited
+here, whose highest is `:42`; `6e9aca1` added two more such rules, the
+`zoo/concat_vs_khkw/*.json` re-include at `:57-59` and `innovation_summary/` at `:96`.
 Built only from reading code (`.py .cpp .h Makefile .yaml .json .toml`) and
 directory listings; no notes or logs were read. Paths are relative to the repo
 root; `file:N` is line N of that file, and a bare `:N` refers to the file
