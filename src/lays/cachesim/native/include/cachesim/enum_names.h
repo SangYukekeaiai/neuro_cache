@@ -19,6 +19,7 @@ inline const char* name_of(LayoutKind k) {
         case LayoutKind::BlockPack: return "block_pack";
         case LayoutKind::SplitCin:  return "split_cin";
         case LayoutKind::KhkwSplit: return "khkw_split";
+        case LayoutKind::CinKhkwConcat: return "cin_khkw_concat";
     }
     return kUnknownEnumName;
 }
@@ -27,6 +28,7 @@ inline bool parse(const std::string& text, LayoutKind& out) {
     if (text == "block_pack") out = LayoutKind::BlockPack;
     else if (text == "split_cin") out = LayoutKind::SplitCin;
     else if (text == "khkw_split") out = LayoutKind::KhkwSplit;
+    else if (text == "cin_khkw_concat") out = LayoutKind::CinKhkwConcat;
     else return false;
     return true;
 }

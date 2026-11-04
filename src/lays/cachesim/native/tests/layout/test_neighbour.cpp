@@ -1,4 +1,4 @@
-// AddressMapper::neighbour, on all three mappers.
+// AddressMapper::neighbour, on all four mappers.
 //
 // The check is against `line_of` rather than against a recomputed stride: the
 // neighbour of a line must be the line of the neighbouring COORDINATE, and
@@ -11,6 +11,7 @@
 
 #include "check.h"
 #include "cachesim/layout/block_pack.h"
+#include "cachesim/layout/cin_khkw_concat.h"
 #include "cachesim/layout/khkw_split.h"
 #include "cachesim/layout/mapper.h"
 #include "cachesim/layout/split_cin.h"
@@ -93,6 +94,7 @@ void refusals(const char* name, const M& m) {
 // delta 0 is the identity, on every mapper and every axis.
 template <typename M>
 void identity(const char* name, const M& m) {
+    (void)name;
     const LineId line = m.line_of(Coord{1, 1, 32, 8});
     for (Axis a : {Axis::KH, Axis::KW, Axis::CIN, Axis::COUT}) {
         const std::optional<LineId> got = m.neighbour(line, a, 0);
@@ -106,17 +108,21 @@ int main() {
     const KhkwSplitMapper khkw(kSmall, kCinBlock, kCoutBlock, kBytes);
     const BlockPackMapper bp(kSmall, kCinBlock, kCoutBlock, kBytes);
     const SplitCinMapper  sc(kSmall, kCinBlock, kCoutBlock, kBytes, 2);
+    const CinKhkwConcatMapper cc(kSmall, kCinBlock, kCoutBlock, kBytes);
 
     std::printf("test_neighbour\n");
     exhaustive("khkw_split", khkw);
     exhaustive("block_pack", bp);
     exhaustive("split_cin", sc);
+    exhaustive("cin_khkw_concat", cc);
     refusals("khkw_split", khkw);
     refusals("block_pack", bp);
     refusals("split_cin", sc);
+    refusals("cin_khkw_concat", cc);
     identity("khkw_split", khkw);
     identity("block_pack", bp);
     identity("split_cin", sc);
+    identity("cin_khkw_concat", cc);
 
     // The one case that motivated putting this on the mapper: under split_cin a
     // cin step can carry between two digits, so it is NOT one stride.

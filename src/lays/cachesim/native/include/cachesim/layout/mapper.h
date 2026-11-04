@@ -34,14 +34,17 @@ namespace cachesim {
 //     SplitCin   SplitCinMapper,  nesting [KH][KW][cin_hi][cout_blk][cin_lo]
 //     KhkwSplit  KhkwSplitMapper, nesting [pos_hi][cout_blk][cin_blk][pos_lo],
 //                where pos = kh * KW + kw split at min(8, KH*KW)
+//     CinKhkwConcat CinKhkwConcatMapper, nesting [cout_blk][d],
+//                   where d = cin_blk * KH*KW + kh * KW + kw
 //
-// Both mappers answer the same interface below, so the engine still never
+// All mappers answer the same interface below, so the engine still never
 // learns which one it has. What changes is which line a coordinate lands on,
 // and therefore which set the line lands in.
 enum class LayoutKind : std::uint8_t {
     BlockPack = 0,
     SplitCin  = 1,
     KhkwSplit = 2,
+    CinKhkwConcat = 3,
 };
 
 // Where a line sits in a set-associative array: which set holds it, and the

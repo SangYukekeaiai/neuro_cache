@@ -4,6 +4,7 @@
 #include <string>
 
 #include "cachesim/layout/block_pack.h"
+#include "cachesim/layout/cin_khkw_concat.h"
 #include "cachesim/layout/khkw_split.h"
 #include "cachesim/layout/split_cin.h"
 
@@ -11,9 +12,10 @@ namespace cachesim {
 
 // The one place `cfg.layout` becomes a mapper.
 //
-// Both drivers call it, so the branch over LayoutKind is written once. Adding a
-// third layout is an enumerator in layout.h, a spelling in config.cpp, and a
-// case here; no driver learns the list.
+// Both drivers call it, so the branch over the four LayoutKind values is written
+// once. Adding a layout needs an enumerator in include/cachesim/layout/mapper.h,
+// a spelling in include/cachesim/enum_names.h, and a case here; no driver learns
+// the list.
 //
 // It also appends the layout warning that needs the LAYER, and the two are one
 // function on purpose. validate() is handed a config and a burst span and never
@@ -39,6 +41,10 @@ std::unique_ptr<AddressMapper> make_mapper(const RunConfig& cfg,
         // is no config field that can disagree with the layer.
         return std::unique_ptr<AddressMapper>(
             new KhkwSplitMapper(shape, cfg.cin_block, cfg.cout_block, cfg.weight_bytes));
+    }
+    if (cfg.layout == LayoutKind::CinKhkwConcat) {
+        return std::unique_ptr<AddressMapper>(
+            new CinKhkwConcatMapper(shape, cfg.cin_block, cfg.cout_block, cfg.weight_bytes));
     }
 
     std::unique_ptr<SplitCinMapper> m(new SplitCinMapper(

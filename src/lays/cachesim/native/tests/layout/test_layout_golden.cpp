@@ -1,4 +1,4 @@
-// The observable mapping of all three layouts, pinned on a fixed grid.
+// The observable mapping of all four layouts, pinned on a fixed grid.
 //
 // For every (shape, blocking, layout) case below this records, in a fixed
 // order: num_lines, line_size_bytes, line_size_terms, line_of of every
@@ -14,7 +14,8 @@
 //
 //     build/fixture/layout/test_layout_golden --print-golden
 //
-// and paste the printed rows over kGolden.
+// and paste the printed rows over kGolden. The separate hand-calculated
+// line-id cases below are a specification, not regenerated tool output.
 #include <cinttypes>
 #include <cstdint>
 #include <cstdio>
@@ -26,6 +27,7 @@
 
 #include "check.h"
 #include "cachesim/layout/block_pack.h"
+#include "cachesim/layout/cin_khkw_concat.h"
 #include "cachesim/layout/khkw_split.h"
 #include "cachesim/layout/mapper.h"
 #include "cachesim/layout/split_cin.h"
@@ -34,6 +36,58 @@
 namespace {
 
 using namespace cachesim;
+
+// Literal oracles calculated from the documented nesting [cout_blk][d],
+// d = cin_blk * (KH*KW) + kh*KW + kw. No mapper output or generated hash
+// supplies these expected ids.
+void hand_calculated_concat_lines() {
+    struct LineCase { Coord coord; std::int64_t id; };
+
+    // 3x3x64x32, blocks 16x4: four CIN blocks, eight COUT blocks,
+    // D = 4*9 = 36, so line = cout_blk*36 + cin_blk*9 + kh*3 + kw.
+    // In particular position eight is 8, the next CIN block starts at 9,
+    // the next COUT block at 36, and the last line is 7*36 + 3*9 + 8 = 287.
+    const CinKhkwConcatMapper conv(WeightShape{3, 3, 64, 32}, 16, 4, 1);
+    const LineCase conv_cases[] = {
+        {{0, 0, 0, 0}, 0},
+        {{0, 1, 0, 0}, 1},
+        {{0, 2, 0, 0}, 2},
+        {{1, 0, 0, 0}, 3},
+        {{1, 1, 0, 0}, 4},
+        {{1, 2, 0, 0}, 5},
+        {{2, 0, 0, 0}, 6},
+        {{2, 1, 0, 0}, 7},
+        {{2, 2, 0, 0}, 8},
+        {{2, 2, 15, 3}, 8},  // same packed block, last elements
+        {{0, 0, 16, 0}, 9},
+        {{2, 2, 16, 0}, 17}, // 9 + 8
+        {{2, 2, 63, 3}, 35}, // 3*9 + 8
+        {{0, 0, 0, 4}, 36},
+        {{1, 1, 32, 8}, 94}, // 2*36 + 2*9 + 4
+        {{2, 2, 63, 31}, 287},
+    };
+    CHECK_EQ(conv.num_lines().get(), 288);
+    for (const LineCase& c : conv_cases) CHECK_EQ(conv.line_of(c.coord).get(), c.id);
+
+    // 1x1x100x30, blocks 16x4: ceil(100/16) = 7 CIN blocks and
+    // ceil(30/4) = 8 COUT blocks. D = 7, so line = cout_blk*7 + cin_blk.
+    // Both final blocks are partial; their intersection is 7*7 + 6 = 55.
+    const CinKhkwConcatMapper point(WeightShape{1, 1, 100, 30}, 16, 4, 2);
+    const LineCase point_cases[] = {
+        {{0, 0, 0, 0}, 0},
+        {{0, 0, 15, 3}, 0},
+        {{0, 0, 16, 0}, 1},
+        {{0, 0, 95, 3}, 5},
+        {{0, 0, 96, 0}, 6},
+        {{0, 0, 99, 3}, 6},
+        {{0, 0, 0, 4}, 7},
+        {{0, 0, 32, 8}, 16}, // 2*7 + 2
+        {{0, 0, 0, 28}, 49},
+        {{0, 0, 99, 29}, 55},
+    };
+    CHECK_EQ(point.num_lines().get(), 56);
+    for (const LineCase& c : point_cases) CHECK_EQ(point.line_of(c.coord).get(), c.id);
+}
 
 struct Golden {
     const char*   name;
@@ -226,6 +280,8 @@ std::vector<Case> run_grid() {
                          SplitCinMapper(s, b.cin, b.cout, b.bytes, lo), s);
             }
             add_case("khkw_split " + tag, KhkwSplitMapper(s, b.cin, b.cout, b.bytes), s);
+            add_case("cin_khkw_concat " + tag,
+                     CinKhkwConcatMapper(s, b.cin, b.cout, b.bytes), s);
         }
     }
     const auto add_errors = [&](const std::string& name, const auto& make, bool calls) {
@@ -246,6 +302,11 @@ std::vector<Case> run_grid() {
     add_errors("errors khkw_split", [](WeightShape s, std::int32_t ci, std::int32_t co,
                                        std::int32_t wb) { return KhkwSplitMapper(s, ci, co, wb); },
                true);
+    add_errors("errors cin_khkw_concat",
+               [](WeightShape s, std::int32_t ci, std::int32_t co, std::int32_t wb) {
+                   return CinKhkwConcatMapper(s, ci, co, wb);
+               },
+               true);
     return cases;
 }
 
@@ -257,185 +318,216 @@ const Golden kGolden[] = {
     {"split_cin lo 3 1x1x1x4 blk 1x1 wb 1", 284, 0x9ed5f7a87000fda1ULL},
     {"split_cin lo 8 1x1x1x4 blk 1x1 wb 1", 404, 0x51c273031a8458a6ULL},
     {"khkw_split 1x1x1x4 blk 1x1 wb 1", 236, 0x9c9c33f7a21340d9ULL},
+    {"cin_khkw_concat 1x1x1x4 blk 1x1 wb 1", 236, 0x9c9c33f7a21340d9ULL},
     {"block_pack 1x1x1x4 blk 4x4 wb 1", 199, 0x4dc50456a419708dULL},
     {"split_cin lo 1 1x1x1x4 blk 4x4 wb 1", 199, 0x4dc50456a419708dULL},
     {"split_cin lo 2 1x1x1x4 blk 4x4 wb 1", 199, 0x4dc50456a419708dULL},
     {"split_cin lo 3 1x1x1x4 blk 4x4 wb 1", 199, 0x4dc50456a419708dULL},
     {"split_cin lo 8 1x1x1x4 blk 4x4 wb 1", 199, 0x4dc50456a419708dULL},
     {"khkw_split 1x1x1x4 blk 4x4 wb 1", 199, 0x4dc50456a419708dULL},
+    {"cin_khkw_concat 1x1x1x4 blk 4x4 wb 1", 199, 0x4dc50456a419708dULL},
     {"block_pack 1x1x1x4 blk 16x4 wb 2", 200, 0x4d06d3e960d0ef6aULL},
     {"split_cin lo 1 1x1x1x4 blk 16x4 wb 2", 200, 0x4d06d3e960d0ef6aULL},
     {"split_cin lo 2 1x1x1x4 blk 16x4 wb 2", 200, 0x4d06d3e960d0ef6aULL},
     {"split_cin lo 3 1x1x1x4 blk 16x4 wb 2", 200, 0x4d06d3e960d0ef6aULL},
     {"split_cin lo 8 1x1x1x4 blk 16x4 wb 2", 200, 0x4d06d3e960d0ef6aULL},
     {"khkw_split 1x1x1x4 blk 16x4 wb 2", 200, 0x4d06d3e960d0ef6aULL},
+    {"cin_khkw_concat 1x1x1x4 blk 16x4 wb 2", 200, 0x4d06d3e960d0ef6aULL},
     {"block_pack 1x1x1x4 blk 5x3 wb 1", 213, 0x7acc5e06d6000ee7ULL},
     {"split_cin lo 1 1x1x1x4 blk 5x3 wb 1", 213, 0x7acc5e06d6000ee7ULL},
     {"split_cin lo 2 1x1x1x4 blk 5x3 wb 1", 221, 0x69b7f8cec141ef86ULL},
     {"split_cin lo 3 1x1x1x4 blk 5x3 wb 1", 229, 0xc4db5d0d8990bc63ULL},
     {"split_cin lo 8 1x1x1x4 blk 5x3 wb 1", 269, 0x1a2f337aaf3bdc9dULL},
     {"khkw_split 1x1x1x4 blk 5x3 wb 1", 213, 0x7acc5e06d6000ee7ULL},
+    {"cin_khkw_concat 1x1x1x4 blk 5x3 wb 1", 213, 0x7acc5e06d6000ee7ULL},
     {"block_pack 1x1x1x4 blk 64x64 wb 1", 201, 0x267ed2a17804fccbULL},
     {"split_cin lo 1 1x1x1x4 blk 64x64 wb 1", 201, 0x267ed2a17804fccbULL},
     {"split_cin lo 2 1x1x1x4 blk 64x64 wb 1", 201, 0x267ed2a17804fccbULL},
     {"split_cin lo 3 1x1x1x4 blk 64x64 wb 1", 201, 0x267ed2a17804fccbULL},
     {"split_cin lo 8 1x1x1x4 blk 64x64 wb 1", 201, 0x267ed2a17804fccbULL},
     {"khkw_split 1x1x1x4 blk 64x64 wb 1", 201, 0x267ed2a17804fccbULL},
+    {"cin_khkw_concat 1x1x1x4 blk 64x64 wb 1", 201, 0x267ed2a17804fccbULL},
     {"block_pack 3x3x64x32 blk 1x1 wb 1", 749614, 0x9fb814271985cafdULL},
     {"split_cin lo 1 3x3x64x32 blk 1x1 wb 1", 749614, 0x9fb814271985cafdULL},
     {"split_cin lo 2 3x3x64x32 blk 1x1 wb 1", 749614, 0x82826ee12f9b3f31ULL},
     {"split_cin lo 3 3x3x64x32 blk 1x1 wb 1", 754206, 0xbfcfb019471248b1ULL},
     {"split_cin lo 8 3x3x64x32 blk 1x1 wb 1", 749614, 0x87bd3f281278a2c5ULL},
     {"khkw_split 3x3x64x32 blk 1x1 wb 1", 864246, 0x2c35b30b34f2f4c8ULL},
+    {"cin_khkw_concat 3x3x64x32 blk 1x1 wb 1", 749614, 0xd1b18295432914b9ULL},
     {"block_pack 3x3x64x32 blk 4x4 wb 1", 527566, 0x2379024f3be655f4ULL},
     {"split_cin lo 1 3x3x64x32 blk 4x4 wb 1", 527566, 0x2379024f3be655f4ULL},
     {"split_cin lo 2 3x3x64x32 blk 4x4 wb 1", 527566, 0x3c4c7e154ce528e4ULL},
     {"split_cin lo 3 3x3x64x32 blk 4x4 wb 1", 528702, 0xdcbe1c823b55191fULL},
     {"split_cin lo 8 3x3x64x32 blk 4x4 wb 1", 527566, 0xe4cd17e4e82c96c4ULL},
     {"khkw_split 3x3x64x32 blk 4x4 wb 1", 534678, 0x34ddb289e11c5dd3ULL},
+    {"cin_khkw_concat 3x3x64x32 blk 4x4 wb 1", 527566, 0x041cbcae649f2eb4ULL},
     {"block_pack 3x3x64x32 blk 16x4 wb 2", 499631, 0x840872e790ad0f28ULL},
     {"split_cin lo 1 3x3x64x32 blk 16x4 wb 2", 499631, 0x840872e790ad0f28ULL},
     {"split_cin lo 2 3x3x64x32 blk 16x4 wb 2", 499631, 0xdda3ff4b30328128ULL},
     {"split_cin lo 3 3x3x64x32 blk 16x4 wb 2", 500767, 0x9e5dc20a3be5ec48ULL},
     {"split_cin lo 8 3x3x64x32 blk 16x4 wb 2", 501903, 0x373d7e1c8e128819ULL},
     {"khkw_split 3x3x64x32 blk 16x4 wb 2", 501367, 0xa0810c55325d912aULL},
+    {"cin_khkw_concat 3x3x64x32 blk 16x4 wb 2", 499631, 0x537291af799dbee0ULL},
     {"block_pack 3x3x64x32 blk 5x3 wb 1", 534694, 0xc08adb2f9f340cd1ULL},
     {"split_cin lo 1 3x3x64x32 blk 5x3 wb 1", 534694, 0xc08adb2f9f340cd1ULL},
     {"split_cin lo 2 3x3x64x32 blk 5x3 wb 1", 535478, 0xbd39e2fd806a1df5ULL},
     {"split_cin lo 3 3x3x64x32 blk 5x3 wb 1", 536262, 0x0a0f7af3d431f056ULL},
     {"split_cin lo 8 3x3x64x32 blk 5x3 wb 1", 537046, 0x4eaa06a6110771bfULL},
     {"khkw_split 3x3x64x32 blk 5x3 wb 1", 542646, 0xd11e1917e10e7849ULL},
+    {"cin_khkw_concat 3x3x64x32 blk 5x3 wb 1", 534694, 0x2a1b6a29ae5c74efULL},
     {"block_pack 3x3x64x32 blk 64x64 wb 1", 467448, 0x3f8550d4e096336eULL},
     {"split_cin lo 1 3x3x64x32 blk 64x64 wb 1", 467448, 0x3f8550d4e096336eULL},
     {"split_cin lo 2 3x3x64x32 blk 64x64 wb 1", 467512, 0x5746c9b75be898f3ULL},
     {"split_cin lo 3 3x3x64x32 blk 64x64 wb 1", 467576, 0x0f26609f5942add4ULL},
     {"split_cin lo 8 3x3x64x32 blk 64x64 wb 1", 467896, 0xb1878c27b6336458ULL},
     {"khkw_split 3x3x64x32 blk 64x64 wb 1", 467448, 0x3f8550d4e096336eULL},
+    {"cin_khkw_concat 3x3x64x32 blk 64x64 wb 1", 467448, 0x3f8550d4e096336eULL},
     {"block_pack 1x1x100x30 blk 1x1 wb 1", 107606, 0xaef606bdf418a03fULL},
     {"split_cin lo 1 1x1x100x30 blk 1x1 wb 1", 107606, 0xaef606bdf418a03fULL},
     {"split_cin lo 2 1x1x100x30 blk 1x1 wb 1", 107606, 0xbfb2aa6e6d24c290ULL},
     {"split_cin lo 3 1x1x100x30 blk 1x1 wb 1", 108070, 0xc0a9ec7c0d278910ULL},
     {"split_cin lo 8 1x1x100x30 blk 1x1 wb 1", 108534, 0xb8e6c007210c65bdULL},
     {"khkw_split 1x1x100x30 blk 1x1 wb 1", 107606, 0xa984d90c4b87eb0aULL},
+    {"cin_khkw_concat 1x1x100x30 blk 1x1 wb 1", 107606, 0xa984d90c4b87eb0aULL},
     {"block_pack 1x1x100x30 blk 4x4 wb 1", 71876, 0xd2795160759c6348ULL},
     {"split_cin lo 1 1x1x100x30 blk 4x4 wb 1", 71876, 0xd2795160759c6348ULL},
     {"split_cin lo 2 1x1x100x30 blk 4x4 wb 1", 71932, 0x41255070bf509c55ULL},
     {"split_cin lo 3 1x1x100x30 blk 4x4 wb 1", 71988, 0xbf7e3cd92f565554ULL},
     {"split_cin lo 8 1x1x100x30 blk 4x4 wb 1", 72268, 0x1d120c290f258b35ULL},
     {"khkw_split 1x1x100x30 blk 4x4 wb 1", 71876, 0xcb007a53ad143188ULL},
+    {"cin_khkw_concat 1x1x100x30 blk 4x4 wb 1", 71876, 0xcb007a53ad143188ULL},
     {"block_pack 1x1x100x30 blk 16x4 wb 2", 67455, 0x64c432e150eb59dfULL},
     {"split_cin lo 1 1x1x100x30 blk 16x4 wb 2", 67455, 0x64c432e150eb59dfULL},
     {"split_cin lo 2 1x1x100x30 blk 16x4 wb 2", 67511, 0x9ce640bc149d1d8fULL},
     {"split_cin lo 3 1x1x100x30 blk 16x4 wb 2", 67567, 0xa0f97d9c9da5a7e3ULL},
     {"split_cin lo 8 1x1x100x30 blk 16x4 wb 2", 67511, 0xedaf1eb6c14df88fULL},
     {"khkw_split 1x1x100x30 blk 16x4 wb 2", 67455, 0x2b00ff2898ac249fULL},
+    {"cin_khkw_concat 1x1x100x30 blk 16x4 wb 2", 67455, 0x2b00ff2898ac249fULL},
     {"block_pack 1x1x100x30 blk 5x3 wb 1", 72446, 0x2b64bb435a913bb1ULL},
     {"split_cin lo 1 1x1x100x30 blk 5x3 wb 1", 72446, 0x2b64bb435a913bb1ULL},
     {"split_cin lo 2 1x1x100x30 blk 5x3 wb 1", 72446, 0xc8fd8ed313d1eed1ULL},
     {"split_cin lo 3 1x1x100x30 blk 5x3 wb 1", 72518, 0xd9dcbf03ef1acfacULL},
     {"split_cin lo 8 1x1x100x30 blk 5x3 wb 1", 72734, 0x82d6deec95a042d5ULL},
     {"khkw_split 1x1x100x30 blk 5x3 wb 1", 72446, 0xbb7b73fc4b94da91ULL},
+    {"cin_khkw_concat 1x1x100x30 blk 5x3 wb 1", 72446, 0xbb7b73fc4b94da91ULL},
     {"block_pack 1x1x100x30 blk 64x64 wb 1", 61924, 0x064053c206067504ULL},
     {"split_cin lo 1 1x1x100x30 blk 64x64 wb 1", 61924, 0x064053c206067504ULL},
     {"split_cin lo 2 1x1x100x30 blk 64x64 wb 1", 61924, 0x064053c206067504ULL},
     {"split_cin lo 3 1x1x100x30 blk 64x64 wb 1", 61924, 0x064053c206067504ULL},
     {"split_cin lo 8 1x1x100x30 blk 64x64 wb 1", 61924, 0x064053c206067504ULL},
     {"khkw_split 1x1x100x30 blk 64x64 wb 1", 61924, 0x064053c206067504ULL},
+    {"cin_khkw_concat 1x1x100x30 blk 64x64 wb 1", 61924, 0x064053c206067504ULL},
     {"block_pack 2x3x17x9 blk 1x1 wb 1", 41497, 0xc8810d9fae2dc4fbULL},
     {"split_cin lo 1 2x3x17x9 blk 1x1 wb 1", 41497, 0xc8810d9fae2dc4fbULL},
     {"split_cin lo 2 2x3x17x9 blk 1x1 wb 1", 41921, 0xfb9c0793a7757f9cULL},
     {"split_cin lo 3 2x3x17x9 blk 1x1 wb 1", 41921, 0x16116aaf4311813aULL},
     {"split_cin lo 8 2x3x17x9 blk 1x1 wb 1", 44465, 0x522d5d763aa3b701ULL},
     {"khkw_split 2x3x17x9 blk 1x1 wb 1", 41497, 0x849b1088a9d0f384ULL},
+    {"cin_khkw_concat 2x3x17x9 blk 1x1 wb 1", 41497, 0x849b1088a9d0f384ULL},
     {"block_pack 2x3x17x9 blk 4x4 wb 1", 30523, 0xe5e67626552bcc5eULL},
     {"split_cin lo 1 2x3x17x9 blk 4x4 wb 1", 30523, 0xe5e67626552bcc5eULL},
     {"split_cin lo 2 2x3x17x9 blk 4x4 wb 1", 30659, 0x434b68be063e37c1ULL},
     {"split_cin lo 3 2x3x17x9 blk 4x4 wb 1", 30659, 0x032f1f8d19da20f1ULL},
     {"split_cin lo 8 2x3x17x9 blk 4x4 wb 1", 30931, 0xc68264460983aefeULL},
     {"khkw_split 2x3x17x9 blk 4x4 wb 1", 30523, 0xc204a77e6eac388cULL},
+    {"cin_khkw_concat 2x3x17x9 blk 4x4 wb 1", 30523, 0xc204a77e6eac388cULL},
     {"block_pack 2x3x17x9 blk 16x4 wb 2", 29066, 0x8a0467bf16b4c570ULL},
     {"split_cin lo 1 2x3x17x9 blk 16x4 wb 2", 29066, 0x8a0467bf16b4c570ULL},
     {"split_cin lo 2 2x3x17x9 blk 16x4 wb 2", 29066, 0x727e2c318209790cULL},
     {"split_cin lo 3 2x3x17x9 blk 16x4 wb 2", 29202, 0x4cb2a902f592ebb2ULL},
     {"split_cin lo 8 2x3x17x9 blk 16x4 wb 2", 29882, 0xd5487642f3538d58ULL},
     {"khkw_split 2x3x17x9 blk 16x4 wb 2", 29066, 0x7fd7933c3bc8e902ULL},
+    {"cin_khkw_concat 2x3x17x9 blk 16x4 wb 2", 29066, 0x7fd7933c3bc8e902ULL},
     {"block_pack 2x3x17x9 blk 5x3 wb 1", 30619, 0x2fb0e0fdf2694b6dULL},
     {"split_cin lo 1 2x3x17x9 blk 5x3 wb 1", 30619, 0x2fb0e0fdf2694b6dULL},
     {"split_cin lo 2 2x3x17x9 blk 5x3 wb 1", 30619, 0xa7032d36bc375968ULL},
     {"split_cin lo 3 2x3x17x9 blk 5x3 wb 1", 30891, 0x69f2cb0e40761545ULL},
     {"split_cin lo 8 2x3x17x9 blk 5x3 wb 1", 31163, 0xc39f07f83df4cd02ULL},
     {"khkw_split 2x3x17x9 blk 5x3 wb 1", 30619, 0x22c7d8e02026c295ULL},
+    {"cin_khkw_concat 2x3x17x9 blk 5x3 wb 1", 30619, 0x22c7d8e02026c295ULL},
     {"block_pack 2x3x17x9 blk 64x64 wb 1", 27591, 0x73af91628951f3ebULL},
     {"split_cin lo 1 2x3x17x9 blk 64x64 wb 1", 27591, 0x73af91628951f3ebULL},
     {"split_cin lo 2 2x3x17x9 blk 64x64 wb 1", 27631, 0xd6b246cbce33a66cULL},
     {"split_cin lo 3 2x3x17x9 blk 64x64 wb 1", 27671, 0xf7aeb7b8cfd8133dULL},
     {"split_cin lo 8 2x3x17x9 blk 64x64 wb 1", 27871, 0xb3abe639e0f18f30ULL},
     {"khkw_split 2x3x17x9 blk 64x64 wb 1", 27591, 0x73af91628951f3ebULL},
+    {"cin_khkw_concat 2x3x17x9 blk 64x64 wb 1", 27591, 0x73af91628951f3ebULL},
     {"block_pack 5x5x8x12 blk 1x1 wb 1", 108786, 0x0faf817a1909ada1ULL},
     {"split_cin lo 1 5x5x8x12 blk 1x1 wb 1", 108786, 0x0faf817a1909ada1ULL},
     {"split_cin lo 2 5x5x8x12 blk 1x1 wb 1", 108786, 0xe17c09f24e0d2206ULL},
     {"split_cin lo 3 5x5x8x12 blk 1x1 wb 1", 111178, 0xd6e5174fb77fd94dULL},
     {"split_cin lo 8 5x5x8x12 blk 1x1 wb 1", 108786, 0x8704f08d2a636182ULL},
     {"khkw_split 5x5x8x12 blk 1x1 wb 1", 114106, 0x241e10537c206828ULL},
+    {"cin_khkw_concat 5x5x8x12 blk 1x1 wb 1", 108786, 0x473d516337ba5b31ULL},
     {"block_pack 5x5x8x12 blk 4x4 wb 1", 78186, 0x046567b86efe5376ULL},
     {"split_cin lo 1 5x5x8x12 blk 4x4 wb 1", 78186, 0x046567b86efe5376ULL},
     {"split_cin lo 2 5x5x8x12 blk 4x4 wb 1", 78186, 0xee7d08cb0a5058b6ULL},
     {"split_cin lo 3 5x5x8x12 blk 4x4 wb 1", 78778, 0xaf99675522b8a6e0ULL},
     {"split_cin lo 8 5x5x8x12 blk 4x4 wb 1", 81738, 0xc0a0bd5e1f78a308ULL},
     {"khkw_split 5x5x8x12 blk 4x4 wb 1", 78466, 0x09e4278ca5fa3272ULL},
+    {"cin_khkw_concat 5x5x8x12 blk 4x4 wb 1", 78186, 0x251d0579a5bddf96ULL},
     {"block_pack 5x5x8x12 blk 16x4 wb 2", 75487, 0xc5b59c2916af5a9cULL},
     {"split_cin lo 1 5x5x8x12 blk 16x4 wb 2", 75487, 0xc5b59c2916af5a9cULL},
     {"split_cin lo 2 5x5x8x12 blk 16x4 wb 2", 76079, 0x7bba550411fb1914ULL},
     {"split_cin lo 3 5x5x8x12 blk 16x4 wb 2", 76671, 0xa22f65acdd947a2cULL},
     {"split_cin lo 8 5x5x8x12 blk 16x4 wb 2", 79631, 0x64a72b9b0cf4529bULL},
     {"khkw_split 5x5x8x12 blk 16x4 wb 2", 75599, 0x9d65dbdaea561beaULL},
+    {"cin_khkw_concat 5x5x8x12 blk 16x4 wb 2", 75487, 0x5d60a744ae48ff5cULL},
     {"block_pack 5x5x8x12 blk 5x3 wb 1", 79886, 0xf733c45ea1cfa3d5ULL},
     {"split_cin lo 1 5x5x8x12 blk 5x3 wb 1", 79886, 0xf733c45ea1cfa3d5ULL},
     {"split_cin lo 2 5x5x8x12 blk 5x3 wb 1", 79886, 0x76ab9c6653f908d0ULL},
     {"split_cin lo 3 5x5x8x12 blk 5x3 wb 1", 80678, 0xbc57ed5193abf629ULL},
     {"split_cin lo 8 5x5x8x12 blk 5x3 wb 1", 84638, 0xaaa6d43e17f170d3ULL},
     {"khkw_split 5x5x8x12 blk 5x3 wb 1", 80278, 0x8023106f55a70c64ULL},
+    {"cin_khkw_concat 5x5x8x12 blk 5x3 wb 1", 79886, 0x34df8b59ff9a2780ULL},
     {"block_pack 5x5x8x12 blk 64x64 wb 1", 72488, 0x5610ed1c7c3cc5d4ULL},
     {"split_cin lo 1 5x5x8x12 blk 64x64 wb 1", 72488, 0x5610ed1c7c3cc5d4ULL},
     {"split_cin lo 2 5x5x8x12 blk 64x64 wb 1", 72680, 0x11542b6fe2084a81ULL},
     {"split_cin lo 3 5x5x8x12 blk 64x64 wb 1", 72872, 0x105bd31458783d7fULL},
     {"split_cin lo 8 5x5x8x12 blk 64x64 wb 1", 73832, 0x5eec92ef6caa239cULL},
     {"khkw_split 5x5x8x12 blk 64x64 wb 1", 72488, 0x5610ed1c7c3cc5d4ULL},
+    {"cin_khkw_concat 5x5x8x12 blk 64x64 wb 1", 72488, 0x5610ed1c7c3cc5d4ULL},
     {"block_pack 3x1x40x6 blk 1x1 wb 1", 31282, 0x6013b989faf51321ULL},
     {"split_cin lo 1 3x1x40x6 blk 1x1 wb 1", 31282, 0x6013b989faf51321ULL},
     {"split_cin lo 2 3x1x40x6 blk 1x1 wb 1", 31282, 0x7a3bcd5d95878fc7ULL},
     {"split_cin lo 3 3x1x40x6 blk 1x1 wb 1", 31554, 0x5db1f612468c8b61ULL},
     {"split_cin lo 8 3x1x40x6 blk 1x1 wb 1", 31282, 0x77e3a7831204d5fbULL},
     {"khkw_split 3x1x40x6 blk 1x1 wb 1", 31282, 0x9557e3235ae754f6ULL},
+    {"cin_khkw_concat 3x1x40x6 blk 1x1 wb 1", 31282, 0x9557e3235ae754f6ULL},
     {"block_pack 3x1x40x6 blk 4x4 wb 1", 22564, 0xc1a939d6fd15482cULL},
     {"split_cin lo 1 3x1x40x6 blk 4x4 wb 1", 22564, 0xc1a939d6fd15482cULL},
     {"split_cin lo 2 3x1x40x6 blk 4x4 wb 1", 22564, 0xb58d469ca0aa1e2cULL},
     {"split_cin lo 3 3x1x40x6 blk 4x4 wb 1", 22644, 0x4b511478125b66d4ULL},
     {"split_cin lo 8 3x1x40x6 blk 4x4 wb 1", 22804, 0xbae5c4bd2aa457faULL},
     {"khkw_split 3x1x40x6 blk 4x4 wb 1", 22564, 0x6d10b42bec7886bcULL},
+    {"cin_khkw_concat 3x1x40x6 blk 4x4 wb 1", 22564, 0x6d10b42bec7886bcULL},
     {"block_pack 3x1x40x6 blk 16x4 wb 2", 21455, 0x4a5ff8698bf978b5ULL},
     {"split_cin lo 1 3x1x40x6 blk 16x4 wb 2", 21455, 0x4a5ff8698bf978b5ULL},
     {"split_cin lo 2 3x1x40x6 blk 16x4 wb 2", 21495, 0xb3261a1488e5fb70ULL},
     {"split_cin lo 3 3x1x40x6 blk 16x4 wb 2", 21455, 0xc2a600d9a2bcf715ULL},
     {"split_cin lo 8 3x1x40x6 blk 16x4 wb 2", 21655, 0x01396deb47ce2d65ULL},
     {"khkw_split 3x1x40x6 blk 16x4 wb 2", 21455, 0x9c6d20d193f2b2d5ULL},
+    {"cin_khkw_concat 3x1x40x6 blk 16x4 wb 2", 21455, 0x9c6d20d193f2b2d5ULL},
     {"block_pack 3x1x40x6 blk 5x3 wb 1", 22594, 0xb51eff7dd464e789ULL},
     {"split_cin lo 1 3x1x40x6 blk 5x3 wb 1", 22594, 0xb51eff7dd464e789ULL},
     {"split_cin lo 2 3x1x40x6 blk 5x3 wb 1", 22594, 0x44087a5edc2ad4a9ULL},
     {"split_cin lo 3 3x1x40x6 blk 5x3 wb 1", 22634, 0x936c11a8c770e371ULL},
     {"split_cin lo 8 3x1x40x6 blk 5x3 wb 1", 22594, 0xa711953193880d49ULL},
     {"khkw_split 3x1x40x6 blk 5x3 wb 1", 22594, 0xe129676fe1a70f29ULL},
+    {"cin_khkw_concat 3x1x40x6 blk 5x3 wb 1", 22594, 0xe129676fe1a70f29ULL},
     {"block_pack 3x1x40x6 blk 64x64 wb 1", 20400, 0xc9951ef0e64ecea5ULL},
     {"split_cin lo 1 3x1x40x6 blk 64x64 wb 1", 20400, 0xc9951ef0e64ecea5ULL},
     {"split_cin lo 2 3x1x40x6 blk 64x64 wb 1", 20416, 0x122df2e3fa200425ULL},
     {"split_cin lo 3 3x1x40x6 blk 64x64 wb 1", 20432, 0x177ce67d396394a5ULL},
     {"split_cin lo 8 3x1x40x6 blk 64x64 wb 1", 20512, 0xd7421568939c8573ULL},
     {"khkw_split 3x1x40x6 blk 64x64 wb 1", 20400, 0xc9951ef0e64ecea5ULL},
+    {"cin_khkw_concat 3x1x40x6 blk 64x64 wb 1", 20400, 0xc9951ef0e64ecea5ULL},
     {"errors block_pack", 2961, 0x245dc646209bd126ULL},
     {"errors split_cin lo 3", 2918, 0xc9ed116694dea63eULL},
     {"errors split_cin lo 0", 863, 0xe420b6a1cfaa27f2ULL},
     {"errors split_cin lo -2", 867, 0xb10296d96d6829b2ULL},
     {"errors khkw_split", 2979, 0xa369007e4466e07bULL},
+    {"errors cin_khkw_concat", 3116, 0x13bcf2cfe1846b89ULL},
 };
 const std::size_t kGoldenSize = sizeof(kGolden) / sizeof(kGolden[0]);
 
@@ -453,6 +545,7 @@ int main(int argc, char** argv) {
     }
 
     std::printf("test_layout_golden\n");
+    hand_calculated_concat_lines();
     CHECK_EQ(static_cast<std::int64_t>(cases.size()), static_cast<std::int64_t>(kGoldenSize));
     std::int64_t total = 0;
     for (std::size_t i = 0; i < cases.size() && i < kGoldenSize; ++i) {

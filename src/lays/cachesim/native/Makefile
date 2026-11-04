@@ -39,6 +39,7 @@ endif
 BUILDDIR := build/$(MODE)
 CXXFLAGS := $(CXXSTD) $(WARN) $(INCLUDES) $(MODEFLAGS)
 
+# Layout siblings, including cin_khkw_concat.cpp, are discovered recursively.
 SRCS := $(sort $(shell find src -type f -name '*.cpp' -print))
 OBJS := $(patsubst src/%.cpp,$(BUILDDIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)

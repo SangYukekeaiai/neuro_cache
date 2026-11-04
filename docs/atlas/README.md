@@ -15,17 +15,23 @@ three exceptions - `.gitignore`, `pyproject.toml` and `zoo/demo_l2pf/compare_l2p
 re-resolved by content. Coverage claim: this applies to BOTH citation forms (`path:N` attached and
 bare `:N`) in BOTH backtick states.
 
-NOT re-verified here: 11 attached citations whose cited text changed between this file's previous stamp
-`0c598d1` and `b2c4a88`, measured by comparing the text at each cited line number in those two commits -
-9 under `src/lays/cachesim/native/` (`src/config.cpp` 3, `src/core/engine.cpp` 2, and one each in
-`apps/cachesim_run.cpp`, `include/cachesim/config.h`, `include/cachesim/core/engine.h`,
-`src/instrument/stats.cpp`), 1 in `src/lays/cachesim/grid.py` and 1 in `src/lays/scheduler/solve.py`.
-Those 11 were last true at `0c598d1`. The count is per citation, not per file, and it is measured on the
-cited TEXT rather than on where hunks fall, so it covers citations into files that never moved a line as
-well. The bare `:N` runs of those entries are not measured individually; they inherit their entry's
-file.
-Every code file cited here is committed at `0c55f2f`; no cited code file is
-uncommitted, whether or not the documentation around it has been committed yet.
+Re-verified since, so nothing here is left uncovered: the 13 citations whose cited text changed
+between this file's previous stamp `0c598d1` and `b2c4a88` have each been read against the code at
+`0c55f2f` and repointed. In BOTH forms: 11 attached and 2 bare - `src/config.cpp` 3,
+`src/core/engine.cpp` 2, `include/cachesim/config.h` 2 (the attached `:110` and the bare `:71`, which
+named `l1_mshrs` where the sentence means `l2_mshrs`, now `:73`), `src/lays/cachesim/grid.py` 2, and one
+each in `apps/cachesim_run.cpp` (with its bare `:143`), `include/cachesim/core/engine.h`,
+`src/instrument/stats.cpp` and `src/lays/scheduler/solve.py`. The count is per citation, not per file,
+and it is measured on the cited TEXT rather than on where hunks fall, so it covers citations into files
+that never moved a line as well; a file carrying two citations counts twice. Text comparison is only a
+candidate list: it cannot see a citation that was never right, nor one that shifted onto a
+coincidentally identical line, so each of the 13 was read against the code rather than repointed by
+arithmetic.
+Every code file cited here is committed at `0c55f2f` except one: the new layout
+mapper `src/lays/cachesim/native/src/layout/cin_khkw_concat.cpp`, cited in fact 3,
+is untracked, so its citation was read against the working tree rather than that
+commit. Whether the documentation around a cited file has been committed yet does
+not affect this.
 The only `.gitignore` line this atlas does not cover is an ignore rule at the end
 of the file, below every line of it cited here.
 Built only from reading code (`.py .cpp .h Makefile .yaml .json .toml`) and
@@ -72,31 +78,32 @@ Where each part of the tree is described:
    (`src/lays/cachesim/native/src/trace/stream_trace.cpp:292-294`), so bursts on every
    axis decode. Any other format version is refused
    (`src/lays/cachesim/native/include/cachesim/trace/stream_format.h:42`, :221).
-3. The three mappers (block_pack, split_cin, khkw_split) share their checks
-   and burst walk (`detail::expand_burst`,
+3. The four mappers (block_pack, split_cin, khkw_split, cin_khkw_concat) share
+   their checks and burst walk (`detail::expand_burst`,
    `src/lays/cachesim/native/src/layout/layout_common.h:120`), included by
    `src/lays/cachesim/native/src/layout/block_pack.cpp:7`,
-   `src/lays/cachesim/native/src/layout/split_cin.cpp:8` and
-   `src/lays/cachesim/native/src/layout/khkw_split.cpp:9`;
+   `src/lays/cachesim/native/src/layout/split_cin.cpp:8`,
+   `src/lays/cachesim/native/src/layout/khkw_split.cpp:9` and
+   `src/lays/cachesim/native/src/layout/cin_khkw_concat.cpp:6`;
    `src/lays/cachesim/native/tests/layout/test_layout_golden.cpp:6-10` pins every mapping
    and refusal with one FNV-1a hash per case.
 4. Cache simulator output: both apps write the CSV header by default and
-   `--no-header` turns it off (`src/lays/cachesim/native/apps/cachesim_run.cpp:49-50`,
-   :143; `src/lays/cachesim/native/apps/cachesim_sweep.cpp:47-48`, :88);
+   `--no-header` turns it off (`src/lays/cachesim/native/apps/cachesim_run.cpp:50-51`,
+   :152; `src/lays/cachesim/native/apps/cachesim_sweep.cpp:47-48`, :88);
    `l2_pf_timely` always equals `l2_pf_retriggers`, since
-   `src/lays/cachesim/native/src/core/engine.cpp:468-469` increments both at one site
-   (`src/lays/cachesim/native/include/cachesim/core/engine.h:259`,
-   `src/lays/cachesim/native/src/instrument/stats.cpp:333-337`).
+   `src/lays/cachesim/native/src/core/engine.cpp:528-530` increments both at one site
+   (`src/lays/cachesim/native/include/cachesim/core/engine.h:268-273`,
+   `src/lays/cachesim/native/src/instrument/stats.cpp:353-354`).
 5. L2 MSHR floor: an unset `l2_demand_reserve` (-1,
-   `src/lays/cachesim/native/include/cachesim/config.h:110`) resolves to
-   `lines_per_burst` and must stay below `l2_mshrs` (default 20, :71), else
-   `validate` resolves the reserve (`src/lays/cachesim/native/src/config.cpp:659`) and refuses the config
-   when it leaves no MSHR free (`src/lays/cachesim/native/src/config.cpp:664-668`).
+   `src/lays/cachesim/native/include/cachesim/config.h:127`) resolves to
+   `lines_per_burst` and must stay below `l2_mshrs` (default 20, :73), else
+   `validate` resolves the reserve (`src/lays/cachesim/native/src/config.cpp:706`) and refuses the config
+   when it leaves no MSHR free (`src/lays/cachesim/native/src/config.cpp:711-716`).
 6. The cache simulator's base point and sweep axes have one source each,
    `examples/cache/base.json` and `examples/cache/khkw_sweep.json`, read only
    through `src/lays/cachesim/grid.py:8-17`. One `cachesim_sweep` call takes one
    address mapper, so grids are written one file per `cin_block`
-   (`src/lays/cachesim/grid.py:39-52`) and the pipeline runs one sweep per file
+   (`src/lays/cachesim/grid.py:51-54`) and the pipeline runs one sweep per file
    (`scripts/pipeline.py:368-376`).
 7. `FLITS_PER_PACKET = 4` has one source,
    `src/lays/nocsim/eventsim/constants.h:5`; `src/lays/nocsim/core/transaction.py:28-37`
@@ -120,7 +127,7 @@ Where each part of the tree is described:
 10. Build and reproduce: GNU make, C++17, no CMake. `make build`
     (`Makefile:5-8`) builds the cache simulator apps, eventsim and `loasgen`;
     in `src/lays/cachesim/native`, `make release` builds only the library
-    (`src/lays/cachesim/native/Makefile:181-182`), so the apps need `make
+    (`src/lays/cachesim/native/Makefile:182-183`), so the apps need `make
     MODE=release apps`, which is what `src/lays/cachesim/cli.py:23` and
     `scripts/pipeline.py:333` run. A Gurobi license is needed only to solve:
     the tracked schedules in `examples/schedules/loas` cover V8, V9, R9 and R16,
@@ -141,7 +148,7 @@ their "2. Bottom-up" entries:
 | # | Function | Location |
 |---|---|---|
 | 1 | `demo` (the end-to-end driver) | `scripts/pipeline.py:316` |
-| 2 | `solve_best_schedule` | `src/lays/scheduler/solve.py:269` |
+| 2 | `solve_best_schedule` | `src/lays/scheduler/solve.py:271` |
 | 3 | `solve_and_cache_schedule` | `src/lays/scheduler/artifact.py:49` |
 | 4 | `reconstruct_samples` | `src/lays/weight_trace_gen/weight_trace.py:163` |
 | 5 | `run_stream` | `src/lays/weight_trace_gen/cli.py:301` |
@@ -149,8 +156,8 @@ their "2. Bottom-up" entries:
 | 7 | `decode_header` | `src/lays/cachesim/native/include/cachesim/trace/stream_format.h:208` |
 | 8 | `StreamingTileTrace::advance` | `src/lays/cachesim/native/src/trace/stream_trace.cpp:176` |
 | 9 | `detail::expand_burst` | `src/lays/cachesim/native/src/layout/layout_common.h:120` |
-| 10 | `validate` | `src/lays/cachesim/native/src/config.cpp:529` |
-| 11 | `Engine::run_to_barrier` | `src/lays/cachesim/native/src/core/engine.cpp:141` |
+| 10 | `validate` | `src/lays/cachesim/native/src/config.cpp:542` |
+| 11 | `Engine::run_to_barrier` | `src/lays/cachesim/native/src/core/engine.cpp:148` |
 | 12 | `CacheLevel::triage` | `src/lays/cachesim/native/src/core/cache_level.cpp:115` |
 | 13 | `schedule_from_strategy` | `src/lays/nocsim/schedule/decode.py:238` |
 | 14 | `iter_node_tiles` | `src/lays/nocsim/schedule/tiles.py:98` |

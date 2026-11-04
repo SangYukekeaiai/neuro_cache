@@ -54,6 +54,10 @@ examples/input_trace/delta/
 # The campaign's sweep configuration is source-controlled.
 !zoo/demo_l2pf/l2pf_demo.json
 
+# The concat-vs-khkw comparison's six configs and stream provenance are
+# source-controlled deliverables, not captured data.
+!zoo/concat_vs_khkw/*.json
+
 # Local Gurobi installation and license files
 gurobi_server1302/
 gurobi.lic
@@ -89,3 +93,4 @@ core.*
 
 # Default NEURO_CACHE_DATA (src/lays/util.py data_root): data kept outside git
 /data/
+innovation_summary/

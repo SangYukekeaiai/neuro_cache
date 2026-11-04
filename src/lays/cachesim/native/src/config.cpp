@@ -589,9 +589,9 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
     // the line size and the associativity, which check_level_geometry has just
     // proved divide evenly.
     if (cfg.layout != LayoutKind::SplitCin) {
-        // block_pack does not split the CIN block index at all, and khkw_split
+        // block_pack and cin_khkw_concat do not split CIN, and khkw_split
         // splits the KERNEL POSITION at a width it derives from the kernel
-        // itself, so under both of them the field names a width the run does
+        // itself, so under all three the field names a width the run does
         // not use. Refused rather than carried into the row, where a reader
         // would take it for a measurement.
         if (cfg.cin_lo_blocks != -1) {
