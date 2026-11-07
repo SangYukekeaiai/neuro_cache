@@ -191,3 +191,32 @@ def test_prosperity_sorts_and_reuses_rows_across_t():
     addresses = [a[:2] for e in result.ticks for c in e.cores for a in c.weight_addresses]
     assert addresses == [(2, 2), (1, 1)]
     assert result.mac_cycles == 2
+
+
+@pytest.mark.parametrize("arch,exe,bursts,cycles", [
+    ("loas", "loasgen", 1, 1), ("spinalflow", "spinalflowgen", 2, 2),
+    ("ptb", "ptbgen", 1, 8), ("gustavsnn", "gustavgen", 1, 1),
+    ("prosperity", "prosperitygen", 1, 1),
+])
+def test_native_1x1_uses_zero_padding_and_the_selected_token(arch, exe, bursts, cycles):
+    binary = pathlib.Path(gwt.__file__).parent / arch / exe
+    if not binary.exists():
+        pytest.skip(f"{exe} not built")
+    np = pytest.importorskip("numpy")
+    from lays.parsers.layer import DIM_COUT, DIM_CIN, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
+    from lays.weight_trace_gen import NodeTileSpec
+    from lays.weight_trace_gen.trace import build_workload_from_trace
+    from lays.weight_trace_gen.weight_trace import reconstruct_samples
+
+    trace = np.zeros((2, 1, 1, 3, 1), np.uint8)
+    trace[:, 0, 0, 1, 0] = 1
+    meta = {"layers": {"fc": list(trace.shape)},
+            "layer_params": {"fc": {"cout": 4, "kernel": 1, "stride": 1}}}
+    problem = build_workload_from_trace(meta, "fc")["problem"]
+    tile = NodeTileSpec(0, {DIM_HO: 1, DIM_WO: 1, DIM_KH: problem["KH"], DIM_KW: problem["KW"],
+                            DIM_CIN: 1, DIM_COUT: 4, DIM_T: 1 if arch == "gustavsnn" else 2},
+                        {DIM_T: 0, DIM_HO: 1, DIM_WO: 0}, True)
+    result = reconstruct_samples(arch, trace, [tile], [0], "tokens", "fc", problem, 1)[0].tiles[0]
+    addresses = [a for tick in result.ticks for core in tick.cores for a in core.weight_addresses]
+    assert addresses == [(0, 0, 0, 0, 4)] * bursts
+    assert result.mac_cycles == cycles

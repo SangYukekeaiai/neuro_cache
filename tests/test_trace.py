@@ -11,6 +11,15 @@ from lays.weight_trace_gen.trace import (build_workload_from_trace, exclusion_re
 INPUT_TRACE = pathlib.Path(__file__).resolve().parents[1] / "examples/input_trace/loas"
 
 
+def test_pre_gemm_3x3_workloads_match_frozen_reference():
+    golden = json.loads(pathlib.Path(__file__).with_name("trace_3x3.golden").read_text())
+    assert golden["reference_blob"] and golden["cases"]
+    for case in golden["cases"]:
+        m = {"layers": {"conv": case["shape"]}, "layer_params": {"conv": case["params"]}}
+        assert exclusion_reason(m, "conv") is None, case
+        assert build_workload_from_trace(m, "conv") == case["expected"], case
+
+
 def meta(**params):
     """Three layers; `params` overrides a layer's layer_params entry."""
     layers = {"a": [4, 5, 64, 8, 8], "b": [4, 5, 128, 4, 4], "s": [4, 5, 64, 8, 8]}
@@ -39,12 +48,37 @@ def test_a_layer_params_entry_missing_cout_is_refused():
         build_workload_from_trace(meta(b={"kernel": 3, "stride": 1}), "b")
 
 
-def test_kernel_1_and_stride_2_layers_are_excluded_with_a_reason():
+def test_stride_2_layers_are_excluded_with_a_reason():
     m = meta()
     assert valid_layer_names(m) == ["b"]
     assert "stride 2" in exclusion_reason(m, "a")
     assert "kernel 1" in exclusion_reason(m, "s")
     assert exclusion_reason(m, "b") is None
+
+
+@pytest.mark.parametrize("hin,win", [(128, 1), (1, 1), (8, 8)])
+def test_1x1_replays_gemm_and_pointwise_spatial_dimensions(hin, win):
+    m = {"layers": {"fc": [4, 5, 768, hin, win]},
+         "layer_params": {"fc": {"cout": 3072, "kernel": 1, "stride": 1}}}
+    assert exclusion_reason(m, "fc") is None
+    assert valid_layer_names(m) == ["fc"]
+    assert build_workload_from_trace(m, "fc")["problem"] == {
+        "KH": 1, "KW": 1, "CIN": 768, "COUT": 3072, "HO": hin, "WO": win,
+        "T": 4, "shape": "snn-layer"}
+
+
+def test_unsupported_kernel_remains_excluded():
+    m = meta(b={"cout": 128, "kernel": 5, "stride": 1})
+    assert "kernel 5x5" in exclusion_reason(m, "b")
+    with pytest.raises(ValueError, match="kernel 5x5"):
+        build_workload_from_trace(m, "b")
+
+
+@pytest.mark.parametrize("kernel", [1, 3])
+def test_empty_spatial_extent_is_excluded(kernel):
+    m = meta(b={"cout": 128, "kernel": kernel, "stride": 1})
+    m["layers"]["b"][3] = 0
+    assert "too small" in exclusion_reason(m, "b")
 
 
 def test_building_an_excluded_layer_is_refused():

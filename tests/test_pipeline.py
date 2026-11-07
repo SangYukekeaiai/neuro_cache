@@ -87,6 +87,14 @@ def test_check_inputs_accepts_a_complete_bench(traces):
     assert pipeline.check_inputs("loas", [("t", "layer_01_a")], range(0, 5)) == []
 
 
+def test_check_inputs_accepts_a_captured_gemm(traces, monkeypatch):
+    monkeypatch.setattr(pipeline, "WORKLOADS", [("G", "t")])
+    write_bench(traces, layers=(("layer_01_fc", [4, 5, 8, 16, 1]),),
+                params={"layer_01_fc": {"cout": 32, "kernel": 1, "stride": 1}})
+    assert pipeline.check_inputs("loas", [("t", "layer_01_fc")], range(0, 5)) == []
+    assert pipeline.resolve_layers("loas", ["all"]) == [("t", "layer_01_fc")]
+
+
 def test_check_inputs_refuses_a_missing_bench_dir(traces):
     assert "does not exist" in pipeline.check_inputs("loas", [("t", "x")], range(1))[0]
 

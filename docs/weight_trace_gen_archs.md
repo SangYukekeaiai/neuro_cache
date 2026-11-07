@@ -317,8 +317,8 @@ not confirm that a borrowed schedule was solved with this repo's current mapspac
 ### Misleading comments
 
 - `prosperity/ProsperityGen.h:36-38` and `prosperity/__init__.py:14` describe `k=16` (KH=KW=4)
-  and m=256. Real layers here have `k=9`, because only 3x3 convs are replayable
-  (`trace.py:26`), and `m` varies with the schedule (16 on `layer_07`).
+  and m=256. Replayable layers have `k=1` for 1x1 kernels or `k=9` for 3x3 kernels
+  (`trace.py:27`, `KERNEL_PADDING`), and `m` varies with the schedule (16 on `layer_07`).
 - Both headers say they are ports "kept in lockstep" with Python modules such as
   `reconstruct.py`. Those files no longer exist, so the C++ is the source of truth.
 
@@ -345,9 +345,9 @@ print addresses for a small hand-made case, as in sections 3 and 4:
 
 ```python
 import numpy as np
-from weight_trace_gen import NodeTileSpec
-from weight_trace_gen.weight_trace import reconstruct_samples
-from parsers.layer import DIM_CIN as C, DIM_COUT as O, DIM_HO as H, DIM_KH as KH, DIM_KW as KW, DIM_T as T, DIM_WO as W
+from lays.weight_trace_gen import NodeTileSpec
+from lays.weight_trace_gen.weight_trace import reconstruct_samples
+from lays.parsers.layer import DIM_CIN as C, DIM_COUT as O, DIM_HO as H, DIM_KH as KH, DIM_KW as KW, DIM_T as T, DIM_WO as W
 
 trace = np.zeros((1, 1, 2, 4, 4), np.uint8)     # [T, B, Cin, Hin, Win]
 trace[0, 0, 0] = [[0,0,1,0], [0,1,1,0], [1,1,0,0], [0,0,0,0]]

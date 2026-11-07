@@ -23,17 +23,9 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-KH = KW = 3   # every arch model's C++ replay walks 3x3 stride-1 windows
-              # (e.g. src/lays/weight_trace_gen/loas/LoASGen.h reads input row ho+kh-pad),
-              # so valid_layer_names leaves out any other kernel or stride.
+# Native replay infers same-padding as (kernel - 1) // 2 from each tile.
+KERNEL_PADDING = {1: 0, 3: 1}
 LAYER_PARAM_KEYS = ("cout", "kernel", "stride")
-PAD = 1       # "same" padding for a 3x3/stride-1 conv (the standard VGG/
-              # ResNet convention) -- HO = Hin + 2*PAD - KH + 1 = Hin when
-              # PAD=1, KH=3. PAD=0 ("valid" convolution, HO=Hin-2) was this
-              # project's original assumption; changed to 1 by explicit
-              # user direction (2026-07-16) since real VGG/ResNet 3x3 convs
-              # use same-padding to preserve spatial resolution between
-              # layers, not valid-padding.
 
 
 def load_layer_trace(trace_dir: pathlib.Path, layer_name: str, mmap: bool = False) -> np.ndarray:
@@ -107,19 +99,21 @@ def layer_params(meta: Dict[str, Any], layer_name: str) -> Dict[str, int]:
 
 def exclusion_reason(meta: Dict[str, Any], layer_name: str) -> Optional[str]:
     """Why the arch models cannot replay this layer, or None when they can:
-    its kernel is not KHxKW=3x3 or its stride is not 1, or its Hin/Win give
-    no output with PAD=1 (HO=Hin+2*PAD-KH+1<1, same for WO).
+    supported kernels are 1x1 (PAD=0) and 3x3 (PAD=1), with stride 1
+    and positive output spatial dimensions.
 
     Raises:
         ValueError: from layer_params(), if the layer's entry is incomplete.
     """
     p = layer_params(meta, layer_name)
-    if p["kernel"] != KH or p["stride"] != 1:
+    kernel = p["kernel"]
+    if kernel not in KERNEL_PADDING or p["stride"] != 1:
         return (f"kernel {p['kernel']}x{p['kernel']}, stride {p['stride']}: "
-                f"the arch models replay only {KH}x{KW} stride-1 convs")
+                "the arch models replay only 1x1 or 3x3 stride-1 layers")
+    pad = KERNEL_PADDING[kernel]
     _t, _b, _cin, hin, win = meta["layers"][layer_name]
-    if hin + 2 * PAD - (KH - 1) < 1 or win + 2 * PAD - (KW - 1) < 1:
-        return f"Hin={hin}/Win={win} too small for a {KH}x{KW} conv with PAD={PAD}"
+    if hin + 2 * pad - (kernel - 1) < 1 or win + 2 * pad - (kernel - 1) < 1:
+        return f"Hin={hin}/Win={win} too small for a {kernel}x{kernel} layer with PAD={pad}"
     return None
 
 
@@ -131,16 +125,17 @@ def valid_layer_names(meta: Dict[str, Any]) -> List[str]:
 
 def build_workload_from_trace(meta: Dict[str, Any], layer_name: str) -> Dict[str, Any]:
     """Build a {"problem": {...}} dict for one captured layer, derived
-    directly from meta.json -- KH=KW=3, stride-1, PAD=1 ("same" padding,
-    the standard VGG/ResNet 3x3-conv convention -- HO=Hin, WO=Win exactly),
-    COUT from meta["layer_params"].
+    directly from meta.json. Stride-1 kernels use PAD=0 for 1x1 or PAD=1
+    for 3x3, so HO=Hin and WO=Win. Captured GEMMs have Cin=K, Hin=M,
+    Win=1 and cout=N; pointwise convolutions retain both spatial dimensions.
+    Padding is implicit in native replay, not an extra workload dimension.
 
     Args:
         meta:      the parsed meta.json dict.
         layer_name: e.g. "layer_01_features_3".
 
     Returns:
-        {"problem": {"KH":3, "KW":3, "CIN":.., "COUT":.., "HO":.., "WO":..,
+        {"problem": {"KH":kernel, "KW":kernel, "CIN":.., "COUT":.., "HO":.., "WO":..,
         "T":.., "shape": "snn-layer"}}, ready to write to a YAML file and
         pass to SNNProb.
 
@@ -153,10 +148,13 @@ def build_workload_from_trace(meta: Dict[str, Any], layer_name: str) -> Dict[str
     if reason is not None:
         raise ValueError(f"build_workload_from_trace: '{layer_name}' is excluded: {reason}")
     t, _b, cin, hin, win = meta["layers"][layer_name]
-    ho, wo = hin + 2 * PAD - (KH - 1), win + 2 * PAD - (KW - 1)
+    p = layer_params(meta, layer_name)
+    kernel = p["kernel"]
+    pad = KERNEL_PADDING[kernel]
+    ho, wo = hin + 2 * pad - (kernel - 1), win + 2 * pad - (kernel - 1)
     return {
         "problem": {
-            "KH": KH, "KW": KW, "CIN": cin, "COUT": layer_params(meta, layer_name)["cout"],
+            "KH": kernel, "KW": kernel, "CIN": cin, "COUT": p["cout"],
             "HO": ho, "WO": wo, "T": t, "shape": "snn-layer",
         }
     }
