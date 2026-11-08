@@ -93,4 +93,5 @@ core.*
 
 # Default NEURO_CACHE_DATA (src/lays/util.py data_root): data kept outside git
 /data/
+/neuro_cache_bench_trace/
 innovation_summary/

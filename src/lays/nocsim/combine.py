@@ -256,6 +256,12 @@ def combine(
     # dram_i, ensuring the two steps are properly ordered.
     prev_dram_psum_store: Optional[int] = None
     prev_dram_vmem_store: Optional[int] = None
+    # Bank reuse follows weight tiles, which may span multiple loop steps.
+    w_prevprev_consumers: List[int] = []
+    w_prev_consumers: List[int] = []
+    resident_weight_sends: List[int] = []
+    gb_w_prevprev_sends: List[int] = []
+    gb_w_prev_sends: List[int] = []
 
     # ── 5. Outer DRAM loop ────────────────────────────────────────────────
     for dram_i in range(schedule.dram_num_steps):
@@ -269,13 +275,16 @@ def combine(
         # unconditionally -- load_weight/load_psum/load_vmem send straight
         # from DRAM instead (src_port=gen.noc.dram_port below).
         #
-        # Weight: always transfers; no prior DRAM store to sequence against.
+        # Reusing a GB weight bank waits for all reads of the tile two loads back.
         dram_w_id = load_from_dram(
             gen, "weight", ds, bww,
             skip=single_node,
-            deps=[],
+            deps=gb_w_prevprev_sends,
             label_prefix=dlbl,
         )
+        if dram_w_id is not None:
+            gb_w_prevprev_sends = gb_w_prev_sends
+            gb_w_prev_sends = []
 
         # Psum: skip if this is the first K iteration (nothing in DRAM yet)
         #       or if psum is completely free of DRAM traffic.
@@ -351,36 +360,44 @@ def combine(
                 )
 
             # ── Step 1: Weight load  (GB → all nodes) ─────────────────────
-            # Two deps:
-            #   a) previous weight load (noc_i-1): sequential GB sends avoid
-            #      simultaneous accesses to the same GB weight bank.
-            #   b) MAC COUNT two steps back (noc_i-2): node double-buffer —
-            #      the PE finishes consuming its prior weight tile, freeing
-            #      its local buffer to accept the incoming weight.
-            # At noc_i=0 we add the DRAM weight load in place of dep (a).
-            # Single-node: dram_w_id is always None (the DRAM->GB leg is
-            # skipped entirely, see 5a above) and there is no shared GB
-            # weight bank to serialize sends on, so dep (a) does not apply;
-            # load_weight sends straight from DRAM via src_port below.
+            weight_changes = si.weight_changes(dram_i, noc_i)
             w_deps: List[int] = []
-            if noc_i == 0:
-                if dram_w_id is not None:
-                    w_deps.append(dram_w_id)
+            if single_node:
+                # Direct DRAM sends alternate node banks per weight tile.
+                # Tile m waits for every MAC that consumed tile m-2;
+                # the first two tiles have no bank-reuse dependency.
+                if weight_changes:
+                    w_deps.extend(w_prevprev_consumers)
+                    w_prevprev_consumers = w_prev_consumers
+                    w_prev_consumers = []
+                if noc_i > 0:
+                    w_deps.extend(_vals(w_hist.get(noc_i - 1, {})))
             else:
-                # Sequential: wait for the previous weight send to finish
-                w_deps.extend(_vals(w_hist.get(noc_i - 1, {})))
-            if noc_i >= 2:
-                # Node double-buffer: PE freed its old weight buffer 2 steps ago
-                w_deps.extend(_vals(mac_hist.get(noc_i - 2, {})))
+                # Sequential GB sends wait for the preceding step's send
+                # (or the DRAM load at noc_i=0). Node bank reuse also waits
+                # for the MAC two NoC steps back.
+                if noc_i == 0:
+                    if dram_w_id is not None:
+                        w_deps.append(dram_w_id)
+                else:
+                    # Sequential: wait for the previous weight send to finish
+                    w_deps.extend(_vals(w_hist.get(noc_i - 1, {})))
+                if noc_i >= 2:
+                    # Node double-buffer: PE freed its old weight buffer 2 steps ago
+                    w_deps.extend(_vals(mac_hist.get(noc_i - 2, {})))
 
             w_tcs = load_weight(
                 gen, bs, ds, bww,
-                weight_changes=si.weight_changes(dram_i, noc_i),
+                weight_changes=weight_changes,
                 deps=w_deps,
                 label_prefix=f"weight_{nlbl}",
                 src_port=(gen.noc.dram_port if single_node else None),
             )
             w_hist[noc_i] = w_tcs
+            if w_tcs:
+                resident_weight_sends = _vals(w_tcs)
+            if not single_node:
+                gb_w_prev_sends.extend(_vals(w_tcs))
 
             # ── Step 2: Psum load  (GB → K_max PE per group) ─────────────
             # Skipped if no prior psum to reload (is_first_K) or if the PE
@@ -416,10 +433,12 @@ def combine(
             )
 
             # ── Step 3: MAC COUNT  (all PEs, parallel) ────────────────────
-            # Deps: weight loads, psum loads (if any), and the node
+            # Every MAC waits for its resident tile's actual weight send,
+            # including steps that reuse a tile across DRAM blocks.
+            # Deps also include psum loads (if any) and the node
             # double-buffer: PE must have finished its prior MAC work (noc_i-2)
             # before it can start a new one into the same node buffer bank.
-            mac_deps: List[int] = _vals(w_tcs) + _vals(pl_tcs)
+            mac_deps: List[int] = resident_weight_sends + _vals(pl_tcs)
             if noc_i >= 2:
                 mac_deps.extend(_vals(mac_hist.get(noc_i - 2, {})))
 
@@ -428,6 +447,8 @@ def combine(
                 label_prefix=f"mac_{nlbl}",
             )
             mac_hist[noc_i] = mac_tcs
+            if single_node:
+                w_prev_consumers.extend(_vals(mac_tcs))
 
             # ── Step 4: K-chain  (K=0 → K=1 → … → K_max per group) ──────
             # Serial within a group; all groups run in parallel.

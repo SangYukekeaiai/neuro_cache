@@ -1,0 +1,1404 @@
+{
+  "campaign": "fig3_hw_n_sweep",
+  "samples_per_network_and_N": 5,
+  "repo_commit": "d80b3b0ad34d17370e20832a42f1dc939511baf8",
+  "recorded_at_utc": "2026-11-06T21:42:32.038933+00:00",
+  "run_completed_at_utc": "2026-11-06T21:40:45.386149+00:00",
+  "working_tree_note": "Campaign files are untracked. combine.py is modified relative to repo_commit; its exact source and patch are recorded. The working tree also has an unrelated docs/weight_trace_gen_archs.md modification.",
+  "architecture": {
+    "name": "spinalflow",
+    "single_node": true,
+    "hardware_sizes": [
+      32,
+      64,
+      128,
+      256,
+      512
+    ],
+    "node_instances": 1,
+    "physical_global_buffer": false,
+    "buffer_bytes": {
+      "weight": "3*3*512*N",
+      "psum": "144*N",
+      "vmem": "144*N"
+    },
+    "buffer_note": "Psum/vmem sizes preserve the N=128 reference allocation, not a computed requirement; per-tile psum need is 2*min(N,COUT) bytes. nocsim does not enforce capacities.",
+    "bitwidths": {
+      "weight": 8,
+      "psum": 16,
+      "vmem": 32
+    },
+    "dram_cycles_per_32byte_packet": 0.25
+  },
+  "mapping": {
+    "active_PEs": "min(N,COUT)",
+    "node_temporal": [
+      "KH",
+      "KW",
+      "CIN",
+      "T"
+    ],
+    "NoC_loops": [],
+    "DRAM_outer_to_inner": [
+      "HO",
+      "WO",
+      "COUT"
+    ],
+    "dram_num_steps": "HO*WO*COUT/min(N,COUT)",
+    "idle_lanes": "N-min(N,COUT)"
+  },
+  "workloads": {
+    "vgg16": {
+      "trace": "examples/input_trace/loas/vgg16_T4_n5",
+      "included_layers": [
+        "layer_01_features_3",
+        "layer_02_features_7",
+        "layer_03_features_10",
+        "layer_04_features_14",
+        "layer_05_features_17",
+        "layer_06_features_20",
+        "layer_07_features_24",
+        "layer_08_features_27",
+        "layer_09_features_30",
+        "layer_10_features_34",
+        "layer_11_features_37",
+        "layer_12_features_40"
+      ],
+      "excluded_layers": {}
+    },
+    "resnet19": {
+      "trace": "examples/input_trace/loas/resnet19_T4_n5",
+      "included_layers": [
+        "layer_02_layer1_0_conv2",
+        "layer_04_layer1_1_conv1",
+        "layer_05_layer1_1_conv2",
+        "layer_06_layer1_2_conv1",
+        "layer_07_layer1_2_conv2",
+        "layer_09_layer2_0_conv2",
+        "layer_11_layer2_1_conv1",
+        "layer_12_layer2_1_conv2",
+        "layer_13_layer2_2_conv1",
+        "layer_14_layer2_2_conv2",
+        "layer_16_layer3_0_conv2",
+        "layer_18_layer3_1_conv1",
+        "layer_19_layer3_1_conv2"
+      ],
+      "excluded_layers": {
+        "layer_01_layer1_0_conv1": "kernel 3x3, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "layer_03_layer1_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "layer_08_layer2_0_conv1": "kernel 3x3, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "layer_10_layer2_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "layer_15_layer3_0_conv1": "kernel 3x3, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "layer_17_layer3_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 3x3 stride-1 convs"
+      }
+    }
+  },
+  "capture_sample_indices": [
+    2697,
+    3078,
+    5110,
+    6367,
+    8502
+  ],
+  "metric": "For each network/N/sample, sum included layer total_cycles and count_cycles separately; memory_cycles is their difference. Layers execute sequentially without overlap.",
+  "coverage": "VGG16 includes all 12 captured convolutions. ResNet19 is a 13-of-19-convolution partial sum: 01,03,08,10,15,17 are omitted because stride-2 replay is unsupported. These are the spatial-downsampling convolutions, so omission is not uniform across network depth. Uncaptured operations are outside the metric.",
+  "feasibility": {
+    "reference": "Raw [T,C,H,W] sample, pad=(kernel-1)//2; count_nonzero of each kernel-by-kernel window beginning at (ho*stride, wo*stride) in padded input. No generator window function is used.",
+    "stride2_supported": false,
+    "cases": [
+      {
+        "layer": "layer_08_layer2_0_conv1",
+        "sample": 0,
+        "hardware_N": 128,
+        "kernel": 3,
+        "stride": 2,
+        "padding": 1,
+        "output_shape": [
+          8,
+          8
+        ],
+        "tiles": 128,
+        "mismatches": 126,
+        "reference_total": 164200,
+        "native_total": 156796,
+        "first_mismatch": {
+          "dram_i": 2,
+          "ho": 0,
+          "wo": 1,
+          "cout_start": 0,
+          "reference_mac_cycles": 1031,
+          "native_mac_cycles": 1170,
+          "delta": 139
+        },
+        "public_loader_exclusion": "kernel 3x3, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "input_sha256": "f5e41209d51d8aaf8abd60f752e48c9afbab47d9552d34c12bafd2022b30c2c0"
+      },
+      {
+        "layer": "layer_10_layer2_0_shortcut_0",
+        "sample": 0,
+        "hardware_N": 128,
+        "kernel": 1,
+        "stride": 2,
+        "padding": 0,
+        "output_shape": [
+          8,
+          8
+        ],
+        "tiles": 128,
+        "mismatches": 126,
+        "reference_total": 21938,
+        "native_total": 19638,
+        "first_mismatch": {
+          "dram_i": 2,
+          "ho": 0,
+          "wo": 1,
+          "cout_start": 0,
+          "reference_mac_cycles": 210,
+          "native_mac_cycles": 215,
+          "delta": 5
+        },
+        "public_loader_exclusion": "kernel 1x1, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "input_sha256": "f5e41209d51d8aaf8abd60f752e48c9afbab47d9552d34c12bafd2022b30c2c0"
+      },
+      {
+        "layer": "layer_09_layer2_0_conv2",
+        "sample": 0,
+        "hardware_N": 128,
+        "kernel": 3,
+        "stride": 1,
+        "padding": 1,
+        "output_shape": [
+          8,
+          8
+        ],
+        "tiles": 128,
+        "mismatches": 0,
+        "reference_total": 196964,
+        "native_total": 196964,
+        "first_mismatch": null,
+        "public_loader_exclusion": null,
+        "input_sha256": "5c201f62d3861ceee28d7b4848712265ac47b2e5871c7257baa650a48e34d0b7"
+      }
+    ]
+  },
+  "feasibility_artifacts": [
+    {
+      "path": "zoo/fig3_hw_n_sweep/outputs/feasibility/layer_08_layer2_0_conv1.csv",
+      "bytes": 3278,
+      "sha256": "47ec33d136c97b4e0d8f347a696b36d2a11dcb0fb1e2b6c15ca7b8acff908d26"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/outputs/feasibility/layer_09_layer2_0_conv2.csv",
+      "bytes": 3000,
+      "sha256": "d0945c48fd3618e1d4707f0546b3249be050fb4f2f11cb997a5603b466de2a37"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/outputs/feasibility/layer_10_layer2_0_shortcut_0.csv",
+      "bytes": 2966,
+      "sha256": "fa74ec24dfaf16295d41b0c20484a54507b5a48c70640553920b4db3fc79517c"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/outputs/feasibility/report.json",
+      "bytes": 2164,
+      "sha256": "36b97074ca420723c6d390c7eedd15da010ccdeba2562840678595680fa74ead"
+    }
+  ],
+  "commands": [
+    "make -C src/lays/weight_trace_gen/spinalflow",
+    "make -C src/lays/nocsim/eventsim",
+    "PYTHONPATH=src /u/yyu9/miniconda3/envs/gurobi/bin/python zoo/fig3_hw_n_sweep/check_replay.py",
+    "PYTHONPATH=src /u/yyu9/miniconda3/envs/gurobi/bin/python zoo/fig3_hw_n_sweep/gen_inputs.py",
+    "setsid env PYTHONPATH=src /u/yyu9/miniconda3/envs/gurobi/bin/python zoo/fig3_hw_n_sweep/run.py --dry-run --jobs 2",
+    "setsid env PYTHONPATH=src /u/yyu9/miniconda3/envs/gurobi/bin/python zoo/fig3_hw_n_sweep/run.py --jobs 4 > zoo/fig3_hw_n_sweep/outputs/full_run.log 2>&1",
+    "/u/yyu9/miniconda3/envs/gurobi/bin/python zoo/fig3_hw_n_sweep/plot.py",
+    "/u/yyu9/miniconda3/envs/gurobi/bin/python zoo/fig3_hw_n_sweep/record_provenance.py"
+  ],
+  "command_logs": [
+    {
+      "path": "zoo/fig3_hw_n_sweep/outputs/logs/commands.txt",
+      "bytes": 726125,
+      "sha256": "8a754fea117b0da2aab096c10c6a7b74edf75e9afbf818b135bb4bfb989dcd1a"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/outputs/smoke/logs/commands.txt",
+      "bytes": 3533,
+      "sha256": "e4be128c64233c244d6d1a1ee99f2576284b041fc3e108b405bb94cf420a4466"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_02_layer1_0_conv2.npy",
+      "bytes": 655488,
+      "sha256": "624bf6ba301172e8db37aa583c0cbecff8867e0bb811e0f329e6d9cf5c3ac8c4"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_04_layer1_1_conv1.npy",
+      "bytes": 655488,
+      "sha256": "deaf2fa2d773392ea04e04b7f358d53c8731962a610d9f29b84fe24a98ca345b"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_05_layer1_1_conv2.npy",
+      "bytes": 655488,
+      "sha256": "3949e067af0e8b454b784b86cff11d63830790557be3669cdcfd98d2a1f97f06"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_06_layer1_2_conv1.npy",
+      "bytes": 655488,
+      "sha256": "adabffe3a2903cdcbaac1a2cf47cd69941bd1e75acc4db8c259bdbd6c95e2a59"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_07_layer1_2_conv2.npy",
+      "bytes": 655488,
+      "sha256": "a1e456c1bf2f1b792bfa49efb140fb562341f078c1530e8781417c80b48b399c"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_08_layer2_0_conv1.npy",
+      "bytes": 655488,
+      "sha256": "f5e41209d51d8aaf8abd60f752e48c9afbab47d9552d34c12bafd2022b30c2c0"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_09_layer2_0_conv2.npy",
+      "bytes": 327808,
+      "sha256": "5c201f62d3861ceee28d7b4848712265ac47b2e5871c7257baa650a48e34d0b7"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_10_layer2_0_shortcut_0.npy",
+      "bytes": 655488,
+      "sha256": "f5e41209d51d8aaf8abd60f752e48c9afbab47d9552d34c12bafd2022b30c2c0"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_11_layer2_1_conv1.npy",
+      "bytes": 327808,
+      "sha256": "ded306917b8515be67e93d797239825a06bd4d6f5da0405060d97e5ecf2b54ec"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_12_layer2_1_conv2.npy",
+      "bytes": 327808,
+      "sha256": "1ce9093d52184a535bb130a452f3cc35317d1c753934ec2661e6e634a0183656"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_13_layer2_2_conv1.npy",
+      "bytes": 327808,
+      "sha256": "6436ad90a031eb4e27e7dc12c11e23e80ac26c3f563f33d0cd2eac155502e70d"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_14_layer2_2_conv2.npy",
+      "bytes": 327808,
+      "sha256": "630d964b068fece021c07be8e7e376b1961de2c8a2bdcdde265a36735cf7cdea"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_16_layer3_0_conv2.npy",
+      "bytes": 163968,
+      "sha256": "69fbf17dd2976f12d6e20ff6c25f6136048574c5e2d3fb26e7172ca10208d50e"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_18_layer3_1_conv1.npy",
+      "bytes": 163968,
+      "sha256": "29c3ef876a6f0aca4563b4ed16a30c417be76e84790b1fd89c99f2f5f480d299"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/layer_19_layer3_1_conv2.npy",
+      "bytes": 163968,
+      "sha256": "f79bf78e41e943b3c3394d135d9a42e810d1c574f28bad00ee1a1c6ee6eddd87"
+    },
+    {
+      "path": "examples/input_trace/loas/resnet19_T4_n5/meta.json",
+      "bytes": 3377,
+      "sha256": "4aeec5be083fd3f6eb384e29b2a297fca8d124a51e91801533f95ebd850a48ac"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_01_features_3.npy",
+      "bytes": 1310848,
+      "sha256": "9a1356ada47b5f23a9870392e903721dfb5ce7cfff9d106a5e11fee63810917b"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_02_features_7.npy",
+      "bytes": 327808,
+      "sha256": "6b9c8ec19f3d6ed6995032a3bacbd84ffd8fea3c0d0f98b6d20c15d521036fd9"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_03_features_10.npy",
+      "bytes": 655488,
+      "sha256": "665a4e45163e617f2d6f6346450e78556e2ed85c26d038b60533de9d58d09039"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_04_features_14.npy",
+      "bytes": 163968,
+      "sha256": "926a56ec25f35cd1c3dd454f15d9035dcce91fb30fde7112b594b8e6687d562f"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_05_features_17.npy",
+      "bytes": 327808,
+      "sha256": "b75b00047e0e903f808418320be0eab0ee04b88a32cd17f98c4a367ae0cc762a"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_06_features_20.npy",
+      "bytes": 327808,
+      "sha256": "4d14c20af6b439469a1d38ed34d0d57e20cecff7ee371c97a0e2fd64fc65bf84"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_07_features_24.npy",
+      "bytes": 82048,
+      "sha256": "b4f8e4693f07645f026014d7f69b1b762310a99280c1fbc568d86201ba5da01a"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_08_features_27.npy",
+      "bytes": 163968,
+      "sha256": "2da56182e419e51605eeae343731fceaf9cd3ec80974f81614786482564f5690"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_09_features_30.npy",
+      "bytes": 163968,
+      "sha256": "48843ded7ac57a719c538a109d2da4566ff6c8924589b921ed8280a99f6a30e4"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_10_features_34.npy",
+      "bytes": 41088,
+      "sha256": "fbc2467f88473bc7916ea05eedd63c2f71e04fa2c0f5e4a6b9524626ccc19568"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_11_features_37.npy",
+      "bytes": 41088,
+      "sha256": "1e31d994450c3b83faaeb5e88c5c37dbe9e279739d284efaa6a5f53eb8a336ef"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/layer_12_features_40.npy",
+      "bytes": 41088,
+      "sha256": "7d8dec027fddcfecaee87543b132044279898c16b00d0df01df9e411309e1c9f"
+    },
+    {
+      "path": "examples/input_trace/loas/vgg16_T4_n5/meta.json",
+      "bytes": 2202,
+      "sha256": "dd08e2d9bc7f9c1cb6027fed342bfae7f19c27802830b447cacc9a5979707ca0"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/arch/spinalflow_1node_n128.yaml",
+      "bytes": 612,
+      "sha256": "4a9808efe900a1c8a746cdb76df7f62f9dd64ca0dad860376e1e67a6174c9c56"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/arch/spinalflow_1node_n256.yaml",
+      "bytes": 613,
+      "sha256": "fb26b9b125cf05de7c3a4430dd35302cbbe890a557df574d3f89c1bbbdb00b24"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/arch/spinalflow_1node_n32.yaml",
+      "bytes": 609,
+      "sha256": "8503f62fe42bb581c1b6a93e1b64260cf0ff0940cfa8a2d963fecf8582ae8a33"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/arch/spinalflow_1node_n512.yaml",
+      "bytes": 613,
+      "sha256": "fae0627bf5146d53671cdf2c27f52cef2fa3a153ce583d85805f2062f40d666b"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/arch/spinalflow_1node_n64.yaml",
+      "bytes": 609,
+      "sha256": "5155a0aad91f7e20b1a5a1f383b4901600cfacc671ca93a84fd4be33b8452b54"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/manifest.json",
+      "bytes": 1934,
+      "sha256": "594f417bbba762423f6a70742bbf2bbd25fe1480ac272e67d1286a22ab561a83"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_02_layer1_0_conv2.json",
+      "bytes": 1552,
+      "sha256": "0fb61ae99e723f2ad8d13c482b180a13f59a6dd73d69c9ca67268ab55ece390d"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_04_layer1_1_conv1.json",
+      "bytes": 1552,
+      "sha256": "b409d0377f960ea6f5ef2a17ee2bbb2b2758f42e14114075acb0dd6539fe3fc0"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_05_layer1_1_conv2.json",
+      "bytes": 1552,
+      "sha256": "4fc6523d13eb16ad8e0500c68360b33ea82058988431ad3b6e0e2ad724194ed7"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_06_layer1_2_conv1.json",
+      "bytes": 1552,
+      "sha256": "2a2e327cfb21d7f82f813c73480293f2034625e8b6751608963ddb7190d685dd"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_07_layer1_2_conv2.json",
+      "bytes": 1552,
+      "sha256": "02c71e9c12a52cc612656d2c16710cc919874ba1d2208fb8d2d535e29f6c1278"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+      "bytes": 1546,
+      "sha256": "a9c3280307ef83fc8d6fe735a19cdb0a305c619b300f328ca03f9b4d2da81400"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_11_layer2_1_conv1.json",
+      "bytes": 1546,
+      "sha256": "0899534af8735440a165774c25560f6d178230fe5d61e8cfc2b2fde7bd8e26c9"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_12_layer2_1_conv2.json",
+      "bytes": 1546,
+      "sha256": "28da1e5352b8dd6f71f1b946f444511602588c7f726721bfce73f73691622041"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_13_layer2_2_conv1.json",
+      "bytes": 1546,
+      "sha256": "9cc2688c443d7b0cac8e1d6f46df0db8d66c08cd96d122ebbad824311ea6efee"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_14_layer2_2_conv2.json",
+      "bytes": 1546,
+      "sha256": "384ade81df7490aea536d8cde1b521f273087e8473735f16a3b9e96e9ec93f7f"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "6e97ff8538a7bc694b440d48fd89b99bdd67ee4746d9456c0a8ca4dd7ca7080d"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_18_layer3_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "a9beb79aceec7c70f630de5723cf7023d9851695e08fcdc6a697bdd463522fa0"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_19_layer3_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "ad2c1a985314fb336be969a69c019091196b565c79530e991d8c8c343b7a6456"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_01_features_3.json",
+      "bytes": 1542,
+      "sha256": "abfab07832cea18d4ec840d38e8f48c4df78f41f03690397367e913ba3993450"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_02_features_7.json",
+      "bytes": 1543,
+      "sha256": "6fbe3b5d7e7555499a33f7efaadcfb42693abb43b5d76ab4d4e1ba0d6b24a06e"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_03_features_10.json",
+      "bytes": 1546,
+      "sha256": "a61fb67ddf1b808323527f9941bb7c50083168b2e4632103c114c56d372ffd52"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_04_features_14.json",
+      "bytes": 1540,
+      "sha256": "fbf5157d6d8a938cdeb87e87e0be88633da97b0407e81f78c38c76aa44ce92b1"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_05_features_17.json",
+      "bytes": 1540,
+      "sha256": "b91f88b0c1b95ec41a1601852bd9087e4cb1efdc97ad799db9ab4b62bcbad066"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_06_features_20.json",
+      "bytes": 1540,
+      "sha256": "e8fd22c4e5125f6596383855126bf28a00720941c775ba03213ee8e150113e22"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_07_features_24.json",
+      "bytes": 1539,
+      "sha256": "8d37775307c3565128de173320cc79261d31c3e49424e95ec7d5f4433a67ed4a"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_08_features_27.json",
+      "bytes": 1539,
+      "sha256": "aacf1c6c2fe1ce87f4d9da752f2873225ed1f4d2aa36972d88d393dba1d63d56"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_09_features_30.json",
+      "bytes": 1539,
+      "sha256": "0b72bf51285a4232f7e2361a10031bec2eed92422d17b72b6ffc90cb8fa10770"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_10_features_34.json",
+      "bytes": 1539,
+      "sha256": "ed7ed60b353ac0e408a23abff41f64bb2d3c378ecfa7fb124b73c04dc898f93a"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_11_features_37.json",
+      "bytes": 1539,
+      "sha256": "6e5dd2398fbdd1a3f2cc031548b05199c7e9a1da8003eaf8cd93c48dff4e266f"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_12_features_40.json",
+      "bytes": 1539,
+      "sha256": "140877ea2ace074fd44373ef1a7729bcbe883e61b75b950a68872679f966399d"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_02_layer1_0_conv2.json",
+      "bytes": 1552,
+      "sha256": "0fb61ae99e723f2ad8d13c482b180a13f59a6dd73d69c9ca67268ab55ece390d"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_04_layer1_1_conv1.json",
+      "bytes": 1552,
+      "sha256": "b409d0377f960ea6f5ef2a17ee2bbb2b2758f42e14114075acb0dd6539fe3fc0"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_05_layer1_1_conv2.json",
+      "bytes": 1552,
+      "sha256": "4fc6523d13eb16ad8e0500c68360b33ea82058988431ad3b6e0e2ad724194ed7"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_06_layer1_2_conv1.json",
+      "bytes": 1552,
+      "sha256": "2a2e327cfb21d7f82f813c73480293f2034625e8b6751608963ddb7190d685dd"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_07_layer1_2_conv2.json",
+      "bytes": 1552,
+      "sha256": "02c71e9c12a52cc612656d2c16710cc919874ba1d2208fb8d2d535e29f6c1278"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "c0fa334759ab7661cfd41368fc11ad639dcb411acb94dd591a9f7d46ae7e32c1"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_11_layer2_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "8dc09e8e5328a9150cb7b6c6f92ec25459772833d8d62a2e690d5ba927b78fc7"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_12_layer2_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "1b8abc24ac464326bafca4c550b846c31e39c04e8d975b41dfecc2aebd2a4a9b"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_13_layer2_2_conv1.json",
+      "bytes": 1545,
+      "sha256": "309245651c942f5ee8491122f10231336f6592b6b06653d194803132e5647286"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_14_layer2_2_conv2.json",
+      "bytes": 1545,
+      "sha256": "a362127ce376f6d5bf91e1057923a9613d3d02366d8bc0f6b7830952250ae8f9"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "34a7cf8b3c006f71d7c994ab35bde909669ac4086ef3f6517551fb8ce14fdf27"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_18_layer3_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "cc9c12aee58e53c5aa5e19742c141443cf684c6074ef217455e77bf92d881d74"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_19_layer3_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "eb0b895b3a64ff98f3641c3ee5795bf2808c7d6f0c2e62b330bd55b16abb1fc5"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_01_features_3.json",
+      "bytes": 1542,
+      "sha256": "abfab07832cea18d4ec840d38e8f48c4df78f41f03690397367e913ba3993450"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_02_features_7.json",
+      "bytes": 1543,
+      "sha256": "6fbe3b5d7e7555499a33f7efaadcfb42693abb43b5d76ab4d4e1ba0d6b24a06e"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_03_features_10.json",
+      "bytes": 1546,
+      "sha256": "a61fb67ddf1b808323527f9941bb7c50083168b2e4632103c114c56d372ffd52"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_04_features_14.json",
+      "bytes": 1539,
+      "sha256": "e5d071de74049b1477e43eb69270857a8d2ff599a030ea90f1ed237d4c559389"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_05_features_17.json",
+      "bytes": 1539,
+      "sha256": "6da8b68d30ead746f98602e6ae2d4b4c46fe02223252371d16211e296a6abf8f"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_06_features_20.json",
+      "bytes": 1539,
+      "sha256": "49303475e9f5d8ec7f189bf2c8cd4bc8e47ed3d0486e6f1d9098dbaef1ec6d39"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_07_features_24.json",
+      "bytes": 1539,
+      "sha256": "3e1fe6634229ca03f7dee83ff95f3475104370557ffba21369079afd011a2347"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_08_features_27.json",
+      "bytes": 1539,
+      "sha256": "7689c5b40ab6043c626f8277c0708fa5942c060d911141b6a50a6a48836d28e9"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_09_features_30.json",
+      "bytes": 1539,
+      "sha256": "7ddf55582366c74c3c08edaa2880ce68f25831ae6a3830f7e5bd490567fa765b"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_10_features_34.json",
+      "bytes": 1538,
+      "sha256": "365d286d34641a71e61e2a11e7fcff035c6ff5ade5b15ad75c40474e9074312d"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_11_features_37.json",
+      "bytes": 1538,
+      "sha256": "42b4245b695354ee5d9ae588cc580c68878cebc5fb376330c8e642be7e5704b1"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_12_features_40.json",
+      "bytes": 1538,
+      "sha256": "3af25f01f35172af70e1f98ce414ac1ca25930ab8a8404b13d161b34acc6c91d"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_02_layer1_0_conv2.json",
+      "bytes": 1552,
+      "sha256": "0bf1612cade1e95fb53e32cdf4e663854604e82d5f3b568d55ac9b32f90df5e7"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_04_layer1_1_conv1.json",
+      "bytes": 1552,
+      "sha256": "dcb91bd6632f856eb707276517a0a3bdf744cac4552ef96b8d39c59ae96f1c64"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_05_layer1_1_conv2.json",
+      "bytes": 1552,
+      "sha256": "ccac4eeeff7fce3fd99a0fc65038f327867fd70d08e7be6f1bc04750bb2d02cc"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_06_layer1_2_conv1.json",
+      "bytes": 1552,
+      "sha256": "3159fa5352bb0f4968154a36ebb90dd4da0634c563b3f0281d1d5589c79364d3"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_07_layer1_2_conv2.json",
+      "bytes": 1552,
+      "sha256": "0e69cabd36594446f05ff41923c477a2944249d981f7ff8bc1b05b516f0231e1"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "56e515e40c6574c963f5be1dab38b5fac85fd2b7edd81ae0a63f0fe6770b827d"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_11_layer2_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "cd2de0339b316a760bd4f72c60999de0cd46cc251dc3ecee9ccc2eb1b4c908bd"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_12_layer2_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "6eebcd5dd871b53d587a48e9581f5df650bf3a1329657501052b14faa425ded5"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_13_layer2_2_conv1.json",
+      "bytes": 1545,
+      "sha256": "c787434f75cfb6c90895f2f67f95eca88eaa6954d101a25b0f169812a4377a76"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_14_layer2_2_conv2.json",
+      "bytes": 1545,
+      "sha256": "951c8e778a893b7378477786b9dca483538f2a11fc9c8a2a2777d2d5f9916847"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+      "bytes": 1547,
+      "sha256": "8384ce6443d93b993a0860846538aec77f9b6361d5a2287c6b5a7c8c71380489"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_18_layer3_1_conv1.json",
+      "bytes": 1547,
+      "sha256": "1d51c0bd314beb34cd3c72ea473b04ba79c34a0cbaba67294a96269e0bff1651"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_19_layer3_1_conv2.json",
+      "bytes": 1547,
+      "sha256": "1121bebc40ccf2520c58b2a95c523567ae2a913dd3c8382db5c3fc06ef57e06c"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_01_features_3.json",
+      "bytes": 1542,
+      "sha256": "f57717bd99167c1a99301dedd71988662948d3a1f5b7275c827b2c08edc55d31"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_02_features_7.json",
+      "bytes": 1543,
+      "sha256": "9647c54f62c3a663fffba0523834461686d575b44efc32d2b76c38acbe91a041"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_03_features_10.json",
+      "bytes": 1546,
+      "sha256": "9119fb87230480206fa97ce32b8e364329b2f70b522d7f1f0a7e576d84d88ad7"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_04_features_14.json",
+      "bytes": 1539,
+      "sha256": "38baf9816c50ff1dce2252178c1b3c6c14a7971d4f86a68e25b6a39db1c0ef13"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_05_features_17.json",
+      "bytes": 1539,
+      "sha256": "37bcc023574ae4b28fd033a447d25ea269fed7160849abd1e85dc2389cf2e883"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_06_features_20.json",
+      "bytes": 1539,
+      "sha256": "2772ca3fa198cf40ad7805158025011e5a6886c3b0b88165716434e50f8bc1b5"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_07_features_24.json",
+      "bytes": 1541,
+      "sha256": "67946932b1ddaa9e89a193c4db91f301b50e1cd8ccbffe240134a8917b820327"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_08_features_27.json",
+      "bytes": 1541,
+      "sha256": "c7b27ed25b99eab9021c6518a98c999723c6f41de5e762df8d1dfd44ea579456"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_09_features_30.json",
+      "bytes": 1541,
+      "sha256": "c552e037124b1a1286723d8f9834090f8597f9b7f2091749d359b6b9631b5ac6"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_10_features_34.json",
+      "bytes": 1540,
+      "sha256": "1ad87ada45673fa06a09f9403845e6c64fc9fd6f7d7842d1eb24275249548322"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_11_features_37.json",
+      "bytes": 1540,
+      "sha256": "c3333eb40ba9b628ee4f77d75b33ea4fe357f2deb1f3070c259cd061c746c9d0"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_12_features_40.json",
+      "bytes": 1540,
+      "sha256": "2f1d4a4f6723259c493626d6304c8bea68511d0532de992d6760b64ad7689180"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_02_layer1_0_conv2.json",
+      "bytes": 1552,
+      "sha256": "0fb61ae99e723f2ad8d13c482b180a13f59a6dd73d69c9ca67268ab55ece390d"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_04_layer1_1_conv1.json",
+      "bytes": 1552,
+      "sha256": "b409d0377f960ea6f5ef2a17ee2bbb2b2758f42e14114075acb0dd6539fe3fc0"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_05_layer1_1_conv2.json",
+      "bytes": 1552,
+      "sha256": "4fc6523d13eb16ad8e0500c68360b33ea82058988431ad3b6e0e2ad724194ed7"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_06_layer1_2_conv1.json",
+      "bytes": 1552,
+      "sha256": "2a2e327cfb21d7f82f813c73480293f2034625e8b6751608963ddb7190d685dd"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_07_layer1_2_conv2.json",
+      "bytes": 1552,
+      "sha256": "02c71e9c12a52cc612656d2c16710cc919874ba1d2208fb8d2d535e29f6c1278"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "c0fa334759ab7661cfd41368fc11ad639dcb411acb94dd591a9f7d46ae7e32c1"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_11_layer2_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "8dc09e8e5328a9150cb7b6c6f92ec25459772833d8d62a2e690d5ba927b78fc7"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_12_layer2_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "1b8abc24ac464326bafca4c550b846c31e39c04e8d975b41dfecc2aebd2a4a9b"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_13_layer2_2_conv1.json",
+      "bytes": 1545,
+      "sha256": "309245651c942f5ee8491122f10231336f6592b6b06653d194803132e5647286"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_14_layer2_2_conv2.json",
+      "bytes": 1545,
+      "sha256": "a362127ce376f6d5bf91e1057923a9613d3d02366d8bc0f6b7830952250ae8f9"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "da21e10a01d41102c3987f150f55c5135ba90878557e5a4569ade3b4d291a3e2"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_18_layer3_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "4233104f89f05c317d95d6aac60ae9a71563e62a9a562150525682cd4ab04afe"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_19_layer3_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "d4328f9b089262f4bbb9bd29ec8b95ca26a0dd937b1c8d6341a36e73a38b62d0"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_01_features_3.json",
+      "bytes": 1542,
+      "sha256": "abfab07832cea18d4ec840d38e8f48c4df78f41f03690397367e913ba3993450"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_02_features_7.json",
+      "bytes": 1543,
+      "sha256": "6fbe3b5d7e7555499a33f7efaadcfb42693abb43b5d76ab4d4e1ba0d6b24a06e"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_03_features_10.json",
+      "bytes": 1546,
+      "sha256": "a61fb67ddf1b808323527f9941bb7c50083168b2e4632103c114c56d372ffd52"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_04_features_14.json",
+      "bytes": 1539,
+      "sha256": "e5d071de74049b1477e43eb69270857a8d2ff599a030ea90f1ed237d4c559389"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_05_features_17.json",
+      "bytes": 1539,
+      "sha256": "6da8b68d30ead746f98602e6ae2d4b4c46fe02223252371d16211e296a6abf8f"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_06_features_20.json",
+      "bytes": 1539,
+      "sha256": "49303475e9f5d8ec7f189bf2c8cd4bc8e47ed3d0486e6f1d9098dbaef1ec6d39"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_07_features_24.json",
+      "bytes": 1539,
+      "sha256": "570ad6ef90283403edeaa434a1c1b9bc6599389d08db020aba093a99f42c55c0"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_08_features_27.json",
+      "bytes": 1539,
+      "sha256": "1ee1bb0db747cde1fceae727761581244f555604cdc66565dc784899d62bbbe3"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_09_features_30.json",
+      "bytes": 1539,
+      "sha256": "a91a9c3ed6e828ef294a5dfc4a65b4ba94249d1970d712e2704904db2072ee06"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_10_features_34.json",
+      "bytes": 1538,
+      "sha256": "aa8e6fd11417a824691b4caadd6a3642976199be2be026b3eb9468e4ae130dfb"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_11_features_37.json",
+      "bytes": 1538,
+      "sha256": "e90f4fa826c1ab0c470a97fbf814b50607f5da977e0d86895e723f986423e1cf"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_12_features_40.json",
+      "bytes": 1538,
+      "sha256": "49ec7d53680fb43a38854e5bbd7a8995bf279e4bf848430b7fde905ceb4e4aca"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_02_layer1_0_conv2.json",
+      "bytes": 1551,
+      "sha256": "699f870227bbc97248c2cfe6e67b55d8194d11033d632c09e580d3b80b0dfd36"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_04_layer1_1_conv1.json",
+      "bytes": 1551,
+      "sha256": "556d11ea51fdd61fbb9eb90af2b8f0740f1fad7f4515cfb3ef5fefaf6290aaa1"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_05_layer1_1_conv2.json",
+      "bytes": 1551,
+      "sha256": "185718c15056c08ca530e4d86840371f51cd15818c155952cb87cbb74c22de13"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_06_layer1_2_conv1.json",
+      "bytes": 1551,
+      "sha256": "000e5d33b2f7ce02cf1ea86e9dd35d0fa21fe9abb5d0135d1da30b5cf8ba3bed"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_07_layer1_2_conv2.json",
+      "bytes": 1551,
+      "sha256": "6a997823f8b8c4b32b9e07edc7a1151a765031a1c894e677c8603d79bf0dc0ee"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "dc6359947adde02df963f495648d1979d21a634cab26aab07c1f33251af0df13"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_11_layer2_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "406e80ab1aa19212ef93fe1ff6a28ef2f33adc1a81ed8f361babafe6a9b2f651"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_12_layer2_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "861e2756cb3a7a5c757d89c165e987852548f616f9839ef3070c4576ba6c139d"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_13_layer2_2_conv1.json",
+      "bytes": 1545,
+      "sha256": "fac0f1be66781a3817785047dc1e5d75c742b404c95274e34fc5cf12693d70e3"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_14_layer2_2_conv2.json",
+      "bytes": 1545,
+      "sha256": "e77dd76d4f5ae14c0f2bf97ab035e8780ee2a51aa0b568252657b0d5a246decf"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "62e474b4c19d0b35b86bd90773408e04edc61a654f4c96248bb92f69227de984"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_18_layer3_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "537095db4432ef19d5d1ed927c4964de365849b182e9cce9bff9801662494082"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_19_layer3_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "04b4dc05de0c530abc7c1c96439dbf09ac24ecdd3d22ff51c02521b53c80b15d"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_01_features_3.json",
+      "bytes": 1542,
+      "sha256": "abfab07832cea18d4ec840d38e8f48c4df78f41f03690397367e913ba3993450"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_02_features_7.json",
+      "bytes": 1542,
+      "sha256": "c45f65e90589d3732ee422e8993299a68758a35c9402380ad6197418b6fff513"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_03_features_10.json",
+      "bytes": 1545,
+      "sha256": "fad06240cb12694061f34cb991c7332977e0635093652c078fbc8bfd7ebb2d46"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_04_features_14.json",
+      "bytes": 1539,
+      "sha256": "822f62b500e3e4945d300f5da1ff96e590d56de9c481e0bdf801a4ab31d83afd"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_05_features_17.json",
+      "bytes": 1539,
+      "sha256": "45088d6c4fe405d15e4bd03edc77d9ffba375248cb98c8619734aa7c6b28976a"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_06_features_20.json",
+      "bytes": 1539,
+      "sha256": "7bf4aa8d06c7cd6dbe1ddb1fdd004cc88e4424298024527824877da7ee11bce1"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_07_features_24.json",
+      "bytes": 1539,
+      "sha256": "223e4eba15bc3824edd612b9cfd9b397c0bd384c8900df324faf584157d2f18e"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_08_features_27.json",
+      "bytes": 1539,
+      "sha256": "79534d1dbd0bf4efa4601955fc20b2cdac7a90f84fb0f79efae1f5197462efa6"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_09_features_30.json",
+      "bytes": 1539,
+      "sha256": "50256d2db8574380a866b8924e6539fb5ccec693e9bffd7ed47b71dd6f4d2e29"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_10_features_34.json",
+      "bytes": 1538,
+      "sha256": "bb5c43e72a61d121f12268dba396989be5c5401312f868386359768919089916"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_11_features_37.json",
+      "bytes": 1538,
+      "sha256": "d8fba92aa7f6c5399d455de9eb7238fb99da4095bfa202b667c04725a6ea0880"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_12_features_40.json",
+      "bytes": 1538,
+      "sha256": "cbb14ef2aa4fa9e3cd54861def1646eab8ea96bda343b503e04cdf3c538a255d"
+    }
+  ],
+  "scripts": [
+    {
+      "path": "zoo/fig3_hw_n_sweep/gen_inputs.py",
+      "bytes": 5198,
+      "sha256": "a9d9f3a34d2b6829d4e04056d8baaf13c66044b89ec779b16b62c456d763b418"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/check_replay.py",
+      "bytes": 5043,
+      "sha256": "58b2cbbbae7d0e00b9e21c0d4b3160e11fc627c82564d6af102fb8d240f0e855"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/run.py",
+      "bytes": 5961,
+      "sha256": "599345357f8927ae649a286b9143e79f832e3421cd1bf5762c56e80dbdfdaac2"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/plot.py",
+      "bytes": 5517,
+      "sha256": "a04dafc7e48475585ccdb745638c93094a670820cce1ba91041e79f0df925359"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/record_provenance.py",
+      "bytes": 8335,
+      "sha256": "9f9633e66531cc02f84ef0acfb3c5fcc4a225b7908986c983900c39b72fe13a5"
+    }
+  ],
+  "source_files": [
+    {
+      "path": "src/lays/nocsim/combine.py",
+      "bytes": 31292,
+      "sha256": "587e3a2e6ba5b0e42055e153f0e3afcf1ccf72ba17ffd38452dce488d90a25fa"
+    },
+    {
+      "path": "tests/test_weight_dependencies.py",
+      "bytes": 3265,
+      "sha256": "cb8d8867b989e1a8b7fb0e77df0ddfa702c02b63c3484336411e581f51e09fb3"
+    },
+    {
+      "path": "src/lays/weight_trace_gen/spinalflow/SpinalFlowGen.h",
+      "bytes": 3755,
+      "sha256": "f56b892cdee40308939ffec331d286c08a802c2a05e5f89b5cd1d976325a7ea2"
+    },
+    {
+      "path": "src/lays/weight_trace_gen/spinalflow/native_bridge.py",
+      "bytes": 5086,
+      "sha256": "f4e5ae3994dc46dd7180d3a18ff15d060d4a951626159e7a9fd22b74ed0cb4b1"
+    },
+    {
+      "path": "src/lays/weight_trace_gen/trace.py",
+      "bytes": 7374,
+      "sha256": "8c800f4e55d262cb17a1bfd1873eadc8d93c5666499bd15be88330c9c0828fe8"
+    }
+  ],
+  "source_patch": {
+    "path": "zoo/fig3_hw_n_sweep/outputs/combine.patch",
+    "bytes": 6387,
+    "sha256": "c3d989d99159a0125e32454296b0ba71eae8e087367c6ecfe309ca68a445a18e"
+  },
+  "binaries": [
+    {
+      "path": "src/lays/weight_trace_gen/spinalflow/spinalflowgen",
+      "bytes": 28680,
+      "sha256": "e3d8d7e2001cb35d8b419cf297ea99736cceb244b7d853e15cca3074a693389a"
+    },
+    {
+      "path": "src/lays/nocsim/eventsim/eventsim",
+      "bytes": 60344,
+      "sha256": "28e3dad50ad0ad71481ed64ff40671fa7605f56961237b3fd93845da3437e3d0"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "zoo/fig3_hw_n_sweep/outputs/results.csv",
+      "bytes": 31560,
+      "sha256": "66430a76f7e00f5c4dc638e590b7928a3da040a8a9ce905a7bb8d2430b19c5a5"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/outputs/summary.csv",
+      "bytes": 2068,
+      "sha256": "003f083362e41c8785d028d766f370c67b25724cc470d58df6e84c1114c1a745"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/outputs/full_run.log",
+      "bytes": 45873,
+      "sha256": "34a04de880f2f177165b62e8d3415e9e5d64b13b1ec67506b21d675f885c7b49"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/outputs/smoke/results.csv",
+      "bytes": 197,
+      "sha256": "fd2375d12f5afb49d76df1f34a952466ffcb090ad895b9628a15be6b724e7b65"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/fig3_hw_n_sweep.pdf",
+      "bytes": 13562,
+      "sha256": "35e1ee5622e4a7c0b11738fcc50c847249676666923d05857de3194461bde6af"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/fig3_hw_n_sweep.png",
+      "bytes": 52685,
+      "sha256": "83954922c9b815ef40f76cdc0a6651995b726c5701b76a0fcaa878fcab7940c1"
+    },
+    {
+      "path": "zoo/fig3_hw_n_sweep/README.md",
+      "bytes": 10922,
+      "sha256": "66f488655873225b0bfd9ccc367799ced135cda9a71388a49548805cfab7e75a"
+    }
+  ],
+  "artifact_counts": {
+    "layer_runs": 625,
+    "network_sample_totals": 50,
+    "layer_schedules": 125,
+    "architectures": 5
+  },
+  "statistics": [
+    {
+      "network": "vgg16",
+      "N": 32,
+      "samples": 5,
+      "total_cycles": {
+        "median": 7149601,
+        "min": 6916594,
+        "max": 7486564
+      },
+      "count_cycles": {
+        "median": 7139692,
+        "min": 6904908,
+        "max": 7477456
+      },
+      "memory_cycles": {
+        "median": 11008,
+        "min": 9108,
+        "max": 11686
+      }
+    },
+    {
+      "network": "vgg16",
+      "N": 64,
+      "samples": 5,
+      "total_cycles": {
+        "median": 3721391,
+        "min": 3601176,
+        "max": 3833886
+      },
+      "count_cycles": {
+        "median": 3569846,
+        "min": 3452454,
+        "max": 3738728
+      },
+      "memory_cycles": {
+        "median": 148722,
+        "min": 95158,
+        "max": 161234
+      }
+    },
+    {
+      "network": "vgg16",
+      "N": 128,
+      "samples": 5,
+      "total_cycles": {
+        "median": 2620980,
+        "min": 2547603,
+        "max": 2654559
+      },
+      "count_cycles": {
+        "median": 1984043,
+        "min": 1888353,
+        "max": 2076452
+      },
+      "memory_cycles": {
+        "median": 636937,
+        "min": 570026,
+        "max": 659250
+      }
+    },
+    {
+      "network": "vgg16",
+      "N": 256,
+      "samples": 5,
+      "total_cycles": {
+        "median": 1916012,
+        "min": 1855851,
+        "max": 1967389
+      },
+      "count_cycles": {
+        "median": 1350984,
+        "min": 1276234,
+        "max": 1413846
+      },
+      "memory_cycles": {
+        "median": 566309,
+        "min": 551975,
+        "max": 579617
+      }
+    },
+    {
+      "network": "vgg16",
+      "N": 512,
+      "samples": 5,
+      "total_cycles": {
+        "median": 1247454,
+        "min": 1182196,
+        "max": 1304457
+      },
+      "count_cycles": {
+        "median": 1132542,
+        "min": 1067284,
+        "max": 1189545
+      },
+      "memory_cycles": {
+        "median": 114912,
+        "min": 114912,
+        "max": 114912
+      }
+    },
+    {
+      "network": "resnet19",
+      "N": 32,
+      "samples": 5,
+      "total_cycles": {
+        "median": 20966959,
+        "min": 20359678,
+        "max": 21212862
+      },
+      "count_cycles": {
+        "median": 20955996,
+        "min": 20351220,
+        "max": 21203480
+      },
+      "memory_cycles": {
+        "median": 9382,
+        "min": 8458,
+        "max": 13503
+      }
+    },
+    {
+      "network": "resnet19",
+      "N": 64,
+      "samples": 5,
+      "total_cycles": {
+        "median": 10653942,
+        "min": 10287744,
+        "max": 10691320
+      },
+      "count_cycles": {
+        "median": 10477998,
+        "min": 10175610,
+        "max": 10601740
+      },
+      "memory_cycles": {
+        "median": 112134,
+        "min": 89580,
+        "max": 186344
+      }
+    },
+    {
+      "network": "resnet19",
+      "N": 128,
+      "samples": 5,
+      "total_cycles": {
+        "median": 5442911,
+        "min": 5298075,
+        "max": 5468399
+      },
+      "count_cycles": {
+        "median": 5238999,
+        "min": 5087805,
+        "max": 5300870
+      },
+      "memory_cycles": {
+        "median": 203912,
+        "min": 167529,
+        "max": 210270
+      }
+    },
+    {
+      "network": "resnet19",
+      "N": 256,
+      "samples": 5,
+      "total_cycles": {
+        "median": 3378667,
+        "min": 3359431,
+        "max": 3468211
+      },
+      "count_cycles": {
+        "median": 3046090,
+        "min": 2993968,
+        "max": 3116686
+      },
+      "memory_cycles": {
+        "median": 351525,
+        "min": 329185,
+        "max": 365463
+      }
+    },
+    {
+      "network": "resnet19",
+      "N": 512,
+      "samples": 5,
+      "total_cycles": {
+        "median": 2820690,
+        "min": 2786559,
+        "max": 2903367
+      },
+      "count_cycles": {
+        "median": 2736594,
+        "min": 2702463,
+        "max": 2819271
+      },
+      "memory_cycles": {
+        "median": 84096,
+        "min": 84096,
+        "max": 84096
+      }
+    }
+  ],
+  "figure": {
+    "width_inches": 3.375,
+    "height_to_width_ratio": 0.65,
+    "text_size_pt": 8,
+    "x_axis": "Node size N (PEs)",
+    "y_axis": "Latency (cycles)",
+    "y_tick_unit": "millions of cycles",
+    "boxes": "Q1-Q3 of five per-sample network totals; median center; min-max whiskers; linear NumPy percentile interpolation",
+    "lines": "Per-network medians across hardware sizes",
+    "colors": {
+      "vgg16": "#648FFF",
+      "resnet19": "#FFB000"
+    },
+    "labels": {
+      "vgg16": "VGG16",
+      "resnet19": "ResNet19 (13/19)"
+    },
+    "font_requested": "Gill Sans MT",
+    "font_used": "DejaVu Sans",
+    "font_file": {
+      "path": "/u/yyu9/miniconda3/envs/gurobi/lib/python3.12/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf",
+      "bytes": 756072,
+      "sha256": "3fdf69cabf06049ea70a00b5919340e2ce1e6d02b0cc3c4b44fb6801bd1e0d22"
+    },
+    "font_fallback": true,
+    "pdf_graphics": "vector",
+    "pdf_creation_date": null,
+    "png_dpi": 300
+  },
+  "environment": {
+    "python": "3.12.13 | packaged by Anaconda, Inc. | (main, Jul  9 2026, 14:38:16) [GCC 14.3.0]",
+    "executable": "/u/yyu9/miniconda3/envs/gurobi/bin/python",
+    "platform": "Linux-5.14.0-570.154.1.el9_6.x86_64-x86_64-with-glibc2.34",
+    "numpy": "2.5.1",
+    "PyYAML": "6.0.3",
+    "matplotlib": "3.11.1",
+    "parallel_jobs": 4,
+    "process_isolation": "setsid; systemd user bus unavailable"
+  },
+  "future_capture_repository": {
+    "path": "neuro_cache_bench_trace",
+    "url": "git@github.com:SangYukekeaiai/neuro_cache_bench_trace.git",
+    "commit": "0672210a4e0b63714ccbb93264fb162f5996f7f3",
+    "used_for_demo": false,
+    "submodule": false,
+    "ignore_file": {
+      "path": ".gitignore",
+      "bytes": 2433,
+      "sha256": "45ec4f8947690ab563b1b76a23803084de70a21b60d625bf50facfd4d5a7e966"
+    }
+  },
+  "limitations": [
+    "Five captured samples per network; no confidence intervals.",
+    "ResNet19 coverage is a 13-of-19 partial convolution sum with nonuniform omission of spatial-downsampling layers.",
+    "Network sums assume sequential execution with no inter-layer overlap.",
+    "Manual mappings; no solver optimization or buffer-capacity enforcement.",
+    "Lanes above a layer's COUT remain idle; fixed bandwidth and replay model determine latency."
+  ]
+}
