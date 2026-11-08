@@ -59,10 +59,9 @@ from lays.nocsim.schedule.decode import schedule_from_strategy
 DEFAULT_TRACE_ROOT = ROOT / "examples/input_trace/loas"
 DEFAULT_TRACE_DIRS = ["resnet19_T4_n5", "vgg16_T4_n5"]
 
-# --all-layers only: chunk size for regenerate_layer's inner loop (bounds
-# peak memory -- the native call holds every requested sample's full
-# per-tile weight-address list in memory at once; a dense layer at
-# chunk_size=100 OOM'd on real data).
+# Default chunk size for single-combo and --all-layers reconstruction. The
+# campaign can lower this explicitly with --sample-chunk-size when its
+# allocation needs a smaller native reconstruction batch.
 SAMPLE_CHUNK_SIZE = 10
 # --all-layers only: samples covered in the first pass across every layer,
 # before the second pass fills in the rest of the requested samples.
@@ -75,8 +74,11 @@ FIRST_PASS_SAMPLES = 10
 
 def _resolve_samples(args: argparse.Namespace) -> List[int]:
     if args.sample_count is not None:
+        if args.sample_total is not None:
+            return sample_indices(n=args.sample_count, seed=args.seed, n_total=args.sample_total)
         return list(range(args.sample_start, args.sample_start + args.sample_count))
-    return sample_indices(n=args.n_samples, seed=args.seed)
+    return sample_indices(n=args.n_samples, seed=args.seed,
+                          n_total=args.sample_total or 10000)
 
 
 # ----------------------------------------------------------------------
@@ -118,11 +120,8 @@ def _process_chunk(sample_indices: Sequence[int]) -> int:
     return len(layer_traces)
 
 
-def _chunks(seq: List[int], n_chunks: int) -> List[List[int]]:
-    if n_chunks <= 1 or len(seq) <= 1:
-        return [seq]
-    size = max(1, len(seq) // n_chunks)
-    return [seq[i : i + size] for i in range(0, len(seq), size)]
+def _fixed_chunks(seq: List[int], chunk_size: int) -> List[List[int]]:
+    return [seq[i:i + chunk_size] for i in range(0, len(seq), chunk_size)]
 
 
 def run_one_combo(args: argparse.Namespace) -> int:
@@ -163,9 +162,9 @@ def run_one_combo(args: argparse.Namespace) -> int:
         if args.workers <= 1:
             _init_worker(trace, tiles, args.arch, args.trace_dir, args.layer,
                          artifact.workload["problem"], artifact.dram_num_steps, out_dir, combo_tag)
-            n_done = _process_chunk(todo)
+            n_done = sum(_process_chunk(chunk) for chunk in _fixed_chunks(todo, args.sample_chunk_size))
         else:
-            chunks = _chunks(todo, args.workers)
+            chunks = _fixed_chunks(todo, args.sample_chunk_size)
             with multiprocessing.Pool(
                 processes=args.workers,
                 initializer=_init_worker,
@@ -199,7 +198,8 @@ def _all_layer_targets(trace_root: pathlib.Path, trace_dirs: Sequence[str]):
     ]
 
 
-def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices):
+def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices,
+                      chunk_size=SAMPLE_CHUNK_SIZE):
     """Reconstruct and save whichever of `indices` aren't already saved for
     this (arch, trace_dir, layer). Returns (num_done, seconds)."""
     sched_path = schedule_cache / arch_name / trace_dir_name / f"{layer_name}.json"
@@ -214,8 +214,8 @@ def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir
     t0 = time.time()
     artifact, prob, tiles = load_schedule(sched_path)
     trace = load_layer_trace(trace_root / trace_dir_name, layer_name, mmap=True)
-    for chunk_start in range(0, len(missing), SAMPLE_CHUNK_SIZE):
-        chunk = missing[chunk_start:chunk_start + SAMPLE_CHUNK_SIZE]
+    for chunk_start in range(0, len(missing), chunk_size):
+        chunk = missing[chunk_start:chunk_start + chunk_size]
         traces = reconstruct_samples(
             arch_name, trace, tiles, chunk, trace_dir_name, layer_name,
             artifact.workload["problem"], artifact.dram_num_steps,
@@ -226,17 +226,19 @@ def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir
 
 
 def _regenerate_one_layer_task(task) -> tuple:
-    arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices = task
-    n, dt = _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices)
+    arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices, chunk_size = task
+    n, dt = _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices,
+                              chunk_size)
     return trace_dir_name, layer_name, n, dt
 
 
-def _run_pass(arch_name, trace_root, schedule_cache, out_root, trace_dirs, indices, label, max_workers):
+def _run_pass(arch_name, trace_root, schedule_cache, out_root, trace_dirs, indices, label, max_workers,
+              chunk_size=SAMPLE_CHUNK_SIZE):
     targets = _all_layer_targets(trace_root, trace_dirs)
     print(f"=== {arch_name}: {label} ({len(indices)} samples), "
           f"{len(targets)} layers, {max_workers} workers ===", flush=True)
     tasks = [
-        (arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices)
+        (arch_name, trace_root, schedule_cache, out_root, trace_dir_name, layer_name, indices, chunk_size)
         for trace_dir_name, layer_name in targets
     ]
 
@@ -267,9 +269,9 @@ def run_all_layers(args: argparse.Namespace) -> int:
     indices = _resolve_samples(args)
     first_pass = indices[:FIRST_PASS_SAMPLES]
     _run_pass(args.arch, trace_root, schedule_cache, out_root, args.trace_dirs,
-              first_pass, f"pass 1, first {len(first_pass)}", max_workers)
+              first_pass, f"pass 1, first {len(first_pass)}", max_workers, args.sample_chunk_size)
     _run_pass(args.arch, trace_root, schedule_cache, out_root, args.trace_dirs,
-              indices, "pass 2, remaining", max_workers)
+              indices, "pass 2, remaining", max_workers, args.sample_chunk_size)
     return 0
 
 
@@ -373,12 +375,16 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
                         "<out-dir>/<arch>/<trace-dir>/<layer>/ layout exactly.")
     p.add_argument("--sample-start", type=int, default=0)
     p.add_argument("--sample-count", type=int,
-                   help="Explicit sample range (single-combo mode only); mutually exclusive with --n-samples.")
+                   help="Explicit sample range (or selected count with --sample-total) in single-combo mode; mutually exclusive with --n-samples.")
+    p.add_argument("--sample-total", type=int,
+                   help="Total samples for sample_indices selection; with --sample-count, selects that many from range(sample-total).")
     p.add_argument("--n-samples", type=int, default=100,
                    help="Fixed, reproducible n-sample subset (lays.weight_trace_gen.weight_trace.sample_indices); "
                         "n=100 (the default) is the canonical subset. Default: 100.")
     p.add_argument("--seed", type=int, default=0, help="Seed for the samples beyond the canonical 100.")
     p.add_argument("--workers", type=int, default=1)
+    p.add_argument("--sample-chunk-size", type=int, default=SAMPLE_CHUNK_SIZE,
+                   help="samples per native reconstruction call (default: %(default)s)")
     p.add_argument("--force", action="store_true", help="Regenerate samples even if already present.")
     p.add_argument("--stream", action="store_true",
                    help="Emit one WCTS stream (the weight addresses) on stdout instead of writing "
@@ -394,6 +400,14 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
 
     if args.sample_count is not None and args.n_samples != 100:
         p.error("specify --sample-count or --n-samples, not both")
+    if args.sample_total is not None and args.sample_total < 1:
+        p.error("--sample-total must be positive")
+    if args.sample_total is not None and args.sample_count is not None and args.sample_count < 100:
+        p.error("--sample-count must be at least 100 with --sample-total")
+    if args.sample_chunk_size < 1:
+        p.error("--sample-chunk-size must be positive")
+    if args.sample_total is not None and args.sample_start != 0:
+        p.error("--sample-start cannot be combined with --sample-total")
     if args.dump_trace_tiles is not None and not args.dump_trace:
         p.error("--dump-trace-tiles needs --dump-trace")
     if args.stream:

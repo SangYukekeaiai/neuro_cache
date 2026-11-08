@@ -6,14 +6,18 @@ from pathlib import Path
 from lays.parsers.layer import DIM_COUT, DIM_HO, DIM_WO
 from lays.scheduler.artifact import check_schedule_matches_trace
 from lays.weight_trace_gen.trace import build_workload_from_trace, exclusion_reason, valid_layer_names
-from lays.weight_trace_gen.weight_trace import load_schedule
+from lays.weight_trace_gen.weight_trace import load_schedule, sample_indices
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
 HARDWARE_SIZES = (32, 64, 128, 256, 512)
-SAMPLES = tuple(range(5))
-NETWORKS = {name: REPO / "examples/input_trace/loas" / f"{name}_T4_n5"
-            for name in ("vgg16", "resnet19")}
+SAMPLE_COUNT = 100
+SAMPLE_SEED = 0
+SAMPLE_TOTAL = 500
+SAMPLE_INDICES = tuple(sample_indices(n=SAMPLE_COUNT, seed=SAMPLE_SEED, n_total=SAMPLE_TOTAL))
+SAMPLES = SAMPLE_INDICES
+TRACE_ROOT = Path("/lustre/fs1/home/ya867177/data/input_trace_delta/B09")
+NETWORKS = {"resnet19": TRACE_ROOT / "loas_resnet19_T4_n500"}
 
 
 def workloads():
@@ -38,15 +42,29 @@ def schedule_path(network, layer, n):
 
 
 def main():
-    feasibility = json.loads((ROOT / "outputs/feasibility/report.json").read_text())
+    feasibility_path = ROOT / "outputs/feasibility/report.json"
+    feasibility = json.loads(feasibility_path.read_text())
     assert not feasibility["stride2_supported"], "Reassess the public loader before including stride-2 layers"
-    manifest = {"hardware_sizes": HARDWARE_SIZES, "samples": SAMPLES, "networks": {}}
+    manifest = {
+        "hardware_sizes": HARDWARE_SIZES,
+        "samples": SAMPLES,
+        "sample_selection": {
+            "n": SAMPLE_COUNT, "seed": SAMPLE_SEED, "n_total": SAMPLE_TOTAL,
+            "indices": SAMPLE_INDICES,
+        },
+        "networks": {},
+    }
     all_workloads = workloads()
     for network, trace in NETWORKS.items():
         meta = json.loads((trace / "meta.json").read_text())
-        assert meta["n_samples"] == len(SAMPLES)
+        assert meta["n_samples"] == SAMPLE_TOTAL
+        assert feasibility["trace"] == str(trace), (
+            f"{feasibility_path} describes {feasibility.get('trace')!r}, expected {trace}"
+        )
+        assert feasibility["valid_layers"] == list(all_workloads[network])
         manifest["networks"][network] = {
-            "trace": str(trace.relative_to(REPO)),
+            "arch": meta["arch"],
+            "trace": str(trace),
             "included_layers": list(all_workloads[network]),
             "excluded_layers": {name: exclusion_reason(meta, name) for name in meta["layers"]
                                 if name not in all_workloads[network]},

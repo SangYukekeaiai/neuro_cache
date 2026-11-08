@@ -10,11 +10,12 @@ import numpy as np
 from lays.parsers.layer import DIM_CIN, DIM_COUT, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
 from lays.weight_trace_gen import NodeTileSpec
 from lays.weight_trace_gen.spinalflow.native_bridge import reconstruct_samples_native
-from lays.weight_trace_gen.trace import exclusion_reason
+from lays.weight_trace_gen.trace import exclusion_reason, valid_layer_names
+from gen_inputs import NETWORKS
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-TRACE = REPO / "examples/input_trace/loas/resnet19_T4_n5"
+TRACE = NETWORKS["resnet19"]
 
 
 def reference_counts(sample, kernel, stride):
@@ -39,8 +40,13 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     meta = json.loads((TRACE / "meta.json").read_text())
     reports = []
-    # Layer 09 is a stride-1 control for the same independent reference.
-    for name in ("layer_08_layer2_0_conv1", "layer_10_layer2_0_shortcut_0", "layer_09_layer2_0_conv2"):
+    valid = valid_layer_names(meta)
+    excluded = [name for name in meta["layers"] if name not in valid]
+    stride2 = [name for name in excluded if meta["layer_params"][name]["stride"] != 1]
+    assert len(stride2) >= 2, f"expected at least two stride-2 exclusions, got {stride2}"
+    # The first two excluded layers exercise stride-2 behavior; the first valid
+    # layer is a stride-1 control for the same independent reference.
+    for name in (*stride2[:2], valid[0]):
         trace = np.load(TRACE / f"{name}.npy")
         params = meta["layer_params"][name]
         kernel, stride, cout = (params[key] for key in ("kernel", "stride", "cout"))
@@ -90,6 +96,11 @@ def main():
         print(json.dumps(report), flush=True)
     assert reports[2]["mismatches"] == 0, "Stride-1 control disagrees with reference"
     document = {
+        "trace": str(TRACE),
+        "arch": meta["arch"],
+        "n_samples": meta["n_samples"],
+        "valid_layers": valid,
+        "excluded_layers": {name: exclusion_reason(meta, name) for name in excluded},
         "reference": "Raw [T,C,H,W] sample, pad=(kernel-1)//2; count_nonzero of each kernel-by-kernel window beginning at (ho*stride, wo*stride) in padded input. No generator window function is used.",
         "stride2_supported": all(r["mismatches"] == 0 for r in reports[:2]),
         "cases": reports,
