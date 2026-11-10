@@ -1,7 +1,7 @@
 {
   "figure": "fig3_design_space",
-  "generated_at_utc": "2026-11-10T16:13:45.420546+00:00",
-  "repo_commit": "1932ba7",
+  "generated_at_utc": "2026-11-10T16:22:53.552772+00:00",
+  "repo_commit": "2bc5c6a",
   "repo": "/u/yyu9/projects/neuro_cache",
   "command": "conda run -n gurobi python zoo/fig3_design_space/plot.py",
   "regenerate_all": [
@@ -104,5 +104,5 @@
     "zoo/fig3_design_space/fig3_design_space.pdf",
     "zoo/fig3_design_space/fig3_design_space.png"
   ],
-  "git_status_clean_for_inputs": "M zoo/fig3_design_space/caption.txt\n M zoo/fig3_design_space/fig3_design_space.pdf\n M zoo/fig3_design_space/fig3_design_space.png\n M zoo/fig3_design_space/plot.py\n M zoo/fig3_design_space/provenance.json"
+  "git_status_clean_for_inputs": "M zoo/fig3_design_space/fig3_design_space.pdf\n M zoo/fig3_design_space/fig3_design_space.png\n M zoo/fig3_design_space/plot.py"
 }

@@ -168,7 +168,7 @@ def main() -> int:
 
     ax.set_xlim(edges[0] / 1.15, edges[-1] * 1.15)
     ax.set_ylim(0, ymax)
-    ax.set_xlabel("Schedule latency (temporal iterations)", labelpad=2)
+    ax.set_xlabel("Schedule latency (cycles)", labelpad=2)
     ax.set_ylabel("Valid schedules", labelpad=2)
     ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"${v / 1e3:g}$k"))
     ax.xaxis.set_major_formatter(
