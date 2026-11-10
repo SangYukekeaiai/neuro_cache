@@ -1,4 +1,4 @@
-"""Shared case-manifest and shard helpers for the fig3 Slurm harness."""
+"""Shared case-manifest and shard helpers for the fig2 Slurm harness."""
 
 from __future__ import annotations
 
@@ -45,10 +45,10 @@ def case_key(case):
     return case_tuple(case)
 
 
-def config_cases():
+def config_cases(networks=None):
     """Build the deterministic full case list from gen_inputs.py."""
     config, _ = campaign_modules()
-    layer_workloads = config.workloads()
+    layer_workloads = config.workloads(networks=networks)
     return [
         (network, layer, n, sample)
         for network, layers in layer_workloads.items()

@@ -1,0 +1,4286 @@
+{
+  "campaign": "fig2_hw_n_sweep",
+  "samples_per_network_and_N": 100,
+  "campaign_complete": true,
+  "results_dir": "zoo/fig2_hw_n_sweep/outputs",
+  "shard_root": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs",
+  "repo_commit": "08541df5226e7900dbb6290fb8a801c5f336c7c3",
+  "recorded_at_utc": "2026-11-10T08:58:18.549203+00:00",
+  "run_completed_at_utc": "2026-11-10T08:56:42+00:00",
+  "working_tree_note": "Campaign harness/configuration files may be uncommitted at capture time. src/lays/nocsim/combine.py is already part of repo_commit; no external patch is required.",
+  "architecture": {
+    "name": "spinalflow",
+    "single_node": true,
+    "hardware_sizes": [
+      32,
+      64,
+      128,
+      256,
+      512
+    ],
+    "node_instances": 1,
+    "physical_global_buffer": false,
+    "buffer_bytes": {
+      "weight": "3*3*512*N",
+      "psum": "144*N",
+      "vmem": "144*N"
+    },
+    "buffer_note": "Psum/vmem sizes preserve the N=128 reference allocation, not a computed requirement; per-tile psum need is 2*min(N,COUT) bytes. nocsim does not enforce capacities.",
+    "bitwidths": {
+      "weight": 8,
+      "psum": 16,
+      "vmem": 32
+    },
+    "dram_cycles_per_32byte_packet": 0.25
+  },
+  "mapping": {
+    "active_PEs": "min(N,COUT)",
+    "node_temporal": [
+      "KH",
+      "KW",
+      "CIN",
+      "T"
+    ],
+    "NoC_loops": [],
+    "DRAM_outer_to_inner": [
+      "HO",
+      "WO",
+      "COUT"
+    ],
+    "dram_num_steps": "HO*WO*COUT/min(N,COUT)",
+    "idle_lanes": "N-min(N,COUT)"
+  },
+  "workloads": {
+    "resnet19": {
+      "arch": "loas_resnet19",
+      "trace": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500",
+      "feasibility": "/lustre/fs1/home/ya867177/projects/neuro_cache_wcache/zoo/fig2_hw_n_sweep/outputs/feasibility/report.json",
+      "included_layers": [
+        "layer_02_core_layer1_0_conv2",
+        "layer_04_core_layer1_1_conv1",
+        "layer_05_core_layer1_1_conv2",
+        "layer_06_core_layer1_2_conv1",
+        "layer_07_core_layer1_2_conv2",
+        "layer_09_core_layer2_0_conv2",
+        "layer_11_core_layer2_1_conv1",
+        "layer_12_core_layer2_1_conv2",
+        "layer_13_core_layer2_2_conv1",
+        "layer_14_core_layer2_2_conv2",
+        "layer_16_core_layer3_0_conv2",
+        "layer_18_core_layer3_1_conv1",
+        "layer_19_core_layer3_1_conv2"
+      ],
+      "excluded_layers": {
+        "layer_01_core_layer1_0_conv1": "kernel 3x3, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+        "layer_03_core_layer1_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+        "layer_08_core_layer2_0_conv1": "kernel 3x3, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+        "layer_10_core_layer2_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+        "layer_15_core_layer3_0_conv1": "kernel 3x3, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+        "layer_17_core_layer3_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers"
+      }
+    },
+    "vgg16": {
+      "arch": "loas_vgg16",
+      "trace": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500",
+      "feasibility": "/lustre/fs1/home/ya867177/projects/neuro_cache_wcache/zoo/fig2_hw_n_sweep/outputs/feasibility/vgg16/report.json",
+      "included_layers": [
+        "layer_01_core_features_3",
+        "layer_02_core_features_7",
+        "layer_03_core_features_10",
+        "layer_04_core_features_14",
+        "layer_05_core_features_17",
+        "layer_06_core_features_20",
+        "layer_07_core_features_24",
+        "layer_08_core_features_27",
+        "layer_09_core_features_30",
+        "layer_10_core_features_34",
+        "layer_11_core_features_37",
+        "layer_12_core_features_40",
+        "layer_13_core_classifier"
+      ],
+      "excluded_layers": {}
+    },
+    "sdt": {
+      "arch": "sdt_2_512",
+      "trace": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500",
+      "feasibility": "/lustre/fs1/home/ya867177/projects/neuro_cache_wcache/zoo/fig2_hw_n_sweep/outputs/feasibility/sdt/report.json",
+      "included_layers": [
+        "layer_01_patch_embed_proj_conv1",
+        "layer_02_patch_embed_proj_conv2",
+        "layer_03_patch_embed_proj_conv3",
+        "layer_04_patch_embed_rpe_conv",
+        "layer_05_block_0_attn_q_conv",
+        "layer_06_block_0_attn_k_conv",
+        "layer_07_block_0_attn_v_conv",
+        "layer_08_block_0_attn_proj_conv",
+        "layer_09_block_0_mlp_fc_conv1",
+        "layer_10_block_0_mlp_fc_conv2",
+        "layer_11_block_1_attn_q_conv",
+        "layer_12_block_1_attn_k_conv",
+        "layer_13_block_1_attn_v_conv",
+        "layer_14_block_1_attn_proj_conv",
+        "layer_15_block_1_mlp_fc_conv1",
+        "layer_16_block_1_mlp_fc_conv2"
+      ],
+      "excluded_layers": {}
+    },
+    "vgg8dvs": {
+      "arch": "sma_azo_vgg_cifar10_dvs",
+      "trace": "/lustre/fs1/home/ya867177/data/input_trace_delta/C01/sma_azo_vgg_cifar10_dvs_T10_n500",
+      "feasibility": "/lustre/fs1/home/ya867177/projects/neuro_cache_wcache/zoo/fig2_hw_n_sweep/outputs/feasibility/vgg8dvs/report.json",
+      "included_layers": [
+        "layer_01_core_block2_0_0",
+        "layer_02_core_block3_0_0",
+        "layer_03_core_block4_0_0",
+        "layer_04_core_block5_0_0",
+        "layer_05_core_others_5",
+        "layer_06_core_others_8"
+      ],
+      "excluded_layers": {}
+    }
+  },
+  "capture_sample_indices": [
+    0,
+    7,
+    20,
+    31,
+    32,
+    37,
+    41,
+    46,
+    47,
+    48,
+    50,
+    51,
+    55,
+    71,
+    72,
+    75,
+    97,
+    104,
+    111,
+    113,
+    122,
+    124,
+    128,
+    132,
+    133,
+    144,
+    149,
+    154,
+    155,
+    158,
+    161,
+    163,
+    166,
+    169,
+    170,
+    181,
+    183,
+    197,
+    204,
+    207,
+    215,
+    222,
+    226,
+    229,
+    241,
+    244,
+    248,
+    250,
+    252,
+    258,
+    260,
+    261,
+    266,
+    272,
+    278,
+    280,
+    282,
+    286,
+    290,
+    298,
+    308,
+    312,
+    313,
+    316,
+    320,
+    327,
+    342,
+    350,
+    360,
+    361,
+    363,
+    368,
+    373,
+    386,
+    388,
+    401,
+    409,
+    411,
+    412,
+    414,
+    422,
+    423,
+    424,
+    430,
+    432,
+    435,
+    443,
+    447,
+    455,
+    456,
+    461,
+    464,
+    465,
+    467,
+    468,
+    470,
+    478,
+    485,
+    488,
+    489
+  ],
+  "metric": "For each network/N/sample, sum included layer total_cycles and count_cycles separately; memory_cycles is their difference. Layers execute sequentially without overlap.",
+  "coverage": {
+    "resnet19": {
+      "included_layers": 13,
+      "total_layers": 19
+    },
+    "vgg16": {
+      "included_layers": 13,
+      "total_layers": 13
+    },
+    "sdt": {
+      "included_layers": 16,
+      "total_layers": 16
+    },
+    "vgg8dvs": {
+      "included_layers": 6,
+      "total_layers": 6
+    }
+  },
+  "feasibility": {
+    "resnet19": {
+      "network": "resnet19",
+      "trace": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500",
+      "arch": "loas_resnet19",
+      "n_samples": 500,
+      "valid_layers": [
+        "layer_02_core_layer1_0_conv2",
+        "layer_04_core_layer1_1_conv1",
+        "layer_05_core_layer1_1_conv2",
+        "layer_06_core_layer1_2_conv1",
+        "layer_07_core_layer1_2_conv2",
+        "layer_09_core_layer2_0_conv2",
+        "layer_11_core_layer2_1_conv1",
+        "layer_12_core_layer2_1_conv2",
+        "layer_13_core_layer2_2_conv1",
+        "layer_14_core_layer2_2_conv2",
+        "layer_16_core_layer3_0_conv2",
+        "layer_18_core_layer3_1_conv1",
+        "layer_19_core_layer3_1_conv2"
+      ],
+      "excluded_layers": {
+        "layer_01_core_layer1_0_conv1": "kernel 3x3, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+        "layer_03_core_layer1_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+        "layer_08_core_layer2_0_conv1": "kernel 3x3, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+        "layer_10_core_layer2_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+        "layer_15_core_layer3_0_conv1": "kernel 3x3, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+        "layer_17_core_layer3_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers"
+      },
+      "reference": "Raw [T,C,H,W] sample, pad=(kernel-1)//2; count_nonzero of each kernel-by-kernel window beginning at (ho*stride, wo*stride) in padded input. No generator window function is used.",
+      "stride2_supported": false,
+      "cases": [
+        {
+          "layer": "layer_01_core_layer1_0_conv1",
+          "sample": 0,
+          "hardware_N": 128,
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "output_shape": [
+            16,
+            16
+          ],
+          "tiles": 256,
+          "mismatches": 254,
+          "reference_total": 50709,
+          "native_total": 45435,
+          "first_mismatch": {
+            "dram_i": 1,
+            "ho": 0,
+            "wo": 1,
+            "cout_start": 0,
+            "reference_mac_cycles": 120,
+            "native_mac_cycles": 127,
+            "delta": 7
+          },
+          "public_loader_exclusion": "kernel 3x3, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+          "input_sha256": "1c396efd3f297c828e11db23b427b774dc701c417d6f5b2a987f64bc5e1bb07f",
+          "network": "resnet19"
+        },
+        {
+          "layer": "layer_03_core_layer1_0_shortcut_0",
+          "sample": 0,
+          "hardware_N": 128,
+          "kernel": 1,
+          "stride": 2,
+          "padding": 0,
+          "output_shape": [
+            16,
+            16
+          ],
+          "tiles": 256,
+          "mismatches": 252,
+          "reference_total": 5883,
+          "native_total": 5382,
+          "first_mismatch": {
+            "dram_i": 1,
+            "ho": 0,
+            "wo": 1,
+            "cout_start": 0,
+            "reference_mac_cycles": 17,
+            "native_mac_cycles": 21,
+            "delta": 4
+          },
+          "public_loader_exclusion": "kernel 1x1, stride 2: the arch models replay only 1x1 or 3x3 stride-1 layers",
+          "input_sha256": "1c396efd3f297c828e11db23b427b774dc701c417d6f5b2a987f64bc5e1bb07f",
+          "network": "resnet19"
+        },
+        {
+          "layer": "layer_02_core_layer1_0_conv2",
+          "sample": 0,
+          "hardware_N": 128,
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "output_shape": [
+            16,
+            16
+          ],
+          "tiles": 256,
+          "mismatches": 0,
+          "reference_total": 144914,
+          "native_total": 144914,
+          "first_mismatch": null,
+          "public_loader_exclusion": null,
+          "input_sha256": "6667cba2799f9f74b66b9e68648bbbbd3bec8ea35ab6e4954d5709b2029c09d8",
+          "network": "resnet19"
+        }
+      ]
+    },
+    "vgg16": {
+      "network": "vgg16",
+      "trace": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500",
+      "arch": "loas_vgg16",
+      "n_samples": 500,
+      "valid_layers": [
+        "layer_01_core_features_3",
+        "layer_02_core_features_7",
+        "layer_03_core_features_10",
+        "layer_04_core_features_14",
+        "layer_05_core_features_17",
+        "layer_06_core_features_20",
+        "layer_07_core_features_24",
+        "layer_08_core_features_27",
+        "layer_09_core_features_30",
+        "layer_10_core_features_34",
+        "layer_11_core_features_37",
+        "layer_12_core_features_40",
+        "layer_13_core_classifier"
+      ],
+      "excluded_layers": {},
+      "reference": "Raw [T,C,H,W] sample, pad=(kernel-1)//2; count_nonzero of each kernel-by-kernel window beginning at (ho*stride, wo*stride) in padded input. No generator window function is used.",
+      "stride2_supported": false,
+      "cases": [
+        {
+          "layer": "layer_01_core_features_3",
+          "sample": 0,
+          "hardware_N": 128,
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "output_shape": [
+            32,
+            32
+          ],
+          "tiles": 1024,
+          "mismatches": 0,
+          "reference_total": 287641,
+          "native_total": 287641,
+          "first_mismatch": null,
+          "public_loader_exclusion": null,
+          "input_sha256": "07a4fd23f950816d4392ef3b403de2d3be8c5974feac599a40a9b8d2494a0a6b",
+          "network": "vgg16"
+        },
+        {
+          "layer": "layer_13_core_classifier",
+          "sample": 0,
+          "hardware_N": 128,
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "output_shape": [
+            1,
+            1
+          ],
+          "tiles": 1,
+          "mismatches": 0,
+          "reference_total": 649,
+          "native_total": 649,
+          "first_mismatch": null,
+          "public_loader_exclusion": null,
+          "input_sha256": "06d7ef4011aa5450c68bb4147a3a274b6ba707f6cac908ba229859ed3b4ff798",
+          "network": "vgg16"
+        }
+      ]
+    },
+    "sdt": {
+      "network": "sdt",
+      "trace": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500",
+      "arch": "sdt_2_512",
+      "n_samples": 500,
+      "valid_layers": [
+        "layer_01_patch_embed_proj_conv1",
+        "layer_02_patch_embed_proj_conv2",
+        "layer_03_patch_embed_proj_conv3",
+        "layer_04_patch_embed_rpe_conv",
+        "layer_05_block_0_attn_q_conv",
+        "layer_06_block_0_attn_k_conv",
+        "layer_07_block_0_attn_v_conv",
+        "layer_08_block_0_attn_proj_conv",
+        "layer_09_block_0_mlp_fc_conv1",
+        "layer_10_block_0_mlp_fc_conv2",
+        "layer_11_block_1_attn_q_conv",
+        "layer_12_block_1_attn_k_conv",
+        "layer_13_block_1_attn_v_conv",
+        "layer_14_block_1_attn_proj_conv",
+        "layer_15_block_1_mlp_fc_conv1",
+        "layer_16_block_1_mlp_fc_conv2"
+      ],
+      "excluded_layers": {},
+      "reference": "Raw [T,C,H,W] sample, pad=(kernel-1)//2; count_nonzero of each kernel-by-kernel window beginning at (ho*stride, wo*stride) in padded input. No generator window function is used.",
+      "stride2_supported": false,
+      "cases": [
+        {
+          "layer": "layer_01_patch_embed_proj_conv1",
+          "sample": 0,
+          "hardware_N": 128,
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "output_shape": [
+            32,
+            32
+          ],
+          "tiles": 1024,
+          "mismatches": 0,
+          "reference_total": 544575,
+          "native_total": 544575,
+          "first_mismatch": null,
+          "public_loader_exclusion": null,
+          "input_sha256": "dfb0805806237593b123c178f6b55bd4c178e840c956c3c5846dad99366054f6",
+          "network": "sdt"
+        },
+        {
+          "layer": "layer_05_block_0_attn_q_conv",
+          "sample": 0,
+          "hardware_N": 128,
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "output_shape": [
+            8,
+            8
+          ],
+          "tiles": 256,
+          "mismatches": 0,
+          "reference_total": 117472,
+          "native_total": 117472,
+          "first_mismatch": null,
+          "public_loader_exclusion": null,
+          "input_sha256": "4cadb4a7b5146c051f4b1a6bc299909b15c5fc613eb0a2ff6b0ff51202539217",
+          "network": "sdt"
+        }
+      ]
+    },
+    "vgg8dvs": {
+      "network": "vgg8dvs",
+      "trace": "/lustre/fs1/home/ya867177/data/input_trace_delta/C01/sma_azo_vgg_cifar10_dvs_T10_n500",
+      "arch": "sma_azo_vgg_cifar10_dvs",
+      "n_samples": 500,
+      "valid_layers": [
+        "layer_01_core_block2_0_0",
+        "layer_02_core_block3_0_0",
+        "layer_03_core_block4_0_0",
+        "layer_04_core_block5_0_0",
+        "layer_05_core_others_5",
+        "layer_06_core_others_8"
+      ],
+      "excluded_layers": {},
+      "reference": "Raw [T,C,H,W] sample, pad=(kernel-1)//2; count_nonzero of each kernel-by-kernel window beginning at (ho*stride, wo*stride) in padded input. No generator window function is used.",
+      "stride2_supported": false,
+      "cases": [
+        {
+          "layer": "layer_01_core_block2_0_0",
+          "sample": 0,
+          "hardware_N": 128,
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "output_shape": [
+            64,
+            64
+          ],
+          "tiles": 4096,
+          "mismatches": 0,
+          "reference_total": 1639334,
+          "native_total": 1639334,
+          "first_mismatch": null,
+          "public_loader_exclusion": null,
+          "input_sha256": "60e35fa4532f6be8af4ac7402231f0c5a064a09c41be0bc62813212a47afb377",
+          "network": "vgg8dvs"
+        },
+        {
+          "layer": "layer_05_core_others_5",
+          "sample": 0,
+          "hardware_N": 128,
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "output_shape": [
+            1,
+            1
+          ],
+          "tiles": 8,
+          "mismatches": 0,
+          "reference_total": 18384,
+          "native_total": 18384,
+          "first_mismatch": null,
+          "public_loader_exclusion": null,
+          "input_sha256": "a18683cfb644c880ba69cfaeb990952836ba68a580fd233024d13024fdad18be",
+          "network": "vgg8dvs"
+        }
+      ]
+    }
+  },
+  "feasibility_artifacts": [
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/layer_01_core_layer1_0_conv1.csv",
+      "bytes": 5929,
+      "sha256": "1cf7c9d341549ce6615bbed41dd6460d4b11eb676ff23667842ec379572d16ee"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/layer_02_core_layer1_0_conv2.csv",
+      "bytes": 5528,
+      "sha256": "993d3072d28a94708da2a7788e2037ec0b7728d987826c0a76867ff0ebc71e12"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/layer_03_core_layer1_0_shortcut_0.csv",
+      "bytes": 5214,
+      "sha256": "9b8dd16c3cada5ade05e064e54808c2062865d01a52405566f0967ff171341a5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/layer_08_layer2_0_conv1.csv",
+      "bytes": 3278,
+      "sha256": "47ec33d136c97b4e0d8f347a696b36d2a11dcb0fb1e2b6c15ca7b8acff908d26"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/layer_09_layer2_0_conv2.csv",
+      "bytes": 3000,
+      "sha256": "d0945c48fd3618e1d4707f0546b3249be050fb4f2f11cb997a5603b466de2a37"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/layer_10_layer2_0_shortcut_0.csv",
+      "bytes": 2966,
+      "sha256": "fa74ec24dfaf16295d41b0c20484a54507b5a48c70640553920b4db3fc79517c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/report.json",
+      "bytes": 3669,
+      "sha256": "e85b16c6a7b7a0ee00e8886d112befda5440f415bfeb3ac6e208a45db853b6e1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/sdt/layer_01_patch_embed_proj_conv1.csv",
+      "bytes": 22896,
+      "sha256": "97957ef5c53f4e66d4ee37a4a76b37e31aa562bd37f54ef06bb0b2e91a7fd9e2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/sdt/layer_05_block_0_attn_q_conv.csv",
+      "bytes": 5720,
+      "sha256": "8346d661ac4b20d81d80804d87cd1eab008c4cc2575e11db017b6f29023436ca"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/sdt/report.json",
+      "bytes": 2053,
+      "sha256": "d20e48e9ba86978a685e6dad3a3aedb253e8eaf858245bcd2aebc2e541db11f4"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/vgg16/layer_01_core_features_3.csv",
+      "bytes": 22896,
+      "sha256": "20096940b733a572e2844f166f25d9961d9fdf52d7495095e482ef6cfd653c32"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/vgg16/layer_13_core_classifier.csv",
+      "bytes": 89,
+      "sha256": "5a1c943a9a2c3437ebc75b16768ed4474791232fb0fa3af52814bbac9a37e4fb"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/vgg16/report.json",
+      "bytes": 1872,
+      "sha256": "5630bf51acc7c2c873bb9bbeb8dafcb3652af4fa7b2a4907015622ce2888d436"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/vgg8dvs/layer_01_core_block2_0_0.csv",
+      "bytes": 95964,
+      "sha256": "db5a8715d185b579e2125d0c2acde8d6eeb3e6b42e4af637127650c7500771fb"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/vgg8dvs/layer_05_core_others_5.csv",
+      "bytes": 252,
+      "sha256": "ba8c48bf9e5f6d41bd6ad56185142626dc41381a9ada82053d482d5c20dfd15e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/feasibility/vgg8dvs/report.json",
+      "bytes": 1671,
+      "sha256": "f4d7c198727880052a3be50d46f8a96a5fe04ff78ef727314f3a1bb38fef78d6"
+    }
+  ],
+  "commands": [
+    "make -C src/lays/weight_trace_gen/spinalflow",
+    "make -C src/lays/nocsim/eventsim",
+    "PYTHONPATH=src /lustre/fs1/home/ya867177/.venvs/neuro_cache_wcache/bin/python zoo/fig2_hw_n_sweep/check_replay.py",
+    "PYTHONPATH=src /lustre/fs1/home/ya867177/.venvs/neuro_cache_wcache/bin/python zoo/fig2_hw_n_sweep/gen_inputs.py",
+    "PYTHONPATH=src:zoo/fig2_hw_n_sweep/slurm /lustre/fs1/home/ya867177/.venvs/neuro_cache_wcache/bin/python zoo/fig2_hw_n_sweep/slurm/shard_cases.py --batch-samples --num-shards 250 --cases-per-shard 100",
+    "sbatch --partition=normal --time=90:00 --cpus-per-task=4 --array=0-64%65 zoo/fig2_hw_n_sweep/slurm/run_array.sbatch --batch-samples",
+    "PYTHONPATH=src:zoo/fig2_hw_n_sweep/slurm /lustre/fs1/home/ya867177/.venvs/neuro_cache_wcache/bin/python zoo/fig2_hw_n_sweep/slurm/assemble_shards.py --manifest zoo/fig2_hw_n_sweep/outputs/slurm/n500-cases/manifest.json --source zoo/fig2_hw_n_sweep/outputs/slurm/n500-cases/manifest.json zoo/fig2_hw_n_sweep/outputs/slurm/n500-runs --output-root zoo/fig2_hw_n_sweep/outputs/slurm/n500-assembled-runs",
+    "PYTHONPATH=src:zoo/fig2_hw_n_sweep/slurm /lustre/fs1/home/ya867177/.venvs/neuro_cache_wcache/bin/python zoo/fig2_hw_n_sweep/slurm/merge_results.py --carry-existing --shard-root zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs",
+    "/lustre/fs1/home/ya867177/.venvs/neuro_cache_wcache/bin/python zoo/fig2_hw_n_sweep/plot.py",
+    "/lustre/fs1/home/ya867177/.venvs/neuro_cache_wcache/bin/python zoo/fig2_hw_n_sweep/record_provenance.py"
+  ],
+  "command_logs": [
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0000/logs/commands_0000.txt",
+      "bytes": 92000,
+      "sha256": "44dfd51e353de2963430c9357e430dd5476faa30512b9a259e52c42f8cd60fc6"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0001/logs/commands_0001.txt",
+      "bytes": 92000,
+      "sha256": "f076abf7de40398a3ff302cadda2c2f31c8175c1bf27699c180ed71cfd164abe"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0002/logs/commands_0002.txt",
+      "bytes": 92400,
+      "sha256": "104d76756b4692129f9f0fe9f872e06d8acb37deec8815867605d957af33a803"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0003/logs/commands_0003.txt",
+      "bytes": 92400,
+      "sha256": "01638224a3e84e16426506b7e5205fb61ab9acfd96cfb35c419de6bf489f94b3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0004/logs/commands_0004.txt",
+      "bytes": 92400,
+      "sha256": "358807e6c749b212f058bba2c90d9d8204cdc4d88e52fb3fc14ca69f5b8a03cb"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0005/logs/commands_0005.txt",
+      "bytes": 92400,
+      "sha256": "978d2f5b95424b70ca5e15056b237a36d902f1218900f3fbcf8e9d0261b8907d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0006/logs/commands_0006.txt",
+      "bytes": 92400,
+      "sha256": "2931d7a014d7e93b3674da32ab85072b5cfe01ca36fdd2f30f333b7dff2c6f45"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0007/logs/commands_0007.txt",
+      "bytes": 92400,
+      "sha256": "f0f9d8bd61dbd39cb2e4e61de49009738d9aafd3e0b76bfc8d74907589c184d9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0008/logs/commands_0008.txt",
+      "bytes": 92400,
+      "sha256": "5a85ea7a27e43bbbf384d90087e17e78c9a01f659e24cbe73f84a99edb59cd6d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0009/logs/commands_0009.txt",
+      "bytes": 92400,
+      "sha256": "47c3f5d079c938e15257da50e8586db0e97b9d370e225cd4b252a97bdd5e1ee0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0010/logs/commands_0010.txt",
+      "bytes": 92400,
+      "sha256": "802b56d67587232fe6c2d269b30d4abbd903e2b14726aa526fee36e95ece318d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0011/logs/commands_0011.txt",
+      "bytes": 92400,
+      "sha256": "8257eeb64634b40b78a907fcd4044ab4c72f0029cdfdc988b45a8abcf62e5fed"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0012/logs/commands_0012.txt",
+      "bytes": 92000,
+      "sha256": "8c5ed2e0db02872f70f0aaf36f98dc5c9e63c0b0bd59b9e38623bcb06ad9b750"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0013/logs/commands_0013.txt",
+      "bytes": 92000,
+      "sha256": "d349240d233487f5f73276f726d314e024c75d3c799fb00b1e6d3ade6ee8e308"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0014/logs/commands_0014.txt",
+      "bytes": 92000,
+      "sha256": "5d7a4b727ee2f650031a585a07c2f936a19d0c5bb6c75a955749acb40f1d91fe"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0015/logs/commands_0015.txt",
+      "bytes": 92400,
+      "sha256": "fdaf53be3136a2d0a34f7d0d0ef81f0b0f834936708869e8fa615ba63a3d7691"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0016/logs/commands_0016.txt",
+      "bytes": 92400,
+      "sha256": "3214b4cf8d638ee3ad181519df8f641029496e5b0fab7c6036d781f010e5e203"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0017/logs/commands_0017.txt",
+      "bytes": 92400,
+      "sha256": "d006434254164f77e8be81d2efda111d683148b43d35e9fbe8b9e16c5e44735e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0018/logs/commands_0018.txt",
+      "bytes": 92400,
+      "sha256": "766a816f26c0d4645e884a4a53c29228fc2e476f01ed2e047ad0e8fd41ba67be"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0019/logs/commands_0019.txt",
+      "bytes": 92400,
+      "sha256": "7a90f27ee7a9132bb53e3a3679da7e59b77f7560f5a8b35bc22deee4a998a4f2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0020/logs/commands_0020.txt",
+      "bytes": 92400,
+      "sha256": "3525c1ed823fe9dab30c041522f4b45ebf53ebda451c093fdfe2dcb4b58b9094"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0021/logs/commands_0021.txt",
+      "bytes": 92400,
+      "sha256": "a3256563a2f30cd21a5770700ddd8eb564fe8829d984b3d3fab8a004e0434bbe"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0022/logs/commands_0022.txt",
+      "bytes": 92400,
+      "sha256": "1358abc26ec269a3ce6ae8c04eb4d603eca31e35404026ed3ca1d5e74debc41b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0023/logs/commands_0023.txt",
+      "bytes": 92400,
+      "sha256": "22090c3ce48abbde8f01e2ca156336c27806f7e279c69a99730808efa671a085"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0024/logs/commands_0024.txt",
+      "bytes": 92400,
+      "sha256": "b898d07d2b803ddb52bd38e7869d4e8a45f7f520b46ab9d55803792c8e433c71"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0025/logs/commands_0025.txt",
+      "bytes": 92000,
+      "sha256": "d6922de3c1144be8258afaaf3eb2e8d5f7edcbf34decf1aac08e297e8226e96c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0026/logs/commands_0026.txt",
+      "bytes": 92400,
+      "sha256": "52ae41b081225d9340e7485c6292648622ee3643c5823392157393c788b9cbf2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0027/logs/commands_0027.txt",
+      "bytes": 92400,
+      "sha256": "f5e13e8d4799b278027f01c26b6b23aafef1ec6f1474120023d0565dd1e6de74"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0028/logs/commands_0028.txt",
+      "bytes": 92800,
+      "sha256": "8ddd939af8e6cf252fa5f36e8976ed7130d4ce604b7650fcdb198892f02fcb98"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0029/logs/commands_0029.txt",
+      "bytes": 92800,
+      "sha256": "aeca9eaa1e58aefe96b0e70e7b046de8450d6133fe9edf9ca4eb0b5ef055a08e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0030/logs/commands_0030.txt",
+      "bytes": 92800,
+      "sha256": "fb10dbdc79e8def140853d5045ce5e925c541331df960a3d4db7f3f705410f11"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0031/logs/commands_0031.txt",
+      "bytes": 92800,
+      "sha256": "2183da3c72d6766a8e50dfa03b20b013c98e45daf6f14d6674943188580475b4"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0032/logs/commands_0032.txt",
+      "bytes": 92800,
+      "sha256": "3f34f39b073556858574f11f125192edf6d79e6a9ec75b972ce5193e4b79c094"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0033/logs/commands_0033.txt",
+      "bytes": 92800,
+      "sha256": "ce124f02505dab3fc82527dc87b6a7a3db197dd6856162176669bc1a35b523f3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0034/logs/commands_0034.txt",
+      "bytes": 92800,
+      "sha256": "edcfa936e8774cb0577cb89e43ea3069a6bafeb747b497b9c8a6fdab876fac8e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0035/logs/commands_0035.txt",
+      "bytes": 92800,
+      "sha256": "f0cd8b344d39a3753e90c4ce06ef125ad1ed6ef3e12c1b36b4a97018762fc37a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0036/logs/commands_0036.txt",
+      "bytes": 92800,
+      "sha256": "87a4dac7f3df02ace2688ce2f4dd346378e327ddb24dfda14e486493a9a3993f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0037/logs/commands_0037.txt",
+      "bytes": 92800,
+      "sha256": "b3f351f84a957ae313a13f022d8606c0449179853b1e172b8dda1122bc83ef0d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0038/logs/commands_0038.txt",
+      "bytes": 92400,
+      "sha256": "c89c006c30a413b6438270ca181117d220267f6a855aef9309a5ec6bdf53704b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0039/logs/commands_0039.txt",
+      "bytes": 92400,
+      "sha256": "d58414783cd71b3000efbf4be0497940a07582de1b077b5267afe66f89daf3a5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0040/logs/commands_0040.txt",
+      "bytes": 92400,
+      "sha256": "5075afe4c9dee651e827b4b657dcdb05b6ef9bbae90777ac584c9ec95606c7be"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0041/logs/commands_0041.txt",
+      "bytes": 92800,
+      "sha256": "85204421c8947e766f55e3acaed0e641d50cc1cbb474326d421ca4d7871cc21a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0042/logs/commands_0042.txt",
+      "bytes": 92800,
+      "sha256": "485b94495bdaea2836de88cc9709117413611ef10c2e5f447599b19ab165d4e6"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0043/logs/commands_0043.txt",
+      "bytes": 92800,
+      "sha256": "47000c408678c62e653680b93910bb217cacfd960e49404f9d3af96b7987ae51"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0044/logs/commands_0044.txt",
+      "bytes": 92800,
+      "sha256": "193799d3630da10a256faa4c3b996a4f54e92822504df84808d1489450b4dff1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0045/logs/commands_0045.txt",
+      "bytes": 92800,
+      "sha256": "888c9bf49e4dc6e694771b9af0755133e7153d3c50fb53bb7d84179b52da2067"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0046/logs/commands_0046.txt",
+      "bytes": 92800,
+      "sha256": "018d2314e374e7631e79550ccaa6f3905382541384a8f625266ed1f2bb5b5799"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0047/logs/commands_0047.txt",
+      "bytes": 92800,
+      "sha256": "17c6d341a7364f89ef032aec42e5f54c7a0cb06137a1fa4750c83763825dd960"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0048/logs/commands_0048.txt",
+      "bytes": 92800,
+      "sha256": "8052513cf4e384a5666058a11605638ffc7a195aaf919bcb128d75162aeb4e53"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0049/logs/commands_0049.txt",
+      "bytes": 92800,
+      "sha256": "1fbd5a17e8d6876ad578f2dee26787685bc83b7231bbd425e23e6ed746c60691"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0050/logs/commands_0050.txt",
+      "bytes": 92800,
+      "sha256": "1f892205663372ae79b56c72da57297de5679d959f51c937a268942eade150ab"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0051/logs/commands_0051.txt",
+      "bytes": 92400,
+      "sha256": "39887f639b22ea20bc1a084c7549d53529168afcccd3ee09e63e2fd92104b951"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0052/logs/commands_0052.txt",
+      "bytes": 92400,
+      "sha256": "578b8dd7ede193976a9982eb36766d0af0b7544d6785dfada30e891fed815be9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0053/logs/commands_0053.txt",
+      "bytes": 92400,
+      "sha256": "da3615fcc27f58c8e25e58e4e9481b22798aa0262e759a537b445d029d7550ab"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0054/logs/commands_0054.txt",
+      "bytes": 92800,
+      "sha256": "259bd691e95ee6a216ccaa6a6d2d3a1da489873eaff0b9bae61302f922118e97"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0055/logs/commands_0055.txt",
+      "bytes": 92800,
+      "sha256": "2b9a18d38e14ff84e07363765b2dee4a0d5ebcee7e0ecc3267f6d43cca375c85"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0056/logs/commands_0056.txt",
+      "bytes": 92800,
+      "sha256": "cd23f157a5645b27c654e986f7c868268bcad7261740976e67bac45a38188f62"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0057/logs/commands_0057.txt",
+      "bytes": 92800,
+      "sha256": "a2e9f9cb53162fed105881fa4fd4a1ce1ad45398f18210c506e743e37e9447f0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0058/logs/commands_0058.txt",
+      "bytes": 92800,
+      "sha256": "e2b62458e43cfb8ef55602b555795875e3f6750a2fd6bbe2f3d467e15000dae2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0059/logs/commands_0059.txt",
+      "bytes": 92800,
+      "sha256": "4387392cb24e695303f6ba00abe1a8b317f979cffda2ff0bb3742033288a5179"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0060/logs/commands_0060.txt",
+      "bytes": 92800,
+      "sha256": "d62f216ac634b7f51a225d1e0126d8105bd0d279eb99e01de28cee5cfa2ec885"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0061/logs/commands_0061.txt",
+      "bytes": 92800,
+      "sha256": "fbbfc9f04d7ec7330ac87c6b426903b879a61415502b6b02e38f7af5fd272dcb"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0062/logs/commands_0062.txt",
+      "bytes": 92800,
+      "sha256": "cb73e7e7e6e96fd75d2856e1f2b1800333fa039ee63be417b3b16dbf76f6f114"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0063/logs/commands_0063.txt",
+      "bytes": 92800,
+      "sha256": "67517ba80f25b0424a9c0fae00602aefa9c6adb331d9aeab2feb6fe53499dc8a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0064/logs/commands_0064.txt",
+      "bytes": 92400,
+      "sha256": "4c68f34077c583f78475e8c6e2e0de851fec0b7897df5729c84c2f3169f508f8"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0065/logs/commands_0065.txt",
+      "bytes": 94200,
+      "sha256": "c1743d724386f68137328a4ddfb47616455a125be41ef1bbca563e864c4012f9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0066/logs/commands_0066.txt",
+      "bytes": 94200,
+      "sha256": "9cc5f60011e757a037c2010261672751e429c0ad1123546342b557d1b68d3d37"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0067/logs/commands_0067.txt",
+      "bytes": 94200,
+      "sha256": "69df356c9487d65b29ad81b5ddff175dd4878544190e1cf1b29eacea78f69093"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0068/logs/commands_0068.txt",
+      "bytes": 93400,
+      "sha256": "af9ea9b25b6e800012aae599a0a9f9a4de40a8d409fe52deaf6e4b785dde83a1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0069/logs/commands_0069.txt",
+      "bytes": 93000,
+      "sha256": "a695cd96e7edd7b0970c844ce17e44ef423d8e82b361846abedbe6f1f8c4d04e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0070/logs/commands_0070.txt",
+      "bytes": 93000,
+      "sha256": "53bb9b040ce4ad7f22c318b18c61657ca24c8db4604552c04f65b4940e3e9090"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0071/logs/commands_0071.txt",
+      "bytes": 93000,
+      "sha256": "4d1a18101313298a38c2544d802cb8760b07a09e0020e5e1adbffc0ef840f619"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0072/logs/commands_0072.txt",
+      "bytes": 94200,
+      "sha256": "b3d23aa0c4330b7661e1537992c8922dc410c8efadfe15b95c459045952830a3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0073/logs/commands_0073.txt",
+      "bytes": 93400,
+      "sha256": "e2879c619d8eb3190f495fb0f34cbd718adf5945e81d9900b34f6b75e9372771"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0074/logs/commands_0074.txt",
+      "bytes": 93400,
+      "sha256": "e18a344fddc3f2e2e78bcc138b2e77a529ad72b78f146eea3d1ba2dbd38b80cf"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0075/logs/commands_0075.txt",
+      "bytes": 93000,
+      "sha256": "6dceff7c83e35cd63f7701e41138753b9d7015fbfd63e2a4f630f6762961a112"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0076/logs/commands_0076.txt",
+      "bytes": 93000,
+      "sha256": "73048a7dcfcec6d668c89b7684c5af4ee9388be64ef88a3353c9d3d413fba56d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0077/logs/commands_0077.txt",
+      "bytes": 93000,
+      "sha256": "8e88ab86cf9b2136ebd1c16e4be0f1080b94c96b962b05adaec0e83e2f016bf5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0078/logs/commands_0078.txt",
+      "bytes": 94200,
+      "sha256": "5b93f19c5a0e5a6c6c522059bf79f15f4d20e8df43ac7bf28fb3bd50109e6691"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0079/logs/commands_0079.txt",
+      "bytes": 93400,
+      "sha256": "a0f3916c87696e0ddfade82964e6231d02f1aa747ea3d6bb9f7ec26262949692"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0080/logs/commands_0080.txt",
+      "bytes": 93400,
+      "sha256": "7d65c93d45554837596ba19d099f13ea8e099d82137fe9f8e2dd6d4df27ba5fb"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0081/logs/commands_0081.txt",
+      "bytes": 94200,
+      "sha256": "3dfbaebbe8e6c6180da4981ff7457aaba2ef5b381f7049016d1fdea085ecade3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0082/logs/commands_0082.txt",
+      "bytes": 94200,
+      "sha256": "1d0b785faaf6d250d5fcb503d89d99d9ca31ec2d090bd182ce768c78b80d0e9b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0083/logs/commands_0083.txt",
+      "bytes": 94200,
+      "sha256": "694eeee89caed0f998dd4286788f5d1ac2812574cfdd64113f994a2f528dab6e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0084/logs/commands_0084.txt",
+      "bytes": 93400,
+      "sha256": "8db828c518749a976778ca1dcc8a6bc00140c3925bc080f6d8baf2a22875d970"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0085/logs/commands_0085.txt",
+      "bytes": 93000,
+      "sha256": "b89afb6a965bb331592bd6e73bcc97d582f64b21230e335d37996550a32a0661"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0086/logs/commands_0086.txt",
+      "bytes": 93000,
+      "sha256": "fc17a7de3ba9e4dd642d34a560a86dcb37726c55b6e7a278de8b574ae22d87fe"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0087/logs/commands_0087.txt",
+      "bytes": 93000,
+      "sha256": "f8e7ee9906b5d460acd21c32eb8f90817104d720a5ca261d0aa6b0dfa95d1a52"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0088/logs/commands_0088.txt",
+      "bytes": 94200,
+      "sha256": "ac6b94e8e092957c91c0a473ed8a9cda56f79df3b8e2cde197650c9f3290fc2c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0089/logs/commands_0089.txt",
+      "bytes": 93400,
+      "sha256": "8aea02f8f9fc8748cc8cb6b1e9daf36a39a0e2a603984738e02790bdce751c8b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0090/logs/commands_0090.txt",
+      "bytes": 93400,
+      "sha256": "5a066db7b561603ede3a3e2e92281d6d120f83aaf3575650476c56e4f42e0094"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0091/logs/commands_0091.txt",
+      "bytes": 93000,
+      "sha256": "236e70c156962f60cb5c5bceee576ad9a737aedc6e909043c92991840cccc062"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0092/logs/commands_0092.txt",
+      "bytes": 93000,
+      "sha256": "7afab4acd896773f391b8c9ad50f594f67b86ed12764bd50257eb94c5231e527"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0093/logs/commands_0093.txt",
+      "bytes": 93000,
+      "sha256": "0f429ad7cc7792a6a76c35df2fc33149fe4d58fd1eb49dfb3db2b0b9312c7912"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0094/logs/commands_0094.txt",
+      "bytes": 94200,
+      "sha256": "034bf5324fc4c70f99f23ae3d7283e517d6b9fab9c8f42fe3927a94e2ac84cf3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0095/logs/commands_0095.txt",
+      "bytes": 93400,
+      "sha256": "7fb615c1209d736532fe1d2b7c6121fc53e405753f5920559ddd6347659e5f51"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0096/logs/commands_0096.txt",
+      "bytes": 93400,
+      "sha256": "58c27ce8380be1742b01bbf8a45ee650706185138f3a97c55ad3d24310753a96"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0097/logs/commands_0097.txt",
+      "bytes": 94600,
+      "sha256": "5cd7fc7da389594e5a13dc11395b1813196303e36466483dd532e1d6080b7b87"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0098/logs/commands_0098.txt",
+      "bytes": 94600,
+      "sha256": "c37b7e2965557f6f2bf6382f3bab3bcd353803008dcb1ddbbf5bba66974b21ef"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0099/logs/commands_0099.txt",
+      "bytes": 94600,
+      "sha256": "cd3ccd3778036991e260828f737e60f6522f3035cd634873ea6ef9ca3371e724"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0100/logs/commands_0100.txt",
+      "bytes": 93800,
+      "sha256": "8f56a92c996e1931f513c5bf85e14edb4f16fc8a1fa0993945f31be321653274"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0101/logs/commands_0101.txt",
+      "bytes": 93400,
+      "sha256": "a0b54a255324ba53e43db7fc3bab1948a6a4a5f324650a0424f534991d783415"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0102/logs/commands_0102.txt",
+      "bytes": 93400,
+      "sha256": "1aaf518d02ca6776255c50870b30c40c0dac87f952d33e545747ad4d97f796e2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0103/logs/commands_0103.txt",
+      "bytes": 93400,
+      "sha256": "7671a34122a08d7501783772d256bb4e5e5d70f61625137e1d12b68a376e1bdd"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0104/logs/commands_0104.txt",
+      "bytes": 94600,
+      "sha256": "ecd95862c2998971286f0c384053ac5f9fb8d99f66a8ed6327d2ca67627df3e7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0105/logs/commands_0105.txt",
+      "bytes": 93800,
+      "sha256": "cce9c41482b34351694247f521db67456a69b956dd55aacd70ea051a43a1efaa"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0106/logs/commands_0106.txt",
+      "bytes": 93800,
+      "sha256": "ec301b7c7c8098291263f7eb8848f9bb5e518b9efd732d4d277fa8ba2ea8c2f3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0107/logs/commands_0107.txt",
+      "bytes": 93400,
+      "sha256": "56e94906c01eb1d731a58354766c8e88a21fbd6eb0599c8bae85166378789a1a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0108/logs/commands_0108.txt",
+      "bytes": 93400,
+      "sha256": "8e523ff9f3dc5b8cd46b301e49575ff2b04e9e3bf4669038870c4c9839fa9b26"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0109/logs/commands_0109.txt",
+      "bytes": 93400,
+      "sha256": "479483edcc205249d1ac96813c9fd145786dd8c6248a56ff808bbf6f1646509b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0110/logs/commands_0110.txt",
+      "bytes": 94600,
+      "sha256": "ad00473dab62ba623d3c4bc6c4629ff44d0b7fb9884b955ab16e8b4189b0cc4b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0111/logs/commands_0111.txt",
+      "bytes": 93800,
+      "sha256": "781204fe4735d77348f7e07505feefd80c01145231765d552945b30aaf676404"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0112/logs/commands_0112.txt",
+      "bytes": 93800,
+      "sha256": "6c3773166562f20790171aa26ca50ce5b5966d582ea9ab34cd0dc4bba4cc3d7d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0113/logs/commands_0113.txt",
+      "bytes": 94600,
+      "sha256": "8f710d2594ea4515007a864710a5c1ecbf737fa5e97f6a0f2c96b83e56eca305"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0114/logs/commands_0114.txt",
+      "bytes": 94600,
+      "sha256": "d4ffe01cb37e87ce3b40233bf1381eb08525408d6fb8285002f0be4a903be42c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0115/logs/commands_0115.txt",
+      "bytes": 94600,
+      "sha256": "4bcef24f7aafa439c0accc8519e76b0b2101a2a4fbd399982e564c9d76577f94"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0116/logs/commands_0116.txt",
+      "bytes": 93800,
+      "sha256": "253adbd999925d8362c2b855e8f9770f0db6c42385953038cf7776553f7f40c2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0117/logs/commands_0117.txt",
+      "bytes": 93400,
+      "sha256": "654e86be3fa447247f9ef8cb4284fbdb86925425923867f410c932efd46f7c9c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0118/logs/commands_0118.txt",
+      "bytes": 93400,
+      "sha256": "b46c4e1cd2da003b9435da90893687e744adc9fa809a8f00ac0f9f09f86df458"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0119/logs/commands_0119.txt",
+      "bytes": 93400,
+      "sha256": "99fd165697c2dcd260eaf7618cf37a11ee13b9cbe56020b100408e519f23a203"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0120/logs/commands_0120.txt",
+      "bytes": 94600,
+      "sha256": "0bcbdb43c1832ebe69ec3214a442c7def2e5effafa3f49fdf99a8a5968a7effe"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0121/logs/commands_0121.txt",
+      "bytes": 93800,
+      "sha256": "fbeafa3ac981153ea59fdcb6b731229d46943feefe496c9ea2773da746d92f3f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0122/logs/commands_0122.txt",
+      "bytes": 93800,
+      "sha256": "609ac34760c9762d1342d80e74d8e38a72f9a9534870f4f29bc70842cc564f0d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0123/logs/commands_0123.txt",
+      "bytes": 93400,
+      "sha256": "90a83901265a5bf50c19c5d5f34bcc22b194774a06bc14c781a86bb26682844a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0124/logs/commands_0124.txt",
+      "bytes": 93400,
+      "sha256": "1defd563e5031f2a4cae5c3f6b87435a7864b9e830d6e082cf0f04dd656c0ba9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0125/logs/commands_0125.txt",
+      "bytes": 93400,
+      "sha256": "ab43858e7c43e2a07b59d44a43019639df0b7ab116f386c80de304fd0daf91fb"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0126/logs/commands_0126.txt",
+      "bytes": 94600,
+      "sha256": "e7f7f33ddd41145745f8d99c1fa17c630e48405f6e07a10e8b0b202703306a4a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0127/logs/commands_0127.txt",
+      "bytes": 93800,
+      "sha256": "f0e08aa0d235ca2746c64f94861f275dcf5a3eea987a4131b2c438f541dbdeeb"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0128/logs/commands_0128.txt",
+      "bytes": 93800,
+      "sha256": "91b62e602da46e3400c411c1a1e19df493a794b6fe47aaed9b42aef57da2d093"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0129/logs/commands_0129.txt",
+      "bytes": 94600,
+      "sha256": "74d1316b6d1a26bcecf8a7980df29591857bde23de5d98bc0c60d9208dc821ab"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0130/logs/commands_0130.txt",
+      "bytes": 94600,
+      "sha256": "e0c1d18d1b4cc2720191f038f48e05278da4848f1605a396467ae18fe470f450"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0131/logs/commands_0131.txt",
+      "bytes": 94600,
+      "sha256": "d9f3bdc7bb2f202943eca7a6d292746e8c8d867ef5895cc0c86ac60cab6e33cd"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0132/logs/commands_0132.txt",
+      "bytes": 93800,
+      "sha256": "ddfc584f88b435594ea0c1d3605964cef9d7df2938eb8eba0b23634b5b560562"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0133/logs/commands_0133.txt",
+      "bytes": 93400,
+      "sha256": "d7baf51b4c106634af2011fa70be92032cefa003e5a504a562d0ae3bcd5d3a59"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0134/logs/commands_0134.txt",
+      "bytes": 93400,
+      "sha256": "869d2710293c96f113d7f43153b1c591bd603361354a70034a9de6c0dbf224b6"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0135/logs/commands_0135.txt",
+      "bytes": 93400,
+      "sha256": "351886682eb60ef397b732303d06de4c82b465d296c35332ee32b8feb2161c52"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0136/logs/commands_0136.txt",
+      "bytes": 94600,
+      "sha256": "bc01aeb558a915f4598b73a8216adbe901254ff953a4ec2bb0f11eec5c1ca5f9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0137/logs/commands_0137.txt",
+      "bytes": 93800,
+      "sha256": "3bbfc83d5266f6cbd2fec3ed47ab66fbdbd9d9db25e7fcb079e67702240fca1e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0138/logs/commands_0138.txt",
+      "bytes": 93800,
+      "sha256": "c9b93ee4ba9bba0e38f7282641d8c44ed1ee52c5a2bab2fcea98b36e0157f21c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0139/logs/commands_0139.txt",
+      "bytes": 93400,
+      "sha256": "d4dc601411ac03554fa206a76c376e60012b75e2eab6753ada8307a732ce243c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0140/logs/commands_0140.txt",
+      "bytes": 93400,
+      "sha256": "3610ca400eb2b80654bf3b76422da479dfb34c7a7cd8a22ef99a92626bd1bfe2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0141/logs/commands_0141.txt",
+      "bytes": 93400,
+      "sha256": "c6ed80ee6a8b33aa86b682d3bd1d0daabf28b80956d36f87a2ca7bc1b8779710"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0142/logs/commands_0142.txt",
+      "bytes": 94600,
+      "sha256": "651b13bf3ef73123412459f78710bbbb8152aa2ce88a8e7d985c2d445e192e4f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0143/logs/commands_0143.txt",
+      "bytes": 93800,
+      "sha256": "0f7e1cfa809bbcd85f702343a97a7e4730df71d61f84864bd04c4d0221e636da"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0144/logs/commands_0144.txt",
+      "bytes": 93800,
+      "sha256": "2aa86acd5eaf6f993304d6878e6ac1dc089186cfa9e78c28afc123ccafab5f1f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0145/logs/commands_0145.txt",
+      "bytes": 95200,
+      "sha256": "4302747f92115b35554a0aeef2482e67cb4e5fe4e46e76b29dbc08a5ce67b7ce"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0146/logs/commands_0146.txt",
+      "bytes": 95200,
+      "sha256": "8dae426b3faf3bbb78f590c037703192c39b2b11937bb9ac0ccee1f53bb1bb44"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0147/logs/commands_0147.txt",
+      "bytes": 95200,
+      "sha256": "cc80e8eeb39fbd9389e7576e32eeba0270ebc8410c3da5c277f985b414e920fa"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0148/logs/commands_0148.txt",
+      "bytes": 95200,
+      "sha256": "c964ae6d206b7fe211f6561817d3bb25e4ae8d3fcccf7150424e93cfedbac6f2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0149/logs/commands_0149.txt",
+      "bytes": 94400,
+      "sha256": "24a15896e9e8a45f468b4e5a0f51153c7e261a39e46013cd9257ca051ac65db7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0150/logs/commands_0150.txt",
+      "bytes": 94400,
+      "sha256": "78e264ede5bb2a7ae165ad031b92d83e30e250b2800d4d54639cd4ba6efa9f48"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0151/logs/commands_0151.txt",
+      "bytes": 95200,
+      "sha256": "3a0ba458f2575999872a6ec806d46e3538f5fa5b3a5bca4b768a60e228639dbf"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0152/logs/commands_0152.txt",
+      "bytes": 95200,
+      "sha256": "53e5c48093247100354e737f7a73a501567b0d3c29327e960b9738e83861f387"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0153/logs/commands_0153.txt",
+      "bytes": 95200,
+      "sha256": "bfdbf9ba0a3e3a82f60f70a6630284e58b00ae9c340d2ec925e95b573045e230"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0154/logs/commands_0154.txt",
+      "bytes": 95200,
+      "sha256": "26c51e6e23a4a341812b9b493f45b7d198e1fd62182fba1c3d41238e22908804"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0155/logs/commands_0155.txt",
+      "bytes": 94400,
+      "sha256": "20e2dac89cc7d35527b599fda6eb0195c96eba4d58c34d5b7d3e444ba8030021"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0156/logs/commands_0156.txt",
+      "bytes": 94400,
+      "sha256": "33bd9650e2e848787e6e790b1a7a3aa22e4522c373c0ecdc262b6086df33ae09"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0157/logs/commands_0157.txt",
+      "bytes": 95600,
+      "sha256": "21da4c3ab563c4e2314843ce9c579538055989085216a9a470a54a637d9b64a7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0158/logs/commands_0158.txt",
+      "bytes": 95600,
+      "sha256": "3fea28ed653b0e880c5f3c56b63813a0c24567fa6bbf66a9623b2b2984f21795"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0159/logs/commands_0159.txt",
+      "bytes": 95600,
+      "sha256": "3e84e01b3d874e81255a921c327c99aa4c6b961085915bd17a6be62388e68632"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0160/logs/commands_0160.txt",
+      "bytes": 95600,
+      "sha256": "36d70e4fab6eda55e905f544c014ba606d01e99bc9f21d6077aece7eaa2b0309"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0161/logs/commands_0161.txt",
+      "bytes": 94800,
+      "sha256": "0c8f7b213fe63e272e8ccd020d8eaf191a24f24a19444f4133bf4ffd6b101bf2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0162/logs/commands_0162.txt",
+      "bytes": 94800,
+      "sha256": "2d44b43ec20fb3b517cbc9ebb6f7f12769cf25fb397b2c873f30cdc668cddc1a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0163/logs/commands_0163.txt",
+      "bytes": 95600,
+      "sha256": "6154410e175f57c73fe5ffa13ce35a72129a4b0d5ca9652a4ba748323e5db50c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0164/logs/commands_0164.txt",
+      "bytes": 95600,
+      "sha256": "997ca5be9c05e6320538c40c6b50ae924c6f8189fef4bc90f228a12de8c8e9ac"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0165/logs/commands_0165.txt",
+      "bytes": 95600,
+      "sha256": "15de50fd287c5ac26b4bc1213b96bea57c5919c321f2942eba1e97882adc805e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0166/logs/commands_0166.txt",
+      "bytes": 95600,
+      "sha256": "2a480d8db7e60f1638483d9758ac5c165c640ec4dd1c138347844d4dcd280d1c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0167/logs/commands_0167.txt",
+      "bytes": 94800,
+      "sha256": "ab6762f075003f435b72b56b7f01ea5140f6cda1090f1dd37fa34019883b1666"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0168/logs/commands_0168.txt",
+      "bytes": 94800,
+      "sha256": "1b419b27ac5e73908ecadbee20a8e62522c89119db822fddc238398001d80662"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0169/logs/commands_0169.txt",
+      "bytes": 95600,
+      "sha256": "c42fb03c85b8d4526252d027f9f436b96d4ef1e0518fce15e8408c5f4aaa3ae6"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0170/logs/commands_0170.txt",
+      "bytes": 95600,
+      "sha256": "8bd12d3197fbb5e0b06aa54dbd883788ab93bcb99bbd4df86be78384ca26f5c1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0171/logs/commands_0171.txt",
+      "bytes": 95600,
+      "sha256": "873b0bf388e61860e068bca92121e98d3a8e68e011dbbde27aaa8487b601a18f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0172/logs/commands_0172.txt",
+      "bytes": 95600,
+      "sha256": "b98d9f98e3da01c61e250e43cafd26c7c78db14aebabd7f55b77cf0ecdde603f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0173/logs/commands_0173.txt",
+      "bytes": 94800,
+      "sha256": "f8ff41d2a6305187df02537673f4a4655b9624e47058e73d396bbec765847c94"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/slurm/new3-runs/shard_0174/logs/commands_0174.txt",
+      "bytes": 94800,
+      "sha256": "5df45ecacbc8a50d2ef2fbefcddb5576fab79b449534cdf5375b8d98f8872e7d"
+    }
+  ],
+  "shard_assembly": null,
+  "inputs": [
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_01_patch_embed_proj_conv1.npy",
+      "bytes": 131072128,
+      "sha256": "dfb0805806237593b123c178f6b55bd4c178e840c956c3c5846dad99366054f6"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_02_patch_embed_proj_conv2.npy",
+      "bytes": 262144128,
+      "sha256": "987c312ef066e71d3785653c419d3450ddfa86076c7d16cb51277d6babbf54b3"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_03_patch_embed_proj_conv3.npy",
+      "bytes": 131072128,
+      "sha256": "4da4d711612f175cd71d47078dfaaa9be40499095a5ce80c974374a637981e73"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_04_patch_embed_rpe_conv.npy",
+      "bytes": 65536128,
+      "sha256": "567a112e3b6bc9e2e89590ec748627eb9a77c81aa7bde2b18b2bcddf57d65561"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_05_block_0_attn_q_conv.npy",
+      "bytes": 65536128,
+      "sha256": "4cadb4a7b5146c051f4b1a6bc299909b15c5fc613eb0a2ff6b0ff51202539217"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_06_block_0_attn_k_conv.npy",
+      "bytes": 65536128,
+      "sha256": "4cadb4a7b5146c051f4b1a6bc299909b15c5fc613eb0a2ff6b0ff51202539217"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_07_block_0_attn_v_conv.npy",
+      "bytes": 65536128,
+      "sha256": "4cadb4a7b5146c051f4b1a6bc299909b15c5fc613eb0a2ff6b0ff51202539217"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_08_block_0_attn_proj_conv.npy",
+      "bytes": 65536128,
+      "sha256": "e9d34280f07ee87bbe5a505e78dc0c905bc0ba6aa3f762c658b25360805ae64b"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_09_block_0_mlp_fc_conv1.npy",
+      "bytes": 65536128,
+      "sha256": "37da56d17f8808465c5f26d94cae3accebdc168788b3e0262035fe3383c1aa9f"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_10_block_0_mlp_fc_conv2.npy",
+      "bytes": 262144128,
+      "sha256": "feac5f33b10c4913fc061c51ec8d7acbee9fbf940a170e075bbb4b96948d00b8"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_11_block_1_attn_q_conv.npy",
+      "bytes": 65536128,
+      "sha256": "9c93be11c3addf496bdd5bb4dc6f55ab87bf791cdfd57ca8b4829a61f9c90264"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_12_block_1_attn_k_conv.npy",
+      "bytes": 65536128,
+      "sha256": "9c93be11c3addf496bdd5bb4dc6f55ab87bf791cdfd57ca8b4829a61f9c90264"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_13_block_1_attn_v_conv.npy",
+      "bytes": 65536128,
+      "sha256": "9c93be11c3addf496bdd5bb4dc6f55ab87bf791cdfd57ca8b4829a61f9c90264"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_14_block_1_attn_proj_conv.npy",
+      "bytes": 65536128,
+      "sha256": "771eb7b55a0459038dbc87c46e719d497e938e3a0f02e7ec502034abe55c72bf"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_15_block_1_mlp_fc_conv1.npy",
+      "bytes": 65536128,
+      "sha256": "0c2f5e5efb37b03db97a490b5b8ffb079ec217045a04a72b1407b41e57e9c1c6"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/layer_16_block_1_mlp_fc_conv2.npy",
+      "bytes": 262144128,
+      "sha256": "842f1673e7603cd3ec1128e9c2d78db31bdab454a22ae61b2f789a6f029500c3"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/A04/sdt_2_512_T4_n500/meta.json",
+      "bytes": 9861,
+      "sha256": "1bad6115072e89f3ae0fee5244c943525aa928ad5b17b910d8da68d947033602"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_01_core_layer1_0_conv1.npy",
+      "bytes": 131072128,
+      "sha256": "1c396efd3f297c828e11db23b427b774dc701c417d6f5b2a987f64bc5e1bb07f"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_02_core_layer1_0_conv2.npy",
+      "bytes": 65536128,
+      "sha256": "6667cba2799f9f74b66b9e68648bbbbd3bec8ea35ab6e4954d5709b2029c09d8"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_03_core_layer1_0_shortcut_0.npy",
+      "bytes": 131072128,
+      "sha256": "1c396efd3f297c828e11db23b427b774dc701c417d6f5b2a987f64bc5e1bb07f"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_04_core_layer1_1_conv1.npy",
+      "bytes": 65536128,
+      "sha256": "de5edbf31378bad3df436c55573f9ca6bb1b166e93f60bd2aa868e4534e62994"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_05_core_layer1_1_conv2.npy",
+      "bytes": 65536128,
+      "sha256": "042a20dd5c00e659ff5105664192916384112f96a3f6f5b09e4f55dde3d2bc31"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_06_core_layer1_2_conv1.npy",
+      "bytes": 65536128,
+      "sha256": "a96b5bc52bec13063e7cc1aca60df2ff338937ab38c9a8e23cebf67d0a821096"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_07_core_layer1_2_conv2.npy",
+      "bytes": 65536128,
+      "sha256": "feb0d8e41995c153c64bb0b5ff27ca6cc9014cbc3d07ee444e389ecfd157cefb"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_09_core_layer2_0_conv2.npy",
+      "bytes": 32768128,
+      "sha256": "da88f5511c3876180aa44b5921e6c5dc2f5da4938024e732bb34b14c8d364dbe"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_11_core_layer2_1_conv1.npy",
+      "bytes": 32768128,
+      "sha256": "236df9a6391565dc7772ebc5a8b948e7517031dc7f3a469b5c63ad1a179550f4"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_12_core_layer2_1_conv2.npy",
+      "bytes": 32768128,
+      "sha256": "4a8878575ecb9dbe39bf77f2af94539b1736fa6a01a6e1bb2740ae7d7aa214fe"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_13_core_layer2_2_conv1.npy",
+      "bytes": 32768128,
+      "sha256": "b6ca537272cb72bae65cc6eb477618236fe7ed00f3ce00152d6b4509b2974ba6"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_14_core_layer2_2_conv2.npy",
+      "bytes": 32768128,
+      "sha256": "51806698e07b4acb906b67b2612b3f8727b3bf981bab1707a920ac329aae544b"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_16_core_layer3_0_conv2.npy",
+      "bytes": 16384128,
+      "sha256": "02dc1c74d472c0de4542cdc3b8174ef36a59162cd2aeba58fb511af83f16dad6"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_18_core_layer3_1_conv1.npy",
+      "bytes": 16384128,
+      "sha256": "e5126305912903ce1087ed8c460bf72d295ba8afb4048a1e5786d6cd14c304f0"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/layer_19_core_layer3_1_conv2.npy",
+      "bytes": 16384128,
+      "sha256": "bde677e4a9fb5943f6cca80589aa42cacac06df3aa86c049ff509f575ba3894d"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_resnet19_T4_n500/meta.json",
+      "bytes": 10525,
+      "sha256": "fcfb5c73d98f265992c2b600a27bda69a703ebc7bbf0c9c16be326d11d41ef94"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_01_core_features_3.npy",
+      "bytes": 131072128,
+      "sha256": "07a4fd23f950816d4392ef3b403de2d3be8c5974feac599a40a9b8d2494a0a6b"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_02_core_features_7.npy",
+      "bytes": 32768128,
+      "sha256": "b65e41db5d45ddd25c42042c1db34639434fbc496d7ce67c1eb9c006c84325eb"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_03_core_features_10.npy",
+      "bytes": 65536128,
+      "sha256": "81a9733c28b55f2c2e2c8d532fbcc9a7c0b230ec6d5263b329c0c96ab1389853"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_04_core_features_14.npy",
+      "bytes": 16384128,
+      "sha256": "a93c0a3813f26b1286f1229fece6b0a2674e3ab712a901721ea2a88cc2142053"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_05_core_features_17.npy",
+      "bytes": 32768128,
+      "sha256": "bb3c1da82d228be27f9e2a2a69498c6ed32a99622396596affce21b63dfa19a2"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_06_core_features_20.npy",
+      "bytes": 32768128,
+      "sha256": "8cb54ac8f442370d6810dad4bac3c4341f185e472aaabd4c1fb52061e11bc4c2"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_07_core_features_24.npy",
+      "bytes": 8192128,
+      "sha256": "4569ee0fd6292a0530a6691a053a19510120841c4adea4d6e7e20ac7e7c5d2a7"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_08_core_features_27.npy",
+      "bytes": 16384128,
+      "sha256": "591c5c8c1ef1d578724096dcf934be347d689d2af20e39be2c27499f6f3fbbab"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_09_core_features_30.npy",
+      "bytes": 16384128,
+      "sha256": "237980519112a35dddd4227ce53e03cc20b1c3e72a9ecf864013e2b9bc2b69bd"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_10_core_features_34.npy",
+      "bytes": 4096128,
+      "sha256": "b5b0cfe4fe4b31db1c254e52d676bf7bb7e5a690f4043ff70a0f726e7f00ca4d"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_11_core_features_37.npy",
+      "bytes": 4096128,
+      "sha256": "968c6a5ea826bfe69f57f7f2004ed6a9f8a3b21bda261c2aa0dfef44bef1af24"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_12_core_features_40.npy",
+      "bytes": 4096128,
+      "sha256": "7786f627551b2fc07386f8fbcddf20d05c91e1d0ec51281d845067081ac76103"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/layer_13_core_classifier.npy",
+      "bytes": 1024128,
+      "sha256": "06d7ef4011aa5450c68bb4147a3a274b6ba707f6cac908ba229859ed3b4ff798"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/B09/loas_vgg16_T4_n500/meta.json",
+      "bytes": 9163,
+      "sha256": "194bebd658ca194675d63f32fa723fe0deea259b7619ae93754d95e091523707"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0.npy",
+      "bytes": 1310720128,
+      "sha256": "60e35fa4532f6be8af4ac7402231f0c5a064a09c41be0bc62813212a47afb377"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_02_core_block3_0_0.npy",
+      "bytes": 655360128,
+      "sha256": "37a3d5fcc06d20e1efffe4f265bda1f462a6e356e42054dc573ffd3c58aaf473"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0.npy",
+      "bytes": 327680128,
+      "sha256": "bc243a2f96cc0c8e61eae84ba4543f88636f880c58926bb0db32b4102367944c"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_04_core_block5_0_0.npy",
+      "bytes": 163840128,
+      "sha256": "f38f9e87a9dcb3cdae554e3af70c5ca2fd559bac212b58da3b26698d7a4f60a8"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_05_core_others_5.npy",
+      "bytes": 10240128,
+      "sha256": "a18683cfb644c880ba69cfaeb990952836ba68a580fd233024d13024fdad18be"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_06_core_others_8.npy",
+      "bytes": 5120128,
+      "sha256": "509a3b790817ac3badf8d7385c588a86060de93d8ff472e83ae30815e8b61ad3"
+    },
+    {
+      "path": "/lustre/fs1/home/ya867177/data/input_trace_delta/C01/sma_azo_vgg_cifar10_dvs_T10_n500/meta.json",
+      "bytes": 10650,
+      "sha256": "bb0122f68933c524580ef3e818c1edfffd131d6678a3241b9f9692d7c8a2024b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/arch/spinalflow_1node_n128.yaml",
+      "bytes": 612,
+      "sha256": "4a9808efe900a1c8a746cdb76df7f62f9dd64ca0dad860376e1e67a6174c9c56"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/arch/spinalflow_1node_n256.yaml",
+      "bytes": 613,
+      "sha256": "fb26b9b125cf05de7c3a4430dd35302cbbe890a557df574d3f89c1bbbdb00b24"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/arch/spinalflow_1node_n32.yaml",
+      "bytes": 609,
+      "sha256": "8503f62fe42bb581c1b6a93e1b64260cf0ff0940cfa8a2d963fecf8582ae8a33"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/arch/spinalflow_1node_n512.yaml",
+      "bytes": 613,
+      "sha256": "fae0627bf5146d53671cdf2c27f52cef2fa3a153ce583d85805f2062f40d666b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/arch/spinalflow_1node_n64.yaml",
+      "bytes": 609,
+      "sha256": "5155a0aad91f7e20b1a5a1f383b4901600cfacc671ca93a84fd4be33b8452b54"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/manifest.json",
+      "bytes": 6168,
+      "sha256": "829cf5d78971b549bce70705ed1d85cc6470d32040dbe35c58f64a657bb57e17"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_02_core_layer1_0_conv2.json",
+      "bytes": 1564,
+      "sha256": "ce7ef2993937d187bcdb17014cbe2d377f126e2b03124bfb224e0c20344eda87"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_04_core_layer1_1_conv1.json",
+      "bytes": 1564,
+      "sha256": "477ddbdb3dc4102a495ce7ad2f5db0d78e8a9d6843ddf924a1c36c9ec385d8c2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_05_core_layer1_1_conv2.json",
+      "bytes": 1564,
+      "sha256": "5ef96a42a403e8b04aace1e054582e3a55e08c0cfc1f6fe84d478340fe2d7ad0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_06_core_layer1_2_conv1.json",
+      "bytes": 1564,
+      "sha256": "2cabfacf4917ed677865c4ded4f2f119365b0ddf7d3eafee431e21ae6a41dde2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_07_core_layer1_2_conv2.json",
+      "bytes": 1564,
+      "sha256": "9efde0559bc42964eff030f7fb57f7e212fedc4da26f5a87a20d96076507e390"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_09_core_layer2_0_conv2.json",
+      "bytes": 1558,
+      "sha256": "019af670797730ccdc2175d685953933939c77e28e6bbf88cde2b090ec3fdd79"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_11_core_layer2_1_conv1.json",
+      "bytes": 1558,
+      "sha256": "873efa442303c6118ae162d13ce05092bafc2f926afeeef68349771414012635"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_12_core_layer2_1_conv2.json",
+      "bytes": 1558,
+      "sha256": "302e0435899c669105fdded77ac1d055624c68c72f147f2c7fb95f1d4ef9b975"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_13_core_layer2_2_conv1.json",
+      "bytes": 1558,
+      "sha256": "2977e591f12739645571d134fdc1c7f5be2c793bbbfc6c930fb03f14b7f0bd2e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_14_core_layer2_2_conv2.json",
+      "bytes": 1558,
+      "sha256": "75f53fb5c700789acfd90c31fedc81c629b1e7d776fa33ff4c69adea41aebdd3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_16_core_layer3_0_conv2.json",
+      "bytes": 1557,
+      "sha256": "1cf05b5086df0cd7be07a7ad10d1358139efda55e82de847266d8a31f71de7cc"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_18_core_layer3_1_conv1.json",
+      "bytes": 1557,
+      "sha256": "b572bf58608436490fde9314eb0fb28d9f3207bf14418efe5b2a2a399b750afa"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_resnet19_T4_n500/layer_19_core_layer3_1_conv2.json",
+      "bytes": 1557,
+      "sha256": "d6c33ca06c176d5505dc8698c46332d938bf8726670cfb1c4e68c41385abad85"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_01_core_features_3.json",
+      "bytes": 1554,
+      "sha256": "315a36220af6d433661b82dc7575b625965a333030b56553c2b5861edf6d825c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_02_core_features_7.json",
+      "bytes": 1555,
+      "sha256": "dd4969d05272645c56a690436ef544fa6cf3e1e6d4ba13bdd3452335c05fd22b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_03_core_features_10.json",
+      "bytes": 1558,
+      "sha256": "80d23fe1e5a6858098d47df0fbe657802996d4c7065e2e9af25ba07a9d0c0751"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_04_core_features_14.json",
+      "bytes": 1552,
+      "sha256": "7d482326b2223018cb5fa7ab85170ff3fdd49cd28f3fb0dac27a43c9f979edf2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_05_core_features_17.json",
+      "bytes": 1552,
+      "sha256": "ba3c48271106db758694911c580d6861198a746b81dd70cb07a3bd0872deb484"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_06_core_features_20.json",
+      "bytes": 1552,
+      "sha256": "cf70cad4e73e46ee637ec95d02092a80316ae46a414119f5dbaecd03c8316aff"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_07_core_features_24.json",
+      "bytes": 1551,
+      "sha256": "9ba01b15ee6bf38b7f14c3466a820eedcf92df5a3ecd6e927077c902966b8a5c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_08_core_features_27.json",
+      "bytes": 1551,
+      "sha256": "343b73a3e754b41bb0334f4c501a9e23a7bcc005c77a09b9acfdb0c0e5ed9f72"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_09_core_features_30.json",
+      "bytes": 1551,
+      "sha256": "d62fa7893eb019e9142b4f2d3489beee7cb5b203f20ceb9c8eabe14e31f5a22e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_10_core_features_34.json",
+      "bytes": 1551,
+      "sha256": "4e68e9979023868abec175803832e58405cd03d4440c4c60748d7ba2fe3c3d42"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_11_core_features_37.json",
+      "bytes": 1551,
+      "sha256": "a291f0c664bfa8cad11e7baf94d1335f58e786b445fa203119a13a880327927b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_12_core_features_40.json",
+      "bytes": 1551,
+      "sha256": "d7c97931edf25a3120b23eb20daa77106f6d75e068ae06f12e3ab8b448069d0a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/loas_vgg16_T4_n500/layer_13_core_classifier.json",
+      "bytes": 1547,
+      "sha256": "97326404dedf9374e65aaf049abf1edb0621f7a3f3b492868c108bb5a43103da"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_02_layer1_0_conv2.json",
+      "bytes": 1552,
+      "sha256": "0fb61ae99e723f2ad8d13c482b180a13f59a6dd73d69c9ca67268ab55ece390d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_04_layer1_1_conv1.json",
+      "bytes": 1552,
+      "sha256": "b409d0377f960ea6f5ef2a17ee2bbb2b2758f42e14114075acb0dd6539fe3fc0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_05_layer1_1_conv2.json",
+      "bytes": 1552,
+      "sha256": "4fc6523d13eb16ad8e0500c68360b33ea82058988431ad3b6e0e2ad724194ed7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_06_layer1_2_conv1.json",
+      "bytes": 1552,
+      "sha256": "2a2e327cfb21d7f82f813c73480293f2034625e8b6751608963ddb7190d685dd"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_07_layer1_2_conv2.json",
+      "bytes": 1552,
+      "sha256": "02c71e9c12a52cc612656d2c16710cc919874ba1d2208fb8d2d535e29f6c1278"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+      "bytes": 1546,
+      "sha256": "a9c3280307ef83fc8d6fe735a19cdb0a305c619b300f328ca03f9b4d2da81400"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_11_layer2_1_conv1.json",
+      "bytes": 1546,
+      "sha256": "0899534af8735440a165774c25560f6d178230fe5d61e8cfc2b2fde7bd8e26c9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_12_layer2_1_conv2.json",
+      "bytes": 1546,
+      "sha256": "28da1e5352b8dd6f71f1b946f444511602588c7f726721bfce73f73691622041"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_13_layer2_2_conv1.json",
+      "bytes": 1546,
+      "sha256": "9cc2688c443d7b0cac8e1d6f46df0db8d66c08cd96d122ebbad824311ea6efee"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_14_layer2_2_conv2.json",
+      "bytes": 1546,
+      "sha256": "384ade81df7490aea536d8cde1b521f273087e8473735f16a3b9e96e9ec93f7f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "6e97ff8538a7bc694b440d48fd89b99bdd67ee4746d9456c0a8ca4dd7ca7080d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_18_layer3_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "a9beb79aceec7c70f630de5723cf7023d9851695e08fcdc6a697bdd463522fa0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/resnet19_T4_n5/layer_19_layer3_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "ad2c1a985314fb336be969a69c019091196b565c79530e991d8c8c343b7a6456"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_01_patch_embed_proj_conv1.json",
+      "bytes": 1562,
+      "sha256": "6d248296ce87027393b6e7be4cc3e6dee7b9ec781b6d7922a4553f4d300ef218"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_02_patch_embed_proj_conv2.json",
+      "bytes": 1564,
+      "sha256": "1f8535668abb7e38b37ab3b2dc98b22c0839f9752b6e4496ebcd5effc8820f93"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_03_patch_embed_proj_conv3.json",
+      "bytes": 1564,
+      "sha256": "30430271f8c5557b176b8eb049a06b1e5ac07ed7d4b9a393437a0e89e990e1e1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_04_patch_embed_rpe_conv.json",
+      "bytes": 1555,
+      "sha256": "21420977f39e401894ebd86d009425292ecd2aa21410ddb1d581d142caea8342"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_05_block_0_attn_q_conv.json",
+      "bytes": 1554,
+      "sha256": "9f839cdb70ae8e2a2e01650ccc3ecfdb8511395f26663ace9da33c59506f7202"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_06_block_0_attn_k_conv.json",
+      "bytes": 1554,
+      "sha256": "a35ab575a716240fb6452b7925a70e1b006480caa994451f952ea0a6e292e8cf"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_07_block_0_attn_v_conv.json",
+      "bytes": 1554,
+      "sha256": "841c78ab213f7f9fdd9880b01f4a063fba1dd6729d0f29b772319a5a2f67ebc4"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_08_block_0_attn_proj_conv.json",
+      "bytes": 1557,
+      "sha256": "b0abd834a8ffba17e2c26a387c18a521008bf558fceecf38055c80d4e690341e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_09_block_0_mlp_fc_conv1.json",
+      "bytes": 1559,
+      "sha256": "3e91218a3046feb8c6e721a5e8d61217a621a35f860fdd118617367c08477b19"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_10_block_0_mlp_fc_conv2.json",
+      "bytes": 1557,
+      "sha256": "ebb10b164fd6f812e78c53a5f116873a39d8b0938caa77cc75364b01e9f5c969"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_11_block_1_attn_q_conv.json",
+      "bytes": 1554,
+      "sha256": "c122461bafd8bfb2f4e67262677c98e70e8b648d8101278bfb0f6eef4bede5d2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_12_block_1_attn_k_conv.json",
+      "bytes": 1554,
+      "sha256": "06589b2adfddc5d0314118d0d3654a453c8b782c5fad2b4d8f3b60943c02b6ad"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_13_block_1_attn_v_conv.json",
+      "bytes": 1554,
+      "sha256": "5da7122cf7d01ce035a08eb82f1ef437bc55b2c854991556f9cc41e3c4679872"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_14_block_1_attn_proj_conv.json",
+      "bytes": 1557,
+      "sha256": "df1a4e711f939fee184400b2edd39e443cbfa98790ea0f96930c1e3cd43064c6"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_15_block_1_mlp_fc_conv1.json",
+      "bytes": 1559,
+      "sha256": "8a34ad0d20dc3d246986f856dc1f727641b8ffa5006b9a4b6685286a97fe3f48"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sdt_2_512_T4_n500/layer_16_block_1_mlp_fc_conv2.json",
+      "bytes": 1557,
+      "sha256": "c37727419f06cf4026a5894cbb5616a5365a15564272f3a24e2fe0b7baee94dd"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0.json",
+      "bytes": 1572,
+      "sha256": "8d27b879d847712686e28625f656cc1500270b6a581fdb4d42abffde35ffccef"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_02_core_block3_0_0.json",
+      "bytes": 1574,
+      "sha256": "b8cfeb72c9472aa3a3edf0832246b386ca366b5efbb0c75849065e511ea4de9f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0.json",
+      "bytes": 1574,
+      "sha256": "7d29f4d3d3dc1879dceb110443d12c9a702a16053893d0adc7ceff6dbaa02e02"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_04_core_block5_0_0.json",
+      "bytes": 1567,
+      "sha256": "7eb3d755cb29494419116d2a710c103d52a13a96c6179048d5da36c72578d5ee"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_05_core_others_5.json",
+      "bytes": 1566,
+      "sha256": "85f0d6da9399a859199c751c4c0c036271592ccd52de3ede32654356039eadd7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_06_core_others_8.json",
+      "bytes": 1563,
+      "sha256": "362d6ca95813742d6a69adc37ec9f9984d04ad95859488569dce34a1fbf8c293"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_01_features_3.json",
+      "bytes": 1542,
+      "sha256": "abfab07832cea18d4ec840d38e8f48c4df78f41f03690397367e913ba3993450"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_02_features_7.json",
+      "bytes": 1543,
+      "sha256": "6fbe3b5d7e7555499a33f7efaadcfb42693abb43b5d76ab4d4e1ba0d6b24a06e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_03_features_10.json",
+      "bytes": 1546,
+      "sha256": "a61fb67ddf1b808323527f9941bb7c50083168b2e4632103c114c56d372ffd52"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_04_features_14.json",
+      "bytes": 1540,
+      "sha256": "fbf5157d6d8a938cdeb87e87e0be88633da97b0407e81f78c38c76aa44ce92b1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_05_features_17.json",
+      "bytes": 1540,
+      "sha256": "b91f88b0c1b95ec41a1601852bd9087e4cb1efdc97ad799db9ab4b62bcbad066"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_06_features_20.json",
+      "bytes": 1540,
+      "sha256": "e8fd22c4e5125f6596383855126bf28a00720941c775ba03213ee8e150113e22"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_07_features_24.json",
+      "bytes": 1539,
+      "sha256": "8d37775307c3565128de173320cc79261d31c3e49424e95ec7d5f4433a67ed4a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_08_features_27.json",
+      "bytes": 1539,
+      "sha256": "aacf1c6c2fe1ce87f4d9da752f2873225ed1f4d2aa36972d88d393dba1d63d56"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_09_features_30.json",
+      "bytes": 1539,
+      "sha256": "0b72bf51285a4232f7e2361a10031bec2eed92422d17b72b6ffc90cb8fa10770"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_10_features_34.json",
+      "bytes": 1539,
+      "sha256": "ed7ed60b353ac0e408a23abff41f64bb2d3c378ecfa7fb124b73c04dc898f93a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_11_features_37.json",
+      "bytes": 1539,
+      "sha256": "6e5dd2398fbdd1a3f2cc031548b05199c7e9a1da8003eaf8cd93c48dff4e266f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n128/spinalflow/vgg16_T4_n5/layer_12_features_40.json",
+      "bytes": 1539,
+      "sha256": "140877ea2ace074fd44373ef1a7729bcbe883e61b75b950a68872679f966399d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_02_core_layer1_0_conv2.json",
+      "bytes": 1564,
+      "sha256": "ce7ef2993937d187bcdb17014cbe2d377f126e2b03124bfb224e0c20344eda87"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_04_core_layer1_1_conv1.json",
+      "bytes": 1564,
+      "sha256": "477ddbdb3dc4102a495ce7ad2f5db0d78e8a9d6843ddf924a1c36c9ec385d8c2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_05_core_layer1_1_conv2.json",
+      "bytes": 1564,
+      "sha256": "5ef96a42a403e8b04aace1e054582e3a55e08c0cfc1f6fe84d478340fe2d7ad0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_06_core_layer1_2_conv1.json",
+      "bytes": 1564,
+      "sha256": "2cabfacf4917ed677865c4ded4f2f119365b0ddf7d3eafee431e21ae6a41dde2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_07_core_layer1_2_conv2.json",
+      "bytes": 1564,
+      "sha256": "9efde0559bc42964eff030f7fb57f7e212fedc4da26f5a87a20d96076507e390"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_09_core_layer2_0_conv2.json",
+      "bytes": 1557,
+      "sha256": "6cd603bfe4f9218712e755e4199138fee654a46267e0a1117b5809c6343253ca"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_11_core_layer2_1_conv1.json",
+      "bytes": 1557,
+      "sha256": "d7585dbec33bbbd8004e9d6131c8b5310a314c2b6c1aefc27d246e0b05b72571"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_12_core_layer2_1_conv2.json",
+      "bytes": 1557,
+      "sha256": "dddc054971a1baa2e3ee2f243d73c4557217427c26675bb30a04c1dee12a9edc"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_13_core_layer2_2_conv1.json",
+      "bytes": 1557,
+      "sha256": "e8e38bcc55300c6120440ef0ecbdebd60c0a9cd583007ce414bf5f4e90ccd9f9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_14_core_layer2_2_conv2.json",
+      "bytes": 1557,
+      "sha256": "f1f30c3e37a7c8a291adcf78d72f6001a1da55131c4dbcec28c5e3828063035e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_16_core_layer3_0_conv2.json",
+      "bytes": 1557,
+      "sha256": "b00d1f34c6d3c4538932664e2f0b0d76403fe89d5ab5c54b0c88dce2a09d60eb"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_18_core_layer3_1_conv1.json",
+      "bytes": 1557,
+      "sha256": "73e20b39e676ff79918b9cb3827a1d0a12dafb2bacbba5af5afde0d64f7b18e3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_resnet19_T4_n500/layer_19_core_layer3_1_conv2.json",
+      "bytes": 1557,
+      "sha256": "59e51c1a33aae375ccd78ade05542e5ba713e84c1e80c18b5cf25cf050e87767"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_01_core_features_3.json",
+      "bytes": 1554,
+      "sha256": "315a36220af6d433661b82dc7575b625965a333030b56553c2b5861edf6d825c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_02_core_features_7.json",
+      "bytes": 1555,
+      "sha256": "dd4969d05272645c56a690436ef544fa6cf3e1e6d4ba13bdd3452335c05fd22b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_03_core_features_10.json",
+      "bytes": 1558,
+      "sha256": "80d23fe1e5a6858098d47df0fbe657802996d4c7065e2e9af25ba07a9d0c0751"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_04_core_features_14.json",
+      "bytes": 1551,
+      "sha256": "65f0ca4d07c021a01f597fb9739f85699b2943c8a6538badd70c0b6e50dc8f02"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_05_core_features_17.json",
+      "bytes": 1551,
+      "sha256": "2496be0daaee76487c6a6c0996e1ef0af1b5ae51e1f4c4a85bbce16d63fd8213"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_06_core_features_20.json",
+      "bytes": 1551,
+      "sha256": "5bdecb1b4773a8a8f8732549eea9b82de35f21ae28fb695e11e40b900933fd83"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_07_core_features_24.json",
+      "bytes": 1551,
+      "sha256": "4f8bc270632aeaa488f0c914bb4c5ffb36da093eb2a12c0783e3d15bea6b6d04"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_08_core_features_27.json",
+      "bytes": 1551,
+      "sha256": "eeef3c1965650b80814c05fa87e712685ec9571543a30ddf6050d6dbfcb28ea1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_09_core_features_30.json",
+      "bytes": 1551,
+      "sha256": "7bbb6b6b09408f8037dcc5d2b07b110091eb33e3d8af67fde719dc0337d3bfb7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_10_core_features_34.json",
+      "bytes": 1550,
+      "sha256": "6affbe57a4f4bb1eb710d930bf6ff91c9d745522aeb2c4548fcef7a62508bc0d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_11_core_features_37.json",
+      "bytes": 1550,
+      "sha256": "a9e815a47efabafa5a2f5c912b6e4159722ace52453bec9000350527037ed92b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_12_core_features_40.json",
+      "bytes": 1550,
+      "sha256": "0722a722fb1b01fd3b6c4a71f9abe38cb992e2741c82e8c9a89a14cdc8c3bbab"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/loas_vgg16_T4_n500/layer_13_core_classifier.json",
+      "bytes": 1547,
+      "sha256": "97326404dedf9374e65aaf049abf1edb0621f7a3f3b492868c108bb5a43103da"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_02_layer1_0_conv2.json",
+      "bytes": 1552,
+      "sha256": "0fb61ae99e723f2ad8d13c482b180a13f59a6dd73d69c9ca67268ab55ece390d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_04_layer1_1_conv1.json",
+      "bytes": 1552,
+      "sha256": "b409d0377f960ea6f5ef2a17ee2bbb2b2758f42e14114075acb0dd6539fe3fc0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_05_layer1_1_conv2.json",
+      "bytes": 1552,
+      "sha256": "4fc6523d13eb16ad8e0500c68360b33ea82058988431ad3b6e0e2ad724194ed7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_06_layer1_2_conv1.json",
+      "bytes": 1552,
+      "sha256": "2a2e327cfb21d7f82f813c73480293f2034625e8b6751608963ddb7190d685dd"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_07_layer1_2_conv2.json",
+      "bytes": 1552,
+      "sha256": "02c71e9c12a52cc612656d2c16710cc919874ba1d2208fb8d2d535e29f6c1278"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "c0fa334759ab7661cfd41368fc11ad639dcb411acb94dd591a9f7d46ae7e32c1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_11_layer2_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "8dc09e8e5328a9150cb7b6c6f92ec25459772833d8d62a2e690d5ba927b78fc7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_12_layer2_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "1b8abc24ac464326bafca4c550b846c31e39c04e8d975b41dfecc2aebd2a4a9b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_13_layer2_2_conv1.json",
+      "bytes": 1545,
+      "sha256": "309245651c942f5ee8491122f10231336f6592b6b06653d194803132e5647286"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_14_layer2_2_conv2.json",
+      "bytes": 1545,
+      "sha256": "a362127ce376f6d5bf91e1057923a9613d3d02366d8bc0f6b7830952250ae8f9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "34a7cf8b3c006f71d7c994ab35bde909669ac4086ef3f6517551fb8ce14fdf27"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_18_layer3_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "cc9c12aee58e53c5aa5e19742c141443cf684c6074ef217455e77bf92d881d74"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/resnet19_T4_n5/layer_19_layer3_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "eb0b895b3a64ff98f3641c3ee5795bf2808c7d6f0c2e62b330bd55b16abb1fc5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_01_patch_embed_proj_conv1.json",
+      "bytes": 1562,
+      "sha256": "6d248296ce87027393b6e7be4cc3e6dee7b9ec781b6d7922a4553f4d300ef218"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_02_patch_embed_proj_conv2.json",
+      "bytes": 1564,
+      "sha256": "aed9736f0d67e2625a033c89dab54331c2c49da48d6c6ea25c583c77197b1f28"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_03_patch_embed_proj_conv3.json",
+      "bytes": 1563,
+      "sha256": "06ff30646370f0f75042e5037a6d8c6b5b7850a038d782331385046aeb960ff7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_04_patch_embed_rpe_conv.json",
+      "bytes": 1555,
+      "sha256": "3115f7b6776a0cac23e827249e54350cf85a68040630e39a8f5d3b6475607390"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_05_block_0_attn_q_conv.json",
+      "bytes": 1554,
+      "sha256": "4d12df70bf404407e76fd1a5cb229d3eeec5781ad5a2e642963411798726acd9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_06_block_0_attn_k_conv.json",
+      "bytes": 1554,
+      "sha256": "293de8223d77b4d51cb71c1db3f6e056015252813c58dec2d51a244ddd67c7d0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_07_block_0_attn_v_conv.json",
+      "bytes": 1554,
+      "sha256": "4fdd75479b6267b2dbec0965d368081390193ee44398226b6ce086fddb8fd738"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_08_block_0_attn_proj_conv.json",
+      "bytes": 1557,
+      "sha256": "e8c304321210da670eeaaac832c2f8747063a982e87a09ff0f0ec9e6ef637432"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_09_block_0_mlp_fc_conv1.json",
+      "bytes": 1556,
+      "sha256": "eb4f3d03e9d2399f5fb4901572e8d2f81d726325950235dacfaf77667731d7fe"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_10_block_0_mlp_fc_conv2.json",
+      "bytes": 1557,
+      "sha256": "fa1863720e93c29648902b5969eb3040a9aa9f7b2eb5bb607818c6928d28cb48"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_11_block_1_attn_q_conv.json",
+      "bytes": 1554,
+      "sha256": "9d738089cdfe714bba72e2ece6b530a8374350d0edf45168c7b9fb4665e40c39"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_12_block_1_attn_k_conv.json",
+      "bytes": 1554,
+      "sha256": "7066cf9f687d70ae862f7995b9c26c1546fc4bf3ac10c65bb4122923b31412b1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_13_block_1_attn_v_conv.json",
+      "bytes": 1554,
+      "sha256": "4ef45854cf42b64509e867a784ee3f15b804b8c8642206103c441c209ae16d23"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_14_block_1_attn_proj_conv.json",
+      "bytes": 1557,
+      "sha256": "a014d37668e57692ec5851dcfafa78767c2ca3a1f131253426ea546ac383b3d2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_15_block_1_mlp_fc_conv1.json",
+      "bytes": 1556,
+      "sha256": "1348cdc60921f4ccbbfcb5ce11413a150b5112f723e8bade7626fdc385a15b09"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sdt_2_512_T4_n500/layer_16_block_1_mlp_fc_conv2.json",
+      "bytes": 1557,
+      "sha256": "3a3ac1f7ae0a234dff5eed365d9a084e163f91440ce6b1385279e7147b69abae"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0.json",
+      "bytes": 1572,
+      "sha256": "8d27b879d847712686e28625f656cc1500270b6a581fdb4d42abffde35ffccef"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_02_core_block3_0_0.json",
+      "bytes": 1574,
+      "sha256": "7942a4c0038bcc5bbed14e95d1acbfb0915e45997a93dad6ca1f3b240586e162"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0.json",
+      "bytes": 1573,
+      "sha256": "ee2193ae9ece81cb7fe7f1fb251f65ade2d20e775daa1445e3e192e6d2834c3a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_04_core_block5_0_0.json",
+      "bytes": 1567,
+      "sha256": "695c99938f1a19507d3b642ab1fa8074b707cdf08d0627a730c3b6c37fc4f440"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_05_core_others_5.json",
+      "bytes": 1566,
+      "sha256": "1c2aa8859a75db7a143d6652e36c0fa6f8923159e2e0168a39ffad77bda79ce8"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_06_core_others_8.json",
+      "bytes": 1563,
+      "sha256": "362d6ca95813742d6a69adc37ec9f9984d04ad95859488569dce34a1fbf8c293"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_01_features_3.json",
+      "bytes": 1542,
+      "sha256": "abfab07832cea18d4ec840d38e8f48c4df78f41f03690397367e913ba3993450"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_02_features_7.json",
+      "bytes": 1543,
+      "sha256": "6fbe3b5d7e7555499a33f7efaadcfb42693abb43b5d76ab4d4e1ba0d6b24a06e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_03_features_10.json",
+      "bytes": 1546,
+      "sha256": "a61fb67ddf1b808323527f9941bb7c50083168b2e4632103c114c56d372ffd52"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_04_features_14.json",
+      "bytes": 1539,
+      "sha256": "e5d071de74049b1477e43eb69270857a8d2ff599a030ea90f1ed237d4c559389"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_05_features_17.json",
+      "bytes": 1539,
+      "sha256": "6da8b68d30ead746f98602e6ae2d4b4c46fe02223252371d16211e296a6abf8f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_06_features_20.json",
+      "bytes": 1539,
+      "sha256": "49303475e9f5d8ec7f189bf2c8cd4bc8e47ed3d0486e6f1d9098dbaef1ec6d39"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_07_features_24.json",
+      "bytes": 1539,
+      "sha256": "3e1fe6634229ca03f7dee83ff95f3475104370557ffba21369079afd011a2347"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_08_features_27.json",
+      "bytes": 1539,
+      "sha256": "7689c5b40ab6043c626f8277c0708fa5942c060d911141b6a50a6a48836d28e9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_09_features_30.json",
+      "bytes": 1539,
+      "sha256": "7ddf55582366c74c3c08edaa2880ce68f25831ae6a3830f7e5bd490567fa765b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_10_features_34.json",
+      "bytes": 1538,
+      "sha256": "365d286d34641a71e61e2a11e7fcff035c6ff5ade5b15ad75c40474e9074312d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_11_features_37.json",
+      "bytes": 1538,
+      "sha256": "42b4245b695354ee5d9ae588cc580c68878cebc5fb376330c8e642be7e5704b1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n256/spinalflow/vgg16_T4_n5/layer_12_features_40.json",
+      "bytes": 1538,
+      "sha256": "3af25f01f35172af70e1f98ce414ac1ca25930ab8a8404b13d161b34acc6c91d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_02_core_layer1_0_conv2.json",
+      "bytes": 1564,
+      "sha256": "84e309b86b9691b141a6b9ac25b18129b0f34b63ddaf1c6a3b023b161da962b2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_04_core_layer1_1_conv1.json",
+      "bytes": 1564,
+      "sha256": "7f600990bbbea57b4d773f224d1c29faca59b427a223b9f46511411f0ec7036b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_05_core_layer1_1_conv2.json",
+      "bytes": 1564,
+      "sha256": "bd0d2f57ef18c44622709dd2e9970a063c7d8ca7111e88f403cff0b9eba9e766"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_06_core_layer1_2_conv1.json",
+      "bytes": 1564,
+      "sha256": "6f7c98083447d0d1fe0e8d9e6e8e268a869906e8a049b5678bba1eca16b5c401"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_07_core_layer1_2_conv2.json",
+      "bytes": 1564,
+      "sha256": "4f5e015dc9ebf254d0cd72a69a122bf0d91c719c84fb4168abcc8e3c06c64682"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_09_core_layer2_0_conv2.json",
+      "bytes": 1557,
+      "sha256": "fbd3363d59fff9f92b80cdb7d626bd38e90f42102acad7aa53b4d52c3f10f7f6"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_11_core_layer2_1_conv1.json",
+      "bytes": 1557,
+      "sha256": "3b59b45d6291231fe823ba55a4f713932344e9b4de4dd2aac64151c72fd24142"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_12_core_layer2_1_conv2.json",
+      "bytes": 1557,
+      "sha256": "53dfce0e5a08659f2d2b72fc8c500aa6b24a9f27606d0d913f854f26c1d91ee4"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_13_core_layer2_2_conv1.json",
+      "bytes": 1557,
+      "sha256": "25f5a570debf26f6882d4db3084c272042b88303785879c9105827ccaebf2fc4"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_14_core_layer2_2_conv2.json",
+      "bytes": 1557,
+      "sha256": "5421b466637a3485eb166d55a5c9b9ddf8161112196939c1da0d39fb0c101c75"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_16_core_layer3_0_conv2.json",
+      "bytes": 1559,
+      "sha256": "e5ac1910ffc1eebb7679250fea265a9d6966bae9e23a52897e99ae032e76e7cc"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_18_core_layer3_1_conv1.json",
+      "bytes": 1559,
+      "sha256": "7e365e938e20a300a12c35ecdd293baeaf973d2b3c2d5bf37f73a8de2f0345a5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_resnet19_T4_n500/layer_19_core_layer3_1_conv2.json",
+      "bytes": 1559,
+      "sha256": "26fc06e2a4c1664697f8b5ecf42e41a1607db82b718ba6fea3a3b1fdbace6687"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_01_core_features_3.json",
+      "bytes": 1554,
+      "sha256": "de74ae11109c73bfc78469e2a5ba6b981347d15f0f0b56c3fd71264957d79cc2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_02_core_features_7.json",
+      "bytes": 1555,
+      "sha256": "7ddaf2238ac2da837ef8323e87d7898e3e5c4ac71519b660c4d10ad2dacd0dd5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_03_core_features_10.json",
+      "bytes": 1558,
+      "sha256": "07c1cc3f597d124729ed6c6a7300a1352daf1855abad88368f560cb5d2a028b5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_04_core_features_14.json",
+      "bytes": 1551,
+      "sha256": "3aff0a973ea8468966c5ab8019c62f212bd0b1b21989d65173aff3da3724ad24"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_05_core_features_17.json",
+      "bytes": 1551,
+      "sha256": "af939b6cb9e87bce36876b5f856e398ea0228187019f2d89c829983641b21537"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_06_core_features_20.json",
+      "bytes": 1551,
+      "sha256": "52abc36691dbd10b9f63b19ead665e5370bd4c6d970b048f4b809b044713ffdd"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_07_core_features_24.json",
+      "bytes": 1553,
+      "sha256": "e036df99fc20fc8c53a894c79eff15d4bffae2ab184691e77eac2354adb00521"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_08_core_features_27.json",
+      "bytes": 1553,
+      "sha256": "7e8f9b4ff386bf64fa3e2be8428d3a9beb509fa4d53b2670b548ffa3ebc4a8c5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_09_core_features_30.json",
+      "bytes": 1553,
+      "sha256": "a789f9f51030ab867078637af5f372da933f9519701afa1db9dd7b440dda02ef"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_10_core_features_34.json",
+      "bytes": 1552,
+      "sha256": "88dfd17d48bfda6f00100d67bef47b555d2a188568c43f8d5c7242022e4782a6"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_11_core_features_37.json",
+      "bytes": 1552,
+      "sha256": "1e3fc65b423dc8067c0906d0322fa8927a2975549aa6341382e65eb5fbcfb0f5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_12_core_features_40.json",
+      "bytes": 1552,
+      "sha256": "bdd89a136c8d7477356e38c51420d7d9f5d6e2b8d7d45ce76765f45345ed8c83"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/loas_vgg16_T4_n500/layer_13_core_classifier.json",
+      "bytes": 1547,
+      "sha256": "97326404dedf9374e65aaf049abf1edb0621f7a3f3b492868c108bb5a43103da"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_02_layer1_0_conv2.json",
+      "bytes": 1552,
+      "sha256": "0bf1612cade1e95fb53e32cdf4e663854604e82d5f3b568d55ac9b32f90df5e7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_04_layer1_1_conv1.json",
+      "bytes": 1552,
+      "sha256": "dcb91bd6632f856eb707276517a0a3bdf744cac4552ef96b8d39c59ae96f1c64"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_05_layer1_1_conv2.json",
+      "bytes": 1552,
+      "sha256": "ccac4eeeff7fce3fd99a0fc65038f327867fd70d08e7be6f1bc04750bb2d02cc"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_06_layer1_2_conv1.json",
+      "bytes": 1552,
+      "sha256": "3159fa5352bb0f4968154a36ebb90dd4da0634c563b3f0281d1d5589c79364d3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_07_layer1_2_conv2.json",
+      "bytes": 1552,
+      "sha256": "0e69cabd36594446f05ff41923c477a2944249d981f7ff8bc1b05b516f0231e1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "56e515e40c6574c963f5be1dab38b5fac85fd2b7edd81ae0a63f0fe6770b827d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_11_layer2_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "cd2de0339b316a760bd4f72c60999de0cd46cc251dc3ecee9ccc2eb1b4c908bd"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_12_layer2_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "6eebcd5dd871b53d587a48e9581f5df650bf3a1329657501052b14faa425ded5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_13_layer2_2_conv1.json",
+      "bytes": 1545,
+      "sha256": "c787434f75cfb6c90895f2f67f95eca88eaa6954d101a25b0f169812a4377a76"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_14_layer2_2_conv2.json",
+      "bytes": 1545,
+      "sha256": "951c8e778a893b7378477786b9dca483538f2a11fc9c8a2a2777d2d5f9916847"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+      "bytes": 1547,
+      "sha256": "8384ce6443d93b993a0860846538aec77f9b6361d5a2287c6b5a7c8c71380489"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_18_layer3_1_conv1.json",
+      "bytes": 1547,
+      "sha256": "1d51c0bd314beb34cd3c72ea473b04ba79c34a0cbaba67294a96269e0bff1651"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/resnet19_T4_n5/layer_19_layer3_1_conv2.json",
+      "bytes": 1547,
+      "sha256": "1121bebc40ccf2520c58b2a95c523567ae2a913dd3c8382db5c3fc06ef57e06c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_01_patch_embed_proj_conv1.json",
+      "bytes": 1561,
+      "sha256": "2f8a736bbf5adb8b3f8ce77a551dc86394874106ff6ebdecda5fe885e51b4077"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_02_patch_embed_proj_conv2.json",
+      "bytes": 1563,
+      "sha256": "ffde281da8058beec4daa1533c57db8b7d63220e2b9ea00a28a600f071dee439"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_03_patch_embed_proj_conv3.json",
+      "bytes": 1565,
+      "sha256": "d02d23ef0fb2a34d8f6b51dec98320814d53e4d29a5e3422ae29289d7d02aee4"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_04_patch_embed_rpe_conv.json",
+      "bytes": 1557,
+      "sha256": "b010ae839598735014c91e7dbcee1b09aeac37a373a5380c774ccd49a056bf72"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_05_block_0_attn_q_conv.json",
+      "bytes": 1556,
+      "sha256": "a5bc7057e2c3b00aea9e299209eba2b99e3e1f9c92fe1ec4c8ef84aa4b9eda77"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_06_block_0_attn_k_conv.json",
+      "bytes": 1556,
+      "sha256": "245efaebfd074fb1bbf2422cf99d919c7139424dc8ba0a20abd80c0c2537346c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_07_block_0_attn_v_conv.json",
+      "bytes": 1556,
+      "sha256": "996e85ad3c4d15f44ebfaf09e4282a0a3bd06a2ab7a7721bacbf2b5930fd0b7d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_08_block_0_attn_proj_conv.json",
+      "bytes": 1559,
+      "sha256": "6b6ca56e1d4a3ae86a33bf2ae266fe4f9f3f5e6c256ba4a3fd51ea14e40772fc"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_09_block_0_mlp_fc_conv1.json",
+      "bytes": 1558,
+      "sha256": "1d5c72169a4db93eeee042ac87bd53bfb4c2e6a4ba897163fa6d970f9f033f3f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_10_block_0_mlp_fc_conv2.json",
+      "bytes": 1559,
+      "sha256": "fae2e6ab15afdaa76205bd8e0259985505fa7b27b5b89a290e2c091a9e252fed"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_11_block_1_attn_q_conv.json",
+      "bytes": 1556,
+      "sha256": "60fab6967f9c1b650153df71dace0ed9a14d670f02b2441da38abf43c0444363"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_12_block_1_attn_k_conv.json",
+      "bytes": 1556,
+      "sha256": "a049506b8700044cb1f7b88ca88b50e63b609cb4c9507fca1b167084e5341ada"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_13_block_1_attn_v_conv.json",
+      "bytes": 1556,
+      "sha256": "6b20da26a3f3b7d2c4e38456cbe9fcb6ba889521dc7df9023bac198221a7a244"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_14_block_1_attn_proj_conv.json",
+      "bytes": 1559,
+      "sha256": "6454e2346b2e0520a6a14ccc4decbff36e29c3c9900ef0031c774d7a1b88ff1d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_15_block_1_mlp_fc_conv1.json",
+      "bytes": 1558,
+      "sha256": "8506ebd6b6f8736645ad9be80c42fef06019b61faaedcefc986f87472210449d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sdt_2_512_T4_n500/layer_16_block_1_mlp_fc_conv2.json",
+      "bytes": 1559,
+      "sha256": "d6b7be16e3d7f0a808238d4906982daecd5829142cb13118e137d0a2782c9601"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0.json",
+      "bytes": 1572,
+      "sha256": "c4b11152fc203c9ac3850e3be662c98a1dcee34b27f29a0b6948d58b9c3ca7bf"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_02_core_block3_0_0.json",
+      "bytes": 1573,
+      "sha256": "b5608d887cd0b2176948e7fe0d2ba7289ea204b5af7c887759bde78dc8cbebb7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0.json",
+      "bytes": 1575,
+      "sha256": "592166e718e79e0fbf52d2cef2654da13d5e25c1cc83a2b82b59022cecc7baed"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_04_core_block5_0_0.json",
+      "bytes": 1569,
+      "sha256": "834f751f1b8142b3d2a56ca07f0db4a34ac621a5776be22b8968c95a570ccab8"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_05_core_others_5.json",
+      "bytes": 1568,
+      "sha256": "c4ffdc7bc759b98e3051601c1254f3a5bdda496650da6942ac14a5737f39f892"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_06_core_others_8.json",
+      "bytes": 1563,
+      "sha256": "362d6ca95813742d6a69adc37ec9f9984d04ad95859488569dce34a1fbf8c293"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_01_features_3.json",
+      "bytes": 1542,
+      "sha256": "f57717bd99167c1a99301dedd71988662948d3a1f5b7275c827b2c08edc55d31"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_02_features_7.json",
+      "bytes": 1543,
+      "sha256": "9647c54f62c3a663fffba0523834461686d575b44efc32d2b76c38acbe91a041"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_03_features_10.json",
+      "bytes": 1546,
+      "sha256": "9119fb87230480206fa97ce32b8e364329b2f70b522d7f1f0a7e576d84d88ad7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_04_features_14.json",
+      "bytes": 1539,
+      "sha256": "38baf9816c50ff1dce2252178c1b3c6c14a7971d4f86a68e25b6a39db1c0ef13"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_05_features_17.json",
+      "bytes": 1539,
+      "sha256": "37bcc023574ae4b28fd033a447d25ea269fed7160849abd1e85dc2389cf2e883"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_06_features_20.json",
+      "bytes": 1539,
+      "sha256": "2772ca3fa198cf40ad7805158025011e5a6886c3b0b88165716434e50f8bc1b5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_07_features_24.json",
+      "bytes": 1541,
+      "sha256": "67946932b1ddaa9e89a193c4db91f301b50e1cd8ccbffe240134a8917b820327"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_08_features_27.json",
+      "bytes": 1541,
+      "sha256": "c7b27ed25b99eab9021c6518a98c999723c6f41de5e762df8d1dfd44ea579456"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_09_features_30.json",
+      "bytes": 1541,
+      "sha256": "c552e037124b1a1286723d8f9834090f8597f9b7f2091749d359b6b9631b5ac6"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_10_features_34.json",
+      "bytes": 1540,
+      "sha256": "1ad87ada45673fa06a09f9403845e6c64fc9fd6f7d7842d1eb24275249548322"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_11_features_37.json",
+      "bytes": 1540,
+      "sha256": "c3333eb40ba9b628ee4f77d75b33ea4fe357f2deb1f3070c259cd061c746c9d0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n32/spinalflow/vgg16_T4_n5/layer_12_features_40.json",
+      "bytes": 1540,
+      "sha256": "2f1d4a4f6723259c493626d6304c8bea68511d0532de992d6760b64ad7689180"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_02_core_layer1_0_conv2.json",
+      "bytes": 1564,
+      "sha256": "ce7ef2993937d187bcdb17014cbe2d377f126e2b03124bfb224e0c20344eda87"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_04_core_layer1_1_conv1.json",
+      "bytes": 1564,
+      "sha256": "477ddbdb3dc4102a495ce7ad2f5db0d78e8a9d6843ddf924a1c36c9ec385d8c2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_05_core_layer1_1_conv2.json",
+      "bytes": 1564,
+      "sha256": "5ef96a42a403e8b04aace1e054582e3a55e08c0cfc1f6fe84d478340fe2d7ad0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_06_core_layer1_2_conv1.json",
+      "bytes": 1564,
+      "sha256": "2cabfacf4917ed677865c4ded4f2f119365b0ddf7d3eafee431e21ae6a41dde2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_07_core_layer1_2_conv2.json",
+      "bytes": 1564,
+      "sha256": "9efde0559bc42964eff030f7fb57f7e212fedc4da26f5a87a20d96076507e390"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_09_core_layer2_0_conv2.json",
+      "bytes": 1557,
+      "sha256": "6cd603bfe4f9218712e755e4199138fee654a46267e0a1117b5809c6343253ca"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_11_core_layer2_1_conv1.json",
+      "bytes": 1557,
+      "sha256": "d7585dbec33bbbd8004e9d6131c8b5310a314c2b6c1aefc27d246e0b05b72571"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_12_core_layer2_1_conv2.json",
+      "bytes": 1557,
+      "sha256": "dddc054971a1baa2e3ee2f243d73c4557217427c26675bb30a04c1dee12a9edc"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_13_core_layer2_2_conv1.json",
+      "bytes": 1557,
+      "sha256": "e8e38bcc55300c6120440ef0ecbdebd60c0a9cd583007ce414bf5f4e90ccd9f9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_14_core_layer2_2_conv2.json",
+      "bytes": 1557,
+      "sha256": "f1f30c3e37a7c8a291adcf78d72f6001a1da55131c4dbcec28c5e3828063035e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_16_core_layer3_0_conv2.json",
+      "bytes": 1557,
+      "sha256": "858184717858443ae0e61cf1380c19e15a907320870461a4bb4262bae93696d4"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_18_core_layer3_1_conv1.json",
+      "bytes": 1557,
+      "sha256": "e20d88aae9ce4ff6bbce210c5585ecf82fb6ded6e0475e2808c2887651cb3320"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_resnet19_T4_n500/layer_19_core_layer3_1_conv2.json",
+      "bytes": 1557,
+      "sha256": "f8840bdb760f1a41560a07b8ca2ae9d9e12ad2f16b2dc022402f3a8e2df64f9d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_01_core_features_3.json",
+      "bytes": 1554,
+      "sha256": "315a36220af6d433661b82dc7575b625965a333030b56553c2b5861edf6d825c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_02_core_features_7.json",
+      "bytes": 1555,
+      "sha256": "dd4969d05272645c56a690436ef544fa6cf3e1e6d4ba13bdd3452335c05fd22b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_03_core_features_10.json",
+      "bytes": 1558,
+      "sha256": "80d23fe1e5a6858098d47df0fbe657802996d4c7065e2e9af25ba07a9d0c0751"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_04_core_features_14.json",
+      "bytes": 1551,
+      "sha256": "65f0ca4d07c021a01f597fb9739f85699b2943c8a6538badd70c0b6e50dc8f02"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_05_core_features_17.json",
+      "bytes": 1551,
+      "sha256": "2496be0daaee76487c6a6c0996e1ef0af1b5ae51e1f4c4a85bbce16d63fd8213"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_06_core_features_20.json",
+      "bytes": 1551,
+      "sha256": "5bdecb1b4773a8a8f8732549eea9b82de35f21ae28fb695e11e40b900933fd83"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_07_core_features_24.json",
+      "bytes": 1551,
+      "sha256": "41a4d61a3ccf3fabd644d1682052769497c1b0038ff1bde90b15cd3e4b82207a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_08_core_features_27.json",
+      "bytes": 1551,
+      "sha256": "224ed2d742dfd8a57487337bd46fef22f6dac3f932bc569bf2b89f04165be020"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_09_core_features_30.json",
+      "bytes": 1551,
+      "sha256": "d6d7ad6254d7f027fc0d15c4bb7c6f93ab7760ffd97e0b1268afa5ca6de9cdd9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_10_core_features_34.json",
+      "bytes": 1550,
+      "sha256": "06f17e50b091207db5c96e39d97f35589bab7badc3d64438927bd26dd73baa37"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_11_core_features_37.json",
+      "bytes": 1550,
+      "sha256": "89ef23cec349618493a7ab629766824dee77ee94b27985221a7a0fd7cc9e98be"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_12_core_features_40.json",
+      "bytes": 1550,
+      "sha256": "3e5aeca8c275f6f1e57f4468dd321b43b7f5fe8ba80a01642254604069516aa0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/loas_vgg16_T4_n500/layer_13_core_classifier.json",
+      "bytes": 1547,
+      "sha256": "97326404dedf9374e65aaf049abf1edb0621f7a3f3b492868c108bb5a43103da"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_02_layer1_0_conv2.json",
+      "bytes": 1552,
+      "sha256": "0fb61ae99e723f2ad8d13c482b180a13f59a6dd73d69c9ca67268ab55ece390d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_04_layer1_1_conv1.json",
+      "bytes": 1552,
+      "sha256": "b409d0377f960ea6f5ef2a17ee2bbb2b2758f42e14114075acb0dd6539fe3fc0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_05_layer1_1_conv2.json",
+      "bytes": 1552,
+      "sha256": "4fc6523d13eb16ad8e0500c68360b33ea82058988431ad3b6e0e2ad724194ed7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_06_layer1_2_conv1.json",
+      "bytes": 1552,
+      "sha256": "2a2e327cfb21d7f82f813c73480293f2034625e8b6751608963ddb7190d685dd"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_07_layer1_2_conv2.json",
+      "bytes": 1552,
+      "sha256": "02c71e9c12a52cc612656d2c16710cc919874ba1d2208fb8d2d535e29f6c1278"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "c0fa334759ab7661cfd41368fc11ad639dcb411acb94dd591a9f7d46ae7e32c1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_11_layer2_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "8dc09e8e5328a9150cb7b6c6f92ec25459772833d8d62a2e690d5ba927b78fc7"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_12_layer2_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "1b8abc24ac464326bafca4c550b846c31e39c04e8d975b41dfecc2aebd2a4a9b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_13_layer2_2_conv1.json",
+      "bytes": 1545,
+      "sha256": "309245651c942f5ee8491122f10231336f6592b6b06653d194803132e5647286"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_14_layer2_2_conv2.json",
+      "bytes": 1545,
+      "sha256": "a362127ce376f6d5bf91e1057923a9613d3d02366d8bc0f6b7830952250ae8f9"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "da21e10a01d41102c3987f150f55c5135ba90878557e5a4569ade3b4d291a3e2"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_18_layer3_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "4233104f89f05c317d95d6aac60ae9a71563e62a9a562150525682cd4ab04afe"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/resnet19_T4_n5/layer_19_layer3_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "d4328f9b089262f4bbb9bd29ec8b95ca26a0dd937b1c8d6341a36e73a38b62d0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_01_patch_embed_proj_conv1.json",
+      "bytes": 1562,
+      "sha256": "6d248296ce87027393b6e7be4cc3e6dee7b9ec781b6d7922a4553f4d300ef218"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_02_patch_embed_proj_conv2.json",
+      "bytes": 1564,
+      "sha256": "aed9736f0d67e2625a033c89dab54331c2c49da48d6c6ea25c583c77197b1f28"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_03_patch_embed_proj_conv3.json",
+      "bytes": 1563,
+      "sha256": "57d18969e3a801cd820948b5484cccd46a0917f665e43819ffb216ae35060b0c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_04_patch_embed_rpe_conv.json",
+      "bytes": 1554,
+      "sha256": "78f6b375a788bed6b2e6ed6ac9abc744b58352b89555d4cf5b76b6ea1e68f73e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_05_block_0_attn_q_conv.json",
+      "bytes": 1553,
+      "sha256": "fd4cc46c52ee0c3303bda11b6ede2b155aeca406baddc6dcd49c4a4e31bcedb8"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_06_block_0_attn_k_conv.json",
+      "bytes": 1553,
+      "sha256": "37b34caa0de9139b29ddb5a42be451f2285d2fc254c7b48fbd3abddd787ceb6d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_07_block_0_attn_v_conv.json",
+      "bytes": 1553,
+      "sha256": "679f99a7e7088b81028dc6cc711af56ecee980af5b06f46ef1ad83b140cdee12"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_08_block_0_attn_proj_conv.json",
+      "bytes": 1556,
+      "sha256": "9bc5bf09c6ce533e7aa842bafe7928d75dd9c3f63c770b0db047951882590a36"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_09_block_0_mlp_fc_conv1.json",
+      "bytes": 1556,
+      "sha256": "0a4376e5f277e519bc42cd2a0d7ba4465e8f4f2e898ec7b49b3dc72bf09a24ed"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_10_block_0_mlp_fc_conv2.json",
+      "bytes": 1556,
+      "sha256": "aa866d09a65dafb2df719705a62a849e55a3161e6febf6f5d7515f5ec28df9bc"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_11_block_1_attn_q_conv.json",
+      "bytes": 1553,
+      "sha256": "24de3989d0e9cdc80083cc7ac0d0c6edda8d59b8d488a2be90baec13a0cea3ea"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_12_block_1_attn_k_conv.json",
+      "bytes": 1553,
+      "sha256": "6f70a70040b4c07098894766f5670637681d114711b5764cf959165b869aa634"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_13_block_1_attn_v_conv.json",
+      "bytes": 1553,
+      "sha256": "de9d02e1dc4aea11a5b2aa046211480a19f38c5589edba051d7457e54482c6cf"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_14_block_1_attn_proj_conv.json",
+      "bytes": 1556,
+      "sha256": "e0a9be5f3d194abe1253e95d283e0b34d81bbac673c37aac4087da5385aa52e0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_15_block_1_mlp_fc_conv1.json",
+      "bytes": 1556,
+      "sha256": "c2780acdb5f5edaa0f43dbb294418a1631a2507896de546fc7ded58eb41189fe"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sdt_2_512_T4_n500/layer_16_block_1_mlp_fc_conv2.json",
+      "bytes": 1556,
+      "sha256": "5ef8665f1e04dfabf89c17f270a91fe304a74f88571b8afebf5f9ec1f0375071"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0.json",
+      "bytes": 1572,
+      "sha256": "8d27b879d847712686e28625f656cc1500270b6a581fdb4d42abffde35ffccef"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_02_core_block3_0_0.json",
+      "bytes": 1574,
+      "sha256": "7942a4c0038bcc5bbed14e95d1acbfb0915e45997a93dad6ca1f3b240586e162"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0.json",
+      "bytes": 1573,
+      "sha256": "c7e401f0aa4981baa198744163f730a043677fcd7252aedffe13f0181ef796e4"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_04_core_block5_0_0.json",
+      "bytes": 1566,
+      "sha256": "0d06f39b6ca7ea333cfb93a14835c50eba5dab985d15664f125bb3c0646a7e9b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_05_core_others_5.json",
+      "bytes": 1566,
+      "sha256": "070b661c00a6a72acb7d39f99e37224434fcd3ed6fdbc2cac44b0497a608996b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_06_core_others_8.json",
+      "bytes": 1563,
+      "sha256": "362d6ca95813742d6a69adc37ec9f9984d04ad95859488569dce34a1fbf8c293"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_01_features_3.json",
+      "bytes": 1542,
+      "sha256": "abfab07832cea18d4ec840d38e8f48c4df78f41f03690397367e913ba3993450"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_02_features_7.json",
+      "bytes": 1543,
+      "sha256": "6fbe3b5d7e7555499a33f7efaadcfb42693abb43b5d76ab4d4e1ba0d6b24a06e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_03_features_10.json",
+      "bytes": 1546,
+      "sha256": "a61fb67ddf1b808323527f9941bb7c50083168b2e4632103c114c56d372ffd52"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_04_features_14.json",
+      "bytes": 1539,
+      "sha256": "e5d071de74049b1477e43eb69270857a8d2ff599a030ea90f1ed237d4c559389"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_05_features_17.json",
+      "bytes": 1539,
+      "sha256": "6da8b68d30ead746f98602e6ae2d4b4c46fe02223252371d16211e296a6abf8f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_06_features_20.json",
+      "bytes": 1539,
+      "sha256": "49303475e9f5d8ec7f189bf2c8cd4bc8e47ed3d0486e6f1d9098dbaef1ec6d39"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_07_features_24.json",
+      "bytes": 1539,
+      "sha256": "570ad6ef90283403edeaa434a1c1b9bc6599389d08db020aba093a99f42c55c0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_08_features_27.json",
+      "bytes": 1539,
+      "sha256": "1ee1bb0db747cde1fceae727761581244f555604cdc66565dc784899d62bbbe3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_09_features_30.json",
+      "bytes": 1539,
+      "sha256": "a91a9c3ed6e828ef294a5dfc4a65b4ba94249d1970d712e2704904db2072ee06"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_10_features_34.json",
+      "bytes": 1538,
+      "sha256": "aa8e6fd11417a824691b4caadd6a3642976199be2be026b3eb9468e4ae130dfb"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_11_features_37.json",
+      "bytes": 1538,
+      "sha256": "e90f4fa826c1ab0c470a97fbf814b50607f5da977e0d86895e723f986423e1cf"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n512/spinalflow/vgg16_T4_n5/layer_12_features_40.json",
+      "bytes": 1538,
+      "sha256": "49ec7d53680fb43a38854e5bbd7a8995bf279e4bf848430b7fde905ceb4e4aca"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_02_core_layer1_0_conv2.json",
+      "bytes": 1563,
+      "sha256": "7f68b3f2fb97e275ce15aa8ceedec59ec12a7c708a11f787cea3d49a80961f7a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_04_core_layer1_1_conv1.json",
+      "bytes": 1563,
+      "sha256": "533de3df5b732be19167f78336240cf0e241f130ceb070cca3c53c9538d7c269"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_05_core_layer1_1_conv2.json",
+      "bytes": 1563,
+      "sha256": "f442f94a2ec7b9b19616f4e218947ffa9fe088f18d61471f46b99028d6d08f36"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_06_core_layer1_2_conv1.json",
+      "bytes": 1563,
+      "sha256": "b0158d7e5938e50e9eb145b3ab25c2d6c0edea3afde42a56fa0847d73cf3cedb"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_07_core_layer1_2_conv2.json",
+      "bytes": 1563,
+      "sha256": "02e8d81e9e497921ae04e987912d887bba6f67aa4a759e7ef077540274f05b52"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_09_core_layer2_0_conv2.json",
+      "bytes": 1557,
+      "sha256": "236b0fe188f6fb7cc5c78396877e451ba6a366466f95234cfc36a4c10282b648"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_11_core_layer2_1_conv1.json",
+      "bytes": 1557,
+      "sha256": "dc3ff7e398e5050d140490963086c664fff78065c1c698ad116003164af21e2a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_12_core_layer2_1_conv2.json",
+      "bytes": 1557,
+      "sha256": "06b7116264c533ab12f14ea2d963021bf1ff05faac3243dcf67c70bc28a8e182"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_13_core_layer2_2_conv1.json",
+      "bytes": 1557,
+      "sha256": "5dab154dcd355c1d2ec5cb9facb3ee45638352ff7377d511a0c6df156281e17b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_14_core_layer2_2_conv2.json",
+      "bytes": 1557,
+      "sha256": "58ba9e016076291cf523e3748a8e78e40874338c2695d380dc7402222e59f740"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_16_core_layer3_0_conv2.json",
+      "bytes": 1557,
+      "sha256": "497d6d91e5431618bd270cf71c3ef94ba91ff97b430fd01b1c4f33cb40c0b2a6"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_18_core_layer3_1_conv1.json",
+      "bytes": 1557,
+      "sha256": "a7214b2be968e272edd0a52b38bd139c1879e77d6faaf779941bace0b5b81d34"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_resnet19_T4_n500/layer_19_core_layer3_1_conv2.json",
+      "bytes": 1557,
+      "sha256": "c6d79b855c9312d10b9b6becf57498d42aaec5fcf19fcbf3ee25bf456451920d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_01_core_features_3.json",
+      "bytes": 1554,
+      "sha256": "315a36220af6d433661b82dc7575b625965a333030b56553c2b5861edf6d825c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_02_core_features_7.json",
+      "bytes": 1554,
+      "sha256": "8da569bea92a6f0d13eb6eb59c115f137e563f21bafaacb5b19b285be16049f5"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_03_core_features_10.json",
+      "bytes": 1557,
+      "sha256": "7b36380937cbf9b109674a4441952771346ac28fa7ba8f5a7bd9188eb8926307"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_04_core_features_14.json",
+      "bytes": 1551,
+      "sha256": "1041c5936028e510344637ba437079277e87c13fda54963a4c4f8b0af0265f22"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_05_core_features_17.json",
+      "bytes": 1551,
+      "sha256": "35fddc7b73fbb31c46a8eadfdc73d9beaf535d3c78e753df63ac8e73b43549b0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_06_core_features_20.json",
+      "bytes": 1551,
+      "sha256": "60bdb3b130b6ecd60a23d5df4642ddbe26bca94c22bd6dbcae710c83a4f4f8f3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_07_core_features_24.json",
+      "bytes": 1551,
+      "sha256": "518d706480a40a46bdc9266d1b89f7357afc11c3e6db2e751f5944c79d84bb79"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_08_core_features_27.json",
+      "bytes": 1551,
+      "sha256": "67bf887a1049aabecdf5511095406d1bf0a21928336b116491f69d4db89b4c4f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_09_core_features_30.json",
+      "bytes": 1551,
+      "sha256": "aa63ea3770f4049885752a5b02050a42ea0940334f5c18affd32ebfa174da588"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_10_core_features_34.json",
+      "bytes": 1550,
+      "sha256": "9980972ff2d5a13cefa3c368789696824c45dc48f329d962f8946937083ffe0a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_11_core_features_37.json",
+      "bytes": 1550,
+      "sha256": "d0b2992246d821b5362a6ae042362fd696a04977f26d6f2cd3fb02ce774bab88"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_12_core_features_40.json",
+      "bytes": 1550,
+      "sha256": "4c32972720e010451eaac71599b19f9954089b8f3293099b866118e2ffc3b03f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/loas_vgg16_T4_n500/layer_13_core_classifier.json",
+      "bytes": 1547,
+      "sha256": "97326404dedf9374e65aaf049abf1edb0621f7a3f3b492868c108bb5a43103da"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_02_layer1_0_conv2.json",
+      "bytes": 1551,
+      "sha256": "699f870227bbc97248c2cfe6e67b55d8194d11033d632c09e580d3b80b0dfd36"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_04_layer1_1_conv1.json",
+      "bytes": 1551,
+      "sha256": "556d11ea51fdd61fbb9eb90af2b8f0740f1fad7f4515cfb3ef5fefaf6290aaa1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_05_layer1_1_conv2.json",
+      "bytes": 1551,
+      "sha256": "185718c15056c08ca530e4d86840371f51cd15818c155952cb87cbb74c22de13"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_06_layer1_2_conv1.json",
+      "bytes": 1551,
+      "sha256": "000e5d33b2f7ce02cf1ea86e9dd35d0fa21fe9abb5d0135d1da30b5cf8ba3bed"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_07_layer1_2_conv2.json",
+      "bytes": 1551,
+      "sha256": "6a997823f8b8c4b32b9e07edc7a1151a765031a1c894e677c8603d79bf0dc0ee"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_09_layer2_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "dc6359947adde02df963f495648d1979d21a634cab26aab07c1f33251af0df13"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_11_layer2_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "406e80ab1aa19212ef93fe1ff6a28ef2f33adc1a81ed8f361babafe6a9b2f651"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_12_layer2_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "861e2756cb3a7a5c757d89c165e987852548f616f9839ef3070c4576ba6c139d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_13_layer2_2_conv1.json",
+      "bytes": 1545,
+      "sha256": "fac0f1be66781a3817785047dc1e5d75c742b404c95274e34fc5cf12693d70e3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_14_layer2_2_conv2.json",
+      "bytes": 1545,
+      "sha256": "e77dd76d4f5ae14c0f2bf97ab035e8780ee2a51aa0b568252657b0d5a246decf"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_16_layer3_0_conv2.json",
+      "bytes": 1545,
+      "sha256": "62e474b4c19d0b35b86bd90773408e04edc61a654f4c96248bb92f69227de984"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_18_layer3_1_conv1.json",
+      "bytes": 1545,
+      "sha256": "537095db4432ef19d5d1ed927c4964de365849b182e9cce9bff9801662494082"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/resnet19_T4_n5/layer_19_layer3_1_conv2.json",
+      "bytes": 1545,
+      "sha256": "04b4dc05de0c530abc7c1c96439dbf09ac24ecdd3d22ff51c02521b53c80b15d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_01_patch_embed_proj_conv1.json",
+      "bytes": 1561,
+      "sha256": "bf29fc6c8eeda5e20e0b692784f9856d8527c733659a51124c2722bddfe31580"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_02_patch_embed_proj_conv2.json",
+      "bytes": 1563,
+      "sha256": "72f4f35dc929a476bc4cb10e7dddde6c80b7059027bd61cd2b727aa6300ebed8"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_03_patch_embed_proj_conv3.json",
+      "bytes": 1563,
+      "sha256": "3b6224cfaed0bc48d24dd45bb101a4e53f93f76c13626ef5be91ace58333e69c"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_04_patch_embed_rpe_conv.json",
+      "bytes": 1554,
+      "sha256": "8ba25ae87b66d59b305ecce9d2de747fd09d3022fb97b69d2c027f1cf81f27a0"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_05_block_0_attn_q_conv.json",
+      "bytes": 1553,
+      "sha256": "039c9f34f1c733d96e2024adde128a812d7ba25bbac6f65bfb828f5ef46d84fb"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_06_block_0_attn_k_conv.json",
+      "bytes": 1553,
+      "sha256": "c3c6004144ab2db0203f23abdab92e990b3d7ef0118690233bd877875df5589d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_07_block_0_attn_v_conv.json",
+      "bytes": 1553,
+      "sha256": "b6147598fbd5a557ff664b44d44963c59f9f9c8c579e881c28261052241fffbe"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_08_block_0_attn_proj_conv.json",
+      "bytes": 1556,
+      "sha256": "2973aad7ea464080d3c67372e845e30eeb898e675f9a1d70c24f26e215b4cbca"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_09_block_0_mlp_fc_conv1.json",
+      "bytes": 1558,
+      "sha256": "dc90e0098793fe45c6aac70819154bb355d88d205ff00e01fa2f3ef2c4bd54e8"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_10_block_0_mlp_fc_conv2.json",
+      "bytes": 1556,
+      "sha256": "8f7c4adb6a07b7428facbad360475e6dd7e7e6f2e67ab325793ef8a2185be41b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_11_block_1_attn_q_conv.json",
+      "bytes": 1553,
+      "sha256": "2ad078f334b3f340131130cf4b67a7ddce54344a06f983e86dc4f9a687aa945d"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_12_block_1_attn_k_conv.json",
+      "bytes": 1553,
+      "sha256": "db101b090765a32101cc461c0edd3a537cf5ff5f8eed47a264e9f98a0c454985"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_13_block_1_attn_v_conv.json",
+      "bytes": 1553,
+      "sha256": "d76616017e8e0fdda2722fba746f20741a7bf6f755bcc9c6ae5c9bd933339c4a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_14_block_1_attn_proj_conv.json",
+      "bytes": 1556,
+      "sha256": "1e838bb4125fd8a9ff9f50ce6c1c8a72d1c830590378571b60fd99c5cb648133"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_15_block_1_mlp_fc_conv1.json",
+      "bytes": 1558,
+      "sha256": "53dcabcdb7ebe43346bb33c956b6a3614190becc21178a06c32cd1877d8be484"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sdt_2_512_T4_n500/layer_16_block_1_mlp_fc_conv2.json",
+      "bytes": 1556,
+      "sha256": "da11d5a81a4a157a087fb705fd087989396ed91ca34293d614caf9b2814881c3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0.json",
+      "bytes": 1571,
+      "sha256": "d7fdc22dd162ca07f91d0bd665f95ef1867c59032a0fc27b8eb6b2f134481c46"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_02_core_block3_0_0.json",
+      "bytes": 1573,
+      "sha256": "3fc9398171d8f9bf435e4d7f3544c8a35d0b9755d18256a79f3eb65ee5ae78ab"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0.json",
+      "bytes": 1573,
+      "sha256": "aaf9233ee6342a21b5e0038f57fbf5a7e9480f8ab96f981e37f1c26e6ba6e452"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_04_core_block5_0_0.json",
+      "bytes": 1566,
+      "sha256": "eac97999e6f0aa7bc96094f5af0a0b3b52af5cca6a488fb91cf27c800de14531"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_05_core_others_5.json",
+      "bytes": 1568,
+      "sha256": "8cd89f83f20e6974d5437c9da607f4ffb489f3bff4d304768e278128bf838b8f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/sma_azo_vgg_cifar10_dvs_T10_n500/layer_06_core_others_8.json",
+      "bytes": 1563,
+      "sha256": "362d6ca95813742d6a69adc37ec9f9984d04ad95859488569dce34a1fbf8c293"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_01_features_3.json",
+      "bytes": 1542,
+      "sha256": "abfab07832cea18d4ec840d38e8f48c4df78f41f03690397367e913ba3993450"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_02_features_7.json",
+      "bytes": 1542,
+      "sha256": "c45f65e90589d3732ee422e8993299a68758a35c9402380ad6197418b6fff513"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_03_features_10.json",
+      "bytes": 1545,
+      "sha256": "fad06240cb12694061f34cb991c7332977e0635093652c078fbc8bfd7ebb2d46"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_04_features_14.json",
+      "bytes": 1539,
+      "sha256": "822f62b500e3e4945d300f5da1ff96e590d56de9c481e0bdf801a4ab31d83afd"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_05_features_17.json",
+      "bytes": 1539,
+      "sha256": "45088d6c4fe405d15e4bd03edc77d9ffba375248cb98c8619734aa7c6b28976a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_06_features_20.json",
+      "bytes": 1539,
+      "sha256": "7bf4aa8d06c7cd6dbe1ddb1fdd004cc88e4424298024527824877da7ee11bce1"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_07_features_24.json",
+      "bytes": 1539,
+      "sha256": "223e4eba15bc3824edd612b9cfd9b397c0bd384c8900df324faf584157d2f18e"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_08_features_27.json",
+      "bytes": 1539,
+      "sha256": "79534d1dbd0bf4efa4601955fc20b2cdac7a90f84fb0f79efae1f5197462efa6"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_09_features_30.json",
+      "bytes": 1539,
+      "sha256": "50256d2db8574380a866b8924e6539fb5ccec693e9bffd7ed47b71dd6f4d2e29"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_10_features_34.json",
+      "bytes": 1538,
+      "sha256": "bb5c43e72a61d121f12268dba396989be5c5401312f868386359768919089916"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_11_features_37.json",
+      "bytes": 1538,
+      "sha256": "d8fba92aa7f6c5399d455de9eb7238fb99da4095bfa202b667c04725a6ea0880"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/inputs/schedules/n64/spinalflow/vgg16_T4_n5/layer_12_features_40.json",
+      "bytes": 1538,
+      "sha256": "cbb14ef2aa4fa9e3cd54861def1646eab8ea96bda343b503e04cdf3c538a255d"
+    }
+  ],
+  "scripts": [
+    {
+      "path": "zoo/fig2_hw_n_sweep/gen_inputs.py",
+      "bytes": 6531,
+      "sha256": "75e7a53e9ac59c5fd2812b3ed38e55612614c21bf0f2470a38b639310229e196"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/check_replay.py",
+      "bytes": 6294,
+      "sha256": "bf49a53d9ef4d6331cef79f2de5539bc1841b0843a49c29233061b9b1f55196a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/run.py",
+      "bytes": 9728,
+      "sha256": "c941057207b4889e2d08c7361744a639c58a57d8f95c61c177cefb4c163eb3fa"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/plot.py",
+      "bytes": 6626,
+      "sha256": "2d078ae09c800e0e689f4f27fa412dc31805bab24c94280fdaf0a5ec7da22dee"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/record_provenance.py",
+      "bytes": 17871,
+      "sha256": "46631c371398ae8922cda79fd17ccbed58c735c26217ee7942b7513d0e343574"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/slurm/harness.py",
+      "bytes": 6476,
+      "sha256": "a62ea677de6646ecdb404d56673354cf19635956cd3139f6bf990de9a51aa93b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/slurm/shard_cases.py",
+      "bytes": 3491,
+      "sha256": "84e5a97b74144f062dcba4e67628116be25e1dd31d2f58f5c37ba4007d8d7cfd"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/slurm/run_array.sbatch",
+      "bytes": 2261,
+      "sha256": "a51fa2f95f3ea45d71cd977bde497d3f241e646c80b948284a3e978e16fe8c43"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/slurm/merge_results.py",
+      "bytes": 7227,
+      "sha256": "2050cfa2b8467d9c79b7e182b41467be408a9b244373fa68bcdd8073644a6d13"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/slurm/rerun_missing.py",
+      "bytes": 4028,
+      "sha256": "231bf413a5c25bd69626b1598e0f65c056a2b28dbd19a339f0d1ff192d7d6cb3"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/slurm/assemble_shards.py",
+      "bytes": 7792,
+      "sha256": "d5c3ec34b89c749b6d9214a55de9034d9c0b1d5a954fa11fd91c5315df2129ff"
+    }
+  ],
+  "source_files": [
+    {
+      "path": "src/lays/nocsim/combine.py",
+      "bytes": 31292,
+      "sha256": "587e3a2e6ba5b0e42055e153f0e3afcf1ccf72ba17ffd38452dce488d90a25fa"
+    },
+    {
+      "path": "tests/test_weight_dependencies.py",
+      "bytes": 3265,
+      "sha256": "cb8d8867b989e1a8b7fb0e77df0ddfa702c02b63c3484336411e581f51e09fb3"
+    },
+    {
+      "path": "src/lays/weight_trace_gen/cli.py",
+      "bytes": 22213,
+      "sha256": "90e7a2eb38545957e53eb0a03061880a0d0feff0bb29ea04cd326a3e26baf697"
+    },
+    {
+      "path": "src/lays/weight_trace_gen/spinalflow/SpinalFlowGen.h",
+      "bytes": 3755,
+      "sha256": "f56b892cdee40308939ffec331d286c08a802c2a05e5f89b5cd1d976325a7ea2"
+    },
+    {
+      "path": "src/lays/weight_trace_gen/spinalflow/native_bridge.py",
+      "bytes": 5086,
+      "sha256": "f4e5ae3994dc46dd7180d3a18ff15d060d4a951626159e7a9fd22b74ed0cb4b1"
+    },
+    {
+      "path": "src/lays/weight_trace_gen/trace.py",
+      "bytes": 7015,
+      "sha256": "1a092bf80356130d9462b7e8b45ded79fb67955021affcea46de0fdd4b4804eb"
+    }
+  ],
+  "source_patch": null,
+  "binaries": [
+    {
+      "path": "src/lays/weight_trace_gen/spinalflow/spinalflowgen",
+      "bytes": 34520,
+      "sha256": "b80746efc25427a3f8ee22f7c2bacff5a726db87ac07a8d07df99f451617f0a0"
+    },
+    {
+      "path": "src/lays/nocsim/eventsim/eventsim",
+      "bytes": 66200,
+      "sha256": "6c14a1ad5a7c076ea64574f602baf884594bfea6a1ce4604a104bbe60d5b20e5"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/results.csv",
+      "bytes": 1353109,
+      "sha256": "d666d26eaf27e0d8617ecc0f29c7ad71f7c2880626f0c9980cd563e18cc81e4b"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/outputs/summary.csv",
+      "bytes": 82979,
+      "sha256": "f417aa93f35dcc05c97eb2c3ca22e264f0d9928c55de6063ee825078c0c955af"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/fig2_hw_n_sweep.pdf",
+      "bytes": 15973,
+      "sha256": "e9563cdaa0a792a415f0189dc511ffa5c04e674042da9b163d6c5bf32fd3630a"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/fig2_hw_n_sweep.png",
+      "bytes": 83553,
+      "sha256": "cd6a46ddb29a01e324701c53cf25ec623599e1d0812d9688044e2030bd7c207f"
+    },
+    {
+      "path": "zoo/fig2_hw_n_sweep/README.md",
+      "bytes": 15656,
+      "sha256": "3caef7e20914efd7006be37acebe71b19b140eceb068545c411d89f64105dff9"
+    }
+  ],
+  "artifact_counts": {
+    "layer_runs": 24000,
+    "network_sample_totals": 2000,
+    "layer_schedules": 240,
+    "architectures": 5
+  },
+  "statistics": [
+    {
+      "network": "resnet19",
+      "N": 32,
+      "samples": 100,
+      "total_cycles": {
+        "median": 20640842.0,
+        "min": 19890062,
+        "max": 21264409
+      },
+      "count_cycles": {
+        "median": 20629030.0,
+        "min": 19877664,
+        "max": 21254600
+      },
+      "memory_cycles": {
+        "median": 9396.0,
+        "min": 7945,
+        "max": 31224
+      }
+    },
+    {
+      "network": "resnet19",
+      "N": 64,
+      "samples": 100,
+      "total_cycles": {
+        "median": 10450763.5,
+        "min": 10114325,
+        "max": 10737630
+      },
+      "count_cycles": {
+        "median": 10314515.0,
+        "min": 9938832,
+        "max": 10627300
+      },
+      "memory_cycles": {
+        "median": 116077.0,
+        "min": 71388,
+        "max": 246797
+      }
+    },
+    {
+      "network": "resnet19",
+      "N": 128,
+      "samples": 100,
+      "total_cycles": {
+        "median": 5352196.5,
+        "min": 5202564,
+        "max": 5505065
+      },
+      "count_cycles": {
+        "median": 5157257.5,
+        "min": 4969416,
+        "max": 5313650
+      },
+      "memory_cycles": {
+        "median": 192321.0,
+        "min": 136294,
+        "max": 242755
+      }
+    },
+    {
+      "network": "resnet19",
+      "N": 256,
+      "samples": 100,
+      "total_cycles": {
+        "median": 3379137.5,
+        "min": 3267769,
+        "max": 3473794
+      },
+      "count_cycles": {
+        "median": 3022898.5,
+        "min": 2897145,
+        "max": 3123341
+      },
+      "memory_cycles": {
+        "median": 353750.5,
+        "min": 328164,
+        "max": 380441
+      }
+    },
+    {
+      "network": "resnet19",
+      "N": 512,
+      "samples": 100,
+      "total_cycles": {
+        "median": 2811275.5,
+        "min": 2692851,
+        "max": 2905879
+      },
+      "count_cycles": {
+        "median": 2727179.5,
+        "min": 2608755,
+        "max": 2821783
+      },
+      "memory_cycles": {
+        "median": 84096.0,
+        "min": 84096,
+        "max": 84096
+      }
+    },
+    {
+      "network": "sdt",
+      "N": 32,
+      "samples": 100,
+      "total_cycles": {
+        "median": 24114127.0,
+        "min": 18696823,
+        "max": 26675142
+      },
+      "count_cycles": {
+        "median": 23121018.0,
+        "min": 17478004,
+        "max": 25714904
+      },
+      "memory_cycles": {
+        "median": 994528.0,
+        "min": 947179,
+        "max": 1218819
+      }
+    },
+    {
+      "network": "sdt",
+      "N": 64,
+      "samples": 100,
+      "total_cycles": {
+        "median": 13030800.5,
+        "min": 11362040,
+        "max": 14155186
+      },
+      "count_cycles": {
+        "median": 11560509.0,
+        "min": 8739002,
+        "max": 12857452
+      },
+      "memory_cycles": {
+        "median": 1443955.5,
+        "min": 1236286,
+        "max": 2623038
+      }
+    },
+    {
+      "network": "sdt",
+      "N": 128,
+      "samples": 100,
+      "total_cycles": {
+        "median": 9629604.0,
+        "min": 9297529,
+        "max": 9871455
+      },
+      "count_cycles": {
+        "median": 5780254.5,
+        "min": 4369501,
+        "max": 6428726
+      },
+      "memory_cycles": {
+        "median": 3852131.0,
+        "min": 3405029,
+        "max": 4928028
+      }
+    },
+    {
+      "network": "sdt",
+      "N": 256,
+      "samples": 100,
+      "total_cycles": {
+        "median": 7760225.5,
+        "min": 7314451,
+        "max": 8053998
+      },
+      "count_cycles": {
+        "median": 3102953.0,
+        "min": 2260916,
+        "max": 3522397
+      },
+      "memory_cycles": {
+        "median": 4652533.5,
+        "min": 4451538,
+        "max": 5067618
+      }
+    },
+    {
+      "network": "sdt",
+      "N": 512,
+      "samples": 100,
+      "total_cycles": {
+        "median": 2919251.0,
+        "min": 2297484,
+        "max": 3278941
+      },
+      "count_cycles": {
+        "median": 2079084.5,
+        "min": 1441014,
+        "max": 2438089
+      },
+      "memory_cycles": {
+        "median": 840205.0,
+        "min": 823973,
+        "max": 861407
+      }
+    },
+    {
+      "network": "vgg16",
+      "N": 32,
+      "samples": 100,
+      "total_cycles": {
+        "median": 7090422.5,
+        "min": 6590874,
+        "max": 7645874
+      },
+      "count_cycles": {
+        "median": 7079152.0,
+        "min": 6562317,
+        "max": 7637380
+      },
+      "memory_cycles": {
+        "median": 11431.0,
+        "min": 8494,
+        "max": 28557
+      }
+    },
+    {
+      "network": "vgg16",
+      "N": 64,
+      "samples": 100,
+      "total_cycles": {
+        "median": 3683099.0,
+        "min": 3448739,
+        "max": 3895835
+      },
+      "count_cycles": {
+        "median": 3539929.0,
+        "min": 3281497,
+        "max": 3819023
+      },
+      "memory_cycles": {
+        "median": 134389.0,
+        "min": 76812,
+        "max": 235095
+      }
+    },
+    {
+      "network": "vgg16",
+      "N": 128,
+      "samples": 100,
+      "total_cycles": {
+        "median": 2566452.5,
+        "min": 2424127,
+        "max": 2736389
+      },
+      "count_cycles": {
+        "median": 1942056.0,
+        "min": 1768754,
+        "max": 2120484
+      },
+      "memory_cycles": {
+        "median": 621841.5,
+        "min": 547949,
+        "max": 702014
+      }
+    },
+    {
+      "network": "vgg16",
+      "N": 256,
+      "samples": 100,
+      "total_cycles": {
+        "median": 1875540.5,
+        "min": 1739060,
+        "max": 2047546
+      },
+      "count_cycles": {
+        "median": 1310942.0,
+        "min": 1160432,
+        "max": 1471612
+      },
+      "memory_cycles": {
+        "median": 568244.5,
+        "min": 546077,
+        "max": 589581
+      }
+    },
+    {
+      "network": "vgg16",
+      "N": 512,
+      "samples": 100,
+      "total_cycles": {
+        "median": 1208796.5,
+        "min": 1066963,
+        "max": 1374066
+      },
+      "count_cycles": {
+        "median": 1093844.5,
+        "min": 952011,
+        "max": 1259114
+      },
+      "memory_cycles": {
+        "median": 114952.0,
+        "min": 114952,
+        "max": 114952
+      }
+    },
+    {
+      "network": "vgg8dvs",
+      "N": 32,
+      "samples": 100,
+      "total_cycles": {
+        "median": 25545972.0,
+        "min": 19479803,
+        "max": 28729684
+      },
+      "count_cycles": {
+        "median": 25511786.0,
+        "min": 19386918,
+        "max": 28726932
+      },
+      "memory_cycles": {
+        "median": 22771.0,
+        "min": 2752,
+        "max": 305511
+      }
+    },
+    {
+      "network": "vgg8dvs",
+      "N": 64,
+      "samples": 100,
+      "total_cycles": {
+        "median": 13054382.5,
+        "min": 10725266,
+        "max": 14433933
+      },
+      "count_cycles": {
+        "median": 12756181.0,
+        "min": 9693774,
+        "max": 14363790
+      },
+      "memory_cycles": {
+        "median": 332813.0,
+        "min": 70143,
+        "max": 1313667
+      }
+    },
+    {
+      "network": "vgg8dvs",
+      "N": 128,
+      "samples": 100,
+      "total_cycles": {
+        "median": 8069850.0,
+        "min": 7390280,
+        "max": 8515025
+      },
+      "count_cycles": {
+        "median": 6378378.5,
+        "min": 4847202,
+        "max": 7182219
+      },
+      "memory_cycles": {
+        "median": 1738902.0,
+        "min": 1257992,
+        "max": 2646309
+      }
+    },
+    {
+      "network": "vgg8dvs",
+      "N": 256,
+      "samples": 100,
+      "total_cycles": {
+        "median": 6501621.0,
+        "min": 5715406,
+        "max": 6983325
+      },
+      "count_cycles": {
+        "median": 4132918.5,
+        "min": 3112435,
+        "max": 4638294
+      },
+      "memory_cycles": {
+        "median": 2390147.0,
+        "min": 2152698,
+        "max": 2690319
+      }
+    },
+    {
+      "network": "vgg8dvs",
+      "N": 512,
+      "samples": 100,
+      "total_cycles": {
+        "median": 3579412.0,
+        "min": 2698950,
+        "max": 4049947
+      },
+      "count_cycles": {
+        "median": 3534788.0,
+        "min": 2654593,
+        "max": 4005729
+      },
+      "memory_cycles": {
+        "median": 44631.5,
+        "min": 44218,
+        "max": 45024
+      }
+    }
+  ],
+  "figure": {
+    "width_inches": 3.375,
+    "height_to_width_ratio": 0.65,
+    "text_size_pt": 8,
+    "x_axis": "Node size N (PEs)",
+    "y_axis": "Latency (cycles)",
+    "y_scale": "log",
+    "y_limits_cycles": [
+      853570.4,
+      35912105.0
+    ],
+    "y_major_ticks_cycles": "base-10 decades across data-driven limits",
+    "y_tick_unit": "millions of cycles",
+    "boxes": "Q1-Q3 of 100 per-sample network totals; median center; min-max whiskers; linear NumPy percentile interpolation",
+    "lines": "Per-network medians across hardware sizes",
+    "colors": {
+      "boxes_whiskers": {
+        "resnet19": "#FFB000",
+        "vgg16": "#785EF0",
+        "sdt": "#DC267F",
+        "vgg8dvs": "#648FFF"
+      },
+      "median_line_markers_legend": {
+        "resnet19": "#FFB000",
+        "vgg16": "#785EF0",
+        "sdt": "#DC267F",
+        "vgg8dvs": "#648FFF"
+      }
+    },
+    "median_colors": {
+      "resnet19": "#FFB000",
+      "vgg16": "#785EF0",
+      "sdt": "#DC267F",
+      "vgg8dvs": "#648FFF"
+    },
+    "labels": {
+      "resnet19": "ResNet19 (13/19)",
+      "vgg16": "VGG16 (13/13)",
+      "sdt": "SDT (16/16)",
+      "vgg8dvs": "VGG8-DVS (6/6)"
+    },
+    "font_requested": "Gill Sans MT",
+    "font_used": "DejaVu Sans",
+    "font_file": {
+      "path": "/apps/anaconda/anaconda-2024.10/lib/python3.12/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf",
+      "bytes": 756072,
+      "sha256": "3fdf69cabf06049ea70a00b5919340e2ce1e6d02b0cc3c4b44fb6801bd1e0d22"
+    },
+    "font_fallback": true,
+    "pdf_graphics": "vector",
+    "pdf_creation_date": null,
+    "png_dpi": 300
+  },
+  "environment": {
+    "python": "3.12.7 | packaged by Anaconda, Inc. | (main, Oct  4 2024, 13:27:36) [GCC 11.2.0]",
+    "executable": "/lustre/fs1/home/ya867177/.venvs/neuro_cache_wcache/bin/python",
+    "platform": "Linux-4.18.0-553.123.1.el8_10.0.1.x86_64-x86_64-with-glibc2.28",
+    "numpy": "1.26.4",
+    "PyYAML": "6.0.1",
+    "matplotlib": "3.9.2",
+    "parallel_jobs": 4,
+    "process_isolation": "setsid; systemd user bus unavailable"
+  },
+  "future_capture_repository": {
+    "path": "neuro_cache_bench_trace",
+    "url": "git@github.com:SangYukekeaiai/neuro_cache_bench_trace.git",
+    "commit": null,
+    "used_for_demo": false,
+    "submodule": false,
+    "ignore_file": {
+      "path": ".gitignore",
+      "bytes": 2433,
+      "sha256": "45ec4f8947690ab563b1b76a23803084de70a21b60d625bf50facfd4d5a7e966"
+    }
+  },
+  "limitations": [
+    "100 selected captured samples from the 500-sample trace; no confidence intervals.",
+    "ResNet19 coverage is a 13-of-19 partial convolution sum with nonuniform omission of spatial-downsampling layers.",
+    "Network sums assume sequential execution with no inter-layer overlap.",
+    "Manual mappings; no solver optimization or buffer-capacity enforcement.",
+    "Lanes above a layer's COUT remain idle; fixed bandwidth and replay model determine latency."
+  ]
+}

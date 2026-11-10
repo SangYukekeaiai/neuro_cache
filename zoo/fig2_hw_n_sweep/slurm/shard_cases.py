@@ -17,6 +17,8 @@ def main():
     parser.add_argument("--cases-per-shard", type=int, help="maximum cases assigned to each shard")
     parser.add_argument("--limit", type=int, help="optional prefix limit for a small validation campaign")
     parser.add_argument("--network", help="restrict a validation manifest to one network")
+    parser.add_argument("--networks", nargs="+", metavar="NETWORK",
+                        help="restrict a manifest to one or more networks")
     parser.add_argument("--hardware-size", type=int, action="append",
                         help="restrict cases to one or more hardware sizes")
     parser.add_argument("--layer", action="append", help="restrict cases to one or more layers")
@@ -31,9 +33,17 @@ def main():
     if args.cpus < 1:
         parser.error("--cpus must be positive")
 
-    cases = config_cases()
-    if args.network:
-        cases = [case for case in cases if case[0] == args.network]
+    if args.network and args.networks:
+        parser.error("use only one of --network and --networks")
+    selected_networks = args.networks
+    if selected_networks:
+        selected_networks = [network for value in selected_networks for network in value.split(",")]
+    elif args.network:
+        selected_networks = [args.network]
+    try:
+        cases = config_cases(networks=selected_networks)
+    except KeyError as exc:
+        parser.error(f"unknown network: {exc.args[0]}")
     if args.hardware_size:
         cases = [case for case in cases if case[2] in args.hardware_size]
     if args.layer:

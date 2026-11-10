@@ -138,7 +138,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Run three representative n500 ResNet19 cases")
     parser.add_argument("--jobs", type=int, default=1, help="Independent replay/simulator subprocess pairs")
     parser.add_argument("--case-file", type=Path, help="JSON list or manifest containing explicit cases")
-    parser.add_argument("--output-dir", type=Path, help="Output directory (default: zoo/fig3_hw_n_sweep/outputs)")
+    parser.add_argument("--output-dir", type=Path, help="Output directory (default: zoo/fig2_hw_n_sweep/outputs)")
     parser.add_argument("--results-suffix", default="", help="Suffix inserted before results.csv, summary.csv, and commands.txt")
     parser.add_argument("--no-summary", action="store_true", help="Do not write a summary CSV")
     parser.add_argument("--batch-samples", action="store_true",

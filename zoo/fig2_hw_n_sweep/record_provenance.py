@@ -92,6 +92,29 @@ def resolve_cli_path(path):
     return path if path.is_absolute() else (Path.cwd() / path).resolve()
 
 
+def feasibility_report_path(network):
+    root = ROOT / "outputs/feasibility"
+    return root / "report.json" if network == "resnet19" else root / network / "report.json"
+
+
+def load_feasibility_reports(manifest):
+    reports = {}
+    for network, info in manifest["networks"].items():
+        path = feasibility_report_path(network)
+        if not path.is_file():
+            raise RuntimeError(f"missing feasibility report for {network}: {path}")
+        report = json.loads(path.read_text())
+        if report.get("trace") != info["trace"]:
+            raise RuntimeError(
+                f"feasibility report for {network} describes {report.get('trace')!r}, "
+                f"expected {info['trace']!r}"
+            )
+        if report.get("valid_layers") != info["included_layers"]:
+            raise RuntimeError(f"feasibility report for {network} does not match the manifest layers")
+        reports[network] = report
+    return reports
+
+
 def main():
     args = parse_args()
     results_dir = resolve_cli_path(args.results_dir)
@@ -115,7 +138,15 @@ def main():
         campaign_complete = True
         stats_rows = rows
     else:
-        campaign_complete = len(layer_rows) == 6500 and len(summary_rows) == 500
+        expected_layer_runs = sum(
+            len(info["included_layers"]) for info in manifest["networks"].values()
+        ) * len(manifest["hardware_sizes"]) * len(manifest["samples"])
+        expected_network_samples = (
+            len(manifest["networks"]) * len(manifest["hardware_sizes"]) * len(manifest["samples"])
+        )
+        campaign_complete = (
+            len(layer_rows) == expected_layer_runs and len(summary_rows) == expected_network_samples
+        )
         stats_rows = summary_rows
     plot.paper_style()
     font = font_manager.findfont(font_manager.FontProperties(family=matplotlib.rcParams["font.family"]))
@@ -126,9 +157,10 @@ def main():
             trace = REPO / trace
         inputs.append(trace / "meta.json")
         inputs.extend(trace / f"{name}.npy" for name in info["included_layers"])
-    feasibility = json.loads((ROOT / "outputs/feasibility/report.json").read_text())
-    for case in feasibility["cases"]:
-        inputs.append(Path(feasibility["trace"]) / f"{case['layer']}.npy")
+    feasibility = load_feasibility_reports(manifest)
+    for report in feasibility.values():
+        for case in report["cases"]:
+            inputs.append(Path(report["trace"]) / f"{case['layer']}.npy")
     statistics = []
     groups = {(r["network"], r["N"]) for r in stats_rows}
     for network, n in sorted(groups):
@@ -139,13 +171,13 @@ def main():
             for key in ("total_cycles", "count_cycles", "memory_cycles")
         }))
     python = "/lustre/fs1/home/ya867177/.venvs/neuro_cache_wcache/bin/python"
-    prefix = "zoo/fig3_hw_n_sweep"
+    prefix = "zoo/fig2_hw_n_sweep"
     shard_root = resolve_cli_path(args.shard_root)
     command_logs = sorted(shard_root.glob("shard_*/logs/commands_*.txt"))
     command_logs = [path for path in command_logs if path.is_file()]
     output_paths = [result_path, summary_path]
     if campaign_complete:
-        output_paths.extend(ROOT / f"fig3_hw_n_sweep.{suffix}" for suffix in ("pdf", "png"))
+        output_paths.extend(ROOT / f"fig2_hw_n_sweep.{suffix}" for suffix in ("pdf", "png"))
     output_paths.append(ROOT / "README.md")
     output_paths = [path for path in output_paths if path.is_file()]
     future_repo = REPO / "neuro_cache_bench_trace"
@@ -170,17 +202,30 @@ def main():
         assembly_args.extend(("--output-root", repo_path(assembly["output_root"])))
     else:
         assembly_args = [
-            "--manifest", "zoo/fig3_hw_n_sweep/outputs/slurm/n500-cases/manifest.json",
-            "--source", "zoo/fig3_hw_n_sweep/outputs/slurm/n500-cases/manifest.json",
-            "zoo/fig3_hw_n_sweep/outputs/slurm/n500-runs",
-            "--output-root", "zoo/fig3_hw_n_sweep/outputs/slurm/n500-assembled-runs",
+            "--manifest", "zoo/fig2_hw_n_sweep/outputs/slurm/n500-cases/manifest.json",
+            "--source", "zoo/fig2_hw_n_sweep/outputs/slurm/n500-cases/manifest.json",
+            "zoo/fig2_hw_n_sweep/outputs/slurm/n500-runs",
+            "--output-root", "zoo/fig2_hw_n_sweep/outputs/slurm/n500-assembled-runs",
         ]
     assembly_command = (
-        f"PYTHONPATH=src:zoo/fig3_hw_n_sweep/slurm {python} {prefix}/slurm/assemble_shards.py "
+        f"PYTHONPATH=src:zoo/fig2_hw_n_sweep/slurm {python} {prefix}/slurm/assemble_shards.py "
         f"{shlex.join(assembly_args)}"
     )
+    expected_layer_runs = sum(
+        len(info["included_layers"]) for info in manifest["networks"].values()
+    ) * len(manifest["hardware_sizes"]) * len(manifest["samples"])
+    expected_network_samples = (
+        len(manifest["networks"]) * len(manifest["hardware_sizes"]) * len(manifest["samples"])
+    )
+    labels = {
+        network: f"{plot.DISPLAY_NAMES.get(network, network)} ({len(info['included_layers'])}/"
+                 f"{len(info['included_layers']) + len(info.get('excluded_layers', {}))})"
+        for network, info in manifest["networks"].items()
+    }
+    all_totals = [row["total_cycles"] for row in stats_rows]
+    y_limits = [min(all_totals) * 0.8, max(all_totals) * 1.25] if all_totals else None
     document = {
-        "campaign": "fig3_hw_n_sweep", "samples_per_network_and_N": len(manifest["samples"]),
+        "campaign": "fig2_hw_n_sweep", "samples_per_network_and_N": len(manifest["samples"]),
         "campaign_complete": campaign_complete,
         "results_dir": str(results_dir.relative_to(REPO) if results_dir.is_relative_to(REPO) else results_dir),
         "shard_root": str(shard_root.relative_to(REPO) if shard_root.is_relative_to(REPO) else shard_root),
@@ -201,17 +246,25 @@ def main():
         "workloads": manifest["networks"],
         "capture_sample_indices": manifest["samples"],
         "metric": "For each network/N/sample, sum included layer total_cycles and count_cycles separately; memory_cycles is their difference. Layers execute sequentially without overlap.",
-        "coverage": "ResNet19 includes 13 of 19 captured convolutions. Layers 01,03,08,10,15,17 are omitted because stride-2 replay is unsupported. These are the spatial-downsampling convolutions, so omission is not uniform across network depth. Uncaptured operations are outside the metric.",
+        "coverage": {
+            network: {
+                "included_layers": len(info["included_layers"]),
+                "total_layers": len(info["included_layers"]) + len(info.get("excluded_layers", {})),
+            }
+            for network, info in manifest["networks"].items()
+        },
         "feasibility": feasibility,
-        "feasibility_artifacts": [record(p) for p in sorted((ROOT / "outputs/feasibility").iterdir()) if p.is_file()],
+        "feasibility_artifacts": [
+            record(p) for p in sorted((ROOT / "outputs/feasibility").rglob("*")) if p.is_file()
+        ],
         "commands": [
             "make -C src/lays/weight_trace_gen/spinalflow", "make -C src/lays/nocsim/eventsim",
             f"PYTHONPATH=src {python} {prefix}/check_replay.py",
             f"PYTHONPATH=src {python} {prefix}/gen_inputs.py",
-            f"PYTHONPATH=src:zoo/fig3_hw_n_sweep/slurm {python} {prefix}/slurm/shard_cases.py --batch-samples --num-shards 250 --cases-per-shard 100",
+            f"PYTHONPATH=src:zoo/fig2_hw_n_sweep/slurm {python} {prefix}/slurm/shard_cases.py --batch-samples --num-shards 250 --cases-per-shard 100",
             f"sbatch --partition=normal --time=90:00 --cpus-per-task=4 --array=0-64%65 {prefix}/slurm/run_array.sbatch --batch-samples",
             assembly_command,
-            f"PYTHONPATH=src:zoo/fig3_hw_n_sweep/slurm {python} {prefix}/slurm/merge_results.py --shard-root {repo_path(shard_root)}",
+            f"PYTHONPATH=src:zoo/fig2_hw_n_sweep/slurm {python} {prefix}/slurm/merge_results.py --carry-existing --shard-root {repo_path(shard_root)}",
             f"{python} {prefix}/plot.py", f"{python} {prefix}/record_provenance.py",
         ],
         "command_logs": [record(path) for path in command_logs],
@@ -229,17 +282,23 @@ def main():
         "source_patch": None,
         "binaries": [record(REPO / name) for name in ("src/lays/weight_trace_gen/spinalflow/spinalflowgen", "src/lays/nocsim/eventsim/eventsim")],
         "outputs": [record(path) for path in output_paths],
-        "artifact_counts": {"layer_runs": 6500, "network_sample_totals": 500, "layer_schedules": 65, "architectures": 5},
+        "artifact_counts": {
+            "layer_runs": expected_layer_runs,
+            "network_sample_totals": expected_network_samples,
+            "layer_schedules": sum(len(info["included_layers"]) for info in manifest["networks"].values())
+                               * len(manifest["hardware_sizes"]),
+            "architectures": len(manifest["hardware_sizes"]),
+        },
         "statistics": statistics,
         "figure": {"width_inches": 3.375, "height_to_width_ratio": 0.65, "text_size_pt": 8,
                    "x_axis": "Node size N (PEs)", "y_axis": "Latency (cycles)", "y_scale": "log",
-                   "y_limits_cycles": [2000000, 25000000],
-                   "y_major_ticks_cycles": [2000000, 5000000, 10000000, 20000000],
+                   "y_limits_cycles": y_limits,
+                   "y_major_ticks_cycles": "base-10 decades across data-driven limits",
                    "y_tick_unit": "millions of cycles",
                    "boxes": "Q1-Q3 of 100 per-sample network totals; median center; min-max whiskers; linear NumPy percentile interpolation",
                    "lines": "Per-network medians across hardware sizes",
-                   "colors": {"boxes_whiskers": plot.COLORS, "median_line_markers_legend": plot.MEDIAN_COLOR},
-                   "median_color": plot.MEDIAN_COLOR, "labels": plot.LABELS,
+                   "colors": {"boxes_whiskers": plot.COLORS, "median_line_markers_legend": plot.COLORS},
+                   "median_colors": plot.COLORS, "labels": labels,
                    "font_requested": "Gill Sans MT", "font_used": font_manager.FontProperties(fname=font).get_name(),
                    "font_file": record(font), "font_fallback": not any(p.is_file() and p.name.upper().startswith("GIL")
                        and p.suffix.lower() == ".ttf" for p in ROOT.iterdir()),

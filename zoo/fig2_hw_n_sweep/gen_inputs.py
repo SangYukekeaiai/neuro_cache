@@ -16,13 +16,26 @@ SAMPLE_SEED = 0
 SAMPLE_TOTAL = 500
 SAMPLE_INDICES = tuple(sample_indices(n=SAMPLE_COUNT, seed=SAMPLE_SEED, n_total=SAMPLE_TOTAL))
 SAMPLES = SAMPLE_INDICES
-TRACE_ROOT = Path("/lustre/fs1/home/ya867177/data/input_trace_delta/B09")
-NETWORKS = {"resnet19": TRACE_ROOT / "loas_resnet19_T4_n500"}
+TRACE_ROOT = Path("/lustre/fs1/home/ya867177/data/input_trace_delta")
+NETWORKS = {
+    "resnet19": TRACE_ROOT / "B09/loas_resnet19_T4_n500",
+    "vgg16": TRACE_ROOT / "B09/loas_vgg16_T4_n500",
+    "sdt": TRACE_ROOT / "A04/sdt_2_512_T4_n500",
+    "vgg8dvs": TRACE_ROOT / "C01/sma_azo_vgg_cifar10_dvs_T10_n500",
+}
+FEASIBILITY_ROOT = ROOT / "outputs/feasibility"
 
 
-def workloads():
+def feasibility_path(network):
+    if network == "resnet19":
+        return FEASIBILITY_ROOT / "report.json"
+    return FEASIBILITY_ROOT / network / "report.json"
+
+
+def workloads(networks=None):
+    selected = NETWORKS if networks is None else {network: NETWORKS[network] for network in networks}
     result = {}
-    for network, trace in NETWORKS.items():
+    for network, trace in selected.items():
         meta = json.loads((trace / "meta.json").read_text())
         result[network] = {layer: build_workload_from_trace(meta, layer)
                            for layer in valid_layer_names(meta)}
@@ -42,9 +55,6 @@ def schedule_path(network, layer, n):
 
 
 def main():
-    feasibility_path = ROOT / "outputs/feasibility/report.json"
-    feasibility = json.loads(feasibility_path.read_text())
-    assert not feasibility["stride2_supported"], "Reassess the public loader before including stride-2 layers"
     manifest = {
         "hardware_sizes": HARDWARE_SIZES,
         "samples": SAMPLES,
@@ -56,15 +66,23 @@ def main():
     }
     all_workloads = workloads()
     for network, trace in NETWORKS.items():
+        report_path = feasibility_path(network)
+        feasibility = json.loads(report_path.read_text())
         meta = json.loads((trace / "meta.json").read_text())
         assert meta["n_samples"] == SAMPLE_TOTAL
-        assert feasibility["trace"] == str(trace), (
-            f"{feasibility_path} describes {feasibility.get('trace')!r}, expected {trace}"
+        assert not feasibility["stride2_supported"], (
+            f"{report_path} reports stride-2 support; reassess the public loader before including those layers"
         )
-        assert feasibility["valid_layers"] == list(all_workloads[network])
+        assert feasibility["trace"] == str(trace), (
+            f"{report_path} describes {feasibility.get('trace')!r}, expected {trace}"
+        )
+        assert feasibility["valid_layers"] == list(all_workloads[network]), (
+            f"{report_path} valid layers do not match the trace metadata"
+        )
         manifest["networks"][network] = {
             "arch": meta["arch"],
             "trace": str(trace),
+            "feasibility": str(report_path),
             "included_layers": list(all_workloads[network]),
             "excluded_layers": {name: exclusion_reason(meta, name) for name in meta["layers"]
                                 if name not in all_workloads[network]},

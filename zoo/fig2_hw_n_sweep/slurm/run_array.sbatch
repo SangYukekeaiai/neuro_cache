@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=fig3-hw-n
+#SBATCH --job-name=fig2-hw-n
 #SBATCH --partition=normal
 #SBATCH --time=90:00
 #SBATCH --array=0-0%1
 #SBATCH --cpus-per-task=1
-#SBATCH --output=/lustre/fs1/home/ya867177/projects/neuro_cache_wcache/zoo/fig3_hw_n_sweep/outputs/slurm/runs/slurm-%A_%a.out
-#SBATCH --error=/lustre/fs1/home/ya867177/projects/neuro_cache_wcache/zoo/fig3_hw_n_sweep/outputs/slurm/runs/slurm-%A_%a.err
+#SBATCH --output=/lustre/fs1/home/ya867177/projects/neuro_cache_wcache/zoo/fig2_hw_n_sweep/outputs/slurm/runs/slurm-%A_%a.out
+#SBATCH --error=/lustre/fs1/home/ya867177/projects/neuro_cache_wcache/zoo/fig2_hw_n_sweep/outputs/slurm/runs/slurm-%A_%a.err
 
 set -euo pipefail
 
 REPO_DEFAULT=/lustre/fs1/home/ya867177/projects/neuro_cache_wcache
 PYTHON_DEFAULT=/lustre/fs1/home/ya867177/.venvs/neuro_cache_wcache/bin/python
-CASE_DIR="$REPO_DEFAULT/zoo/fig3_hw_n_sweep/outputs/slurm/cases"
-SHARD_ROOT="$REPO_DEFAULT/zoo/fig3_hw_n_sweep/outputs/slurm/runs"
+CASE_DIR="$REPO_DEFAULT/zoo/fig2_hw_n_sweep/outputs/slurm/cases"
+SHARD_ROOT="$REPO_DEFAULT/zoo/fig2_hw_n_sweep/outputs/slurm/runs"
 REPO="$REPO_DEFAULT"
 PYTHON="$PYTHON_DEFAULT"
 BATCH_ARGS=()
@@ -71,7 +71,7 @@ cd "$REPO"
 jobs=${SLURM_CPUS_PER_TASK:-1}
 echo "task=$task_index cpus=$jobs case_file=$CASE_FILE shard_dir=$SHARD_DIR"
 exec env PYTHONPATH="$REPO/src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
-    "$REPO/zoo/fig3_hw_n_sweep/run.py" \
+    "$REPO/zoo/fig2_hw_n_sweep/run.py" \
     --case-file "$CASE_FILE" \
     --output-dir "$SHARD_DIR" \
     --results-suffix "_$task_tag" \
