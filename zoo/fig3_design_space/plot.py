@@ -33,7 +33,16 @@ HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 FONT_DIR = REPO / "zoo" / "fig2_hw_n_sweep"
 N_BINS = 24
-BAR_COLOR = "#648FFF"
+# Bins are ordered (latency), so they take a perceptually uniform sequential
+# map: cividis, dark blue = fast through yellow = slow, colorblind-safe and
+# free of the magenta used for the architecture markers.  The top is cut at
+# 0.85 so the slowest bins stay visible on white.  Color repeats the x
+# position, so it never carries information on its own.
+BAR_CMAP = "cividis"
+BAR_CMAP_RANGE = (0.0, 0.85)
+# Bars keep this fraction of each bin's log10 width, inset equally on both
+# sides, so neighbours stay apart without an edge stroke crossing a boundary.
+BAR_KEEP = 0.975
 MARK_COLOR = "#DC267F"
 DISPLAY = {
     "loas_t4": "LoAS",
@@ -52,6 +61,17 @@ def paper_style() -> str:
         "figure.titlesize": 8, "mathtext.default": "regular",
         "pdf.fonttype": 42, "ps.fonttype": 42,
     })
+    # Numbers go through mathtext in the x-height-matched digit face that
+    # ../fig2_hw_n_sweep/make_digit_font.py builds.
+    digits = FONT_DIR / "DIGITS.ttf"
+    if digits.is_file():
+        font_manager.fontManager.addfont(str(digits))
+        dfam = font_manager.FontProperties(fname=str(digits)).get_name()
+        plt.rcParams.update({"mathtext.fontset": "custom", "mathtext.default": "rm",
+                             "mathtext.rm": dfam, "mathtext.it": dfam,
+                             "mathtext.bf": dfam, "mathtext.cal": dfam})
+    else:
+        print(f"WARNING: {digits} missing; numbers fall back to the text face.")
     fonts = sorted(
         p for p in FONT_DIR.iterdir()
         if p.is_file() and p.name.upper().startswith("GIL")
@@ -121,8 +141,15 @@ def main() -> int:
     ax.set_axisbelow(True)
     ax.grid(axis="y", linestyle="-", alpha=0.5)
     ax.set_xscale("log")
-    ax.bar(edges[:-1], heights, width=np.diff(edges), align="edge",
-           color=BAR_COLOR, edgecolor=BAR_COLOR, linewidth=0.3)
+    centers = np.log10(np.sqrt(edges[:-1] * edges[1:]))
+    t = (centers - centers[0]) / (centers[-1] - centers[0])
+    shade = BAR_CMAP_RANGE[0] + t * (BAR_CMAP_RANGE[1] - BAR_CMAP_RANGE[0])
+    log_lo, log_hi = np.log10(edges[:-1]), np.log10(edges[1:])
+    inset = (1 - BAR_KEEP) / 2 * (log_hi - log_lo)
+    bar_lo, bar_hi = 10 ** (log_lo + inset), 10 ** (log_hi - inset)
+    assert np.all(bar_lo > edges[:-1]) and np.all(bar_hi < edges[1:])
+    ax.bar(bar_lo, heights, width=bar_hi - bar_lo, align="edge",
+           color=matplotlib.colormaps[BAR_CMAP](shade), linewidth=0)
 
     # Architecture markers: one dashed line per distinct solver delay, labelled
     # with every architecture that lands on it.
@@ -134,16 +161,18 @@ def main() -> int:
     ymax = heights.max() * 1.08
     for delay, names in sorted(by_delay.items()):
         ax.axvline(delay, color=MARK_COLOR, linestyle="--", linewidth=0.8)
-        ax.text(delay * 1.06, ymax * 0.97, ", ".join(sorted(names)),
-                rotation=90, ha="left", va="top", color=MARK_COLOR, fontsize=8,
-                bbox={"facecolor": "white", "edgecolor": "none",
-                      "alpha": 0.75, "pad": 0.5})
+        # No background box: the 1.03 offset fits each label in the clear
+        # space right of its line (the GustavSNN group sits in the empty bin).
+        ax.text(delay * 1.03, ymax * 0.97, ", ".join(sorted(names)),
+                rotation=90, ha="left", va="top", color=MARK_COLOR, fontsize=8)
 
     ax.set_xlim(edges[0] / 1.15, edges[-1] * 1.15)
     ax.set_ylim(0, ymax)
     ax.set_xlabel("Schedule latency (temporal iterations)", labelpad=2)
     ax.set_ylabel("Valid schedules", labelpad=2)
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v / 1e3:g}k"))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"${v / 1e3:g}$k"))
+    ax.xaxis.set_major_formatter(
+        FuncFormatter(lambda v, _: f"$10^{{{int(round(np.log10(v)))}}}$"))
     ax.tick_params(pad=1)
 
     outputs = []
@@ -180,7 +209,8 @@ def main() -> int:
         f"{n_sched:,} valid schedules found by exhaustive enumeration "
         f"({summary['n_node_assignments']:,} local-buffer-valid per-dimension "
         "node assignments, each crossed with every legal NoC partition), "
-        f"counted into {N_BINS} log-spaced latency bins; "
+        f"counted into {N_BINS} log-spaced latency bins, each shaded by its "
+        "latency (dark blue = fast, yellow = slow); "
         f"{summary['n_distinct_latencies']} distinct latencies span "
         f"{summary['best_latency']:,} to {summary['worst_latency']:,} "
         f"iterations, a {summary['spread']}x spread. Latency is the "

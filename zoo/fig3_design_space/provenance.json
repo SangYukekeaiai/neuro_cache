@@ -1,8 +1,8 @@
 {
   "figure": "fig3_design_space",
-  "generated_at_utc": "2026-11-10T11:48:15.279462+00:00",
-  "repo_commit": "dd37b46",
-  "repo": "/u/yyu9/projects/neuro_cache_wcache",
+  "generated_at_utc": "2026-11-10T16:13:45.420546+00:00",
+  "repo_commit": "1932ba7",
+  "repo": "/u/yyu9/projects/neuro_cache",
   "command": "conda run -n gurobi python zoo/fig3_design_space/plot.py",
   "regenerate_all": [
     "conda run -n gurobi python zoo/fig3_design_space/enumerate.py",
@@ -104,5 +104,5 @@
     "zoo/fig3_design_space/fig3_design_space.pdf",
     "zoo/fig3_design_space/fig3_design_space.png"
   ],
-  "git_status_clean_for_inputs": "?? zoo/fig3_design_space/"
+  "git_status_clean_for_inputs": "M zoo/fig3_design_space/caption.txt\n M zoo/fig3_design_space/fig3_design_space.pdf\n M zoo/fig3_design_space/fig3_design_space.png\n M zoo/fig3_design_space/plot.py\n M zoo/fig3_design_space/provenance.json"
 }
