@@ -1,0 +1,10 @@
+dataflow:
+  # Figure 3 variant of examples/node_mapspace/prosperity.yaml: COUT fanout
+  # drops 8 -> 4 and CIN is resident at 16 instead of barred, keeping the
+  # weight tile tiny while the full T row tile stays local.
+  node_dim_capacity:
+    CIN:  16
+    COUT: {spatial: 4}
+    HO:   4
+    WO:   4
+    T:    full

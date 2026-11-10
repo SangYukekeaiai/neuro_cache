@@ -1,0 +1,121 @@
+{
+  "arch": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig3_design_space/arch.yaml",
+  "layer": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig3_design_space/layer.yaml",
+  "total_work": 150994944,
+  "n_mapspaces": 5,
+  "n_feasible": 5,
+  "all_closed_form_match": true,
+  "baselines": [
+    {
+      "name": "gustavsnn_fig3",
+      "mapspace": "zoo/fig3_design_space/mapspaces/gustavsnn_fig3.yaml",
+      "status": "OPTIMAL",
+      "has_solution": true,
+      "objective": 188.5913338750062,
+      "delay": 2359296,
+      "node_spatial": {
+        "COUT": 2,
+        "HO": 2
+      },
+      "pe_spatial": 4,
+      "t_spatial": 1,
+      "noc_fanout": 16,
+      "closed_form_latency": 2359296,
+      "node_temporal": {
+        "KH": 3,
+        "KW": 3,
+        "CIN": 512,
+        "WO": 4
+      },
+      "closed_form_matches": true
+    },
+    {
+      "name": "loas_t4",
+      "mapspace": "zoo/fig3_design_space/mapspaces/loas_t4.yaml",
+      "status": "OPTIMAL",
+      "has_solution": true,
+      "objective": 175.0963902638073,
+      "delay": 589824,
+      "node_spatial": {
+        "COUT": 4,
+        "T": 4
+      },
+      "pe_spatial": 4,
+      "t_spatial": 4,
+      "noc_fanout": 16,
+      "closed_form_latency": 589824,
+      "node_temporal": {
+        "KH": 3,
+        "KW": 3,
+        "CIN": 512
+      },
+      "closed_form_matches": true
+    },
+    {
+      "name": "prosperity_fig3",
+      "mapspace": "zoo/fig3_design_space/mapspaces/prosperity_fig3.yaml",
+      "status": "OPTIMAL",
+      "has_solution": true,
+      "objective": 189.02866327559468,
+      "delay": 2359296,
+      "node_spatial": {
+        "COUT": 4
+      },
+      "pe_spatial": 4,
+      "t_spatial": 1,
+      "noc_fanout": 16,
+      "closed_form_latency": 2359296,
+      "node_temporal": {
+        "CIN": 16,
+        "HO": 4,
+        "WO": 4,
+        "T": 4
+      },
+      "closed_form_matches": true
+    },
+    {
+      "name": "ptb_t4",
+      "mapspace": "zoo/fig3_design_space/mapspaces/ptb_t4.yaml",
+      "status": "OPTIMAL",
+      "has_solution": true,
+      "objective": 175.0963902638073,
+      "delay": 589824,
+      "node_spatial": {
+        "COUT": 4,
+        "T": 4
+      },
+      "pe_spatial": 4,
+      "t_spatial": 4,
+      "noc_fanout": 16,
+      "closed_form_latency": 589824,
+      "node_temporal": {
+        "KH": 3,
+        "KW": 3,
+        "CIN": 512
+      },
+      "closed_form_matches": true
+    },
+    {
+      "name": "spinalflow_fig3",
+      "mapspace": "zoo/fig3_design_space/mapspaces/spinalflow_fig3.yaml",
+      "status": "OPTIMAL",
+      "has_solution": true,
+      "objective": 188.9593338750062,
+      "delay": 2359296,
+      "node_spatial": {
+        "COUT": 4
+      },
+      "pe_spatial": 4,
+      "t_spatial": 1,
+      "noc_fanout": 16,
+      "closed_form_latency": 2359296,
+      "node_temporal": {
+        "KH": 3,
+        "KW": 3,
+        "CIN": 512,
+        "T": 4
+      },
+      "closed_form_matches": true
+    }
+  ]
+}

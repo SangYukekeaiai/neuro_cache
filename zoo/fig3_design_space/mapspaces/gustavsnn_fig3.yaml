@@ -1,0 +1,11 @@
+dataflow:
+  # Figure 3 variant of examples/node_mapspace/gustavsnn.yaml: HO fanout
+  # drops 4 -> 2 so the non-T spatial product (COUT 2 x HO 2) stays within
+  # the 8-PE budget. T is barred from NodeLevel.
+  node_dim_capacity:
+    KH:   full
+    KW:   full
+    CIN:  full
+    COUT: {spatial: 2}
+    HO:   {spatial: 2}
+    WO:   4

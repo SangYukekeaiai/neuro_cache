@@ -1,0 +1,108 @@
+{
+  "figure": "fig3_design_space",
+  "generated_at_utc": "2026-11-10T11:48:15.279462+00:00",
+  "repo_commit": "dd37b46",
+  "repo": "/u/yyu9/projects/neuro_cache_wcache",
+  "command": "conda run -n gurobi python zoo/fig3_design_space/plot.py",
+  "regenerate_all": [
+    "conda run -n gurobi python zoo/fig3_design_space/enumerate.py",
+    "python3 zoo/fig3_design_space/run_baselines.py",
+    "python3 zoo/fig3_design_space/check_consistency.py",
+    "conda run -n gurobi python zoo/fig3_design_space/plot.py"
+  ],
+  "inputs": {
+    "arch": "zoo/fig3_design_space/arch.yaml",
+    "layer": "zoo/fig3_design_space/layer.yaml",
+    "mapspaces": [
+      "zoo/fig3_design_space/mapspaces/gustavsnn_fig3.yaml",
+      "zoo/fig3_design_space/mapspaces/loas_t4.yaml",
+      "zoo/fig3_design_space/mapspaces/prosperity_fig3.yaml",
+      "zoo/fig3_design_space/mapspaces/ptb_t4.yaml",
+      "zoo/fig3_design_space/mapspaces/spinalflow_fig3.yaml"
+    ],
+    "schedules_csv": "zoo/fig3_design_space/outputs/schedules.csv",
+    "summary_json": "zoo/fig3_design_space/outputs/summary.json",
+    "baselines_json": "zoo/fig3_design_space/outputs/baselines.json",
+    "consistency_json": "zoo/fig3_design_space/outputs/consistency.json",
+    "fonts": "zoo/fig2_hw_n_sweep"
+  },
+  "font_family_used": "Gill Sans MT",
+  "n_schedules": 3948846,
+  "n_node_assignments": 65379,
+  "n_distinct_latencies": 24,
+  "best_latency": 294912,
+  "worst_latency": 150994944,
+  "spread": 512,
+  "n_bins": 24,
+  "n_occupied_bins": 21,
+  "bin_edges": [
+    294911.7050882949,
+    382453.54674123885,
+    495980.88723060733,
+    643207.6329115535,
+    834137.1002131492,
+    1081741.9855583052,
+    1402845.7947987313,
+    1819265.9157708285,
+    2359296.000000003,
+    3059628.3739299057,
+    3967847.097844852,
+    5145661.06329242,
+    6673096.8017051825,
+    8653935.884466426,
+    11222766.358389832,
+    14554127.326166604,
+    18874367.99999999,
+    24477026.991439257,
+    31742776.782758832,
+    41165288.50633937,
+    53384774.41364148,
+    69231487.07573144,
+    89782130.8671187,
+    116433018.60933289,
+    150995094.99494398
+  ],
+  "bin_heights": [
+    21396,
+    37852,
+    90576,
+    138540,
+    23379,
+    254195,
+    377478,
+    459950,
+    0,
+    483696,
+    528944,
+    352690,
+    20513,
+    445881,
+    217092,
+    5203,
+    251091,
+    71816,
+    112393,
+    13502,
+    0,
+    35908,
+    0,
+    6751
+  ],
+  "markers": {
+    "589824": [
+      "LoAS",
+      "PTB"
+    ],
+    "2359296": [
+      "GustavSNN",
+      "Prosperity",
+      "SpinalFlow"
+    ]
+  },
+  "baselines_all_feasible": true,
+  "outputs": [
+    "zoo/fig3_design_space/fig3_design_space.pdf",
+    "zoo/fig3_design_space/fig3_design_space.png"
+  ],
+  "git_status_clean_for_inputs": "?? zoo/fig3_design_space/"
+}

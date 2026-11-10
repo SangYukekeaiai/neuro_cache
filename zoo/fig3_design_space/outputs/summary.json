@@ -1,0 +1,67 @@
+{
+  "layer": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig3_design_space/layer.yaml",
+  "arch": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig3_design_space/arch.yaml",
+  "bounds": {
+    "KH": 3,
+    "KW": 3,
+    "CIN": 512,
+    "COUT": 512,
+    "HO": 4,
+    "WO": 4,
+    "T": 4
+  },
+  "total_work": 150994944,
+  "lb_byte_caps": {
+    "weight": 30720,
+    "psum": 1024,
+    "vmem": 1024
+  },
+  "glb_byte_caps": {
+    "weight": 1966080,
+    "psum": 65536,
+    "vmem": 65536
+  },
+  "bytes_per_element": {
+    "weight": 1,
+    "psum": 2,
+    "vmem": 4
+  },
+  "budgets": {
+    "pe_spatial_cap": 8,
+    "t_spatial_cap": 4,
+    "noc_fanout_cap": 16
+  },
+  "n_node_assignments": 65379,
+  "n_schedules": 3948846,
+  "n_distinct_latencies": 24,
+  "best_latency": 294912,
+  "worst_latency": 150994944,
+  "spread": 512,
+  "latency_counts": {
+    "294912": 21396,
+    "393216": 37852,
+    "524288": 7400,
+    "589824": 83176,
+    "786432": 138540,
+    "1048576": 23379,
+    "1179648": 254195,
+    "1572864": 377478,
+    "2097152": 55547,
+    "2359296": 404403,
+    "3145728": 483696,
+    "4194304": 56247,
+    "4718592": 472697,
+    "6291456": 352690,
+    "8388608": 20513,
+    "9437184": 445881,
+    "12582912": 217092,
+    "16777216": 5203,
+    "18874368": 251091,
+    "25165824": 71816,
+    "37748736": 112393,
+    "50331648": 13502,
+    "75497472": 35908,
+    "150994944": 6751
+  },
+  "csv": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig3_design_space/outputs/schedules.csv"
+}

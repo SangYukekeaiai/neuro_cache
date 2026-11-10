@@ -1,0 +1,10 @@
+dataflow:
+  # Figure 3 variant of examples/node_mapspace/ptb.yaml: PTB batches
+  # timesteps, so T is counted in-parallel (spatial 4) instead of as a
+  # 64-tick temporal window. HO/WO stay barred.
+  node_dim_capacity:
+    KH:   4
+    KW:   4
+    CIN:  full
+    COUT: {spatial: 4}
+    T:    {spatial: 4}

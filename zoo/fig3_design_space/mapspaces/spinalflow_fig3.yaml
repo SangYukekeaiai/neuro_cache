@@ -1,0 +1,10 @@
+dataflow:
+  # Figure 3 variant of examples/node_mapspace/spinalflow.yaml: COUT fanout
+  # drops 8 -> 4 so the full-CIN weight tile (3*3*512*4 = 18432 B) fits the
+  # 30720 B LB weight capacity.
+  node_dim_capacity:
+    KH:   4
+    KW:   4
+    CIN:  full
+    COUT: {spatial: 4}
+    T:    full

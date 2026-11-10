@@ -1,0 +1,10 @@
+dataflow:
+  # Figure 3 variant of examples/node_mapspace/loas.yaml: LoAS is fully
+  # temporal-parallel, so T is the extra parallel axis (spatial 4) rather
+  # than an LB-resident loop. COUT keeps its published spatial 4.
+  node_dim_capacity:
+    KH:   full
+    KW:   full
+    CIN:  full
+    COUT: {spatial: 4}
+    T:    {spatial: 4}
