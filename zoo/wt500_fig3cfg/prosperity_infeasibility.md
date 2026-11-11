@@ -103,9 +103,19 @@ Layers that are high-`T` yet feasible, each explained by the same arithmetic:
 |---|---|---:|---|
 | A08 L10-L12 | 3x3, 2x2 out, T=32 | 1,024 B | `ho = wo = 2`, so `HO_r = WO_r = 2`: `2*2*2*4*32 = 1024`, fits with **zero** slack |
 | A08 L13 | GEMM 1x1, COUT 10, T=32 | 128 B | `ho = wo = 1` and `COUT_spatial = largest_divisor(10, 4) = 2` |
-| C01 L5-L6 | GEMM, 1x1 out, T=10/16 | 80-160 B | `ho = wo = 1` collapses the spatial product |
+| C01 L5-L6 | GEMM, 1x1 out, T=10/16 | 32-128 B | `ho = wo = 1` collapses the spatial product; these heads are among the only four layers campaign-wide where `_largest_divisor_leq(COUT, 4) < 4`, relaxing the `COUT_spatial = 4` the rest of this doc assumes |
 | A02, A04, B09 S2 convs | 3x3, T=4 | 512 B | `T = 4`, half the budget |
 | A07 GEMMs | 1x1, 128x1 out, T=4 | 128 B | `wo = 1`, `T = 4` |
+
+All four layers with `COUT_spatial < 4` are the small classifier heads:
+`COUT = 10` gives 2 (A08 L13, B09/`loas_vgg16` L13, C01/cifar10_dvs L6) and
+`COUT = 11` gives 1 (C01/dvs128_gesture L6). Every other layer in all 157 has
+`COUT` divisible by 4, so `COUT_spatial = 4` holds everywhere else, including
+all 17 infeasible pairs.
+
+The four C01 head values in full: cifar10_dvs L5 (`COUT 1024`, T=10) 80 B and
+L6 (`COUT 10` -> `COUT_spatial` 2, T=10) 40 B; dvs128_gesture L5 (`COUT 1024`,
+T=16) 128 B and L6 (`COUT 11` -> `COUT_spatial` 1, T=16) 32 B.
 
 A08 L10-L12 at exactly 1,024 B is the tightest confirmation available: one more
 factor of 2 anywhere in `HO`, `WO`, `COUT` or `T` would flip them infeasible, and
