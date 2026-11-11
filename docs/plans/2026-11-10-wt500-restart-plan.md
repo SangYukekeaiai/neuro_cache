@@ -66,13 +66,79 @@ whether it is expected (recorded outcome) or a gap to fix.
   or a recorded policy; zero unexplained gaps.
 - User signs off on the coverage matrix.
 
-## Later steps (outline only, planned after Step 1)
+## Step 2: config review, one architecture at a time
 
-- **Step 2**: resolve the three open user decisions (generation host
-  Stokes vs DeltaAI; accept vs revise the 17 prosperity infeasibles; PTB
-  T 64 vs 32), then freeze configs.
-- **Step 3**: close the unfinished doc/code rows from the handoff (T14
-  archs.md fixes, T21 dead-reference sweep, consolidated doc sync).
+Goal: the user sees and signs off every configuration the campaign solves
+with: the shared hardware (`zoo/wt500_fig3cfg/arch.yaml`) and each
+architecture's node-mapspace (`zoo/wt500_fig3cfg/mapspaces/<arch>.yaml`),
+presented one by one ("popped up"), never as one bulk dump.
+
+Protocol per pop-up: show the full YAML, the interpretation (what each knob
+makes the solver do), the diffs from the fig3 baseline, and any open flag on
+that arch. The user approves, edits, or defers; an edit is a dispatched task
+and (because configs are content-hash gated) re-solves only that arch's
+pairs. Next pop-up goes out only after the verdict on the current one.
+
+Order and known flags:
+
+1. **Hardware `arch.yaml`** (shared by all 5): the 4 PEs/node, 16 nodes,
+   L1 weight 32,768 B / psum 1,024 B / vmem 1,024 B, L2 2 MB figures.
+   Flag: psum 1,024 B is what makes prosperity's 17 high-T layers
+   infeasible (T <= 8 boundary, `prosperity_infeasibility.md`); 4,096 B is
+   the re-solved minimum for full coverage but changes every prosperity
+   cost number. Decide accept-the-17 vs widen here, once, since the
+   hardware is shared.
+2. **loas** mapspace (T: full; COUT 4 spatial).
+3. **ptb** mapspace. Flag: T 64 (published window, matches TW_SIZE 8x8)
+   vs the user's recalled 32 - confirm.
+4. **spinalflow** mapspace.
+5. **prosperity** mapspace (CIN 16 residency; HO/WO pinned to 4 by
+   equality - the other half of the infeasibility arithmetic; a HO/WO cap
+   of 2 is the mapspace-side alternative remedy).
+6. **gustavsnn** mapspace (wave width = per-schedule NodeLevel spatial
+   product; executes last in generation).
+
+Exit: every config either approved as-is or edited + re-solved; the PTB T
+and prosperity-psum decisions recorded; configs frozen (committed) for
+generation.
+
+Step 2 closed 2026-11-10: user finalized the mapspaces directly (gustavsnn
+WO 4->1; prosperity KH/KW 4->1, HO 4->8, WO 4->1; others as reviewed).
+Flag carried into step 3: prosperity KH/KW=1 vs the bridge's no-kernel-offset
+constraint on 3x3 layers - the demo run must prove or disprove it.
+
+## Step 3: generator walkthroughs, one architecture at a time
+
+Goal: verify each of the 5 weight-trace generators by (a) reading its code
+and (b) a real demo run, delivering per arch one markdown walkthrough with a
+CONCRETE worked example: a real captured layer + the finalized configs ->
+solved schedule -> tiles -> packed native task -> emitted weight-trace
+records, with actual numbers (addresses, tile bounds, ticks) shown at every
+hop, plus a caveats section listing anything that may be wrong or fragile.
+
+Protocol: one arch per pop-up, same as step 2: deliver walkthrough, user
+reviews, then the next arch. Order: loas, ptb, spinalflow, prosperity,
+gustavsnn (campaign execution order).
+
+Per-arch recipe:
+1. Code path read: weight_trace.py -> <arch>/native_bridge.py -> <arch>/*Gen.h
+   (+ stream writer stream.py, WCTS v2/v3 for gustavsnn).
+2. Demo run on THIS host (gurobi 13 licensed locally): pick one small real
+   layer, solve its schedule with the FINALIZED mapspace + arch.yaml, run the
+   generator on >=1 real sample, show the emitted records decoded.
+3. Caveat hunt: dimension/offset assumptions, bridge-gate conditions,
+   tick-rule compliance, anything the mapspace edits (esp. prosperity
+   KH/KW=1) break.
+
+Deliverable per arch: zoo/wt500_fig3cfg/walkthroughs/<arch>.md.
+Exit: 5 walkthroughs reviewed; caveat list resolved or accepted by user.
+
+## Later steps (outline only)
+
+- **Step 3.5**: remaining open decision - generation host (Stokes vs
+  DeltaAI); re-solve prosperity + gustavsnn schedules (mapspace hash changed).
+- **Deferred from old plan**: handoff doc/code rows (T14 archs.md fixes, T21
+  dead-reference sweep, consolidated doc sync).
 - **Step 4**: generation pilot with the corrected direction (heavy SpinalFlow
   case isolated, tile-count reporting for shard weighting).
 - **Step 5**: full S4/S5 generation, tile-weighted shards, gustavsnn last.

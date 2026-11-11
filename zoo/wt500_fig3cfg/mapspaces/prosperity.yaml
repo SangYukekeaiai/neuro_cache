@@ -1,14 +1,14 @@
 dataflow:
   # Campaign copy (2026-11-10) of fig3's prosperity_fig3.yaml: COUT fanout 4
-  # (down from the published 8); CIN resident at up to 16 instead of barred;
-  # capped KH/KW/HO/WO block; T fully resident. COUT spatial 4 exactly fills
-  # the 4-PE node. KH/KW are explicit so every native tile receives the full
-  # kernel window (the bridge has no kernel-offset field).
+  # (down from the published 8); CIN resident at up to 16; HO residency 8;
+  # T fully resident. COUT spatial 4 exactly fills the 4-PE node. KH/KW/WO
+  # are absent, so they are barred from NodeLevel residency (absent == cap 1
+  # per node_capacity.py). 3x3 layers solve with a split kernel, then the
+  # gen_inputs.py kernel_tile_bound gate rejects them; under this mapspace
+  # prosperity generates only 1x1/GEMM-shaped layers (user-accepted). The
+  # bridge expands resident CIN ranges one channel at a time.
   node_dim_capacity:
-    KH:   4
-    KW:   4
     CIN:  16
     COUT: {spatial: 4}
-    HO:   4
-    WO:   4
+    HO:   8
     T:    full

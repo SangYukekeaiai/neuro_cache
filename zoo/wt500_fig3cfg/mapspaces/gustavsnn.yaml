@@ -9,4 +9,4 @@ dataflow:
     CIN:  full
     COUT: {spatial: 2}
     HO:   {spatial: 2}
-    WO:   4
+    WO:   1
