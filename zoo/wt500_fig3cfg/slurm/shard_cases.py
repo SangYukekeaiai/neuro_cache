@@ -91,8 +91,9 @@ def main() -> int:
     print(f"manifest={manifest}")
     print(f"sample_range={SAMPLE_START}:{SAMPLE_START + SAMPLE_COUNT} ({SAMPLE_COUNT} samples)")
     print(f"combos={len(combo_records)} cases={len(cases)} shards={num_shards} cases_per_shard={cases_per_shard}")
-    print(f"sbatch={sbatch_command(args.output_dir, shard_root, num_shards, args.cpus,
-                                  args.trace_root, args.schedule_cache, args.repo, args.python)}")
+    sbatch_line = sbatch_command(args.output_dir, shard_root, num_shards, args.cpus,
+                                 args.trace_root, args.schedule_cache, args.repo, args.python)
+    print(f"sbatch={sbatch_line}")
     return 0
 
 
