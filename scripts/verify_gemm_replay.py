@@ -38,7 +38,7 @@ def main():
     meta = json.loads((args.trace_dir / "meta.json").read_text())
     problem = build_workload_from_trace(meta, layer)["problem"]
     assert problem == dict(KH=1, KW=1, CIN=768, COUT=3072, HO=128, WO=1, T=4, shape="snn-layer")
-    trace = load_layer_trace(args.trace_dir, layer, mmap=True)
+    trace = load_layer_trace(args.trace_dir, layer, mmap=False)
     assert trace.shape == (4, 5, 768, 128, 1)
     token, cout_stop = 10, 64
     tile = NodeTileSpec(0, {DIM_KH: 1, DIM_KW: 1, DIM_CIN: problem["CIN"], DIM_COUT: cout_stop,

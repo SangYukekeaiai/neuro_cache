@@ -91,10 +91,8 @@ def _resolve_samples(args: argparse.Namespace) -> List[int]:
 # ----------------------------------------------------------------------
 
 # Populated once per worker process by _init_worker, read by _process_chunk.
-# Passing `trace` this way (via Pool initargs, set once per worker) rather
-# than as a per-task argument matters: a memmap'd array (see
-# weight_trace_gen/trace.py's load_layer_trace(mmap=True)) pickles cheaply by
-# file/offset/shape, so this happens once per worker, not once per sample.
+# The parent reads the trace before Pool(...) so forked workers inherit one
+# read-only RAM allocation through initargs instead of each copying it.
 _STATE = {}
 
 
@@ -165,7 +163,7 @@ def run_one_combo(args: argparse.Namespace) -> int:
         node_level_spatial_product(artifact.result["strategy"])
         if args.arch == "gustavsnn" else None
     )
-    trace = load_layer_trace(trace_root / args.trace_dir, args.layer, mmap=True)
+    trace = load_layer_trace(trace_root / args.trace_dir, args.layer, mmap=False)
 
     print(f"Reconstructing {len(todo)} sample(s) of {args.arch}/{combo_tag}/{args.trace_dir}/{args.layer} "
           f"({len(tiles)} tiles/sample) with {args.workers} worker(s)")
@@ -178,7 +176,9 @@ def run_one_combo(args: argparse.Namespace) -> int:
             n_done = sum(_process_chunk(chunk) for chunk in _fixed_chunks(todo, args.sample_chunk_size))
         else:
             chunks = _fixed_chunks(todo, args.sample_chunk_size)
-            with multiprocessing.Pool(
+            # COW sharing of `trace` requires fork; Python 3.14 defaults
+            # Linux to forkserver, which would pickle initargs per worker.
+            with multiprocessing.get_context("fork").Pool(
                 processes=args.workers,
                 initializer=_init_worker,
                 initargs=(trace, tiles, args.arch, args.trace_dir, args.layer,
@@ -231,7 +231,7 @@ def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir
         node_level_spatial_product(artifact.result["strategy"])
         if arch_name == "gustavsnn" else None
     )
-    trace = load_layer_trace(trace_root / trace_dir_name, layer_name, mmap=True)
+    trace = load_layer_trace(trace_root / trace_dir_name, layer_name, mmap=False)
     for chunk_start in range(0, len(missing), chunk_size):
         chunk = missing[chunk_start:chunk_start + chunk_size]
         traces = reconstruct_samples(
@@ -358,7 +358,8 @@ def run_stream(args: argparse.Namespace) -> int:
     for factor in spatial_factors.values():
         n_cores *= factor
 
-    trace = load_layer_trace(pathlib.Path(args.trace_root) / args.trace_dir, args.layer, mmap=True)
+    trace = load_layer_trace(pathlib.Path(args.trace_root) / args.trace_dir,
+                             args.layer, mmap=False)
     print(f"Streaming {args.arch}/{args.trace_dir}/{args.layer} sample {requested[0]} "
           f"({len(tiles)} tiles, {n_cores} cores)", file=sys.stderr)
 

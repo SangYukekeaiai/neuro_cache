@@ -10,6 +10,7 @@ import pathlib
 import subprocess
 import sys
 
+import numpy as np
 import pytest
 
 from lays.nocsim.step_cycles import load_step_cycles, save_step_cycles  # noqa: E402
@@ -104,6 +105,21 @@ def test_all_layers_refuses_a_stale_schedule_even_when_outputs_exist(tmp_path, s
     cache, out = stale_with_outputs
     with pytest.raises(ValueError, match="stale schedule"):
         gwt._regenerate_layer("loas", tmp_path, cache, out, "t", "b", [0])
+
+
+def test_worker_initializer_receives_a_parent_resident_trace(tmp_path):
+    trace = np.arange(12, dtype=np.uint8).reshape(2, 1, 2, 3, 1)
+    (tmp_path / "meta.json").write_text(json.dumps({"layers": {"b": list(trace.shape)}}))
+    np.save(tmp_path / "b.npy", trace)
+    parent_trace = gwt.load_layer_trace(tmp_path, "b", mmap=False)
+    assert isinstance(parent_trace, np.ndarray)
+    assert not isinstance(parent_trace, np.memmap)
+
+    gwt._init_worker(parent_trace, [], "loas", "t", "b", {}, 1, tmp_path)
+
+    assert gwt._STATE["trace"] is parent_trace
+    assert gwt._STATE["trace"].flags.c_contiguous
+    assert gwt._STATE["trace"].flags.owndata
 
 
 def small_trace():

@@ -334,9 +334,12 @@ def _solve_pair(
     if not force and schedule_path.is_file() and _artifact_matches(
         schedule_path, arch, capture, layer_name, workload, arch_yaml, mapspace_yaml
     ):
+        cached_artifact = json.loads(schedule_path.read_text())
         record.update({
             "status": "CACHED",
             "solver_status": "CACHED",
+            "mode": cached_artifact["mode"],
+            "mode_statuses": cached_artifact["result"]["mode_statuses"],
             "schedule_sha256": sha256_file(schedule_path),
         })
         return record
@@ -404,6 +407,7 @@ def _solve_pair(
         record.update({
             "status": "INFEASIBLE",
             "solver_status": "INFEASIBLE",
+            "mode": None,
             "mode_statuses": [
                 {"mode": candidate.get("mode"), "status": candidate.get("status")}
                 for candidate in result["candidates"]
@@ -627,6 +631,33 @@ def _select_pairs(
     ]
 
 
+def _mode_digest(schedules: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    per_mode: Dict[str, Dict[str, int]] = {}
+    winner_counts: Dict[str, int] = {}
+    status_counts: Dict[str, int] = {}
+    for record in schedules:
+        for mode_status in record.get("mode_statuses", []):
+            mode = mode_status.get("mode")
+            status = mode_status.get("status")
+            if not isinstance(mode, str) or not isinstance(status, str):
+                continue
+            counts = per_mode.setdefault(mode, {"OPTIMAL": 0, "INFEASIBLE": 0})
+            counts[status] = counts.get(status, 0) + 1
+            status_counts[status] = status_counts.get(status, 0) + 1
+        winner = record.get("mode")
+        if isinstance(winner, str):
+            winner_counts[winner] = winner_counts.get(winner, 0) + 1
+    time_limit_count = status_counts.get("TIME_LIMIT", 0)
+    return {
+        "candidate_count": sum(status_counts.values()),
+        "per_mode": per_mode,
+        "status_counts": status_counts,
+        "winner_mode_counts": winner_counts,
+        "time_limit_count": time_limit_count,
+        "no_time_limit": time_limit_count == 0,
+    }
+
+
 def build_manifest_inventory(
     captures: Sequence[Capture], arches: Sequence[str], trace_root: pathlib.Path,
 ) -> Dict[str, Any]:
@@ -818,6 +849,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ),
         "passed": not manifest["bridge_incompatible_pairs"],
     }
+    manifest["mode_digest"] = _mode_digest(manifest["schedules"])
     manifest["manifest_path"] = _path_string(manifest_path, output_dir.parent)
     _json_dump(manifest_path, manifest)
     print(f"manifest: {manifest_path}", flush=True)

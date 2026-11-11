@@ -34,13 +34,14 @@ def load_layer_trace(trace_dir: pathlib.Path, layer_name: str, mmap: bool = Fals
     Args:
         trace_dir: directory containing meta.json + <layer_name>.npy.
         layer_name: e.g. "layer_01_features_3" (a meta.json "layers" key).
-        mmap: memory-map the .npy instead of reading it fully into RAM.
-              The "_all" trace variants (B=10000) are multi-GB; reconstruction
-              only ever needs a handful of (t, batch, cin, hin, win) slices
-              per tile, not the whole array resident at once. A memmap'd
-              array also pickles cheaply (by file/offset/shape, not by
-              copying its contents), which matters for handing it to
-              multiprocessing workers -- see weight_trace_gen/cli.py.
+        mmap: memory-map the .npy instead of reading it fully into RAM. The
+              "_all" trace variants (B=10000) can be multi-GB; callers that
+              need lazy access can retain this mode. The single-combo
+              generation CLI uses mmap=False and reads one complete layer (up
+              to about 1.95 GiB in the campaign) in the parent before forking
+              workers, so that read-only array is shared copy-on-write instead
+              of copied per worker. Its all-layers tasks use the same
+              sequential read mode for each layer.
 
     Returns:
         Binary uint8 array, shape [T, B, Cin, Hin, Win] (per meta.json).

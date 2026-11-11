@@ -334,7 +334,7 @@ def shard_tag(index: int) -> str:
 
 
 def write_manifest(output_dir: pathlib.Path, cases: Sequence[Any], shards: Sequence[Sequence[Any]],
-                   cases_per_shard: int, source: str = "campaign manifest",
+                   cases_per_shard: int | None, source: str = "campaign manifest",
                    combos: Sequence[Sequence[str]] | None = None) -> pathlib.Path:
     output_dir = pathlib.Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -353,11 +353,14 @@ def write_manifest(output_dir: pathlib.Path, cases: Sequence[Any], shards: Seque
         "samples": list(SAMPLES),
         "total_cases": len(normalized),
         "num_shards": len(shards),
-        "cases_per_shard": cases_per_shard,
+    }
+    if cases_per_shard is not None:
+        payload["cases_per_shard"] = cases_per_shard
+    payload.update({
         "combos": [list(combo) for combo in combos] if combos is not None else [],
         "cases": [case_dict(case) for case in normalized],
         "shards": shard_files,
-    }
+    })
     path = output_dir / "manifest.json"
     path.write_text(json.dumps(payload, indent=2) + "\n")
     return path
