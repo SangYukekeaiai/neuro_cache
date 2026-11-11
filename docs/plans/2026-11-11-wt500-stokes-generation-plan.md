@@ -36,14 +36,16 @@ L17) never enter the scheduled set for any architecture. That is why the
 campaign's layer count is 151 and not 157. The plan asserts this in S3's
 verification rather than implementing it.
 
-**Directive 3 invalidates the existing schedule cache for generation.** The
-DeltaAI cache was produced by `gen_inputs.py`, which invokes
-`python -m lays.scheduler solve` with no mode flag; `solve_schedule`'s
-`traffic_mode` defaults to BASE and `gen_inputs.py:262` stamps `"mode": "base"`.
-The sweep path is `lays.scheduler.artifact.solve_and_cache_schedule`, which
-solves every traffic mode and keeps the best by the CoSA reference score. So
-**all** (arch, layer) schedules are re-solved in S2, not just prosperity's and
-gustavsnn's - though those two needed re-solves anyway, since their mapspace
+**Directive 3 is now satisfied by the stock driver.** It was not when this
+plan was written: `gen_inputs.py` then invoked `python -m lays.scheduler solve`
+with no mode flag, `solve_schedule` defaulted to BASE, and the manifest was
+stamped `"mode": "base"`. The driver now invokes
+`python -m lays.scheduler enumerate --time-limit 30`, which solves every
+traffic mode and keeps the best by the same CoSA reference score the sweep
+path uses (w_u 0.1, w_tr 1.0, w_dl 10.0). S2 therefore needs no flag and no
+separate entry point - but it does still re-solve **all** (arch, layer) pairs,
+because the DeltaAI cache they would otherwise be read from is BASE-mode.
+Prosperity's and gustavsnn's needed re-solves anyway, since their mapspace
 hashes changed.
 
 The consequence to record for whoever reads the traces: **tick ordering and

@@ -277,13 +277,17 @@ def solve_best_schedule(
     CoSA reference score (lower is better),
     and return (winning_mode, winning_result).
 
-    BASE is always feasible (unconstrained) but is not special-cased --
-    across all 155 real (arch, layer) pairs in this project's own trace
-    data, BASE never actually wins (verified 2026-07-19): every other
-    TrafficMode either is infeasible for these single_node archs or beats
-    BASE's score once feasible, since BASE's objective has no credit for
-    the psum/vmem DRAM-traffic elimination the other modes' loop-order
-    constraints unlock.
+    BASE is always feasible (unconstrained) but is not special-cased, and
+    it does sometimes win.  Over the wt500 campaign's 437 solved (arch,
+    layer) pairs (2026-11-11), BASE won 20: 9 spikinglm BERT
+    ``output_dense`` GEMMs (CIN 3072, COUT 768, 1x1), 7 256x256 3x3 convs
+    on an 8x8 map, and 4 others; 19 of the 20 are prosperity, 1 gustavsnn.
+    Each was a genuine score win over 3-5 feasible modes, not a fallback.
+    The other winners were gb_oooo 237, gb_oook 152, dram_oook 15,
+    dram_ooot 12 and gb_ooot 1.  BASE loses on most layers because its
+    objective has no credit for the psum/vmem DRAM-traffic elimination the
+    other modes' loop-order constraints unlock; where that traffic is small
+    or the constrained modes cost utilization, BASE scores best.
 
     Raises ValueError if EVERY mode is infeasible (callers sweeping many
     layers should catch this and record it, not let it abort the sweep).

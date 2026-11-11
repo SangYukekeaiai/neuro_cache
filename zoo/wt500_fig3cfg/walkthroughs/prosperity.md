@@ -15,11 +15,14 @@ Everything measured here was run on this host against the finalized
 `zoo/wt500_fig3cfg/arch.yaml` and `zoo/wt500_fig3cfg/mapspaces/prosperity.yaml`
 and the real n=500 captures. The solves here come from the scheduler's
 cache-and-solve entry point, which sweeps every traffic mode and keeps the
-best-scoring one; the **campaign** path is BASE mode (`gen_inputs.py` invokes
-`python -m lays.scheduler solve` with no mode flag, `solve_schedule` defaults
-to BASE, and `gen_inputs.py:262` stamps `"mode": "base"`). Tile counts and gate
-results are mode-invariant, so the figures below are campaign-relevant, but
-these are not byte-for-byte the campaign's schedules.
+best-scoring one. The **campaign** path now does the same: `gen_inputs.py`
+invokes `python -m lays.scheduler enumerate --time-limit 30`, which solves
+every traffic mode and selects by the same CoSA reference score (w_u 0.1,
+w_tr 1.0, w_dl 10.0). The figures below therefore describe the campaign's
+actual selection rule, not merely a projection of it onto the quantities that
+happen to be mode-invariant. Tile counts and gate results remain
+mode-invariant in any case. These are still not byte-for-byte the campaign's
+schedules: a re-solve can return a different optimum at the same score.
 
 **The headline: Prosperity's compression is active on its 3x3 layers and
 degenerate on its 1x1 ones, and the split is 47 against 98.**

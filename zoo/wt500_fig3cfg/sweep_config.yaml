@@ -48,7 +48,8 @@ node_mapspaces:           # one per architecture, swept against every benchmark
   gustavsnn:  {file: mapspaces/gustavsnn.yaml,  KH: full, KW: full, CIN: full, COUT: {spatial: 2}, HO: {spatial: 2}, WO: 1}
 
 scheduling:               # stage S2, runs on DeltaAI
-  solver: python -m lays.scheduler solve (Gurobi, conda env base)
+  solver: python -m lays.scheduler enumerate --time-limit 30 (Gurobi, conda
+    env gurobi) # every traffic mode solved, best CoSA score wins
   driver: gen_inputs.py   # per-pair solve + bridge-compatibility gate
   cache: outputs/schedules/, reuse gated on arch_yaml_sha256 +
     mapspace_yaml_sha256 content hashes (stale configs re-solve)

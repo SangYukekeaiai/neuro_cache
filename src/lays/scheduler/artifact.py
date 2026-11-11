@@ -75,13 +75,14 @@ def solve_and_cache_schedule(
     themselves first, matching every other skip-existing check in this
     pipeline (see weight_trace_gen/cli.py).
 
-    BASE is always feasible (unconstrained) but is not special-cased --
-    across all 155 real (arch, layer) pairs in this project's own trace
-    data, BASE never actually wins (verified 2026-07-19): every other
-    TrafficMode either is infeasible for these single_node archs or beats
-    BASE's score once feasible, since BASE's objective has no credit for
-    the psum/vmem DRAM-traffic elimination the other modes' loop-order
-    constraints unlock.
+    BASE is always feasible (unconstrained) but is not special-cased, and
+    it does sometimes win: over the wt500 campaign's 437 solved (arch,
+    layer) pairs (2026-11-11) BASE won 20, against gb_oooo 237, gb_oook
+    152, dram_oook 15, dram_ooot 12 and gb_ooot 1.  See
+    ``solve_best_schedule`` in scheduler/solve.py for the breakdown.  BASE
+    loses on most layers because its objective has no credit for the
+    psum/vmem DRAM-traffic elimination the other modes' loop-order
+    constraints unlock; that is a tendency, not a rule.
 
     Raises ValueError if EVERY mode is infeasible (callers sweeping many
     layers should catch this and record it, not let it abort the sweep).

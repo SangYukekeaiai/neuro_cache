@@ -3,12 +3,13 @@
 
 The weight-trace campaign has two deliberately separate stages.  This script
 does the small, DeltaAI-side stage: it derives a workload from each capture's
-``meta.json``, solves one schedule for every ``(arch, trace, layer)`` pair, and
+``meta.json``, enumerates all traffic modes and selects one schedule for every
+``(arch, trace, layer)`` pair, and
 checks that the resulting tiles satisfy the native bridge contracts before a
 trace-generation array is launched.
 
 The default invocation covers the complete matrix.  ``--smoke`` is useful on a
-new checkout: it solves the first replayable layer of the first capture for
+new checkout: it enumerates the first replayable layer of the first capture for
 each architecture while still writing the complete capture/layer inventory to
 the manifest.  A smoke manifest is marked as such and must not be used for a
 full generation run.
@@ -186,13 +187,15 @@ def _solver_command(
         "python",
         "-m",
         "lays.scheduler",
-        "solve",
+        "enumerate",
         "--arch",
         str(arch_yaml.resolve()),
         "--layer",
         str(layer_yaml.resolve()),
         "--dataflow",
         str(mapspace_yaml.resolve()),
+        "--time-limit",
+        "30",
         "--out",
         str(out_path.resolve()),
     ]
@@ -220,11 +223,14 @@ def _artifact_matches(
         artifact = json.loads(path.read_text())
         result = artifact["result"]
         configs = result.get("configs", {})
+        mode_statuses = result.get("mode_statuses")
         return (
             artifact["arch"] == arch
             and artifact["trace_dir"] == capture.name
             and artifact["layer_name"] == layer_name
             and artifact["workload"] == workload
+            and isinstance(artifact.get("mode"), str)
+            and isinstance(mode_statuses, list)
             and result.get("has_solution") is True
             and isinstance(result.get("strategy"), dict)
             and configs.get("arch") in {str(arch_yaml), str(arch_yaml.resolve())}
@@ -245,21 +251,53 @@ def _make_artifact(
     arch_yaml: pathlib.Path,
     mapspace_yaml: pathlib.Path,
 ) -> Dict[str, Any]:
+    best_mode = result.get("best_mode")
+    candidates = result.get("candidates")
+    best_strategy = result.get("best_strategy")
+    if not isinstance(best_mode, str) or not best_mode:
+        raise ValueError("enumeration result has no best_mode")
+    if not isinstance(candidates, list):
+        raise ValueError("enumeration result has no candidates list")
+    if not all(isinstance(candidate, dict) for candidate in candidates):
+        raise ValueError("enumeration result candidates are not objects")
+    if not isinstance(best_strategy, dict):
+        raise ValueError("enumeration result has no best_strategy")
+    best_candidate = next(
+        (candidate for candidate in candidates if candidate.get("mode") == best_mode),
+        None,
+    )
+    if not isinstance(best_candidate, dict):
+        raise ValueError(f"enumeration result has no candidate for best_mode {best_mode!r}")
+    selected_result = {
+        "status": best_candidate.get("status", "SOLVED"),
+        "has_solution": True,
+        "objective": best_candidate.get("gurobi_objective"),
+        "strategy": best_strategy,
+        "metrics": best_candidate.get("metrics"),
+        "mode_statuses": [
+            {"mode": candidate.get("mode"), "status": candidate.get("status")}
+            for candidate in candidates
+        ],
+        "configs": {
+            "arch": str(arch_yaml.resolve()),
+            "dataflow": str(mapspace_yaml.resolve()),
+        },
+    }
     # SNNProb is path-based, while the solver result artifact stores the
     # workload inline.  Keep the parser's temporary YAML scoped to this call.
     with tempfile.TemporaryDirectory(prefix="schedule-problem-") as tmp:
         workload_path = pathlib.Path(tmp) / "layer.yaml"
         workload_path.write_text(yaml.safe_dump(workload, sort_keys=False))
         prob = SNNProb(workload_path)
-        schedule = schedule_from_strategy(result["strategy"], prob)
+        schedule = schedule_from_strategy(selected_result["strategy"], prob)
     return {
         "arch": arch,
         "trace_dir": capture.name,
         "layer_name": layer_name,
         "workload": workload,
-        "result": result,
+        "result": selected_result,
         "dram_num_steps": schedule.dram_num_steps,
-        "mode": "base",
+        "mode": best_mode,
         "arch_yaml_sha256": sha256_file(arch_yaml),
         "mapspace_yaml_sha256": sha256_file(mapspace_yaml),
     }
@@ -350,10 +388,26 @@ def _solve_pair(
             })
             return record
 
-    if not result.get("has_solution"):
+    if (
+        "best_mode" not in result
+        or not isinstance(result.get("candidates"), list)
+        or not all(isinstance(candidate, dict) for candidate in result["candidates"])
+    ):
+        record.update({
+            "status": "ERROR",
+            "solver_status": "INVALID_ENUMERATION",
+            "stderr": proc.stderr[-4000:],
+        })
+        return record
+
+    if result.get("best_mode") is None:
         record.update({
             "status": "INFEASIBLE",
-            "solver_status": result.get("status", "NO_SOLUTION"),
+            "solver_status": "INFEASIBLE",
+            "mode_statuses": [
+                {"mode": candidate.get("mode"), "status": candidate.get("status")}
+                for candidate in result["candidates"]
+            ],
             "stderr": proc.stderr[-4000:],
         })
         return record
@@ -372,7 +426,9 @@ def _solve_pair(
         return record
     record.update({
         "status": "SOLVED",
-        "solver_status": result.get("status", "SOLVED"),
+        "solver_status": artifact["result"].get("status", "SOLVED"),
+        "mode": artifact["mode"],
+        "mode_statuses": artifact["result"]["mode_statuses"],
         "schedule_sha256": sha256_file(schedule_path),
         "dram_num_steps": artifact["dram_num_steps"],
     })
@@ -689,7 +745,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "mapspace_yaml_sha256": {
             arch: sha256_file(mapspace_dir / f"{arch}.yaml") for arch in arches
         },
-        "solver": [args.conda_exe, "run", "-n", args.conda_env, "python", "-m", "lays.scheduler", "solve"],
+        "solver": [
+            args.conda_exe, "run", "-n", args.conda_env, "python", "-m", "lays.scheduler",
+            "enumerate", "--time-limit", "30",
+        ],
     }
 
     print(

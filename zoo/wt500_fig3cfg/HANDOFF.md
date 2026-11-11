@@ -26,17 +26,28 @@ Plan doc: `docs/plans/2026-11-10-weight-trace-500-campaign-plan.md`.
 - Open review flag: PTB mapspace uses **T: 64** (published window, matches
   PTBGen.h TW_SIZE 8x8); user recalled 32, never confirmed.
 
-### Schedule solve stage (S2): COMPLETE
-- 755 valid (arch, capture-layer) pairs; **738 feasible, all bridge-gate pass,
-  0 violations**; 17 INFEASIBLE; 30 excluded; 377,500 total (arch, layer,
-  sample) cases. Manifest: `zoo/wt500_fig3cfg/outputs/manifest.json`; schedules
-  cached in `outputs/schedules/`.
-- All 17 infeasibles are prosperity (vgg16_cifar10_loas_T32 layers 01-09;
-  sma_azo_vgg cifar10-dvs T10 and dvs128-gesture T16, layers 01-04
-  block2-5_0_0): genuine all-T-resident psum pressure on large spatial maps,
-  not a bug. Policy so far: INFEASIBLE = recorded outcome, no trace.
-- Solver runs on DeltaAI with `conda run -n base` (NOT the "gurobi" env);
-  `gen_inputs.py` defaults to CONDA_ENV="gurobi", must pass `--conda-env base`.
+### Schedule solve stage (S2): RE-RUNNING AS MODE-SWEEPING, PARTIAL
+The earlier DeltaAI pass was BASE mode and is superseded. The driver now
+enumerates every traffic mode and keeps the best CoSA score, so all 755 pairs
+are being re-solved, 5 arch shards into
+`zoo/wt500_fig3cfg/outputs/<arch>/manifest.json` (there is no longer a single
+top-level `outputs/manifest.json`). 755 valid (arch, capture-layer) pairs, 151
+per arch; 30 excluded; 377,500 total (arch, layer, sample) cases.
+
+State on disk as of 2026-11-11 07:40, the last shard write:
+- **437 of 755 solved**, every winner OPTIMAL, no TIME_LIMIT winner.
+  Winning modes: gb_oooo 237, gb_oook 152, base 20, dram_oook 15,
+  dram_ooot 12, gb_ooot 1.
+- **6 INFEASIBLE**, all prosperity, all A08 `vgg16_cifar10_loas_T32` layers
+  01-06: genuine all-T-resident psum pressure on large spatial maps, not a
+  bug. Policy: INFEASIBLE = recorded outcome, no trace.
+- **312 ERROR with no schedule written**, spread over all five archs
+  (gustavsnn 82, loas 81, ptb 53, spinalflow 50, prosperity 46). Every one is
+  `solver_status: NO_OUTPUT` with returncode 130, 2 or 1 - the interruption
+  signature, not a solver verdict. These pairs still need a re-solve before
+  S2 can be called complete.
+- Solver runs under `conda run -n gurobi`; `gen_inputs.py` has
+  CONDA_ENV="gurobi" as its default, so no `--conda-env` flag is needed.
 - Schedule cache is content-hash gated: artifacts store
   arch_yaml_sha256/mapspace_yaml_sha256; mismatch/missing means re-solve
   (`src/lays/scheduler/artifact.py`, `src/lays/scheduler/cli.py`). A prosperity
@@ -147,8 +158,10 @@ line-count stamps for drift detection. Accumulated scope:
 
 1. **Q5, where to generate**: Stokes (needs SSH alias + node-helper name from
    user) vs generating directly on DeltaAI into the destination.
-2. **17 prosperity infeasibles**: accept the gaps vs revise the prosperity
-   mapspace (hash cache limits re-solve to prosperity's 151 pairs).
+2. **6 prosperity infeasibles**, all A08 `vgg16_cifar10_loas_T32` layers
+   01-06: accept the gaps vs revise the prosperity mapspace (hash cache
+   limits re-solve to prosperity's 151 pairs). The decision stands - fewer
+   gaps, same question.
 3. **PTB T: 64 vs 32** (review flag in mapspaces/ptb.yaml).
 
 ## Inputs reference
