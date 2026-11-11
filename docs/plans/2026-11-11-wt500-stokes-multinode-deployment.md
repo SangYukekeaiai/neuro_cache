@@ -59,8 +59,21 @@ Ship to Stokes once: the 8 input captures (~33 GB), the 749 schedule
 JSONs plus unified manifest (~100 MB), and the repo at the campaign
 commit. Build the native generators on a compute node of the target
 partition (not the login node), then run the stale-binary check from the
-parent plan's caveats. Transport: `rsync -a --partial` from DeltaAI;
-Globus if endpoints exist on both sides (check during recon).
+parent plan's caveats.
+
+**Transport is Globus (settled 2026-11-11).** Unattended SSH into Delta
+is not possible: NCSA disables SSH key pairs for general use and requires
+password + NCSA Duo on every login (exceptions only via a
+Gateway-allocation request to NCSA Help). So: Delta side, NCSA Delta's
+ACCESS storage endpoint (`globus endpoint search "NCSA Delta"`; confirm
+it exposes the `/work` destination). Stokes side, an ARCC server endpoint
+if one exists, else **Globus Connect Personal** run as the user on the
+login node - it makes outbound-only connections, so the VPN firewall is
+irrelevant. One browser consent, then the CLI automates transfers
+unattended with checksums and retries. A reverse tunnel through the
+user's VPN laptop remains the fallback for control and small files only,
+never for trace waves. If Globus is blocked on either side, the
+DeltaAI-local alternative (last section) wins outright.
 
 ### Sharding (from S3 estimates, weighted)
 
@@ -99,10 +112,11 @@ DeltaAI (`/work/nvme/bebv/yyu9/`, where the inputs already live).
    `$CAMPAIGN/outbox/<shard_id>/`, then drops a `DONE.sha256` manifest
    (per-file checksums) as its last act.
 2. A **shipper** loop on the login node (cron or a watcher script, not
-   an agent): for each completed shard dir, `rsync -a --partial` to
-   DeltaAI, re-checksum on the receiving side, then and only then
-   delete the Stokes copy. Shard dirs are immutable after DONE, so the
-   shipper needs no coordination with Slurm.
+   an agent): for each completed shard dir,
+   `globus transfer --sync-level checksum` to the Delta collection, poll
+   the task to completion, then and only then delete the Stokes copy.
+   Shard dirs are immutable after DONE, so the shipper needs no
+   coordination with Slurm.
 3. **Backpressure**: the sbatch task prologue checks
    `du -s $CAMPAIGN/outbox`; above a high-water mark (300 GB, 60% of
    quota) the task requeues itself with a delay instead of generating
