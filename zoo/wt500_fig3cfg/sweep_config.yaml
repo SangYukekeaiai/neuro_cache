@@ -45,7 +45,7 @@ node_mapspaces:           # one per architecture, swept against every benchmark
   ptb:        {file: mapspaces/ptb.yaml,        KH: 4, KW: 4, CIN: full, T: 64, COUT: {spatial: 4}}  # review flag: T 64 vs 32
   spinalflow: {file: mapspaces/spinalflow.yaml, KH: 4, KW: 4, CIN: full, T: full, COUT: {spatial: 4}}
   prosperity: {file: mapspaces/prosperity.yaml, KH: 4, KW: 4, CIN: 16, T: full, COUT: {spatial: 4}, HO: 4, WO: 4}
-  gustavsnn:  {file: mapspaces/gustavsnn.yaml,  KH: full, KW: full, CIN: full, COUT: {spatial: 2}, HO: {spatial: 2}, WO: 4}
+  gustavsnn:  {file: mapspaces/gustavsnn.yaml,  KH: full, KW: full, CIN: full, COUT: {spatial: 2}, HO: {spatial: 2}, WO: 1}
 
 scheduling:               # stage S2, runs on DeltaAI
   solver: python -m lays.scheduler solve (Gurobi, conda env base)
@@ -64,8 +64,9 @@ generation:               # stages S3-S5
     loas/ptb/spinalflow/prosperity: v2 (ticks strictly ascending per core)
     gustavsnn: v3 (ticks non-decreasing within a core; equal tick =
       concurrent bursts from the in-core PEs)
-  gustavsnn_wave_width: 4  # runtime parameter, never hardcoded; derived per
-    # schedule as the NodeLevel spatial_split product (COUT 2 x HO 2)
+  gustavsnn_wave_width: schedule_nodelevel_spatial_product
+    # wave width = the schedule's NodeLevel spatial product: 4 on 145 layers,
+    # 2 on 5, 1 on 1; A08 L13 is width 2.
   order: all four wave-2 archs complete before gustavsnn starts
 
 delivery:                 # stage S6
