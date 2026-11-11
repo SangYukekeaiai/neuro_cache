@@ -8,6 +8,7 @@ import gzip
 import json
 import os
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 import pathlib
 import shlex
 import subprocess
@@ -508,6 +509,13 @@ def _run_stream(command: Sequence[str], repo: pathlib.Path, output_path: pathlib
     os.replace(temporary, output_path)
 
 
+def _run_stream_case(command: Sequence[str], repo: pathlib.Path, output_path: pathlib.Path,
+                     log_path: pathlib.Path) -> None:
+    _run_stream(command, repo, output_path, log_path)
+    if not output_path.is_file() or output_path.stat().st_size == 0:
+        raise RuntimeError(f"stream generator omitted WCTS output: {output_path}")
+
+
 def _ordered_combos(cases: Sequence[tuple[str, str, str, int]]) -> list[tuple[str, str, str]]:
     groups = []
     seen = set()
@@ -562,6 +570,7 @@ def run_shard(*, case_file: pathlib.Path, shard_dir: pathlib.Path, repo: pathlib
             command_file.write(shlex.join(cycle_command) + "\n")
             command_file.flush()
             _run_cycles(cycle_command, repo, logs / f"{arch}_{trace_dir}_{layer}_cycles.log")
+            stream_jobs = []
             for sample in for_sample:
                 case = (arch, trace_dir, layer, sample)
                 cycles_rel, wcts_rel = output_relpaths(case)
@@ -576,8 +585,24 @@ def run_shard(*, case_file: pathlib.Path, shard_dir: pathlib.Path, repo: pathlib
                     )
                     command_file.write(shlex.join(stream_command) + " | gzip\n")
                     command_file.flush()
-                    _run_stream(stream_command, repo, wcts_path,
-                                logs / f"{case_stem(case)}_stream.log")
+                    stream_jobs.append((stream_command, wcts_path,
+                                        logs / f"{case_stem(case)}_stream.log"))
+            if stream_jobs:
+                pool = ThreadPoolExecutor(max_workers=workers)
+                try:
+                    futures = [pool.submit(_run_stream_case, command, repo, output_path, log_path)
+                               for command, output_path, log_path in stream_jobs]
+                    for future in futures:
+                        future.result()
+                except BaseException:
+                    pool.shutdown(wait=True, cancel_futures=True)
+                    raise
+                else:
+                    pool.shutdown(wait=True)
+            for sample in for_sample:
+                case = (arch, trace_dir, layer, sample)
+                cycles_rel, wcts_rel = output_relpaths(case)
+                wcts_path = shard_dir / wcts_rel
                 if not wcts_path.is_file() or wcts_path.stat().st_size == 0:
                     raise RuntimeError(f"stream generator omitted WCTS output: {wcts_path}")
                 writer.writerow({"arch": arch, "trace_dir": trace_dir, "layer": layer,
