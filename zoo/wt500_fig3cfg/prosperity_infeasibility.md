@@ -159,36 +159,51 @@ campaign's real `arch.yaml` and `mapspaces/prosperity.yaml`, then calls
 
 **Config F.** All nine A08 `T = 32` convolutions solved individually: L1-L6
 `status = 3` (INFEASIBLE), L7-L9 `status = 2` (feasible), matching the
-boundary arithmetic exactly. All six infeasible ones carry the **same
-4-constraint IIS**:
+boundary arithmetic exactly. All six infeasible ones carry the same
+**8-constraint IIS**:
 
 ```
-cap_NodeLevel_psum, node_cap_bound_HO, node_cap_full_T, pe_split_COUT
+cap_NodeLevel_psum, node_cap_bound_HO, pe_split_COUT,
+node_cap_full_T_0, node_cap_full_T_1, node_cap_full_T_2,
+node_cap_full_T_3, node_cap_full_T_4
 ```
 
-Both C01 convolutions that config K rejects solve feasible under config F, as
-do the 1x1 and GEMM shapes that prosperity actually generates (A08 L13,
+`T: full` contributes **one constraint per prime factor**
+(`node_capacity.py`, `name=f"node_cap_full_{dim}_{n}"`), so `T = 32 = 2^5`
+appears as five separate pins, and all five are in the minimal set.
+
+The eight C01 convolutions that config K rejects solve feasible under config F,
+as do the 1x1 and GEMM shapes that prosperity actually generates (A08 L13,
 A04 L5, A07 L5 all `status = 2`).
 
-**Config K.** The same three representative layers are infeasible with a
-**5-constraint IIS**:
+**Config K.** The same layers are infeasible with an **8-constraint IIS** of a
+different composition:
 
 ```
-cap_NodeLevel_psum, node_cap_bound_HO, node_cap_bound_WO,
-node_cap_full_T, pe_split_COUT
+cap_NodeLevel_psum, node_cap_bound_HO, node_cap_bound_WO, pe_split_COUT,
+node_cap_full_T_0, node_cap_full_T_2, node_cap_full_T_3, node_cap_full_T_4
 ```
 
-The difference between the two IIS sets is exactly `node_cap_bound_WO`: under
+**The difference between the two sets is `node_cap_bound_WO` against one extra
+`T` pin, and that is the mechanism visible in the solver's own output.** Under
 config F `WO` is barred rather than capped, so it contributes no bound
-constraint and cannot participate. That is the mechanism visible in the
-solver's own output - the set of pins in the IIS is the set of pins in the
-inequality.
+constraint - but the budget line is `64 * T <= 1024`, which **all five** factors
+of `T = 32` are needed to breach: drop one and the product is `64 * 16 = 1024`,
+exactly the capacity and therefore feasible. Under config K the line is
+`128 * T <= 1024`, so **four** factors already breach it (`128 * 16 = 2048`) and
+the fifth falls out of the minimal set. One pin is traded for another and both
+sets have eight members.
 
-For one config-K layer the IIS is 8 constraints in full and minimal:
-`pe_split_COUT`, `node_cap_bound_HO`, `node_cap_bound_WO`,
-`node_cap_full_T_{0,2,3,4}` (four of `T = 32`'s five prime factors - enough to
-breach alone) and `cap_NodeLevel_psum`. No assignment, spatial, temporal-order
-or weight/vmem capacity constraint appears in either configuration's IIS.
+The IIS composition is therefore `cap_NodeLevel_psum` plus the `HO` and
+`COUT`-spatial pins, plus `WO`'s pin when `WO` is capped rather than barred,
+plus as many `T` factor-pins as the budget requires. That last term makes the
+set size depend on the layer's own timestep factorization: under config K the
+C01/cifar10_dvs convolutions at `T = 10 = 2 x 5` carry only **two** `T` pins
+and so a 6-constraint IIS, while C01/dvs128_gesture at `T = 16 = 2^4` carries
+four and so eight.
+
+No assignment, spatial, temporal-order or weight/vmem capacity constraint
+appears in any configuration's IIS.
 
 ### Controls
 
