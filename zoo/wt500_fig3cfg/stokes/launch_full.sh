@@ -6,6 +6,9 @@
 set -euo pipefail
 # Stokes login nodes have RLIMIT_NPROC=100; uncapped BLAS threads SIGABRT.
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
+# .venv311's python links against the module python's shared lib; sbatch
+# propagates this to the array tasks.
+export LD_LIBRARY_PATH="/apps/python/python-3.11.4-gcc-12.2.0/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 REPO="$HOME/neuro_cache_wcache"
 PYTHON="$REPO/.venv311/bin/python"
