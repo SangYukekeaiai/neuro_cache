@@ -5,6 +5,7 @@
 #   while :; do bash zoo/wt500_fig3cfg/stokes/monitor.sh; sleep 900; done
 set -u
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
+export LD_LIBRARY_PATH="/apps/python/python-3.11.4-gcc-12.2.0/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 REPO="$HOME/neuro_cache_wcache"
 RUN_ROOT="$REPO/zoo/wt500_fig3cfg/outputs/slurm/runs_full"
 CASE_DIR="$REPO/zoo/wt500_fig3cfg/outputs/slurm/cases_weighted"
