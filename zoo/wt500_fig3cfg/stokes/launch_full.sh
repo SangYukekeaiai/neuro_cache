@@ -20,6 +20,12 @@ RUN_ROOT="$REPO/zoo/wt500_fig3cfg/outputs/slurm/runs_full"
 # a per-shard --time out of estimated_records if queue turnaround matters.
 TIME_LIMIT="${TIME_LIMIT:-7-00:00:00}"
 CPUS="${CPUS:-4}"
+# Stokes default is 1950M/cpu; mid shards thrash at that ceiling. The native
+# generators stream ~89 B/record through $TMPDIR, which saturates the node's
+# single local disk - so scratch goes to /dev/shm (RAM) and the task gets a
+# memory grant covering it (94G shm cap + python + trace).
+MEM="${MEM:-150G}"
+TMPDIR_TASKS="${TMPDIR_TASKS:-/dev/shm}"
 
 cd "$REPO"
 mkdir -p "$RUN_ROOT"
@@ -32,7 +38,7 @@ mkdir -p "$RUN_ROOT"
 n=$(ls "$CASE_DIR"/cases_*.json | wc -l)
 echo "submitting array 0-$((n - 1)) with --time=$TIME_LIMIT --cpus-per-task=$CPUS"
 sbatch --partition=normal --time="$TIME_LIMIT" --cpus-per-task="$CPUS" \
-  --array="0-$((n - 1))" \
+  --mem="$MEM" --export=ALL,TMPDIR="$TMPDIR_TASKS" --array="0-$((n - 1))" \
   --output "$RUN_ROOT/slurm-%A_%a.out" --error "$RUN_ROOT/slurm-%A_%a.err" \
   "$REPO/zoo/wt500_fig3cfg/slurm/run_array.sbatch" \
   --case-dir "$CASE_DIR" --shard-root "$RUN_ROOT" \
