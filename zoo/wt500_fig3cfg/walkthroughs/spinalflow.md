@@ -242,7 +242,7 @@ mean is not a safe estimator for it.
 
 **Why the memory is about 15 GB.** The records are materialized as Python objects before
 being streamed - one tuple per record inside a per-tick, per-core structure.
-At 50 million records that is gigabytes of live objects regardless of how fast
+At 52.5 million records that is gigabytes of live objects regardless of how fast
 the native scan is. The memory is driven by record **count**, which is set by
 the dataflow, not by anything about the implementation's speed.
 

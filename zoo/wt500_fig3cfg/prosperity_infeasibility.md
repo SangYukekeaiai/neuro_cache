@@ -5,11 +5,12 @@ mapspace forces `T` fully resident at NodeLevel while `HO` and `COUT` are each
 pinned, and the resulting partial-sum tile does not fit the node's 1,024-byte
 psum buffer once the product crosses that line.
 
-Under the finalized mapspace this rejects **6** of prosperity's 151 schedulable
-(arch, layer) pairs. A second, larger effect sits downstream of the solver: the
-same mapspace bars the kernel dimensions from residency, so every 3x3 layer
-solves with a split kernel and is then refused by the bridge gate. The net is
-that **prosperity generates only 1x1 and GEMM-shaped layers**.
+Under the current mapspace this rejects **6** of prosperity's 151 schedulable
+(arch, layer) pairs, and the remaining **145 generate**: the kernel dimensions
+are capped rather than barred, so a 3x3 kernel is wholly resident and the bridge
+gate passes with zero violations. Section 3 covers what happens in a
+configuration where the kernel is **not** resident, since that case is what the
+gate exists to catch.
 
 Proven two ways throughout: an analytic predicate applied to all 157 captured
 layers, and real Gurobi solves whose irreducible infeasible sets (IIS) name the
@@ -21,26 +22,36 @@ Every count below is tagged with the configuration it was measured under,
 because the two differ in which dimensions are capped and therefore in the
 boundary.
 
-**Config F - finalized** (`mapspaces/prosperity.yaml`, commit `9b87861`), the
-one the campaign runs:
+**Config A - current** (`mapspaces/prosperity.yaml`, commit `b927291`), the one
+the campaign runs:
 
 ```
-node_dim_capacity:  CIN: 16   COUT: {spatial: 4}   HO: 8   T: full
+node_dim_capacity:  KH: 4   KW: 4   CIN: 16   COUT: {spatial: 4}   HO: 8   T: full
 ```
 
-`KH`, `KW` and `WO` are **absent**, which the node-capacity rule treats as
-barred from NodeLevel entirely (absent == cap 1).
+`WO` is **absent**, which the node-capacity rule treats as barred from
+NodeLevel entirely (absent == cap 1). The kernel dimensions are capped at 4, so
+a 3x3 kernel is wholly resident.
 
-**Config K - capped kernel**, a variant with the kernel and both pixel axes
-capped instead of barred:
+**Config K - four-wide pixel block**, with both pixel axes capped at 4 instead
+of `HO: 8` and `WO` barred, the kernel still capped:
 
 ```
 node_dim_capacity:  KH: 4   KW: 4   CIN: 16   COUT: {spatial: 4}   HO: 4   WO: 4   T: full
 ```
 
-Config F is current. Config K's measurements are kept because they isolate the
-mechanism cleanly - its IIS carries one more constraint, which shows exactly
-which pin is doing the work.
+Config K's kernel is resident, so it refuses nothing at `kernel_tile_bound`.
+What differs from A is the pixel residency, which **is** in the partial-sum
+term, so its infeasible count is **17** rather than 6. Its IIS carries one more
+constraint than A's, which is what isolates the mechanism.
+
+**Config B - barred kernel**, with `KH`, `KW` and `WO` all absent, so each
+kernel tap becomes its own tile. Its kernel is not resident, which is the case
+section 3 uses.
+
+Config A is current. The same labels are used in
+`walkthroughs/prosperity.md`, `CAVEATS.md` and
+`docs/plans/2026-11-10-prosperity-cin-kernel-swap-plan.md`.
 
 ## 1. The mechanism
 
@@ -75,7 +86,7 @@ For `psum`, `constants.py`'s A matrix gives `A[d][psum] = 1` for exactly
 2 * HO_resident * WO_resident * COUT_spatial * T  <=  1024 bytes
 ```
 
-**Under config F**, `WO` is barred so `WO_resident = 1`, and
+**Under config A**, `WO` is barred so `WO_resident = 1`, and
 `HO_resident = _max_product_leq(factors(ho), 8)`. For a layer with `ho >= 8`
 and `COUT` divisible by 4 that gives `HO_resident = 8`, `COUT_spatial = 4`:
 
@@ -91,7 +102,7 @@ In both cases the infeasibility is **structural, not a search failure**: every
 factor in the product is pinned by an equality, so the solver has no freedom to
 shrink the tile, and no amount of solver time changes the outcome.
 
-## 2. What config F rejects at the solver: 6 layers
+## 2. What config A rejects at the solver: 6 layers
 
 Measured psum demand, and verified by real solve (section 4):
 
@@ -114,36 +125,43 @@ The eight C01 convolutions clear comfortably: `HO_res = 8` and `COUT_spatial = 4
 give `2 * 8 * 1 * 4 * 10 = 640 B` at `T = 10` and `1,024 B` at `T = 16` - the
 latter another exact-capacity case.
 
-`vmem` and `weight` never bind. `vmem` is `T`-independent by the A matrix and
-`weight` has `KH`, `KW` barred, so both sit far under their budgets.
+`vmem` and `weight` never bind. `vmem` is `T`-independent by the A matrix, and
+`weight` is `KH_resident x KW_resident x CIN_resident x COUT_spatial` bytes -
+`3 x 3 x 16 x 4 = 576 B` against a 32,768 B budget with the kernel resident at
+3x3, so kernel residency costs nothing at this node size.
 
-## 3. What config F rejects after the solver: 47 more layers
+## 3. What reaches the generator: 145 of 151
 
-`KH` and `KW` absent means barred, so a 3x3 layer receives
-`node_bound[KH] = node_bound[KW] = _max_product_leq([3], 1) = 1`, not 3: the
-kernel is split and each tile holds one tap of nine. The native bridges have
-**no kernel-offset field**, so a one-tap tile is indistinguishable from a
-whole-window tile on the wire.
+Under config A the kernel dimensions are capped at 4, so a 3x3 kernel is wholly
+resident (`_max_product_leq([3], 4) = 3`) and the bridge gate passes. Full
+accounting over prosperity's 151 schedulable pairs:
 
-The bridge gate catches exactly this. `gen_inputs.py` raises
-`kernel_tile_bound` when a tile's `KH`/`KW` bound differs from the problem's,
-so those layers are **refused loudly rather than mis-reconstructed** on the
-campaign path. (A caller reaching the bridge without that gate would get the
-silent version - see `CAVEATS.md` L2.)
+| outcome | config A (current) | config B |
+|---|---:|---:|
+| infeasible at solve (psum) | 6 | 6 |
+| refused by `kernel_tile_bound` | **0** | 47 |
+| **generated** | **145** | 98 |
+| total | 151 | 151 |
 
-Full accounting over prosperity's 151 schedulable pairs:
+The psum column is identical across **A and B** because the kernel dimensions do
+not appear in the partial-sum term, and those are the only dimensions that
+differ between them. It is **not** identical for config K, whose 17
+infeasibilities come from capping both pixel axes at 4 - `HO` and `WO` are in
+that term.
 
-| outcome | pairs | which |
-|---|---:|---|
-| infeasible at solve (psum) | 6 | A08 L1-L6, `T = 32` |
-| refused by `kernel_tile_bound` | 47 | every remaining 3x3 stride-1 layer |
-| **generated** | **98** | the 1x1 convolutions and GEMMs (classes S1 and S3) |
-| total | 151 | |
+Of config A's 145 generating layers, 47 are 3x3 (class S2) and 98 are 1x1
+convolutions and GEMMs (classes S1 and S3). The 47 is the 53 class-S2 layers of
+`layer_dim_coverage.md` minus the 6 that are infeasible before the gate sees
+them.
 
-`6 + 47 + 98 = 151`. The 47 is the 53 class-S2 layers of
-`layer_dim_coverage.md` minus the 6 that never reach the gate. This is
-user-accepted and recorded in the mapspace comment: under this mapspace
-prosperity is a 1x1/GEMM-only architecture.
+Config B exposes a standing property of the wire format: the task carries
+kernel **bounds** and no kernel offset, so a tile holding one tap of nine is
+indistinguishable from a whole-window tile. A solver produces such a schedule
+whenever a mapspace bars the kernel - config B gives 73,728 single-tap tiles on
+one 3x3 layer - and the only thing that stops it reaching the generator is
+`gen_inputs.py` raising `kernel_tile_bound`, which refuses it **loudly** rather
+than mis-reconstructing. A caller reaching the bridge without that gate gets
+the silent version; see `CAVEATS.md` L2.
 
 ## 4. Solver confirmation: the real IIS
 
@@ -157,7 +175,7 @@ model by calling the scheduler's own constraint functions in `solve.py`'s order
 campaign's real `arch.yaml` and `mapspaces/prosperity.yaml`, then calls
 `Model.computeIIS()`.
 
-**Config F.** All nine A08 `T = 32` convolutions solved individually: L1-L6
+**Config A.** All nine A08 `T = 32` convolutions solved individually: L1-L6
 `status = 3` (INFEASIBLE), L7-L9 `status = 2` (feasible), matching the
 boundary arithmetic exactly. All six infeasible ones carry the same
 **8-constraint IIS**:
@@ -172,7 +190,7 @@ node_cap_full_T_3, node_cap_full_T_4
 (`node_capacity.py`, `name=f"node_cap_full_{dim}_{n}"`), so `T = 32 = 2^5`
 appears as five separate pins, and all five are in the minimal set.
 
-The eight C01 convolutions that config K rejects solve feasible under config F,
+The eight C01 convolutions that config K rejects solve feasible under config A,
 as do the 1x1 and GEMM shapes that prosperity actually generates (A08 L13,
 A04 L5, A07 L5 all `status = 2`).
 
@@ -186,7 +204,7 @@ node_cap_full_T_0, node_cap_full_T_2, node_cap_full_T_3, node_cap_full_T_4
 
 **The difference between the two sets is `node_cap_bound_WO` against one extra
 `T` pin, and that is the mechanism visible in the solver's own output.** Under
-config F `WO` is barred rather than capped, so it contributes no bound
+config A `WO` is barred rather than capped, so it contributes no bound
 constraint - but the budget line is `64 * T <= 1024`, which **all five** factors
 of `T = 32` are needed to breach: drop one and the product is `64 * 16 = 1024`,
 exactly the capacity and therefore feasible. Under config K the line is
@@ -248,7 +266,7 @@ Measured under config K on its three representative infeasible shapes:
 | `psum: 2048` B | **9 still infeasible** | fixes the C01 layers but not A08's `T = 32` set - a half-measure |
 | drop `T: full` | would clear it | but `T: full` is the prosperity dataflow's defining property; this changes the arch being modeled, it is not a config fix |
 
-Under config F the equivalent minimum is `psum: 2048` B, since the demand of
+Under config A the equivalent minimum is `psum: 2048` B, since the demand of
 the 6 infeasible layers is 2,048 B exactly.
 
 The campaign does **not** apply any of these. The rejections are a faithful
@@ -259,8 +277,9 @@ prosperity cost number in the campaign, not just the rejected layers.
 
 ## 6. Scope
 
-Settled here: which layers the solver rejects and why, under both
-configurations, and why the 3x3 layers do not generate.
+Settled here: which layers the solver rejects and why, under each
+configuration, and what happens to a 3x3 layer when the kernel is not
+resident.
 
 Not addressed here:
 

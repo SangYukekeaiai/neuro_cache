@@ -150,7 +150,9 @@ That interleaved per-pixel block is one **tile frame** in the output file. The
 file as a whole is: a header describing the machine and the layer (core count,
 how output channels were fanned, the layer's seven dimensions, the burst axis
 and the maximum burst width, plus an identity string naming arch/workload/
-layer/sample), then one frame per tile, then an end marker and a total count.
+layer/sample), then one frame per **tile group**, then an end marker and a total
+count. A frame is all the cores sharing one `(dram_i, noc_i)` position rather
+than one tile, so A08's classifier is a single frame holding 5 cores.
 
 The cache simulator replays it in that order, resolving each record's logical
 coordinates into lines under whichever blocking and layout the run is testing.
@@ -376,7 +378,8 @@ loas is not gustavsnn, so `format_version = WCTS_VERSION = 2`.
 its own docstring as "the one conversion where a mistake is invisible"),
 measures `burst_span` as the maximum `cout_end - cout_start` over the layer,
 and rejects any empty COUT run. Then a 56-byte fixed header plus field codes,
-spatial factors, dims and an identity block; one frame per tile; a `-1` end
+spatial factors, dims and an identity block; one frame per `(dram_i, noc_i)`
+tile group; a `-1` end
 magic and total burst count. `burst_dim` must be 3 (COUT) - anything else is
 refused rather than mislabelled. **v2 enforces strictly ascending local ticks
 within each core**, checked in `write_tile_frame`.
