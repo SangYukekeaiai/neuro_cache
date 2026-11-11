@@ -5,8 +5,8 @@ whether it affects **current campaign generation**. User decision (2026-11-10):
 **no caveat fixes now** - none of the parked items affect generation, so they
 are deferred to next week. This file is the record so nothing is lost.
 
-One section per arch, appended by that arch's walkthrough row. loas is
-complete; ptb, spinalflow, prosperity and gustavsnn follow.
+One section per arch, appended by that arch's walkthrough row. loas and ptb are
+complete; spinalflow, prosperity and gustavsnn follow.
 
 Fields per caveat: the caveat (cited to its walkthrough section), the
 generation verdict with its reason, the severity **if the precondition ever
@@ -14,69 +14,78 @@ changes**, and a fix sketch for next week.
 
 ---
 
-## PENDING, not parked - decide BEFORE generation
+## SETTLED - config decisions, recorded not pending
 
-These two are not deferred. They are open questions about the finalized configs
-that need an answer before the campaign runs.
+### P1. Prosperity's barred kernel and its 47 three-by-three layers
 
-### P1. Prosperity `KH: 1` / `KW: 1` vs its 47 three-by-three layers
+`mapspaces/prosperity.yaml` (commit `9b87861`) omits `KH`, `KW` and `WO` from
+`node_dim_capacity`, which the node-capacity rule treats as barred from
+NodeLevel residency (absent == cap 1). A 3x3 layer therefore receives
+`node_bound[KH] = node_bound[KW] = 1`, not 3: the kernel is split and each tile
+holds one tap of nine. The bridges carry no kernel-offset field, so a one-tap
+tile is indistinguishable from a whole-window tile on the wire.
 
-The finalized `mapspaces/prosperity.yaml` caps `KH: 1` and `KW: 1`. The
-node-capacity rule pins a dimension's resident product to the largest
-sub-product of its own prime factors that does not exceed the cap, so a 3x3
-layer gets `node_bound[KH] = node_bound[KW] = 1`, **not 3**: the kernel is
-split, and only one tap of nine lands in each tile.
+The bridge gate refuses exactly this case: `gen_inputs.py` raises
+`kernel_tile_bound` when a tile's `KH`/`KW` bound differs from the problem's,
+so those layers fail **loudly on the campaign path rather than being
+mis-reconstructed**. The silent-corruption path exists only for a caller that
+reaches the bridge without that gate - see L2 below.
 
-The bridges have **no kernel-offset field** - the packing helper sends
-`node_bound[KH]`/`node_bound[KW]` and nothing else - so a tile holding one tap
-is indistinguishable from a tile holding the whole window. The mapspace's own
-comment still claims the opposite ("KH/KW are explicit so every native tile
-receives the full kernel window"), which is now stale against its own values.
+**Decision: user-accepted.** Under this mapspace prosperity is a 1x1/GEMM-only
+architecture, and the mapspace comment records it. Prosperity's 151 schedulable
+pairs resolve as:
 
-Scale, measured over the 157 captured layers: **47** class-S2 (3x3, stride-1)
-layers would be scheduled for prosperity under the finalized mapspace, and
-every one of them is affected.
+| outcome | pairs |
+|---|---:|
+| infeasible at solve (psum capacity) | 6 |
+| refused by `kernel_tile_bound` | 47 |
+| **generated** (1x1 convolutions and GEMMs) | **98** |
 
-**Important qualifier on the risk.** On the campaign path this fails **loudly,
-not silently**: the bridge gate checks `node_bound[KH] != problem["KH"]` and
-raises `kernel_tile_bound` for exactly this case, so all 47 would be rejected
-rather than mis-reconstructed. The silent-corruption path exists only for a
-caller that reaches the bridge without going through that gate (see L2 below).
-So the realistic outcome is "prosperity generates nothing for 47 layers",
-not "prosperity generates 47 wrong traces" - still a blocker, but a visible one.
+The 47 is the 53 class-S2 layers of `layer_dim_coverage.md` minus the 6 that
+never reach the gate. The prosperity walkthrough demonstrates this outcome; it
+does not decide it.
 
-**To decide in the prosperity walkthrough demo, before generation:** whether
-`KH: 1 / KW: 1` was intended (and the 47 layers are deliberately out of scope),
-or whether it should be `KH: 4 / KW: 4` as in the pre-finalization copy, which
-gives `node_bound = 3` and the full window.
+### P2. The infeasibility boundary under the finalized mapspace
 
-### P2. `prosperity_infeasibility.md`'s T <= 8 boundary is stale
+`prosperity_infeasibility.md` states the boundary for the finalized mapspace:
+with `WO` barred (`WO_resident = 1`) and `HO: 8`, the binding inequality is
+`2 x HO_res x 1 x COUT_spatial x T <= 1024`, so `T <= 16` where
+`HO_res = 8`, and the infeasible set is **6** pairs - A08/`vgg16_cifar10_loas`
+L1-L6 at 2,048 B against the 1,024 B budget.
 
-`prosperity_infeasibility.md` derived the infeasibility boundary under the
-prosperity mapspace as it stood then, `HO: 4, WO: 4`. The finalized mapspace is
-`HO: 8, WO: 1`, which changes the binding arithmetic:
+Three layers sit on the boundary rather than over it: A08 L7-L9 have `ho = 4`,
+so `HO_res = 4` and the demand is exactly 1,024 B - feasible at zero slack. The
+eight C01 convolutions clear at 640 B (`T = 10`) and 1,024 B (`T = 16`).
 
-| | then (`HO 4 / WO 4`) | finalized (`HO 8 / WO 1`) |
-|---|---|---|
-| psum bytes | `2 x 4 x 4 x 4 x T = 128 T` | `2 x HO_res x 1 x 4 x T` |
-| boundary | `T <= 8` | `T <= 16` when `HO_res = 8` |
-| infeasible pairs | **17** | **6** |
+The mechanism is one binding constraint, `cap_NodeLevel_psum`, with `T` forced
+fully resident and the other factors pinned by equalities, so the result is
+structural rather than a search failure. Confirmed by real solve: the six are
+`status = 3` with the IIS `cap_NodeLevel_psum, node_cap_bound_HO,
+node_cap_full_T, pe_split_COUT`, and L7-L9 plus the C01 layers are
+`status = 2`.
 
-Under the finalized values only A08/`vgg16_cifar10_loas` **L1-L6** remain
-infeasible (2,048 B against the 1,024 B psum budget). The eight C01 layers at
-`T = 10` and `T = 16` become **feasible**, and so do A08 **L7-L9**, whose
-`ho = 4` gives `HO_res = 4` and exactly 1,024 B - the zero-slack boundary case
-again. So "A08 T=32 is still out" is right, but it is 6 of the 9, not all 9.
+---
 
-The mechanism in that document is unchanged and still correct: one binding
-constraint, the NodeLevel psum capacity, with `T` forced fully resident and the
-other factors pinned by equalities. Only the numeric boundary and the affected
-set move.
+## PENDING - needs action
 
-**Action:** `prosperity_infeasibility.md` needs a correction pass once P1 is
-decided, since `KH`/`KW` do not enter the psum term and the two questions are
-independent - but there is no point rewriting the numbers twice. Not parked:
-its boundary and affected set are wrong on disk right now.
+### P3. `layer_dim_coverage.md`'s solve-derived counts describe the pre-finalization solve
+
+That document's step-1c coverage matrix and every count taken from
+`schedule_tiles.csv` - the 738 exported rows, the per-arch tile totals, the
+151-of-157 scheduled set, the 17 infeasible pairs, the 1,179,648-tile
+prosperity ceiling - were measured against the solve that preceded the mapspace
+finalization.
+
+Prosperity's numbers there are already superseded: under the finalized mapspace
+it has 6 infeasible pairs rather than 17, so 145 of its 151 pairs solve rather
+than 134, and of those only 98 generate (the other 47 stop at the bridge gate).
+Gustavsnn's mapspace changes carry the same risk.
+
+**Action:** a refresh row the moment prosperity and gustavsnn re-solve, covering
+both the coverage matrix and the tile-count and shard-weighting figures that
+depend on it. Until then, treat `layer_dim_coverage.md`'s prosperity and
+gustavsnn rows as describing the earlier solve, and its loas, ptb and
+spinalflow rows as current - those three mapspaces are unchanged.
 
 ---
 
@@ -264,7 +273,117 @@ identical.
 
 ## ptb
 
-Pending its walkthrough row.
+Source: `walkthroughs/ptb.md` section 4, caveats B1-B6. **None affect
+generation of any of the 8 benchmarks' layers.** All 151 PTB pairs are
+feasible: PTB bars output pixels from residency, so its partial-sum footprint
+is `2 x 1 x 1 x COUT_spatial x T` bytes - 32 B at `T = 4` up to 256 B at
+`T = 32`, against a 1,024 B budget, with no layer near the limit.
+
+The structural reason the list is short: **PTB's weight-address trace is
+identical to LoAS's** for the same layer, schedule and sample (verified by
+direct record-for-record comparison on A08's classifier - the same 1,175
+records, ticks and channel runs). Its two-pass algorithm's second pass feeds
+only the cycle count, so everything PTB-specific below concerns that number
+rather than the trace.
+
+### B1. Only 4 of the 8 array columns are ever used
+
+*Caveat (ptb section 2.3):* column usage is `ceil(timesteps / 8)` capped at 8.
+A08 at 32 timesteps spans 4 columns; the `T = 4` workloads span 1. No campaign
+layer uses more than half the array's temporal width.
+
+- **Affects generation? No.** Column count enters only the compute-cost
+  formula; fetches, their order and their ticks come from the first pass alone.
+- **Severity: efficiency and modeling fidelity, never correctness.** The cycle
+  numbers truthfully describe an array at half temporal occupancy on these
+  workloads.
+- **Fix sketch:** nothing to fix. Full temporal occupancy needs a 64-timestep
+  capture, not a code change.
+
+### B2. Timestep counts that are not multiples of 8 give partial windows
+
+*Caveat (ptb section 2.2, 2.3):* C01 runs at 10 and 16 timesteps, five
+workloads at 4. At 10 the last column holds 2 of its 8 timesteps; at 4 it holds
+4.
+
+- **Affects generation? No, and the partial case is handled explicitly.** The
+  last-column term is `timesteps - 8 x (columns - 1)`, the column's true
+  occupancy, so a partial window is costed at its real size - no rounding up,
+  no zero-padding of the timestep axis, no truncated work. Verified on the C01
+  head at 10 timesteps: last column 2, cycle count 103, matching an independent
+  recomputation. At 16 the division is exact.
+- **Severity: none for correctness.**
+- **Fix sketch:** none needed.
+
+### B3. The cycle formula assumes the resident window never exceeds 64 timesteps
+
+*Caveat (ptb section 2.3, derived):* the column count is capped at 8 but the
+last-column term is not, so above 64 resident timesteps that term exceeds the
+8-timestep column width (at 72 it computes 16), describing a column holding
+twice the time it can hold.
+
+- **Affects generation? No.** The mapspace caps resident timesteps at 64 -
+  exactly `TW_SIZE x PE_COLS_MAX`, the array's own temporal reach - so a tile's
+  window cannot exceed it, and the deepest capture is 32.
+- **Severity if the precondition changes: silently wrong cycle counts**, not
+  wrong traces. A deeper capture would still be split along time by the cap, so
+  reaching the bad range requires raising the cap itself.
+- **Fix sketch:** assert the window is at most `TW_SIZE x PE_COLS_MAX` so
+  raising the cap fails loudly. This also settles the mapspace's own review
+  flag: 64 is correct because it is the array's temporal reach; 32 would strand
+  4 of 8 columns by construction while changing nothing for the current
+  captures.
+
+### B4. The second pass's group count depends on enumeration order
+
+*Caveat (ptb section 1.3):* the merge walk is greedy and left-to-right over
+adjacent pairs in the fixed kernel-row, kernel-column, input-channel order, so
+which lines are neighbours - and therefore mergeable - is a property of the
+enumeration rather than of the spike pattern. Greedy pairing is also not
+optimal; an absorbed line is never reconsidered.
+
+- **Affects generation? No.** The group count feeds only the cycle number.
+- **Severity: modeling fidelity, not a defect.** The published architecture
+  pairs physically adjacent rows, so order dependence is faithful to the
+  hardware - but the count should not be read as the best achievable grouping
+  for a given spike pattern.
+- **Fix sketch:** none. Worth one sentence wherever the cycle model is
+  documented so the number is not mistaken for an optimum.
+
+### B5. An access-bound tile hides its group count
+
+*Caveat (ptb section 2.4):* the cycle count is the maximum of the access and
+compute costs, so an access-bound tile discards the group count, which cannot
+then be recovered from the output. B09/`loas_vgg16` `features_34` is one: 1,033
+fetches and 1,033 cycles.
+
+- **Affects generation? No - an observability limit.**
+- **Severity: cosmetic, with an analysis trap.** Measuring PTB's compression
+  benefit from cycle counts alone silently sees nothing on access-bound tiles,
+  and both regimes occur in this campaign: A08's classifier is compute-bound
+  (261 cycles for 235 fetches), the 3x3 layer at 4 timesteps is access-bound.
+- **Fix sketch:** emit the group count as its own field if the compression
+  effect is to be reported; inference from cycles works only while a tile is
+  compute-bound.
+
+### B6. Shared caveats that apply unchanged
+
+Properties of code PTB shares with LoAS, not rediscoveries - the verdicts carry
+over because the code is the same. `ptb/native_bridge.py`'s task packing is
+byte-for-byte identical to loas's (verified by diff), and `PTBGen.h` duplicates
+the same padding formula with no stride term.
+
+- **L1 stride absent from the native path** - does not affect generation; the
+  loader excludes the 6 stride-2 layers for every arch.
+- **L2 the bridge gate lives in `gen_inputs.py`** - does not affect
+  generation; the campaign path runs the gate. Latent for other callers.
+- **L3 padding inferred from kernel size** - does not affect generation; all
+  157 captured layers are same-padding.
+- **L6 bare assert as the only framing check** and **L7 the stream writer
+  trusts its caller for machine width** - shared code, shared verdicts, neither
+  affects generation.
+- **L10 blocking rather than sparsity decides the footprint** - applies
+  verbatim and with the same numbers, since the address trace is identical.
 
 ## spinalflow
 
@@ -272,8 +391,8 @@ Pending its walkthrough row.
 
 ## prosperity
 
-Pending its walkthrough row. P1 and P2 above belong to this arch and are
-tracked at the top because they must be decided before generation.
+Pending its walkthrough row. P1 and P2 at the top belong to this arch; both are
+settled, and the walkthrough demonstrates rather than decides them.
 
 ## gustavsnn
 
