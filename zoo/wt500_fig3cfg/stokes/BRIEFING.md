@@ -33,8 +33,15 @@ through git. Read, in order:
    alternative (deployment plan, last section) should win.
 2. Commit `recon.txt` to the campaign branch and push, so the manager
    session sees it.
-3. Wait for the manager to land the weighted shard list (produced by S3 on
-   DeltaAI) in `zoo/wt500_fig3cfg/stokes/shards/`; meanwhile stage inputs
+3. Unpack and verify the schedules - they travel in this repo:
+   `zoo/wt500_fig3cfg/release/s2_schedules.tar.gz` (142 KB). Follow
+   `zoo/wt500_fig3cfg/release/README.md`: untar into
+   `zoo/wt500_fig3cfg/outputs/`, then run the README's verification
+   snippet, which checks every schedule file against the sha256 recorded
+   per row in the manifest. 749 verified rows, 0 mismatches, or stop.
+4. Wait for the manager to land the weighted shard list (produced by S3 on
+   DeltaAI) in `zoo/wt500_fig3cfg/stokes/shards/`; meanwhile stage the
+   input captures (~33 GB, via Globus - the one thing git cannot carry)
    and build natives per S4, and run the S5 demos.
 4. Status travels in `zoo/wt500_fig3cfg/stokes/STATUS.md`: one line per
    shard (id, state, records, shipped-at, verified-at), committed and
