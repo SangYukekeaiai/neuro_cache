@@ -15,10 +15,13 @@ Everything measured here was run on this host against the finalized
 the real n=500 captures under `examples/input_trace/delta/`.
 
 **The headline, stated up front because it shapes everything below: PTB's
-weight-address trace is bit-for-bit identical to LoAS's for the same layer.**
-Verified by direct comparison on A08's classifier: the same 1,175 records, the
-same ticks, the same channel runs. PTB differs from LoAS only in its **cycle
-count**. Everything genuinely new in this document is about that number.
+weight-address trace is record-for-record identical to LoAS's for the same
+layer.** Verified by direct comparison on A08's classifier: the same 1,175
+records, the same ticks, the same channel runs. The serialized frames are
+**not** byte-identical, because the cycle count travels in the frame header and
+does differ (261 against 235) - it is the record stream that matches. PTB
+differs from LoAS only in that cycle count, and everything genuinely new in
+this document is about it.
 
 ## 1. How a PTB weight trace is generated (the logic)
 
@@ -32,10 +35,18 @@ array can hold at once.
 
 This is why the mapspace caps resident timesteps at 64. The cap is not a
 tuning choice: it is exactly the hardware's temporal reach, so a tile can never
-be handed more time than the array can represent. Everything else in the
-mapspace matches LoAS - the whole kernel and all input channels resident,
-output channels fanned four ways across the PEs, and output pixels barred from
-residency.
+be handed more time than the array can represent.
+
+The rest of the mapspace is close to LoAS's but not the same, and the
+difference matters for section 2.3. PTB caps the kernel dimensions at 4 and the
+timestep count at 64, where LoAS declares both unbounded: PTB has a **finite**
+temporal window and LoAS has none at all. For every layer in this campaign the
+two are indistinguishable in effect - a 3x3 kernel is wholly resident under a
+cap of 4, and every capture has at most 32 timesteps, well under 64 - but PTB's
+window is a real bound its cycle model reads, and LoAS has no equivalent. Both
+hold all input channels resident, fan output channels across the PEs (a node's
+slab is capped at 4; the machine-wide fan is the schedule's spatial product),
+and bar output pixels from residency.
 
 ### 1.2 What a tile means for PTB
 
@@ -132,7 +143,8 @@ behaviours appear in this campaign (section 2.3).
 Unchanged from LoAS. Each core's ordered fetches for its own channel slab are
 interleaved tick-major - all cores at tick 0, then all at tick 1 - with absent
 cores omitted rather than padded. That block is one tile frame; the file is a
-header describing machine and layer, one frame per tile, an end marker and a
+header describing machine and layer, one frame per `(dram_i, noc_i)` tile group,
+an end marker and a
 total count. PTB uses the **strictly ascending** tick variant of the format,
 which its dense Pass-1 numbering satisfies by construction.
 
@@ -178,9 +190,13 @@ and direct comparison of the two generators' full output confirms it: **the
 
 **Pass 2, and the cost that differs.** Of the 235 survivors, the greedy walk
 finds only **8 mergeable adjacent pairs** out of 234 candidates, leaving
-**227 groups**. Merges are rare because each surviving channel fires on about
-10.7 of the 32 timesteps on average, so two neighbours almost always collide
-somewhere.
+**227 groups**. Merges are rare for a quantitative reason: the 5,504 firing
+events are spread over just 235 surviving channels, so a **survivor** is active
+on `5,504 / 235 = 23.4` of the 32 timesteps on average. Two lines each
+occupying roughly three quarters of the window almost always collide somewhere,
+so disjointness is the exception. (Averaged over all 512 channels the figure is
+10.75, but that population includes the 277 silent channels, which are never
+merge candidates.)
 
 The resulting costs, with the array parameters this layer gives:
 
@@ -265,7 +281,7 @@ Measured cost for one sample: 528,896 records across 32 frames in 2.2 s.
 
 ## 3. Where this lives in the code
 
-The path is the same five hops as LoAS, with the same shared pieces, so only
+The path is the same six hops as LoAS, with the same shared pieces, so only
 the differences are described here. See `walkthroughs/loas.md` section 3 for
 the full hop-by-hop account of schedule loading, dispatch, task packing, the
 regroup step and the stream writer.
@@ -274,15 +290,17 @@ Identical to LoAS:
 
 - **Schedule to tiles** and **dispatch** are shared code, not per-arch.
 - **Task packing**: `ptb/native_bridge.py`'s `_pack_task` is byte-for-byte
-  identical to `loas/native_bridge.py`'s - verified by diff. Same 11 ints per
+  identical to `loas/native_bridge.py`'s - verified by diff of
+  `src/lays/weight_trace_gen/{loas,ptb}/native_bridge.py:26` onward. Same 11 ints per
   tile (`dram_i, ho, wo, kh_n, kw_n, cin_off, cin_n, t_off, t_n, cout_off,
   cout_n`), same `tile_offset.get(DIM_HO, 0)` defaulting, same absence of a
   kernel-offset field, same trace slicing to the requested samples before
   packing.
 - **Regroup**: `assemble_layer_traces` is shared; `mac_cycles` is the maximum
   across a group's cores.
-- **Stream**: `stream.py` selects the v3 format only for gustavsnn, so PTB
-  writes **v2** with its strictly-ascending tick rule.
+- **Stream**: `src/lays/cachesim/stream.py:219` selects the v3 format only for
+  gustavsnn, so PTB writes **v2**, whose strictly-ascending tick rule is
+  enforced at `stream.py:134-140`.
 
 PTB-specific, all in `ptb/PTBGen.h`:
 
@@ -295,23 +313,28 @@ PTB-specific, all in `ptb/PTBGen.h`:
 - `row.tick = (int32_t)i` indexes **Pass-1** lines, and the comment states
   this explicitly ("Address traversal uses Pass-1 lines directly (NOT Pass-2
   groups)").
-- `compute_cycle_count(ln, cout_n, total_t)` implements the systolic formula
-  with `TW_SIZE = 8`, `PE_ROWS_MAX = 16`, `PE_COLS_MAX = 8`, returning the
-  maximum of a full-span term and an active-drain term.
-- `result.mac_cycles = std::max(access_cycle_count, compute_cycles)`, where
-  the access count is the Pass-1 survivor count. The header calls out that this
+- `compute_cycle_count(ln, cout_n, total_t)` (`ptb/PTBGen.h:73-79`) implements
+  the systolic formula with `TW_SIZE = 8`, `PE_ROWS_MAX = 16`,
+  `PE_COLS_MAX = 8` (`:37-39`), returning the maximum of a full-span term and
+  an active-drain term.
+- `result.mac_cycles = std::max(access_cycle_count, compute_cycles)`
+  (`PTBGen.h:162`), where the access count is the Pass-1 survivor count. The header calls out that this
   differs from LoAS, SpinalFlow and Prosperity, which all use the survivor
   count directly.
-- Padding is `pad_h = (kh_n - 1) / 2`, `hin = ho + kh - pad_h` - the same
-  formula as LoAS, duplicated in this header, with no stride term.
+- Padding is `pad_h = (kh_n - 1) / 2`, `hin = ho + kh - pad_h`
+  (`PTBGen.h:86-98`) - the same formula as LoAS, duplicated in this header,
+  with no stride term.
 
 ## 4. Caveats
 
 Each carries the dispatched question: **does it affect weight-trace generation
 of any of the 8 benchmarks' layers under the current campaign?** All 151 PTB
 pairs are feasible - PTB bars output pixels from residency, so its partial-sum
-footprint is `2 x 1 x 1 x COUT_spatial x T` bytes, between 32 B (T=4) and 256 B
-(T=32) against a 1,024 B budget, with no layer close to the limit.
+footprint is `2 x 1 x 1 x COUT_spatial x T` bytes. Over the 151 pairs it takes
+six values, `{16, 32, 40, 80, 128, 256}` B, against a 1,024 B budget. The
+minimum, 16 B, is B09/`loas_vgg16`'s classifier, whose `COUT = 10` gives
+`COUT_spatial = 2` at `T = 4`; the maximum, 256 B, is the A08 layers at
+`T = 32`. No layer is within a factor of four of the limit.
 
 ### B1. Only 4 of the 8 array columns are ever used
 
@@ -361,10 +384,12 @@ holding twice the time it can hold.
   time by the cap, so reaching the bad range needs the cap itself to be raised.
 - **Fix sketch:** add an assertion that the window is at most
   `TW_SIZE x PE_COLS_MAX`, so raising the cap fails loudly instead of producing
-  a quiet overrun. This also settles the mapspace's own review flag: 64 is the
-  correct value because it is the array's temporal reach, and lowering it to 32
-  would strand 4 of 8 columns by construction while changing nothing for the
-  current captures.
+  a quiet overrun. The behavioural facts, for whoever resolves the mapspace's
+  open question about this value: the window must be at most
+  `TW_SIZE x PE_COLS_MAX = 64` for the last-column term to stay within a
+  column, and a 32-tick window would strand four of the eight columns by
+  construction while changing nothing for the current captures, all of which
+  are at 32 timesteps or fewer.
 
 ### B4. The Pass-2 group count depends on enumeration order
 
@@ -425,14 +450,40 @@ verdicts carry over because the code is the same.
   numbers - at 8 input channels per line, core 0 of A08's classifier touches
   every line in its slab despite fetching only 235 of 512 times.
 
-## 5. Reproducing
+## 5. Limits of this write-up
+
+Three things this document does not establish, stated so they are not mistaken
+for measurements.
+
+1. **The 64-timestep window value is settled by argument, not by evidence of
+   intent.** Section 2.3 and caveat B3 show that 64 is the only value
+   consistent with the generator's own array constants, and that a smaller
+   value would strand columns. That is an argument from the hardware model; it
+   is not evidence of what the value was meant to be, and nothing here recovers
+   the original intent.
+2. **148 of the 151 pairs are analytic, not solved.** Three layers were solved
+   locally with the real solver and generated from real captures: A08's
+   classifier, C01/cifar10_dvs's classifier head, and B09/`loas_vgg16`'s
+   `features_34`. The feasibility claim for the other 148, and the footprint
+   value set in section 4, come from applying the capacity inequality to the
+   captured layer dimensions rather than from solving each one.
+3. **Every measured number is sample 0 of one sample.** The 235 survivors, the
+   8 merges, the 227 groups, the 261 cycles, the 1,033 and 528,896 figures are
+   all from a single sample of a 500-sample capture. Sparsity varies per sample,
+   so the counts are representative rather than typical, and no spread is
+   reported. The identity of the record stream with LoAS's is structural rather
+   than statistical, so that result does not depend on the sample - but the
+   cycle numbers do.
+
+## 6. Reproducing
 
 Solve via the scheduler's cache-and-solve entry point with the campaign
 `arch.yaml` and `mapspaces/ptb.yaml`; tiles via the shared schedule loader;
 generation via the arch dispatch on a memory-mapped capture; stream via the
 WCTS writer with core count and spatial factors taken from the solved
-schedule. The LoAS-versus-PTB address comparison is a direct set comparison of
-the two generators' records for the same layer, schedule and sample. Pass 1 and
+schedule, all on sample 0 of each capture. The LoAS-versus-PTB address
+comparison is a direct set comparison of the two generators' records for the
+same layer, schedule and sample. Pass 1 and
 Pass 2 were independently recomputed in Python from the raw recording - survivor
 count, group count, and the published formula - and matched the generator's
 reported cycle count on both the A08 and C01 heads. Drivers are throwaway
