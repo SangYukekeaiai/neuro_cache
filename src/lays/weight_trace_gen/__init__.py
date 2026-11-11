@@ -84,11 +84,11 @@ class ArchComputeModel(Protocol):
 
     def weight_addresses(self, packed: Any, tile: NodeTileSpec) -> List[Any]:
         """Ordered weight addresses this tile touches (this arch's own
-        address.py::event_to_address, wrapped). Not consumed by combine.py's
+        native address traversal, wrapped). Not consumed by combine.py's
         transaction generator (which still uses byte-size accounting) --
         exists so the locality analyzer has one per-arch entry point for
         both timing and addressing, instead of reaching around the
-        Protocol into each arch's raw address.py function.
+        Protocol into each arch's raw native generator.
         """
         ...
 
@@ -105,8 +105,8 @@ class ArchComputeModel(Protocol):
         SpinalFlow/Prosperity: one event/residual-bit per cycle), so this
         is just range(len(weight_addresses(packed, tile))). GustavSNN is
         the one case with genuine same-cycle parallelism: up to
-        PE_COUNT_MAX submatrices each advance their own line pointer every
-        cycle, so multiple addresses can share a tick -- see
-        gustavsnn/address.py.
+        the configured wave-width number of submatrices each advance their
+        own line pointer every cycle, so multiple addresses can share a tick
+        -- see the GustavSNN native bridge's wave assignment.
         """
         ...

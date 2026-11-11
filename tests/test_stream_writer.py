@@ -124,6 +124,36 @@ def test_non_ascending_tick_inside_a_core_is_rejected():
     raise AssertionError("expected ValueError: local_tick not strictly ascending")
 
 
+def test_gustavsnn_v3_allows_same_tick_bursts_in_one_core():
+    """WCTS v3 keeps GustavSNN's concurrent HO-row bursts in one core."""
+    trace = LayerWeightTrace(
+        arch="gustavsnn", trace_dir="w", layer_name="l", sample_idx=0,
+        workload_dims={"KH": 3, "KW": 3, "CIN": 1, "COUT": 8,
+                       "HO": 2, "WO": 2, "T": 1},
+        dram_num_steps=1, noc_num_steps=1,
+        tiles=[TileWeightTrace(
+            dram_i=0, noc_i=0, mac_cycles=2, lif_cycles=None,
+            ticks=[
+                TickEntry(tick=0, cores=[CoreEntry(
+                    core_id=0, weight_addresses=[
+                        [0, 0, 0, 0, 8], [1, 0, 0, 0, 8],
+                    ])]),
+                TickEntry(tick=1, cores=[CoreEntry(
+                    core_id=0, weight_addresses=[[0, 1, 0, 0, 8]])]),
+            ],
+        )],
+    )
+
+    buf = io.BytesIO()
+    assert stream_weight_trace(trace, buf, n_cores=1, spatial_factors={}) == 3
+    header, tiles, _total = decode_stream(buf.getvalue())
+    assert header["format_version"] == 3
+    assert header["n_cores"] == 1
+    assert header["spatial_factors"] == {}
+    assert [core_id for core_id, _bursts in tiles[0][2]] == [0]
+    assert [tick for tick, _addr in tiles[0][2][0][1]] == [0, 0, 1]
+
+
 def test_empty_run_is_rejected():
     trace = tiny_trace()
     trace.tiles[1].ticks[0].cores[0].weight_addresses = [[2, 2, 2, 8, 8]]
@@ -311,6 +341,7 @@ if __name__ == "__main__":
     test_max_tiles_truncates_to_a_valid_short_stream()
     test_a_truncated_stream_is_a_byte_prefix_of_the_full_one()
     test_non_ascending_tick_inside_a_core_is_rejected()
+    test_gustavsnn_v3_allows_same_tick_bursts_in_one_core()
     test_empty_run_is_rejected()
     test_ragged_final_run_carries_the_maximum_span()
     test_round_trip_a_real_fixture()

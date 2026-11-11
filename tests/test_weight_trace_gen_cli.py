@@ -4,6 +4,7 @@ import argparse
 import dataclasses
 import gzip
 import hashlib
+import io
 import json
 import pathlib
 import subprocess
@@ -193,6 +194,247 @@ def test_prosperity_sorts_and_reuses_rows_across_t():
     assert result.mac_cycles == 2
 
 
+def test_prosperity_replays_all_resident_cin_channels():
+    bridge = pathlib.Path(gwt.__file__).parent / "prosperity" / "prosperitygen"
+    if not bridge.exists():
+        pytest.skip("prosperitygen not built")
+    np = pytest.importorskip("numpy")
+    from lays.parsers.layer import DIM_CIN, DIM_COUT, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
+    from lays.weight_trace_gen import NodeTileSpec
+    from lays.weight_trace_gen.weight_trace import reconstruct_samples
+
+    trace = np.zeros((1, 1, 2, 3, 3), np.uint8)
+    trace[0, 0, 0, 1, 1] = 1
+    trace[0, 0, 1, 0, 0] = 1
+    tile = NodeTileSpec(
+        0,
+        {DIM_HO: 1, DIM_WO: 1, DIM_KH: 3, DIM_KW: 3, DIM_CIN: 2, DIM_COUT: 8, DIM_T: 1},
+        {DIM_HO: 0, DIM_WO: 0, DIM_CIN: 0, DIM_T: 0}, True,
+    )
+
+    result = reconstruct_samples(
+        "prosperity", trace, [tile], [0], "x", "y",
+        {"KH": 3, "KW": 3, "CIN": 2, "COUT": 8, "HO": 1, "WO": 1, "T": 1}, 1,
+    )[0].tiles[0]
+    addresses = [a for entry in result.ticks for core in entry.cores for a in core.weight_addresses]
+    assert addresses == [(2, 2, 0, 0, 8), (1, 1, 1, 0, 8)]
+    assert result.mac_cycles == 2
+
+
+def test_prosperity_section3_hand_example_keeps_popcount_order():
+    bridge = pathlib.Path(gwt.__file__).parent / "prosperity" / "prosperitygen"
+    if not bridge.exists():
+        pytest.skip("prosperitygen not built")
+    np = pytest.importorskip("numpy")
+    from lays.parsers.layer import DIM_CIN, DIM_COUT, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
+    from lays.weight_trace_gen import NodeTileSpec
+    from lays.weight_trace_gen.weight_trace import reconstruct_samples
+
+    trace = np.zeros((1, 1, 1, 4, 4), np.uint8)
+    for hin, win in ((0, 2), (1, 1), (1, 2), (2, 0), (2, 1)):
+        trace[0, 0, 0, hin, win] = 1
+    tile = NodeTileSpec(
+        0,
+        {DIM_HO: 2, DIM_WO: 2, DIM_KH: 3, DIM_KW: 3, DIM_CIN: 1, DIM_COUT: 8, DIM_T: 1},
+        {DIM_HO: 0, DIM_WO: 0, DIM_CIN: 0, DIM_T: 0}, True,
+    )
+
+    result = reconstruct_samples(
+        "prosperity", trace, [tile], [0], "x", "y",
+        {"KH": 3, "KW": 3, "CIN": 1, "COUT": 8, "HO": 2, "WO": 2, "T": 1}, 1,
+    )[0].tiles[0]
+    addresses = [a for entry in result.ticks for core in entry.cores for a in core.weight_addresses]
+    assert addresses == [
+        (2, 2, 0, 0, 8), (1, 2, 0, 0, 8), (2, 1, 0, 0, 8),
+        (0, 2, 0, 0, 8), (1, 1, 0, 0, 8), (1, 2, 0, 0, 8),
+        (2, 0, 0, 0, 8), (2, 1, 0, 0, 8),
+    ]
+    assert result.mac_cycles == 8
+
+
+def test_gustavsnn_section4_example1_streams_same_tick_bursts_in_one_core():
+    """The 17-fetch/10-cycle docs example exercises the native v3 path."""
+    binary = pathlib.Path(gwt.__file__).parent / "gustavsnn" / "gustavgen"
+    if not binary.exists():
+        pytest.skip("gustavgen not built")
+    np = pytest.importorskip("numpy")
+    from lays.parsers.layer import DIM_CIN, DIM_COUT, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
+    from lays.cachesim.stream import stream_weight_trace
+    from lays.weight_trace_gen import NodeTileSpec
+    from lays.weight_trace_gen.weight_trace import reconstruct_samples
+
+    trace = np.zeros((1, 1, 2, 4, 4), np.uint8)
+    for hin, win in ((0, 2), (1, 1), (1, 2), (2, 0), (2, 1)):
+        trace[0, 0, 0, hin, win] = 1
+    for hin, win in ((0, 0), (1, 1)):
+        trace[0, 0, 1, hin, win] = 1
+    tile = NodeTileSpec(
+        0,
+        {DIM_HO: 2, DIM_WO: 2, DIM_KH: 3, DIM_KW: 3, DIM_CIN: 2, DIM_COUT: 8, DIM_T: 1},
+        {}, True,
+    )
+
+    layer_result = reconstruct_samples(
+        "gustavsnn", trace, [tile], [0], "x", "y",
+        {"KH": 3, "KW": 3, "CIN": 2, "COUT": 8, "HO": 2, "WO": 2, "T": 1}, 1,
+        wave_width=8,
+    )[0]
+    result = layer_result.tiles[0]
+    expected = [
+        [(1, 0, 1, 0, 8), (0, 0, 1, 0, 8)],
+        [(1, 1, 1, 0, 8), (0, 1, 1, 0, 8)],
+        [(1, 2, 0, 0, 8), (0, 2, 0, 0, 8)],
+        [(2, 1, 0, 0, 8), (1, 1, 0, 0, 8)],
+        [(2, 1, 1, 0, 8), (1, 1, 1, 0, 8)],
+        [(2, 2, 0, 0, 8), (1, 2, 0, 0, 8)],
+        [(2, 2, 1, 0, 8), (1, 2, 1, 0, 8)],
+        [(2, 0, 0, 0, 8)],
+        [(2, 1, 0, 0, 8)],
+        [(2, 2, 0, 0, 8)],
+    ]
+    assert result.mac_cycles == 10
+    assert sum(len(c.weight_addresses) for e in result.ticks for c in e.cores) == 17
+    assert [[a for c in e.cores for a in c.weight_addresses] for e in result.ticks] == expected
+    assert [entry.tick for entry in result.ticks] == list(range(10))
+    assert [len(entry.cores) for entry in result.ticks] == [1] * 10
+    assert [entry.cores[0].core_id for entry in result.ticks] == [0] * 10
+    assert [len(entry.cores[0].weight_addresses) for entry in result.ticks] == [2] * 7 + [1] * 3
+    stream = io.BytesIO()
+    assert stream_weight_trace(layer_result, stream, n_cores=1, spatial_factors={}) == 17
+    assert int.from_bytes(stream.getvalue()[8:12], "little") == 3
+
+
+def test_gustavsnn_section4_example2_streams_wave2_in_one_core():
+    """The nine-row example pins the duplicate and the second-wave offset."""
+    binary = pathlib.Path(gwt.__file__).parent / "gustavsnn" / "gustavgen"
+    if not binary.exists():
+        pytest.skip("gustavgen not built")
+    np = pytest.importorskip("numpy")
+    from lays.parsers.layer import DIM_CIN, DIM_COUT, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
+    from lays.cachesim.stream import stream_weight_trace
+    from lays.weight_trace_gen import NodeTileSpec
+    from lays.weight_trace_gen.weight_trace import reconstruct_samples
+
+    trace = np.zeros((1, 1, 1, 9, 3), np.uint8)
+    for win in (0, 1):
+        trace[0, 0, 0, 0, win] = 1
+    trace[0, 0, 0, 3, 0] = 1
+    for win in (0, 1, 2):
+        trace[0, 0, 0, 8, win] = 1
+    tile = NodeTileSpec(
+        0,
+        {DIM_HO: 9, DIM_WO: 1, DIM_KH: 1, DIM_KW: 3, DIM_CIN: 1, DIM_COUT: 8, DIM_T: 1},
+        {DIM_WO: 1}, True,
+    )
+    layer_result = reconstruct_samples(
+        "gustavsnn", trace, [tile], [0], "x", "y",
+        {"KH": 1, "KW": 3, "CIN": 1, "COUT": 8, "HO": 9, "WO": 1, "T": 1}, 1,
+        wave_width=8,
+    )[0]
+    result = layer_result.tiles[0]
+    assert result.mac_cycles == 5
+    assert sum(len(c.weight_addresses) for e in result.ticks for c in e.cores) == 6
+    assert [entry.tick for entry in result.ticks] == [0, 1, 2, 3, 4]
+    assert [len(entry.cores) for entry in result.ticks] == [1] * 5
+    assert [entry.cores[0].core_id for entry in result.ticks] == [0] * 5
+    assert [len(entry.cores[0].weight_addresses) for entry in result.ticks] == [2, 1, 1, 1, 1]
+    assert result.ticks[0].cores[0].weight_addresses == [
+        (0, 0, 0, 0, 8), (0, 0, 0, 0, 8),
+    ]
+    stream = io.BytesIO()
+    assert stream_weight_trace(layer_result, stream, n_cores=1, spatial_factors={}) == 6
+    assert int.from_bytes(stream.getvalue()[8:12], "little") == 3
+
+
+def test_gustavsnn_campaign_width_four_regroups_waves_from_schedule_shape():
+    """A campaign-shaped 4-PE schedule changes the wave-2 start tick."""
+    binary = pathlib.Path(gwt.__file__).parent / "gustavsnn" / "gustavgen"
+    if not binary.exists():
+        pytest.skip("gustavgen not built")
+    np = pytest.importorskip("numpy")
+    from lays.parsers.layer import DIM_CIN, DIM_COUT, DIM_HO, DIM_KH, DIM_KW, DIM_T, DIM_WO
+    from lays.cachesim.stream import stream_weight_trace
+    from lays.weight_trace_gen import NodeTileSpec
+    from lays.weight_trace_gen.weight_trace import node_level_spatial_product, reconstruct_samples
+
+    strategy = {
+        "NodeLevel": {
+            "spatial_split": {
+                "factors": [{"dim": "COUT", "size": 2}, {"dim": "HO", "size": 2}]
+            }
+        }
+    }
+    wave_width = node_level_spatial_product(strategy)
+    assert wave_width == 4
+
+    trace = np.zeros((1, 1, 1, 9, 3), np.uint8)
+    for win in (0, 1):
+        trace[0, 0, 0, 0, win] = 1
+    trace[0, 0, 0, 3, 0] = 1
+    trace[0, 0, 0, 4, 0] = 1  # gives the {4-7} campaign wave one line
+    for win in (0, 1, 2):
+        trace[0, 0, 0, 8, win] = 1
+    tile = NodeTileSpec(
+        0,
+        {DIM_HO: 9, DIM_WO: 1, DIM_KH: 1, DIM_KW: 3, DIM_CIN: 1, DIM_COUT: 8, DIM_T: 1},
+        {DIM_WO: 1}, True,
+    )
+
+    layer_result = reconstruct_samples(
+        "gustavsnn", trace, [tile], [0], "x", "y",
+        {"KH": 1, "KW": 3, "CIN": 1, "COUT": 8, "HO": 9, "WO": 1, "T": 1}, 1,
+        wave_width=4,
+    )[0]
+    result = layer_result.tiles[0]
+
+    # Derive expected ticks from the wave rule, rather than copying the
+    # width-8 example's numbers.  Rows 0-3, 4-7, and 8 are separate waves.
+    row_lines = [
+        [(0, 0, 0), (0, 1, 0)], [], [], [(0, 0, 0)],
+        [(0, 0, 0)], [], [], [],
+        [(0, 0, 0), (0, 1, 0), (0, 2, 0)],
+    ]
+    expected_ticks = []
+    wave_starts = []
+    wave_start = 0
+    for wave_begin in (0, 4, 8):
+        wave_end = min(wave_begin + 4, len(row_lines))
+        wave_len = max((len(row_lines[row]) for row in range(wave_begin, wave_end)), default=0)
+        wave_starts.append(wave_start)
+        for line_idx in range(wave_len):
+            expected_ticks.append([
+                (*row_lines[row][line_idx], 0, 8)
+                for row in range(wave_begin, wave_end)
+                if line_idx < len(row_lines[row])
+            ])
+        wave_start += wave_len
+
+    actual_ticks = [[a for c in entry.cores for a in c.weight_addresses]
+                    for entry in result.ticks]
+    assert wave_starts == [0, 2, 3]
+    assert result.mac_cycles == wave_start == 6
+    assert sum(map(len, actual_ticks)) == 7
+    assert [entry.tick for entry in result.ticks] == list(range(wave_start))
+    assert actual_ticks == expected_ticks
+
+    # Carry the schedule-derived width through the real bridge call and stream.
+    campaign_stream = io.BytesIO()
+    assert stream_weight_trace(layer_result, campaign_stream, n_cores=1, spatial_factors={}) == 7
+    assert int.from_bytes(campaign_stream.getvalue()[8:12], "little") == 3
+    with pytest.raises(ValueError, match="wave_width is required"):
+        reconstruct_samples(
+            "gustavsnn", trace, [tile], [0], "x", "y",
+            {"KH": 1, "KW": 3, "CIN": 1, "COUT": 8, "HO": 9, "WO": 1, "T": 1}, 1,
+        )
+
+
+def test_reconstruct_samples_rejects_wave_width_for_other_architectures():
+    from lays.weight_trace_gen.weight_trace import reconstruct_samples
+
+    with pytest.raises(ValueError, match="only valid for gustavsnn"):
+        reconstruct_samples("loas", None, [], [], "x", "y", {}, 1, wave_width=4)
+
+
 @pytest.mark.parametrize("arch,exe,bursts,cycles", [
     ("loas", "loasgen", 1, 1), ("spinalflow", "spinalflowgen", 2, 2),
     ("ptb", "ptbgen", 1, 8), ("gustavsnn", "gustavgen", 1, 1),
@@ -216,7 +458,10 @@ def test_native_1x1_uses_zero_padding_and_the_selected_token(arch, exe, bursts, 
     tile = NodeTileSpec(0, {DIM_HO: 1, DIM_WO: 1, DIM_KH: problem["KH"], DIM_KW: problem["KW"],
                             DIM_CIN: 1, DIM_COUT: 4, DIM_T: 1 if arch == "gustavsnn" else 2},
                         {DIM_T: 0, DIM_HO: 1, DIM_WO: 0}, True)
-    result = reconstruct_samples(arch, trace, [tile], [0], "tokens", "fc", problem, 1)[0].tiles[0]
+    result = reconstruct_samples(
+        arch, trace, [tile], [0], "tokens", "fc", problem, 1,
+        wave_width=1 if arch == "gustavsnn" else None,
+    )[0].tiles[0]
     addresses = [a for tick in result.ticks for core in tick.cores for a in core.weight_addresses]
     assert addresses == [(0, 0, 0, 0, 4)] * bursts
     assert result.mac_cycles == cycles

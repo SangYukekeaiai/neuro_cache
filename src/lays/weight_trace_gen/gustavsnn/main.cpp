@@ -8,6 +8,7 @@
 //   T, B_full, Cin_full, Hin_full, Win_full
 //   num_tiles
 //   num_samples
+//   wave_width (the schedule's NodeLevel spatial-split product)
 //   per tile (num_tiles times): dram_i, t_offset, ho_off, ho_n, wo_off,
 //     wo_n, kh_n, kw_n, cin_off, cin_n, cout_off, cout_n  (12 int32)
 //   per sample (num_samples times): sample_idx
@@ -26,8 +27,8 @@
 // See src/lays/weight_trace_gen/tick_output.h for the shared tick-grouping helper.
 // GustavSNN is the one arch where this bucketing is real, not a no-op:
 // its tick assignment (GustavGen.h: wave_start_of[i]+j) genuinely produces
-// multiple addresses sharing one tick (up to PE_COUNT_MAX submatrices
-// advancing their own line pointer the same cycle) -- write_tick_grouped
+// multiple addresses sharing one tick (up to wave_width submatrices advancing
+// their own line pointer the same cycle) -- write_tick_grouped
 // buckets by the addresses' own .tick field regardless of discovery
 // order, so this is correct here without a GustavSNN-specific code path.
 
@@ -83,6 +84,11 @@ int main(int argc, char** argv) {
 
     const int32_t num_tiles = read_i32(task_fh);
     const int32_t num_samples = read_i32(task_fh);
+    const int32_t wave_width = read_i32(task_fh);
+    if (wave_width <= 0) {
+        std::cerr << "gustavgen: wave_width must be positive\n";
+        return 2;
+    }
 
     std::vector<TileSpec> tiles(num_tiles);
     for (auto& tile : tiles) {
@@ -143,7 +149,8 @@ int main(int argc, char** argv) {
     for (int32_t sample_idx : sample_indices) {
         for (int32_t tile_idx = 0; tile_idx < num_tiles; ++tile_idx) {
             const TileSpec& tile = tiles[tile_idx];
-            SampleResult result = reconstruct_sample(trace.data(), shape, tile, sample_idx);
+            SampleResult result = reconstruct_sample(
+                trace.data(), shape, tile, sample_idx, wave_width);
             write_i32(out_fh, tile_idx);
             write_i32(out_fh, sample_idx);
             write_i32(out_fh, result.mac_cycles);

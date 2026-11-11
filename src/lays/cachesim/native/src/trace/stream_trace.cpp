@@ -280,13 +280,15 @@ bool StreamingTileTrace::advance() {
                                          std::to_string(i) + " has local_tick " +
                                          std::to_string(tick) + ", must be >= 0");
             }
-            if (tick <= prev_tick) {
+            const bool ticks_strictly_ascending =
+                header_.format_version == stream::kFormatVersion;
+            if (ticks_strictly_ascending ? tick <= prev_tick : tick < prev_tick) {
                 throw std::runtime_error("WCTS frame " + std::to_string(tile_index) + ": core " +
                                          std::to_string(core_id) + " local_tick " +
                                          std::to_string(tick) + " does not ascend past " +
                                          std::to_string(prev_tick));
             }
-            // The v2 record is [kh, kw, cin, cout, run_end]: the full anchor of
+            // The record is [kh, kw, cin, cout, run_end]: the full anchor of
             // a run that walks `burst_dim`, so the run starts at the anchor's
             // coordinate on that axis.
             const Coord anchor{kh, kw, cin, cout};

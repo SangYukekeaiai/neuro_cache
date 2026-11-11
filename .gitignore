@@ -58,6 +58,11 @@ examples/input_trace/delta/
 # source-controlled deliverables, not captured data.
 !zoo/concat_vs_khkw/*.json
 
+# The wt500 campaign's architecture, mapspace, and sweep configs are
+# hand-written source, not captured data (outputs/ stays ignored above).
+!zoo/wt500_fig3cfg/*.yaml
+!zoo/wt500_fig3cfg/mapspaces/*.yaml
+
 # Local Gurobi installation and license files
 gurobi_server1302/
 gurobi.lic

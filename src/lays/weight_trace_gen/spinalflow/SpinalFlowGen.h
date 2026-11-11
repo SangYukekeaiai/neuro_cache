@@ -1,24 +1,20 @@
-// SpinalFlowGen.h -- C++ port of SpinalFlow's per-tile weight-address/tick
-// reconstruction
-// (a port of the former pure-Python reconstruct/address/cycles modules).
+// SpinalFlowGen.h -- native SpinalFlow per-tile weight-address/tick
+// reconstruction.
 //
 // Much simpler than GustavSNN: one tile = one fixed (ho, wo) output pixel
 // (no per-row waves), so a "spine" is just every (t, kh, kw, cin) with a
 // real spike, visited in t-outermost, kh, kw, cin-innermost order --
-// exactly reconstruct_tile_sequence_batch's own iteration order (the
-// Python source builds this via one big numpy nonzero() and a
-// transpose that puts axes in this same order; here it's a direct
-// nested loop, no vectorization trick needed since there's no per-element
-// Python object construction cost to dodge with numpy in the first
-// place -- C++ loops are cheap either way).
+// exactly the native trace traversal order: t outermost, kh, kw, and cin
+// innermost. The implementation uses a direct nested loop, with no
+// per-element object construction or vectorization layer required here.
 //
-// event_to_address (address.py): each spike event (t, cin, kh, kw)
-// becomes address (kh, kw, cin, cout_start, cout_end), t dropped.
-// event_to_ticks: strictly sequential, tick i == event i (cycles.py:
-// access_cycle_count == compute_cycle_count == len(events), one spike
-// event consumed per cycle, no dominance case, no parallelism).
+// Address traversal maps each spike event (t, cin, kh, kw) to
+// (kh, kw, cin, cout_start, cout_end), dropping t. Tick assignment is
+// strictly sequential, tick i == event i (access_cycle_count ==
+// compute_cycle_count == len(events), one spike event consumed per cycle,
+// with no dominance case or parallelism).
 //
-// "same" padding, matching reconstruct.py: hin = ho + kh - pad_h,
+// "same" padding convention: hin = ho + kh - pad_h,
 // win = wo + kw - pad_w, pad_h=(kh_n-1)/2, pad_w=(kw_n-1)/2. Out-of-range
 // (hin, win) is padding (zero, never a spike), never indexed OOB.
 
@@ -62,10 +58,9 @@ inline SampleResult reconstruct_sample(
     SampleResult result;
     result.mac_cycles = 0;
 
-    // t outermost, then kh, kw, cin innermost -- matches
-    // reconstruct_tile_sequence_batch's own event order exactly, so
-    // ticks (== event position) line up the same way they would from
-    // the Python path.
+    // Follow the traversal order described above: t outermost, then kh, kw,
+    // and cin innermost, so ticks (== event position) line up with the native
+    // address sequence.
     for (int32_t t = tile.t_off; t < tile.t_off + tile.t_n; ++t) {
         for (int32_t kh = 0; kh < tile.kh_n; ++kh) {
             const int32_t hin = tile.ho + kh - pad_h;

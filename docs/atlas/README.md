@@ -56,7 +56,7 @@ named last before it.
 |---|---|
 | [pipeline.md](pipeline.md) | The pipeline end to end: `src/lays/util.py`, `src/lays/parsers/`, `src/lays/scheduler/` (SNN scheduler, Gurobi MIP, schedule artifact), `src/lays/weight_trace_gen/` (weight-trace generator, five native arch models), the files the pipeline writes for the simulators (`src/lays/nocsim/step_cycles.py`, `src/lays/cachesim/stream.py`), `src/lays/cachesim/grid.py` and `cli.py`, `scripts/`, `examples/`, `examples/input_trace/`, `tests/`, and the build files |
 | [nocsim.md](nocsim.md) | `src/lays/nocsim/`: schedule -> NoC transactions -> eventsim makespan, and `python -m lays.nocsim` |
-| [cachesim_native.md](cachesim_native.md) | `src/lays/cachesim/native/`: the C++ cache simulator (`libcachesim.a`, `cachesim_run`, `cachesim_sweep`, tests), the WCTS v2 reader, and `examples/cachesim/` |
+| [cachesim_native.md](cachesim_native.md) | `src/lays/cachesim/native/`: the C++ cache simulator (`libcachesim.a`, `cachesim_run`, `cachesim_sweep`, tests), the WCTS v2/v3 reader, and `examples/cachesim/` |
 
 Where each part of the tree is described:
 
@@ -127,7 +127,7 @@ Where each part of the tree is described:
    from `__file__` except `lays.scheduler solve`/`enumerate`, whose defaults are
    cwd-relative (`src/lays/scheduler/cli.py:22-25`).
 9. Dependency direction: the pipeline produces the schedule JSON
-   (`src/lays/scheduler/artifact.py:101-104`), the step-cycles file nocsim reads
+   (`src/lays/scheduler/artifact.py:115-118`), the step-cycles file nocsim reads
    (`src/lays/nocsim/step_cycles.py:27`, read at `src/lays/nocsim/sim.py:335-337`) and the
    WCTS stream the cache simulator reads (`src/lays/cachesim/stream.py:178`). The
    two simulators never call each other; their numbers meet only in
@@ -160,7 +160,7 @@ their "2. Bottom-up" entries:
 |---|---|---|
 | 1 | `demo` (the end-to-end driver) | `scripts/pipeline.py:316` |
 | 2 | `solve_best_schedule` | `src/lays/scheduler/solve.py:271` |
-| 3 | `solve_and_cache_schedule` | `src/lays/scheduler/artifact.py:49` |
+| 3 | `solve_and_cache_schedule` | `src/lays/scheduler/artifact.py:61` |
 | 4 | `reconstruct_samples` | `src/lays/weight_trace_gen/weight_trace.py:163` |
 | 5 | `run_stream` | `src/lays/weight_trace_gen/cli.py:301` |
 | 6 | `stream_weight_trace` | `src/lays/cachesim/stream.py:178` |

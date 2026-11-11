@@ -1,4 +1,4 @@
-// WCTS, the weight cache trace stream, version 2: the wire format as data.
+// WCTS, the weight cache trace stream, versions 2 and 3: the wire format as data.
 // Each burst record is [kh, kw, cin, cout, run_end]: the run's full anchor
 // plus the end of the run along `burst_dim`.
 //
@@ -40,6 +40,7 @@ namespace cachesim::stream {
 
 inline constexpr char          kMagic[8]        = {'W', 'C', 'T', 'R', 'A', 'C', 'E', '1'};
 inline constexpr std::uint32_t kFormatVersion   = 2;
+inline constexpr std::uint32_t kFormatVersionV3 = 3;
 
 // magic, version, header_bytes, n_tiles, n_cores, weight_bytes, burst_dim,
 // burst_stride, burst_span, n_addr_fields, n_spatial, n_dims, identity_bytes.
@@ -100,6 +101,7 @@ inline std::int32_t code_of(Axis a) {
 }
 
 struct StreamHeader {
+    std::uint32_t format_version = kFormatVersion;
     std::int32_t n_tiles      = 0;
     std::int32_t n_cores      = 0;
     std::int32_t weight_bytes = 1;
@@ -178,7 +180,7 @@ inline void encode_header(const StreamHeader& h, std::vector<unsigned char>& out
                                      identity.size();
 
     out.insert(out.end(), kMagic, kMagic + 8);
-    detail::append_le<std::uint32_t>(out, kFormatVersion);
+    detail::append_le<std::uint32_t>(out, h.format_version);
     detail::append_le<std::uint32_t>(out, static_cast<std::uint32_t>(header_bytes));
     detail::append_le<std::int32_t>(out, h.n_tiles);
     detail::append_le<std::int32_t>(out, h.n_cores);
@@ -218,10 +220,11 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
     detail::Cursor cur(buf, len);
     (void)cur.take<std::uint64_t>("magic");
     const std::uint32_t version = cur.take<std::uint32_t>("format_version");
-    if (version != kFormatVersion) {
+    if (version != kFormatVersion && version != kFormatVersionV3) {
         throw std::invalid_argument(
             "WCTS header: format_version is " + std::to_string(version) +
-            ", this reader speaks only " + std::to_string(kFormatVersion) +
+            ", this reader speaks " + std::to_string(kFormatVersion) + " and " +
+            std::to_string(kFormatVersionV3) +
             "; version 1 streams store [kh, kw, cin, run_start, run_end] records that "
             "cannot hold a non-COUT anchor, so regenerate the stream with the current "
             "src/lays/cachesim/stream.py");
@@ -234,6 +237,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
     }
 
     StreamHeader h;
+    h.format_version = version;
     h.n_tiles = cur.take<std::int32_t>("n_tiles");
     if (h.n_tiles < 0) {
         throw std::invalid_argument("WCTS header: n_tiles is " + std::to_string(h.n_tiles) +
@@ -267,7 +271,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
     const std::int32_t identity_bytes = cur.take<std::int32_t>("identity_bytes");
     if (n_addr_fields != kAddrFields) {
         throw std::invalid_argument("WCTS header: n_addr_fields is " +
-                                    std::to_string(n_addr_fields) + ", v2 requires " +
+                                    std::to_string(n_addr_fields) + ", v2/v3 require " +
                                     std::to_string(kAddrFields));
     }
     if (n_spatial < 0) {
@@ -276,7 +280,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
     }
     if (n_dims != kDims) {
         throw std::invalid_argument("WCTS header: n_dims is " + std::to_string(n_dims) +
-                                    ", v2 requires " + std::to_string(kDims));
+                                    ", v2/v3 require " + std::to_string(kDims));
     }
     if (identity_bytes < 0) {
         throw std::invalid_argument("WCTS header: identity_bytes is " +
@@ -298,7 +302,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
         if (code != i) {
             throw std::invalid_argument("WCTS header: addr_field_id[" + std::to_string(i) +
                                         "] is " + std::to_string(code) +
-                                        ", v2 requires the order {0,1,2,3,4}");
+                                        ", v2/v3 require the order {0,1,2,3,4}");
         }
         h.addr_fields.push_back(static_cast<FieldCode>(code));
     }
@@ -339,7 +343,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
         if (dim != i) {
             throw std::invalid_argument("WCTS header: workload dim_id[" + std::to_string(i) +
                                         "] is " + std::to_string(dim) +
-                                        ", v2 requires the ids 0..6 in order");
+                                        ", v2/v3 require the ids 0..6 in order");
         }
         h.dims.emplace_back(static_cast<DimCode>(dim), extent);
     }
@@ -360,7 +364,7 @@ inline StreamHeader decode_header(const unsigned char* buf, std::size_t len) {
     if (fields.size() != 4 || !current.empty()) {
         throw std::invalid_argument("WCTS header: the identity block holds " +
                                     std::to_string(fields.size()) +
-                                    " NUL-terminated fields, v2 requires exactly 4");
+                                    " NUL-terminated fields, v2/v3 require exactly 4");
     }
     h.arch     = fields[0];
     h.workload = fields[1];

@@ -16,8 +16,8 @@ which ADDITIONALLY divides out spatial_factors[dim] and any NoC-temporal
 factor -- appropriate there because spatial fanout across PEs doesn't
 cost extra MAC cycles, but wrong here: NodeTileSpec.node_bound must
 describe the tile's actual real-trace RESIDENCY width -- what
-reconstruct_tile_sequence slices out of the trace, and what address.py's
-burst spans (e.g. SpinalFlow's burst covers the tile's "whole assigned
+a native tile reconstruction slices out of the trace, and what each
+bridge's burst spans (e.g. SpinalFlow's burst covers the tile's "whole assigned
 output-channel range" -- the full spatial width, not 1 per PE). Tracing
 through PTB's `active_rows = min(tile.node_bound[DIM_COUT], PE_ROWS_MAX)`
 and every arch's existing "COUT costs zero/clamped cycles regardless of

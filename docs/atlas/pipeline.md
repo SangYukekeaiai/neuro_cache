@@ -136,19 +136,28 @@ Formats crossing each boundary:
    `valid_layer_names` (:126) keeps the rest: 25 of the 31 `_n5` layers
    (resnet19 loses layers 01, 08, 15, which are 3x3 stride 2, and the
    shortcuts 03, 10, 17, which are 1x1 stride 2).
-   `check_schedule_matches_trace` (`src/lays/scheduler/artifact.py:115`) refuses
-   a schedule whose `workload.problem` differs from this dict (:127-137) and
+   `check_schedule_matches_trace` (`src/lays/scheduler/artifact.py:129`) refuses
+   a schedule whose `workload.problem` differs from this dict (:141-151) and
    names the `solve-trace --force` command to re-solve it.
-3. **Schedule JSON** (`ScheduleArtifact`, `src/lays/scheduler/artifact.py:27`):
+3. **Schedule JSON** (`ScheduleArtifact`, `src/lays/scheduler/artifact.py:28`):
    `{arch, trace_dir, layer_name, workload:{problem:{...}}, result:{status,
    has_solution, objective, strategy:{NodeLevel{temporal_tile,spatial_split},
    NoCLevel{temporal_permutation,spatial_splitting}, DRAM{temporal_permutation}},
    metrics:{util, spatial_cost, temporal_traffic, delay, capacity},
-   configs:{arch, dataflow}}, dram_num_steps, mode}`. `configs` holds the two
+   configs:{arch, dataflow}}, dram_num_steps, mode, arch_yaml_sha256,
+   mapspace_yaml_sha256}`. `configs` holds the two
    paths as given (`src/lays/scheduler/solve.py:169-172`); the strategy block
    comes from `util.build_strategy` (`src/lays/util.py:27`, called at
-   `src/lays/scheduler/solve.py:234`). Written with `indent=1`
-   (`src/lays/scheduler/artifact.py:103-104`).
+   `src/lays/scheduler/solve.py:234`). `arch_yaml_sha256` and
+   `mapspace_yaml_sha256` are the SHA-256 digests of the arch and mapspace
+   YAML *bytes* as read at solve time (`sha256_file`, :42-48, called at
+   `src/lays/scheduler/artifact.py:112-113`), so an in-place edit of either
+   config changes them; artifacts written before the fields existed carry
+   `""` (the dataclass defaults, :38-39). A cache lookup that compares them
+   against the configs it is about to solve with therefore misses on both an
+   edited config and a pre-field artifact -- `zoo/wt500_fig3cfg/gen_inputs.py`
+   does exactly that (:232-233, inside the match predicate :223-234).
+   Written with `indent=1` (`src/lays/scheduler/artifact.py:117-118`).
 4. **Native bridge wire format** (all int32, native endian;
    `src/lays/weight_trace_gen/loas/main.cpp:6-20`, packer
    `src/lays/weight_trace_gen/loas/native_bridge.py:26`): `task.bin` =
@@ -169,20 +178,29 @@ Formats crossing each boundary:
    (`src/lays/nocsim/step_cycles.py:142`) also
    reads an older full form (no `format` key, each tile also carrying `ticks`,
    ignored) and raises `ValueError` on any other `format` (:162-165).
-6. **WCTS v2 stream** (`src/lays/cachesim/stream.py:17-54`): 56-byte fixed header
-   (layout table :29-36; magic `WCTRACE1` :43, version 2 :44), then the 5
-   field codes `0=KH 1=KW 2=CIN 3=COUT 4=RUN_END` (:51-53), `(dim_id, factor)`
-   spatial pairs, `(dim_id, extent)` for all 7 dims (wire codes 0=KH..6=T,
-   :50), identity `arch\0trace_dir\0layer\0sample_idx\0` (:79-81). Per tile
+6. **WCTS v2/v3 stream** (`src/lays/cachesim/stream.py`, wire format described in
+   the module comment :29-44 and fixed by the constants :46-58): 56-byte fixed
+   header (layout table :29-40; magic `WCTRACE1` :46, version 2 or 3 :47-48,
+   written from the `format_version` argument :96), then the 5
+   field codes `0=KH 1=KW 2=CIN 3=COUT 4=RUN_END` (:57, written :100),
+   `(dim_id, factor)` spatial pairs (:101), `(dim_id, extent)` for all 7 dims
+   (wire codes 0=KH..6=T, :54; written :103), identity
+   `arch\0trace_dir\0layer\0sample_idx\0` (built :88-90, written :105). Per tile
    frame `<iiqQ` = tile_index, cores in frame, mac_cycles, payload bytes
-   (:107); per core `<ii` core_id, n_bursts (:117); per burst `<q5i` =
+   (:121); per core `<ii` core_id, n_bursts (:131); per burst `<q5i` =
    local_tick, the run's anchor `kh, kw, cin, cout`, then `run_end` (28 B,
-   :54, :131). The run walks `burst_dim` from the anchor's coordinate on that
-   axis to `run_end` (exclusive). Trailer `<iQ` = -1, total bursts (:138). The
-   header writer accepts `burst_dim` 0..3 (:66-67); `stream_weight_trace` emits
-   only `burst_dim=3` (COUT) and refuses others (:196-201), because
-   `LayerWeightTrace` addresses are COUT runs. The C++ reader is described in
-   `docs/atlas/cachesim_native.md` (WCTS v2 wire format).
+   `_WCTS_BURST_BYTES` :58, packed :147). The run walks `burst_dim` from the anchor's coordinate on that
+   axis to `run_end` (exclusive). Trailer `<iQ` = -1, total bursts (:154). The
+   header writer accepts `burst_dim` 0..3 (:75-76); `stream_weight_trace` emits
+   only `burst_dim=3` (COUT) and refuses others (:212-217), because
+   `LayerWeightTrace` addresses are COUT runs. The two versions are
+   byte-identical and differ only in the per-core tick rule -- strictly
+   ascending local ticks in v2, non-decreasing in v3, where equal ticks are
+   concurrent bursts from one core's internal lanes (:41-43, enforced :134-140).
+   The version is not a caller argument: `stream_weight_trace` picks v3 when
+   `trace.arch == "gustavsnn"` and v2 otherwise (:219), threading it to the
+   header (:230) and every tile frame (:236). The C++ reader is described in
+   `docs/atlas/cachesim_native.md` section 1.7.
 7. **Simulator outputs.** `cachesim_sweep` prints CSV to stdout (or `--out`),
    with the header on by default
    (`src/lays/cachesim/native/apps/cachesim_sweep.cpp:47-48`, :88); the pipeline
@@ -217,7 +235,7 @@ Imports across the module packages (the Python packages depend on each other
 in both directions; only the native binaries are one-way):
 
 - `lays.scheduler.artifact` imports `lays.weight_trace_gen.trace` and
-  `lays.nocsim.schedule.decode` (`src/lays/scheduler/artifact.py:18-19`);
+  `lays.nocsim.schedule.decode` (`src/lays/scheduler/artifact.py:19-20`);
   `lays.scheduler.cli` imports `weight_trace_gen` for the arch list
   (`src/lays/scheduler/cli.py:16`).
 - `lays.weight_trace_gen.weight_trace` imports `lays.nocsim.schedule.decode`,
@@ -334,22 +352,29 @@ commands above are repo-relative, so run them from the repo root.
 
 ## 2. Bottom-up
 
-### 2.1 `src/lays/scheduler/artifact.py` (137 lines): the schedule artifact
+### 2.1 `src/lays/scheduler/artifact.py` (151 lines): the schedule artifact
 
-- `ScheduleArtifact` :27 dataclass; `mode` defaults to `"base"` (:36).
-- `_dump_workload_path(workload)` :39 writes a temp YAML with `delete=False`
-  (:40) and never removes it; `_prob_from_workload` :45 wraps it in `SNNProb`.
-- `solve_and_cache_schedule(arch_name, arch_yaml, dataflow_yaml, trace_dir_name, layer_name, meta, cache_dir)` :49:
+- `ScheduleArtifact` :28 dataclass; `mode` defaults to `"base"` (:37), and
+  `arch_yaml_sha256` / `mapspace_yaml_sha256` default to `""` (:38-39), which
+  is what a pre-field artifact on disk deserializes to.
+- `sha256_file(path)` :42 (public): SHA-256 of a config file's bytes, read in
+  1 MiB blocks (:46). Used here for the two artifact digest fields and
+  imported by `zoo/wt500_fig3cfg/gen_inputs.py:41`.
+- `_dump_workload_path(workload)` :51 writes a temp YAML with `delete=False`
+  (:52) and never removes it; `_prob_from_workload` :57 wraps it in `SNNProb`.
+- `solve_and_cache_schedule(arch_name, arch_yaml, dataflow_yaml, trace_dir_name, layer_name, meta, cache_dir)` :61:
   builds the workload, calls `lays.scheduler.solve.solve_best_schedule`
-  (imported lazily, :77, so reading a cached schedule needs no `gurobipy`,
-  :22-24), decodes it to get `dram_num_steps` (:90), writes
-  `cache_dir/<arch>/<trace_dir>/<layer>.json` (:101-104). Always re-solves;
-  raises `ValueError` when every mode is infeasible (:85-89).
-- `read_artifact(path)` :108.
-- `check_schedule_matches_trace(schedule_path, trace_dir, layer_name)` :115:
+  (imported lazily, :89, so reading a cached schedule needs no `gurobipy`,
+  :23-25), decodes it to get `dram_num_steps` (:102, :110), hashes the two
+  config paths it was handed (:112-113), writes
+  `cache_dir/<arch>/<trace_dir>/<layer>.json` (:115-118). Always re-solves;
+  raises `ValueError` when every mode is infeasible (:97-101).
+- `read_artifact(path)` :122.
+- `check_schedule_matches_trace(schedule_path, trace_dir, layer_name)` :129:
   raises `ValueError` naming the schedule path, the differing fields, and the
-  `result.configs.arch` it was solved with (:128-137), or the layer's
-  exclusion reason (:122-125). Called before every schedule load in
+  `result.configs.arch` it was solved with (:142-151), or the layer's
+  exclusion reason (:136-139). It compares the workload only; the config
+  digests are not consulted here. Called before every schedule load in
   `src/lays/weight_trace_gen/cli.py` (:135, :206, :317) and by `scripts/pipeline.py`
   (:242, :293).
 
@@ -386,21 +411,28 @@ commands above are repo-relative, so run them from the repo root.
 
 ### 2.4 `src/lays/cachesim/` Python: `stream.py`, `grid.py`, `cli.py`
 
-- `src/lays/cachesim/stream.py` (220 lines): constants :43-54 (`_WCTS_BURST_BYTES` = 28, :54).
-  - `write_stream_header(...)` :57: checks `burst_dim` in 0..3 (:66-67) before
-    writing a byte, then `prod(spatial_factors) == n_cores` (:71-75) and all 7
-    dims present (:76-77).
-  - `write_tile_frame(fh, *, tile_index, mac_cycles, cores, burst_dim)` :99:
-    each burst is `(local_tick, (kh, kw, cin, cout, run_end))`; checks core
-    ids ascending (:112), no empty cores (:114), ticks strictly ascending
-    (:120), and a run not empty along `burst_dim` (:125-129).
-  - `write_stream_trailer` :136.
-  - `_wcts_tile_frames(tiles, n_cores)` :141: tick-major -> core-major;
-    rejects core ids outside `[0, n_cores)` (:155), empty COUT runs (:162),
-    and measures `burst_span` as the largest `cout_end - cout_start` (:167).
-  - `stream_weight_trace(trace, fh, *, n_cores, spatial_factors, burst_dim=3, burst_stride=1, weight_bytes=1, max_tiles=None)` :178:
-    refuses any `burst_dim` but 3 (:196-201); `max_tiles` truncates before the
-    header so `n_tiles` stays right (:202-203). A non-COUT stream has to be
+- `src/lays/cachesim/stream.py` (238 lines): constants :46-58 (`_WCTS_BURST_BYTES` = 28, :58).
+  - `write_stream_header(...)` :61: refuses a `format_version` outside (2, 3)
+    (:71-74) and `burst_dim` outside 0..3 (:75-76) before
+    writing a byte, then `prod(spatial_factors) == n_cores` (:77-84) and all 7
+    dims present (:85-86).
+  - `write_tile_frame(fh, *, tile_index, mac_cycles, cores, burst_dim, format_version=WCTS_VERSION)` :108-109:
+    each burst is `(local_tick, (kh, kw, cin, cout, run_end))`; refuses an
+    unsupported `format_version` (:116-119), then checks core
+    ids ascending (:126), no empty cores (:128), the tick rule (:134-140), and a
+    run not empty along `burst_dim` (:141-145). The tick rule is the one check
+    that depends on the version: strictly ascending for v2, non-decreasing for
+    v3, so v3 admits equal ticks within one core (item 6 above; the comparison
+    is :134-135 and the message word switches at :138).
+  - `write_stream_trailer` :152.
+  - `_wcts_tile_frames(tiles, n_cores)` :157: tick-major -> core-major;
+    rejects core ids outside `[0, n_cores)` (:171-175), empty COUT runs (:178-182),
+    and measures `burst_span` as the largest `cout_end - cout_start` (:183).
+  - `stream_weight_trace(trace, fh, *, n_cores, spatial_factors, burst_dim=3, burst_stride=1, weight_bytes=1, max_tiles=None)` :194:
+    refuses any `burst_dim` but 3 (:212-217); `max_tiles` truncates before the
+    header so `n_tiles` stays right (:218). It takes no version argument: it
+    reads v3 vs v2 off `trace.arch` (:219) and threads the choice to the header
+    (:230) and every frame (:236). A non-COUT stream has to be
     written with `write_stream_header` + `write_tile_frame` directly (only
     `tests/test_stream_writer.py` does).
 - `src/lays/cachesim/grid.py` (65 lines): `BASE_JSON` :8, `SWEEP_JSON` :9; `grid_for(line_bytes)`
@@ -534,9 +566,23 @@ C++ (each `Makefile`: `g++ -O2 -std=c++17 -Wall -Wextra`,
 - `src/lays/weight_trace_gen/spinalflow/SpinalFlowGen.h` `reconstruct_sample` :56: one address per spike
   event, t outermost (:65, :69); tick = event index.
 - `src/lays/weight_trace_gen/prosperity/ProsperityGen.h`: `popcount64` :80; `reconstruct_sample` :90.
-- `src/lays/weight_trace_gen/gustavsnn/GustavGen.h`: `PE_COUNT_MAX=8` :35; `reconstruct_tile` :82
-  (per-HO-row submatrices), `addresses_and_ticks` :132 (waves of 8
-  submatrices, so several addresses share a tick), `reconstruct_sample` :171.
+- `src/lays/weight_trace_gen/gustavsnn/GustavGen.h` (172 lines): the wave width is a
+  runtime argument, not a compile-time constant. `reconstruct_tile` :76 builds the
+  per-HO-row submatrices; `addresses_and_ticks(submatrices, tile, wave_width)`
+  :125-126 groups them into waves of up to `wave_width` (:135-138), so several
+  addresses share a tick; `reconstruct_sample` :166 chains the two (:170-171).
+  The value arrives in the task record, read and refused when non-positive at
+  `src/lays/weight_trace_gen/gustavsnn/main.cpp:87-91`, packed by
+  `src/lays/weight_trace_gen/gustavsnn/native_bridge.py:48`, which refuses a
+  non-int or non-positive value (:32-35) and a missing one (:133-137). It is
+  derived from the solved schedule rather than configured per tile:
+  `node_level_spatial_product` (`src/lays/weight_trace_gen/weight_trace.py:37`)
+  multiplies the `NodeLevel.spatial_split` factor sizes (:46, :51-58), and
+  `reconstruct_samples` :188 -- the dispatcher, which resolves the per-arch
+  `reconstruct_samples_native` bridge at :217 -- refuses a `wave_width` for any
+  other arch (:215-216) and passes it only for gustavsnn (:222-223). The per-arch
+  wave semantics are in `docs/weight_trace_gen_archs.md` (wave grouping :165-168,
+  the v3 tick rule :276-279, the task record :281).
 
 ### 2.8 `src/lays/scheduler/` (the rest)
 

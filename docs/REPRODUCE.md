@@ -22,8 +22,15 @@ make build
 - Gurobi (`gurobipy` in `requirements.txt:1`) is needed only to solve a schedule. Set
   `GRB_LICENSE_FILE` to the path of your license file; never copy the file into the repo.
   `solve-trace` imports gurobipy only when it has a layer to solve
-  (`src/lays/scheduler/cli.py:18-19`) and skips schedules already in `--cache-dir`
-  (`src/lays/scheduler/cli.py:222-225`). The pipeline needs it only when a requested layer
+  (`src/lays/scheduler/cli.py:18-19`) and skips a schedule already in `--cache-dir` only when
+  that schedule's stored config digests still match the live config files. Without `--force`
+  it reads the cached JSON and compares its `arch_yaml_sha256` and `mapspace_yaml_sha256`
+  against the SHA-256 of the arch and mapspace YAMLs it was handed
+  (`src/lays/scheduler/cli.py:222-234`, the comparison at :225-228); an unreadable or
+  malformed artifact counts as a mismatch (:229-230), and on any mismatch it re-solves
+  instead of skipping (:231-234). Editing an arch or mapspace file in place therefore
+  invalidates the cached schedules solved from it, with no need to delete them or pass
+  `--force`. The pipeline needs it only when a requested layer
   has no schedule in `examples/schedules/` (`scripts/pipeline.py:322-325`).
 - `NEURO_CACHE_DATA` is the root for data kept outside git, default `data/`
   (`src/lays/util.py:15-24`): the pipeline writes to `$NEURO_CACHE_DATA/demo/<bench>` by
@@ -49,7 +56,7 @@ one `<layer>.npy` per layer (`scripts/pipeline.py:40-41`), e.g.
   schedule is solved for is KH=KW=3, CIN=Cin, COUT=`cout`, HO=Hin, WO=Win, T=T
   (`src/lays/weight_trace_gen/trace.py:152-162`).
 - A tracked schedule must have been solved for that workload, or the pipeline stops and
-  names it (`src/lays/scheduler/artifact.py:115-137`, `scripts/pipeline.py:290-297`).
+  names it (`src/lays/scheduler/artifact.py:129-151`, `scripts/pipeline.py:290-297`).
 - Tags: layer `layer_NN_*` of `vgg16_T4_n5` is `V<NN>` and of `resnet19_T4_n5` is
   `R<NN>` (`scripts/pipeline.py:49`, `scripts/pipeline.py:105-114`).
 
@@ -81,14 +88,18 @@ python -m lays.scheduler solve-trace --arch loas --trace-root examples/input_tra
   mapspace, default `examples/node_mapspace/<arch>.yaml` (`src/lays/scheduler/cli.py:198`);
   Gurobi.
 - Outputs: `$OUT/schedules/loas/resnet19_T4_n5/layer_09_layer2_0_conv2.json` with keys
-  `arch, trace_dir, layer_name, workload, result, dram_num_steps, mode`
-  (`src/lays/scheduler/artifact.py:26-36`, `src/lays/scheduler/artifact.py:101-104`), and
+  `arch, trace_dir, layer_name, workload, result, dram_num_steps, mode,
+  arch_yaml_sha256, mapspace_yaml_sha256` (`src/lays/scheduler/artifact.py:27-39`,
+  `src/lays/scheduler/artifact.py:115-118`), and
   `$OUT/schedules/summary.csv` with `arch, trace_dir, layer, status, dram_num_steps, error`
-  (`src/lays/scheduler/cli.py:242-248`).
+  (`src/lays/scheduler/cli.py:251-257`). The last two JSON keys hold the SHA-256 of the
+  arch and mapspace YAML bytes as read at solve time (`sha256_file`,
+  `src/lays/scheduler/artifact.py:42-48`, called at :112-113); they are `""` in
+  schedules written before those fields existed (the dataclass defaults, :38-39).
 - Without `--layers` it solves every replayable layer; each `--layers` name applies to the
   trace dirs whose `meta.json` has it, and a name in none of them exits 2
   (`src/lays/scheduler/cli.py:207-218`). Any infeasible or failed layer exits 1
-  (`src/lays/scheduler/cli.py:250-255`).
+  (`src/lays/scheduler/cli.py:264`).
 - `solve` and `enumerate` solve one hand-written layer YAML instead, default
   `examples/workloads/sample_snn_layer.yaml` (`src/lays/scheduler/cli.py:22-25`).
 
@@ -253,4 +264,4 @@ python -m lays.scheduler solve-trace --arch loas --trace-root examples/input_tra
 ```
 
 A schedule whose workload no longer matches `meta.json` is reported with the command to
-re-solve it (`src/lays/scheduler/artifact.py:131-137`).
+re-solve it (`src/lays/scheduler/artifact.py:145-151`).

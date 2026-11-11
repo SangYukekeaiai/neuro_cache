@@ -1,9 +1,10 @@
-"""Python bridge to the compiled prosperitygen C++ binary, a
-port of reconstruct_tile_sequence_batch + _prosparsity_process +
-event_to_address + event_to_ticks. See
-src/lays/weight_trace_gen/gustavsnn/native_bridge.py for the pattern this mirrors
-(same wire-format shape, same slice-to-requested-samples fix for the OOM
-found there 2026-07-26).
+"""Python bridge to the compiled prosperitygen C++ binary.
+
+The native kernel consumes one CIN per invocation; this bridge expands a
+resident CIN tile into one invocation per CIN and concatenates those
+independent walks. The trace is sliced to the requested samples before
+packing. GustavSNN's task record carries a wave_width field; Prosperity keeps
+its own task-record format.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ import pathlib
 import struct
 import subprocess
 import tempfile
+from dataclasses import replace
 from typing import Any, Dict, List, Sequence
 
 import numpy as np
@@ -42,6 +44,50 @@ def _pack_task(trace_shape: Sequence[int], tiles: Sequence[NodeTileSpec], sample
     for s in sample_indices:
         parts.append(struct.pack("<i", s))
     return b"".join(parts)
+
+
+def _expand_cin_tiles(tiles: Sequence[NodeTileSpec]):
+    """Make one native one-CIN tile for every resident CIN in each tile.
+
+    Prosperity's compression prefix is meaningful only between rows for the
+    same input channel: a prefix from another CIN would name different
+    weights. The native kernel therefore remains one-CIN and the bridge
+    concatenates one independent walk per resident channel below.
+    """
+    expanded = []
+    origins = []
+    for origin, tile in enumerate(tiles):
+        cin_count = int(tile.node_bound.get(DIM_CIN, 1))
+        cin_start = int(tile.tile_offset.get(DIM_CIN, 0))
+        for cin_local in range(cin_count):
+            node_bound = dict(tile.node_bound)
+            node_bound[DIM_CIN] = 1
+            tile_offset = dict(tile.tile_offset)
+            tile_offset[DIM_CIN] = cin_start + cin_local
+            expanded.append(replace(tile, node_bound=node_bound, tile_offset=tile_offset))
+            origins.append(origin)
+    return expanded, origins
+
+
+def _combine_cin_results(unpacked, origins):
+    """Concatenate each tile's independent CIN walks into one tile result."""
+    combined = {}
+    for expanded_idx, local_idx, mac_cycles, ticks in unpacked:
+        origin = origins[expanded_idx]
+        key = (origin, local_idx)
+        state = combined.setdefault(key, {"mac_cycles": 0, "ticks": []})
+        tick_offset = state["mac_cycles"]
+        state["ticks"].extend(
+            {
+                "tick": entry["tick"] + tick_offset,
+                "weight_addresses": entry["weight_addresses"],
+            }
+            for entry in ticks
+        )
+        state["mac_cycles"] += mac_cycles
+
+    for (origin, local_idx), state in sorted(combined.items()):
+        yield origin, local_idx, state["mac_cycles"], state["ticks"]
 
 
 def _unpack_output(data: bytes, num_tiles: int, sample_indices: Sequence[int]):
@@ -81,10 +127,9 @@ def reconstruct_samples_native(
     workload_dims: Dict[str, Any],
     dram_num_steps: int,
 ):
-    """Native-C++ equivalent of the former pure-Python
-    reconstruct_samples_for_schedule,
-    specialized to Prosperity. Same LayerWeightTrace output shape as the
-    Python path. Requires prosperitygen to be built first
+    """Native-C++ Prosperity reconstruction with the same
+    LayerWeightTrace output shape as the Python path. Requires prosperitygen
+    to be built first
     (make in this directory).
 
     `tiles` may span multiple (dram_i, noc_i, core_id) triples (multi-node)
@@ -102,7 +147,8 @@ def reconstruct_samples_native(
 
     trace_slice = np.ascontiguousarray(trace[:, sample_indices], dtype=np.uint8)
     local_indices = list(range(len(sample_indices)))
-    task_bytes = _pack_task(trace_slice.shape, tiles, local_indices)
+    expanded_tiles, origins = _expand_cin_tiles(tiles)
+    task_bytes = _pack_task(trace_slice.shape, expanded_tiles, local_indices)
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = pathlib.Path(tmp)
@@ -119,8 +165,8 @@ def reconstruct_samples_native(
         )
         out_data = out_path.read_bytes()
 
-    unpacked = _unpack_output(out_data, len(tiles), local_indices)
+    unpacked = _unpack_output(out_data, len(expanded_tiles), local_indices)
     return assemble_layer_traces(
-        tiles, sample_indices, unpacked,
+        tiles, sample_indices, _combine_cin_results(unpacked, origins),
         arch_name, trace_dir_name, layer_name, workload_dims, dram_num_steps,
     )

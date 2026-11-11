@@ -55,7 +55,7 @@ schedules and enumerate tiles (1.3).
 | Entry | Where | Notes |
 |---|---|---|
 | CLI `python -m lays.nocsim` | src/lays/nocsim/__main__.py:1-4 calls src/lays/nocsim/sim.py:313 `main(argv=None) -> int` | Works from any cwd once the repo is installed with `pip install -e .` (`package-dir` `src`, pyproject.toml:10-11). Imports `lays.parsers` and `lays.weight_trace_gen` (src/lays/nocsim/sim.py:43-49), and `lays.scheduler.constants` through `schedule/decode.py` (src/lays/nocsim/schedule/decode.py:39). |
-| `--schedule JSON` (required) | src/lays/nocsim/sim.py:267 | Raw solver doc, or a `lays.scheduler.artifact.ScheduleArtifact` (src/lays/scheduler/artifact.py:27) that nests it under `"result"` (src/lays/nocsim/sim.py:62). |
+| `--schedule JSON` (required) | src/lays/nocsim/sim.py:267 | Raw solver doc, or a `lays.scheduler.artifact.ScheduleArtifact` (src/lays/scheduler/artifact.py:28) that nests it under `"result"` (src/lays/nocsim/sim.py:62). |
 | `--layer YAML` (required) | src/lays/nocsim/sim.py:273 | Read by `lays.parsers.layer.SNNProb`. Must match the layer used when solving. |
 | `--arch YAML` (required) | src/lays/nocsim/sim.py:279 | Read twice: `SNNArch` (for `single_node`) and `SNNBitwidths` (bit widths, `DRAM_LATENCY`). |
 | `--out CSV` (default `outputs/tc.csv`, relative to cwd) | src/lays/nocsim/sim.py:255, :285 | Suffix `.csv` or `.json` (src/lays/nocsim/core/generator.py:187-195). |
@@ -75,7 +75,7 @@ simulation, missing or failing eventsim (src/lays/nocsim/sim.py:326, :340, :350,
 - `src/lays/weight_trace_gen/weight_trace.py:17-18` imports `schedule_from_strategy`,
   `iter_node_tiles` (weight-trace reconstruction, the input of both nocsim
   `--weight-trace` and the cache simulator's WCTS stream).
-- `src/lays/scheduler/artifact.py:19` imports `schedule_from_strategy`.
+- `src/lays/scheduler/artifact.py:20` imports `schedule_from_strategy`.
 - `src/lays/weight_trace_gen/cli.py:49` imports `save_step_cycles` and
   `src/lays/weight_trace_gen/cli.py:54` imports `schedule_from_strategy`.
 - `src/lays/weight_trace_gen/dense.py:18` imports `Schedule`, and

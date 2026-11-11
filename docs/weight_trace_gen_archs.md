@@ -4,11 +4,9 @@ Sections 1-7 cover the pipeline, Prosperity and GustavSNN.
 [Section 8](#8-loas-ptb-and-spinalflow) covers LoAS, PTB and SpinalFlow, and
 compares all five.
 
-Written against commit `67420ba`. Every output below comes from running the code,
-with the binaries built in a scratch copy, except where a line says it was only
-read from the code. The paths and line numbers in this document were later
-re-pointed to the src-layout tree at `0c55f2f`; the recorded outputs are still
-the ones produced at `67420ba`.
+Every output below comes from running the code, with the binaries built in a
+scratch copy, except where a line says it was only read from the code. Paths
+and line numbers refer to the current src-layout tree.
 
 ## The short version
 
@@ -26,14 +24,14 @@ The two archs differ only in step 2:
 
 |  | Prosperity | GustavSNN |
 |---|---|---|
-| A tile holds | one input channel, all ticks, a block of output pixels | **all** resident input channels, one tick, a block of output pixels |
+| A tile holds | a resident input-channel range, all ticks, a block of output pixels | **all** resident input channels, one tick, a block of output pixels |
 | Saves work by | reusing an earlier row's result, fetching only the difference | fetching a weight once per HO row, however many WO positions need it |
-| Timing | one fetch per cycle | up to 8 HO rows fetch in parallel |
+| Timing | one fetch per cycle | up to the schedule's configured wave width (its NodeLevel spatial-split product) HO rows fetch in parallel |
 | Fetches per tick | always 1 per core | often several |
 
-**Known problem: `--stream` crashes on GustavSNN.** Cycle-count generation works,
-but no GustavSNN address stream can be written today. See
-[section 6](#6-what-does-not-work-today).
+GustavSNN's `--stream` path emits WCTS v3. Ticks within one core are
+non-decreasing, so equal ticks represent concurrent bursts from that core's
+internal PEs. See [section 6](#6-gustavsnn-streaming).
 
 ## 1. The data flow
 
@@ -84,7 +82,7 @@ Real example, `vgg16` `layer_07_features_24`, whose shape is
 |---|---|---|
 | DRAM loops, outer to inner | `COUTx64 -> CINx256` | `COUTx64 -> Tx4` |
 | Tiles | 64 x 256 = **16384** | 64 x 4 = **256** |
-| One tile spans | CIN 1, COUT 8, HO 4, WO 4, T 4 | CIN 256, COUT 8, HO 4, WO 4, T 1 |
+| One tile spans | a resident CIN range, COUT 8, HO 4, WO 4, T 4 | CIN 256, COUT 8, HO 4, WO 4, T 1 |
 | Tile 1 starts at | `CIN=1, COUT=0` | `T=1, COUT=0` |
 | Last tile starts at | `CIN=255, COUT=504` | `T=3, COUT=504` |
 
@@ -154,15 +152,18 @@ which is why order matters: output follows **popcount order, not pixel order**.
 
 ## 4. GustavSNN: one fetch per HO row, HO rows in parallel
 
-Source: `reconstruct_tile` (`gustavsnn/GustavGen.h:82`) and `addresses_and_ticks`
-(`:132`).
+Source: `reconstruct_tile` (`gustavsnn/GustavGen.h:76`) and `addresses_and_ticks`
+(`:125`).
 
 **Step 1, build a line list for each HO row.** A *line* is one `(kh, kw, cin)`
-triple. It is kept if any WO position in the tile sees a spike there (`:105-114`).
+triple. It is kept if any WO position in the tile sees a spike there (`:98-110`).
 WO is OR'd away, which is where the saving comes from. Lines are ordered by `kh`,
 then `kw`, then `cin`.
 
-**Step 2, group HO rows into waves of up to `PE_COUNT_MAX = 8`** (`:35`, `:142-152`).
+**Step 2, group HO rows into waves of up to the configured wave width**
+(`:135-138`). The width is the schedule's NodeLevel spatial-split product;
+the WT500 GustavSNN campaign uses `COUT=2 x HO=2 = 4`. The worked examples
+below use a wave width of 8.
 A wave lasts as long as its longest row:
 
 ```
@@ -258,45 +259,37 @@ A separate Python reimplementation of the Prosperity rules matched the C++
 addresses, order and cycle counts on every tile of both layers. GustavSNN's output
 was checked only against the hand-traced examples above.
 
-**Assumptions the code does not check.** Neither binary receives a KH or KW offset,
-Prosperity reads one `cin`, and GustavSNN reads one `t`, so a schedule that split
-those dims differently would be silently misread. All 124 cached schedules (31 layers x
-{Prosperity, GustavSNN} x {single-node, multinode}) satisfy the assumptions: KH and
-KW are 3 with no offset, Prosperity's CIN is 1, GustavSNN's T is 1 and its CIN is
-the full channel count. That count predates Prosperity's full T residency, so those
-Prosperity schedules must be re-solved to get it.
+**Assumptions the code does not check.** Neither binary receives a KH or KW offset.
+The native Prosperity kernel consumes one `cin` per invocation, while its Python
+bridge expands every resident CIN in a tile into an independent invocation and
+concatenates the walks. GustavSNN reads one `t`, so schedules must provide no KH
+or KW offset, give Prosperity a resident CIN range the bridge can enumerate, and
+give GustavSNN T=1 with its full CIN range.
 
-## 6. What does not work today
+## 6. GustavSNN streaming
 
-### `--stream` crashes on GustavSNN (real bug, not fixed)
+GustavSNN's `--stream` path emits WCTS v3. The generator's HO-row lanes and
+COUT fanout are internal to one scheduled core, so a core can issue several
+weight bursts at one local tick. WCTS v3 makes that explicit: ticks within a
+core are non-decreasing, with equal ticks representing concurrent bursts.
+WCTS v2 requires strictly ascending ticks within a core; v3 permits equal ticks
+but never decreasing ticks.
 
-```
-$ python -m lays.weight_trace_gen gen --arch gustavsnn ... --stream
-ValueError: write_tile_frame: local_tick 0 not strictly ascending in core 0 of tile 0 (previous 0)
-exit code 1, 293 bytes already written to stdout
-```
+The generator carries the configured wave width in its task record. The
+version-gated v3 writer rule is selected in `src/lays/cachesim/stream.py`; the
+reader enforces non-decreasing v3 ticks in
+`src/lays/cachesim/native/src/trace/stream_trace.cpp:283-290`, declared by
+`stream_trace.h:56-57`. `stream_format.h` supplies the wire-version constants
+and layout.
 
-- **Cause:** WCTS requires strictly ascending ticks within a core
-  (`src/lays/cachesim/stream.py:120`, and `docs/atlas/cachesim_native.md` section
-  1.7, WCTS v2 wire format). GustavSNN's
-  parallel PEs are not cores, so its same-tick fetches all land on one core. The
-  merge at `src/lays/cachesim/stream.py:168` flattens them into equal ticks.
-- **Reach:** it failed on all four single-node layers tried (`layer_01`, `04` and
-  `10` through the writer, `07` through the CLI) and on multinode `layer_07`. Any
-  tile with two fetches in one tick on a core triggers it. Prosperity streams fine
-  in the same tests, because it never has two fetches in one tick on a core.
-- **Why tests miss it:** the repo's demo and tests do not stream real GustavSNN
-  output. The only GustavSNN fixture is the legacy file that
-  `examples/cachesim/manifest.json:155-157` marks as unable to drive the engine.
-  `tests/test_stream_writer.py:116-124` asserts this rejection on purpose.
-- **Direction for a fix:** either give each HO-row PE its own core id, or teach the
-  format and the reader about same-tick bursts. The first keeps WCTS unchanged but
-  changes `n_cores` and `spatial_factors`. Neither has been tried.
+The section-4 regressions run through the native `reconstruct_samples` path and
+check both worked examples: 17 fetches in 10 cycles and 6 fetches in 5 cycles,
+including same-tick duplicates and the second wave starting at tick 2.
 
 The Prosperity stream was checked only as far as the writer. I did not feed it
 through `cachesim`.
 
-### Neither arch runs out of the box
+### Build and replay prerequisites
 
 Generation works once these are handled:
 
@@ -316,11 +309,9 @@ not confirm that a borrowed schedule was solved with this repo's current mapspac
 
 ### Misleading comments
 
-- `prosperity/ProsperityGen.h:36-38` and `prosperity/__init__.py:14` describe `k=16` (KH=KW=4)
+- `prosperity/ProsperityGen.h:34` and `prosperity/__init__.py:14` describe `k=16` (KH=KW=4)
   and m=256. Replayable layers have `k=1` for 1x1 kernels or `k=9` for 3x3 kernels
   (`trace.py:27`, `KERNEL_PADDING`), and `m` varies with the schedule (16 on `layer_07`).
-- Both headers say they are ports "kept in lockstep" with Python modules such as
-  `reconstruct.py`. Those files no longer exist, so the C++ is the source of truth.
 
 ## 7. Reproducing this
 
@@ -473,8 +464,8 @@ spinalflow  mac 6   (1,1,0) (1,1,1) (1,1,0) (2,2,1) (1,2,0) (2,2,1)
 | LoAS | 1 pixel, all CIN, all T | no, within a tile | no | fetches |
 | PTB | 1 pixel, all CIN, all T | no, within a tile | no | `max(fetches, ln + overhead)` |
 | SpinalFlow | 1 pixel, all CIN, all T | yes, per spike | no | fetches |
-| Prosperity | pixel block, 1 CIN, all T | yes, across rows | no | fetches |
-| GustavSNN | pixel block, all CIN, 1 T | yes, across HO rows | **yes**, up to 8 | sum of wave lengths |
+| Prosperity | pixel block, resident CIN range, all T | yes, across rows | no | fetches |
+| GustavSNN | pixel block, all CIN, 1 T | yes, across HO rows | **yes**, up to the schedule's configured wave width | sum of wave lengths |
 
 ### Assumptions and running them
 
@@ -487,7 +478,7 @@ HO and WO offsets present.
 - **LoAS** is the supported path: `make build` builds it, `examples/schedules/loas/`
   tracks four layers, and `scripts/pipeline.py` runs it. I did not re-run that
   pipeline for this doc.
-- **PTB and SpinalFlow** have the same obstacles as the table in section 6, and the
-  commands in section 7 work with `--arch ptb` or `--arch spinalflow` once built
+- **PTB and SpinalFlow** use the same single-pixel bridge contract shown above, and
+  the commands in section 7 work with `--arch ptb` or `--arch spinalflow` once built
   with `make -C src/lays/weight_trace_gen/<arch>`. Their `--stream` output was checked
   only as far as the writer, single-node, not through `cachesim`.

@@ -17,7 +17,7 @@ import pathlib
 import struct
 import subprocess
 import tempfile
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 
@@ -29,10 +29,23 @@ _HERE = pathlib.Path(__file__).resolve().parent
 _BINARY = _HERE / "gustavgen"
 
 
-def _pack_task(trace_shape: Sequence[int], tiles: Sequence[NodeTileSpec], sample_indices: Sequence[int]) -> bytes:
+def _validate_wave_width(wave_width: int) -> int:
+    if isinstance(wave_width, bool) or not isinstance(wave_width, int) or wave_width <= 0:
+        raise ValueError(f"gustavsnn: wave_width must be a positive integer (got {wave_width!r})")
+    return wave_width
+
+
+def _pack_task(
+    trace_shape: Sequence[int],
+    tiles: Sequence[NodeTileSpec],
+    sample_indices: Sequence[int],
+    wave_width: int,
+) -> bytes:
+    wave_width = _validate_wave_width(wave_width)
     T, B_full, Cin_full, Hin_full, Win_full = trace_shape
     parts = [struct.pack("<5i", T, B_full, Cin_full, Hin_full, Win_full)]
     parts.append(struct.pack("<2i", len(tiles), len(sample_indices)))
+    parts.append(struct.pack("<i", wave_width))
     for tile in tiles:
         parts.append(struct.pack(
             "<12i",
@@ -50,7 +63,7 @@ def _pack_task(trace_shape: Sequence[int], tiles: Sequence[NodeTileSpec], sample
 
 
 def _unpack_output(data: bytes, num_tiles: int, sample_indices: Sequence[int]):
-    """Parses the tick-grouped wire format gustavgen's main.cpp now writes
+    """Parses the tick-grouped wire format gustavgen's main.cpp writes
     (src/lays/weight_trace_gen/tick_output.h): per (tile, sample), tick_value +
     num_addresses_at_tick pairs, addresses without a per-address tick field
     (the tick value is the group key). Yields ticks already in the
@@ -88,6 +101,8 @@ def reconstruct_samples_native(
     layer_name: str,
     workload_dims: Dict[str, Any],
     dram_num_steps: int,
+    *,
+    wave_width: Optional[int] = None,
 ):
     """Native-C++ equivalent of the former pure-Python
     reconstruct_samples_for_schedule,
@@ -115,6 +130,13 @@ def reconstruct_samples_native(
             f"cd {_BINARY.parent} && make"
         )
 
+    if wave_width is None:
+        raise ValueError(
+            "gustavsnn: wave_width is required; derive it from the schedule's "
+            "NodeLevel spatial_split"
+        )
+    wave_width = _validate_wave_width(wave_width)
+
     # Slice to just the requested samples before handing off -- the full
     # trace (all ~10,000 samples in the _all trace variants) is B_full's
     # worth of data regardless of how many samples this call actually
@@ -126,7 +148,7 @@ def reconstruct_samples_native(
     # (mapped back via sample_indices[local_idx] below).
     trace_slice = np.ascontiguousarray(trace[:, sample_indices], dtype=np.uint8)
     local_indices = list(range(len(sample_indices)))
-    task_bytes = _pack_task(trace_slice.shape, tiles, local_indices)
+    task_bytes = _pack_task(trace_slice.shape, tiles, local_indices, wave_width)
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = pathlib.Path(tmp)

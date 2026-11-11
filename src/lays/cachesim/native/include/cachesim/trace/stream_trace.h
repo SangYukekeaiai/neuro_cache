@@ -53,8 +53,9 @@ public:
     // Decodes the next tile frame. Returns false at the trailer, having
     // verified the end magic and the total burst count. Throws when
     // `tile_index` is not the expected counter, when a core id is out of range
-    // or not ascending, when a local_tick is not ascending, when
-    // `run_end <= run_start`, or when the derived tile_tail is below 1.
+    // or not ascending, when a local_tick is not ascending (strictly for v2,
+    // non-decreasing for v3), when `run_end <= run_start`, or when the derived
+    // tile_tail is below 1.
     bool advance();
 
     // G14's diagnostic, for the window tile only: how many DISTINCT address

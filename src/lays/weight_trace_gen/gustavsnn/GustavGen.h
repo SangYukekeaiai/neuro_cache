@@ -1,27 +1,23 @@
-// GustavGen.h -- C++ port of GustavSNN's per-tile weight-address/tick
-// reconstruction
-// (a port of the former pure-Python reconstruct/address/cycles modules).
+// GustavGen.h -- native GustavSNN per-tile weight-address/tick reconstruction.
 //
-// Faithful port of three Python functions, kept in lockstep with them:
-//   reconstruct_tile_sequence_batch (reconstruct.py) -- builds, per
-//     (tile, sample), one GustavSubmatrix per resident HO row, each
-//     holding the non-zero (kh, kw, cin) "lines" for that row.
-//   event_to_address (address.py) -- flattens submatrices/lines into
+// The generator has three stages:
+//   tile reconstruction -- builds, per (tile, sample), one GustavSubmatrix per
+//     resident HO row, each holding the non-zero (kh, kw, cin) "lines" for
+//     that row.
+//   address traversal -- flattens submatrices/lines into
 //     (kh, kw, cin, cout_start, cout_end) address tuples, in
 //     submatrix-then-line order.
-//   event_to_ticks (address.py) + group_into_waves (cycles.py) -- groups
-//     submatrices into waves of up to PE_COUNT_MAX, and assigns each
-//     line a tick = wave_start + (its position within its own
-//     submatrix's line list).
+//   wave assignment -- groups submatrices into waves of up to the configured
+//     wave width, and assigns each line a tick = wave_start + (its position
+//     within its own submatrix's line list).
 //
 // A "line" is keyed by the FULL (kh, kw, cin) triple, not (kh, cin) --
-// kw is a genuine per-line dimension in the Python source (see
-// GustavLine's fields), determined by OR-ing across this tile's resident
-// WO range only (not KW), matching reconstruct.py's
-// `active = (gathered != 0).any(axis=2)` where axis 2 is WO.
+// kw is a genuine per-line dimension in the source model (see GustavLine's
+// fields), determined by OR-ing across this tile's resident WO range only (not
+// KW), where the gathered activation mask is reduced along WO.
 //
-// "same" padding, matching reconstruct.py's convention: hin = ho + kh -
-// pad_h, win = wo + kw - pad_w, pad_h=(kh_n-1)/2, pad_w=(kw_n-1)/2. An
+// "same" padding convention: hin = ho + kh - pad_h, win = wo + kw - pad_w,
+// pad_h=(kh_n-1)/2, pad_w=(kw_n-1)/2. An
 // (hin, win) outside [0, Hin_full)/[0, Win_full) is treated as zero
 // (no spike), never indexed out of bounds.
 
@@ -31,8 +27,6 @@
 #include <array>
 #include <cstdint>
 #include <vector>
-
-constexpr int PE_COUNT_MAX = 8;  // K': PEs per tile, matches cycles.py's PE_COUNT_MAX.
 
 struct TileSpec {
     int32_t dram_i;
@@ -124,13 +118,12 @@ inline std::vector<Submatrix> reconstruct_tile(
 }
 
 // Groups submatrices (already in piece_idx order by construction) into
-// waves of up to PE_COUNT_MAX, assigns each line's tick, and flattens
+// waves of up to wave_width, assigns each line's tick, and flattens
 // into address rows in the same submatrix-then-line order
-// event_to_address uses -- port of group_into_waves (cycles.py) +
-// event_to_address + event_to_ticks (address.py), fused into one pass
-// since they all need the same wave/line traversal.
+// The address traversal and wave assignment are fused into one pass since
+// they share the same wave/line traversal.
 inline SampleResult addresses_and_ticks(
-    const std::vector<Submatrix>& submatrices, const TileSpec& tile
+    const std::vector<Submatrix>& submatrices, const TileSpec& tile, int32_t wave_width
 ) {
     SampleResult result;
     result.mac_cycles = 0;
@@ -139,8 +132,10 @@ inline SampleResult addresses_and_ticks(
     // wave began. Line j in this submatrix fires at wave_start + j.
     std::vector<int32_t> wave_start_of(submatrices.size(), 0);
 
-    for (size_t wave_begin = 0; wave_begin < submatrices.size(); wave_begin += PE_COUNT_MAX) {
-        const size_t wave_end = std::min(wave_begin + (size_t)PE_COUNT_MAX, submatrices.size());
+    for (size_t wave_begin = 0; wave_begin < submatrices.size();
+         wave_begin += static_cast<size_t>(wave_width)) {
+        const size_t wave_end = std::min(
+            wave_begin + static_cast<size_t>(wave_width), submatrices.size());
         int32_t wave_len = 0;
         for (size_t i = wave_begin; i < wave_end; ++i) {
             wave_len = std::max(wave_len, (int32_t)submatrices[i].lines.size());
@@ -169,8 +164,9 @@ inline SampleResult addresses_and_ticks(
 }
 
 inline SampleResult reconstruct_sample(
-    const uint8_t* trace, const TraceShape& shape, const TileSpec& tile, int32_t sample_idx
+    const uint8_t* trace, const TraceShape& shape, const TileSpec& tile,
+    int32_t sample_idx, int32_t wave_width
 ) {
     auto submatrices = reconstruct_tile(trace, shape, tile, sample_idx);
-    return addresses_and_ticks(submatrices, tile);
+    return addresses_and_ticks(submatrices, tile, wave_width);
 }

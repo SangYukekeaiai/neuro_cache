@@ -1,0 +1,12 @@
+dataflow:
+  # Campaign copy (2026-11-10) of fig3's spinalflow_fig3.yaml, kept as-is
+  # per user instruction: COUT fanout 4 (down from the published 8) so the
+  # full-CIN weight tile fits the node weight scratchpad; receptive field
+  # capped at 4x4; T fully resident; HO/WO barred. COUT spatial 4 exactly
+  # fills the 4-PE node.
+  node_dim_capacity:
+    KH:   4
+    KW:   4
+    CIN:  full
+    COUT: {spatial: 4}
+    T:    full

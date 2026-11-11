@@ -48,7 +48,12 @@ ROOT = pathlib.Path(__file__).resolve().parents[3]
 from lays.cachesim.stream import stream_weight_trace
 from lays.nocsim.step_cycles import save_step_cycles
 from lays.scheduler.artifact import check_schedule_matches_trace
-from lays.weight_trace_gen.weight_trace import load_schedule, reconstruct_samples, sample_indices
+from lays.weight_trace_gen.weight_trace import (
+    load_schedule,
+    node_level_spatial_product,
+    reconstruct_samples,
+    sample_indices,
+)
 from lays.weight_trace_gen import ARCH_NATIVE_BRIDGES
 from lays.weight_trace_gen.trace import load_layer_trace, valid_layer_names
 from lays.nocsim.schedule.decode import schedule_from_strategy
@@ -93,7 +98,8 @@ def _resolve_samples(args: argparse.Namespace) -> List[int]:
 _STATE = {}
 
 
-def _init_worker(trace, tiles, arch_name, trace_dir_name, layer_name, workload_dims, dram_num_steps, out_dir, combo_tag=""):
+def _init_worker(trace, tiles, arch_name, trace_dir_name, layer_name, workload_dims, dram_num_steps,
+                 out_dir, combo_tag="", wave_width=None):
     _STATE["trace"] = trace
     _STATE["tiles"] = tiles
     _STATE["arch_name"] = arch_name
@@ -103,6 +109,7 @@ def _init_worker(trace, tiles, arch_name, trace_dir_name, layer_name, workload_d
     _STATE["dram_num_steps"] = dram_num_steps
     _STATE["out_dir"] = out_dir
     _STATE["combo_tag"] = combo_tag
+    _STATE["wave_width"] = wave_width
 
 
 def _process_chunk(sample_indices: Sequence[int]) -> int:
@@ -110,6 +117,7 @@ def _process_chunk(sample_indices: Sequence[int]) -> int:
         _STATE["arch_name"], _STATE["trace"], _STATE["tiles"], sample_indices,
         _STATE["trace_dir_name"], _STATE["layer_name"],
         _STATE["workload_dims"], _STATE["dram_num_steps"],
+        wave_width=_STATE["wave_width"],
     )
     for lt in layer_traces:
         out_path = (
@@ -153,6 +161,10 @@ def run_one_combo(args: argparse.Namespace) -> int:
         return 0
 
     artifact, prob, tiles = load_schedule(schedule_path)
+    wave_width = (
+        node_level_spatial_product(artifact.result["strategy"])
+        if args.arch == "gustavsnn" else None
+    )
     trace = load_layer_trace(trace_root / args.trace_dir, args.layer, mmap=True)
 
     print(f"Reconstructing {len(todo)} sample(s) of {args.arch}/{combo_tag}/{args.trace_dir}/{args.layer} "
@@ -161,7 +173,8 @@ def run_one_combo(args: argparse.Namespace) -> int:
     try:
         if args.workers <= 1:
             _init_worker(trace, tiles, args.arch, args.trace_dir, args.layer,
-                         artifact.workload["problem"], artifact.dram_num_steps, out_dir, combo_tag)
+                         artifact.workload["problem"], artifact.dram_num_steps, out_dir,
+                         combo_tag, wave_width)
             n_done = sum(_process_chunk(chunk) for chunk in _fixed_chunks(todo, args.sample_chunk_size))
         else:
             chunks = _fixed_chunks(todo, args.sample_chunk_size)
@@ -169,7 +182,8 @@ def run_one_combo(args: argparse.Namespace) -> int:
                 processes=args.workers,
                 initializer=_init_worker,
                 initargs=(trace, tiles, args.arch, args.trace_dir, args.layer,
-                          artifact.workload["problem"], artifact.dram_num_steps, out_dir, combo_tag),
+                          artifact.workload["problem"], artifact.dram_num_steps, out_dir,
+                          combo_tag, wave_width),
             ) as pool:
                 n_done = sum(pool.map(_process_chunk, chunks))
     except Exception:
@@ -213,12 +227,17 @@ def _regenerate_layer(arch_name, trace_root, schedule_cache, out_root, trace_dir
 
     t0 = time.time()
     artifact, prob, tiles = load_schedule(sched_path)
+    wave_width = (
+        node_level_spatial_product(artifact.result["strategy"])
+        if arch_name == "gustavsnn" else None
+    )
     trace = load_layer_trace(trace_root / trace_dir_name, layer_name, mmap=True)
     for chunk_start in range(0, len(missing), chunk_size):
         chunk = missing[chunk_start:chunk_start + chunk_size]
         traces = reconstruct_samples(
             arch_name, trace, tiles, chunk, trace_dir_name, layer_name,
             artifact.workload["problem"], artifact.dram_num_steps,
+            wave_width=wave_width,
         )
         for t in traces:
             save_step_cycles(t, out_dir / f"sample_{t.sample_idx:05d}.json.gz")
@@ -323,6 +342,10 @@ def run_stream(args: argparse.Namespace) -> int:
         return 1
 
     artifact, prob, tiles = load_schedule(schedule_path)
+    wave_width = (
+        node_level_spatial_product(artifact.result["strategy"])
+        if args.arch == "gustavsnn" else None
+    )
     # n_cores is the MACHINE size, so it comes from the schedule's spatial
     # unrolling rather than from max(core_id) in the data, which undercounts
     # whenever some core drew no work. schedule_from_strategy is pure, so
@@ -342,6 +365,7 @@ def run_stream(args: argparse.Namespace) -> int:
     layer_traces = reconstruct_samples(
         args.arch, trace, tiles, requested, args.trace_dir, args.layer,
         artifact.workload["problem"], artifact.dram_num_steps,
+        wave_width=wave_width,
     )
     total = emit_stream(layer_traces[0], sys.stdout.buffer, n_cores=n_cores,
                         spatial_factors=spatial_factors,

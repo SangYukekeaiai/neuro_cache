@@ -1,32 +1,22 @@
-// LoASGen.h -- C++ port of LoAS's per-tile weight-address/tick
-// reconstruction
-// (a port of the former pure-Python reconstruct/address/cycles modules).
+// LoASGen.h -- native LoAS per-tile weight-address/tick reconstruction.
 //
 // One tile = one fixed (ho, wo) output pixel's full reduction row. A
 // "line" is one (kh, kw, cin) position that fires at least once across
 // the tile's whole T range (bitmask == 1, "non-silent") -- silent
 // positions (never fire) contribute nothing. Iteration order is
-// [KH, KW, CIN] nested (kh outermost, cin innermost), matching
-// reconstruct.py's own bitmask layout
-// (`non_silent.reshape(num_batch, -1)` flattens a [KH,KW,CIN] array with
-// CIN fastest).
+// [KH, KW, CIN] nested (kh outermost, cin innermost), matching the native
+// trace traversal.
 //
-// Neither the row-level bitmask nor each line's own length-T spike
-// bit-vector is needed downstream: cycles.py/address.py both read only
-// `.lines`' (kh, kw, cin) identity, not `.bitmask`/`.ptr`/`.bits` (see
-// address.py's own module docstring: "this module doesn't read
-// reconstructed.bitmask/.ptr -- only .lines matters"). So this port
-// skips building either, it only needs the yes/no "did this (kh,kw,cin)
-// fire at all in this tile's T range" test.
+// The native path does not retain row-level masks or per-line spike vectors;
+// it only needs the yes/no "did this (kh,kw,cin) fire at all in this tile's T
+// range" test.
 //
-// event_to_address (address.py): each line (kh, kw, cin) becomes address
-// (kh, kw, cin, cout_start, cout_end), same [KH,KW,CIN] order as above.
-// event_to_ticks: strictly sequential, tick i == line i (cycles.py:
-// access_cycle_count == compute_cycle_count == popcount(bitmask) ==
-// len(lines), one weight-fetch cycle per non-silent row, no dominance
-// case, no parallelism).
+// Address traversal: each line (kh, kw, cin) becomes
+// (kh, kw, cin, cout_start, cout_end), in the same [KH,KW,CIN] order as
+// above. Tick assignment is strictly sequential, tick i == line i; one
+// weight-fetch cycle is used per non-silent row, with no parallelism.
 //
-// "same" padding, matching reconstruct.py: hin = ho + kh - pad_h,
+// "same" padding convention: hin = ho + kh - pad_h,
 // win = wo + kw - pad_w, pad_h=(kh_n-1)/2, pad_w=(kw_n-1)/2. Out-of-range
 // (hin, win) is padding (zero, never a spike), never indexed OOB.
 

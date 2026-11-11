@@ -1,0 +1,73 @@
+# wt500_fig3cfg sweep configuration
+#
+# The one-file listing of the running baseline weight-trace generation sweep:
+# what is swept, with which inputs, in which order, producing which outputs.
+# Nothing here concerns cache simulation; this is the trace GENERATION side
+# only. The authoritative input files live beside this one (arch.yaml,
+# mapspaces/); this file lists them and their sweep roles for review.
+
+campaign:
+  name: wt500_fig3cfg
+  repo: /u/yyu9/projects/neuro_cache
+  branch: wcache-rebuild-phase-a
+  plan: docs/plans/2026-11-10-weight-trace-500-campaign-plan.md
+
+sweep_axes:
+  architectures:          # execution order; gustavsnn runs LAST
+    - loas
+    - ptb
+    - spinalflow
+    - prosperity
+    - gustavsnn
+  benchmarks:             # 8 captures under /work/nvme/bebv/yyu9/input_trace_delta/
+    - {capture: A02/spikformer_4_384_cifar100_T4_n500,  T: 4}
+    - {capture: A04/sdt_2_512_cifar100_T4_n500,         T: 4}
+    - {capture: A07/spikinglm_t4_T4_n500,               T: 4}   # 72-layer spiking LM
+    - {capture: A08/vgg16_cifar10_loas_T32_n500,        T: 32}
+    - {capture: B09/loas_vgg16_T4_n500,                 T: 4}
+    - {capture: B09/loas_resnet19_T4_n500,              T: 4}
+    - {capture: C01/sma_azo_vgg_cifar10_dvs_T10_n500,   T: 10}
+    - {capture: C01/sma_azo_vgg_dvs128_gesture_T16_n500, T: 16}
+  samples:
+    start: 0
+    count: 500            # all 500 samples of every valid layer
+  layers: all valid layers per capture meta.json (exclusion rules in
+    src/lays/weight_trace_gen/trace.py); 755 valid (arch, capture-layer)
+    pairs, 377,500 (arch, layer, sample) cases in total
+
+hardware: arch.yaml       # one fixed multi-node config shared by all 5 archs
+  # 16 nodes x 4 PEs; L1 weight 32,768 B (32 KB), psum 1,024 B, vmem 1,024 B;
+  # L2 weight 2,097,152 B (2 MB), psum 65,536 B, vmem 65,536 B;
+  # bitwidths 8/16/32; DRAM_LATENCY 0.25; single_node false.
+
+node_mapspaces:           # one per architecture, swept against every benchmark
+  loas:       {file: mapspaces/loas.yaml,       KH: full, KW: full, CIN: full, T: full, COUT: {spatial: 4}}
+  ptb:        {file: mapspaces/ptb.yaml,        KH: 4, KW: 4, CIN: full, T: 64, COUT: {spatial: 4}}  # review flag: T 64 vs 32
+  spinalflow: {file: mapspaces/spinalflow.yaml, KH: 4, KW: 4, CIN: full, T: full, COUT: {spatial: 4}}
+  prosperity: {file: mapspaces/prosperity.yaml, KH: 4, KW: 4, CIN: 16, T: full, COUT: {spatial: 4}, HO: 4, WO: 4}
+  gustavsnn:  {file: mapspaces/gustavsnn.yaml,  KH: full, KW: full, CIN: full, COUT: {spatial: 2}, HO: {spatial: 2}, WO: 4}
+
+scheduling:               # stage S2, runs on DeltaAI
+  solver: python -m lays.scheduler solve (Gurobi, conda env base)
+  driver: gen_inputs.py   # per-pair solve + bridge-compatibility gate
+  cache: outputs/schedules/, reuse gated on arch_yaml_sha256 +
+    mapspace_yaml_sha256 content hashes (stale configs re-solve)
+  infeasible_policy: recorded as a campaign outcome and skipped; no trace
+    is generated for an INFEASIBLE (arch, layer) pair
+
+generation:               # stages S3-S5
+  command: python -m lays.weight_trace_gen gen
+  outputs:
+    step_cycles: sample_NNNNN.json.gz per (arch, layer, sample)  # nocsim input
+    wcts_stream: per-sample .wcts.gz via --stream                # cachesim input
+  wcts_format:
+    loas/ptb/spinalflow/prosperity: v2 (ticks strictly ascending per core)
+    gustavsnn: v3 (ticks non-decreasing within a core; equal tick =
+      concurrent bursts from the in-core PEs)
+  gustavsnn_wave_width: 4  # runtime parameter, never hardcoded; derived per
+    # schedule as the NodeLevel spatial_split product (COUT 2 x HO 2)
+  order: all four wave-2 archs complete before gustavsnn starts
+
+delivery:                 # stage S6
+  destination: /work/nvme/bebv/yyu9/weight_traces/   # DeltaAI storage
+  verification: sha256 per file, exact-coverage merge check

@@ -212,6 +212,41 @@ void test_non_ascending_local_tick_throws() {
     CHECK_THROWS(std::runtime_error, tr.advance());
 }
 
+void test_v3_allows_same_tick_bursts_in_one_core() {
+    check::group("Task 3: WCTS v3 permits concurrent same-tick bursts");
+    StreamBuilder b(1, 1, 3, 3);
+    b.begin_tile(0, 4);
+    b.begin_core(0);
+    b.add_burst(0, 0, 0, 0, 0, 16);
+    b.add_burst(0, 0, 0, 1, 0, 16);
+    b.add_burst(1, 0, 0, 2, 0, 16);
+    b.end_tile();
+    const std::vector<unsigned char> bytes = b.finish();
+    MemByteSource src(bytes);
+    StreamingTileTrace tr(src);
+    CHECK_EQ(tr.header().format_version, std::uint32_t{3});
+    CHECK_TRUE(tr.advance());
+    CHECK_EQ(tr.n_bursts(CoreId{0}, 0), 3);
+    CHECK_EQ(tr.local_tick(CoreId{0}, 0, BurstIndex{0}), LocalTick{0});
+    CHECK_EQ(tr.local_tick(CoreId{0}, 0, BurstIndex{1}), LocalTick{0});
+    CHECK_EQ(tr.gap(CoreId{0}, 0, BurstIndex{0}), LocalTick{0});
+    CHECK_EQ(tr.gap(CoreId{0}, 0, BurstIndex{1}), LocalTick{1});
+}
+
+void test_v3_decreasing_local_tick_throws() {
+    check::group("Task 3 rejection 4b: WCTS v3 rejects decreasing local ticks");
+    StreamBuilder b(1, 1, 3, 3);
+    b.begin_tile(0, 4);
+    b.begin_core(0);
+    b.add_burst(1, 0, 0, 0, 0, 16);
+    b.add_burst(0, 0, 0, 1, 0, 16);
+    b.end_tile();
+    const std::vector<unsigned char> bytes = b.finish();
+    MemByteSource src(bytes);
+    StreamingTileTrace tr(src);
+    CHECK_THROWS(std::runtime_error, tr.advance());
+}
+
 void test_empty_run_throws() {
     check::group("Task 3 rejection 5: run_end <= run_start rather than a count of 0");
     StreamBuilder b(1, 2);
@@ -469,6 +504,8 @@ int main() {
     test_core_id_at_or_above_n_cores_throws();
     test_descending_core_id_throws();
     test_non_ascending_local_tick_throws();
+    test_v3_allows_same_tick_bursts_in_one_core();
+    test_v3_decreasing_local_tick_throws();
     test_empty_run_throws();
     test_every_burst_axis_round_trips();
     test_empty_run_on_a_non_cout_axis_throws();

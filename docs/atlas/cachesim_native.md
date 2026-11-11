@@ -135,9 +135,9 @@ resolver needs nothing else to read the file.
    an entry's own subject - a path opening a sub-entry as `` `path`: ``, or heading a bold
    paragraph. `src/lays/cachesim/stream.py` is a cross-reference in one entry and a subject in
    two: 2.5's own `src/lays/cachesim/stream.py` bullet, and the "Upstream connection" paragraph,
-   whose nine bares after `src/lays/cachesim/stream.py:44` are lines of
-   `src/lays/cachesim/stream.py` (`:53`, `:57`, `:99`, `:125`, `:136`, `:141`, `:167`, `:178`,
-   `:196`), each verified against that file.
+   whose eleven bares after `src/lays/cachesim/stream.py:47` are lines of
+   `src/lays/cachesim/stream.py` (`:48`, `:57`, `:61`, `:108`, `:141`, `:152`, `:157`, `:183`,
+   `:194`, `:212`, `:219`), each verified against that file.
    In an entry whose heading names a header and source pair, a bare `:N` is always the header and
    `.cpp:N` is line N of the source: under 2.2's
    `src/layout/layout_common.h / src/layout/layout_common.cpp`, `reject` `:30` is
@@ -148,11 +148,15 @@ resolver needs nothing else to read the file.
    A `:N` quoted inside this conventions section is an EXAMPLE of the form, not a citation of
    this file's own: the two above are the only ones, and the sentence resolves both.
 
-> **The reader accepts WCTS version 2 only.** `decode_header` throws `std::invalid_argument` for any
-> `format_version` other than 2 and says in the message to regenerate the stream
-> (`src/lays/cachesim/native/include/cachesim/trace/stream_format.h:221-228`, `kFormatVersion = 2` at
-> `trace/stream_format.h:42`). The writer is `lays.cachesim.stream.stream_weight_trace`
-> (`src/lays/cachesim/stream.py:178`), which writes `WCTS_VERSION = 2` (`src/lays/cachesim/stream.py:44`).
+> **The reader accepts WCTS versions 2 and 3.** `decode_header` throws `std::invalid_argument` for any
+> `format_version` other than 2 or 3 and says in the message to regenerate the stream
+> (`src/lays/cachesim/native/include/cachesim/trace/stream_format.h:222-231`, `kFormatVersion = 2` at
+> `trace/stream_format.h:42`, `kFormatVersionV3 = 3` at `:43`). The two versions are byte-identical;
+> they differ only in the per-core tick-ordering contract (1.7). The writer is
+> `lays.cachesim.stream.stream_weight_trace` (`src/lays/cachesim/stream.py:194`), which picks the
+> version from the arch rather than from a caller argument -- v3 when `trace.arch == "gustavsnn"`,
+> v2 otherwise (`src/lays/cachesim/stream.py:219`, constants `WCTS_VERSION = 2` `:47` and
+> `WCTS_VERSION_V3 = 3` `:48`).
 
 There is **no `CMakeLists.txt`**. The native build is `src/lays/cachesim/native/Makefile` (GNU make).
 
@@ -201,7 +205,7 @@ row. Flags parsed in `parse_args` (`cachesim_run.cpp:160`); help text `kUsage` (
 | flag | default | meaning |
 |---|---|---|
 | `--config PATH` | required | flat JSON object, `parse_config` |
-| `--trace PATH` | required | WCTS v2 stream; `-` = stdin, `fd:N` = open descriptor |
+| `--trace PATH` | required | WCTS v2 or v3 stream; `-` = stdin, `fd:N` = open descriptor |
 | `--out PATH` | `-` (stdout) | CSV destination (file is truncated, `output.h:133`) |
 | `--header` / `--no-header` | **on** (`cachesim_run.cpp:152`) | CSV header line |
 | `--arm NAME` | `cache` | one of `cache, spad_oracle, spad_wcache, spad_nocsim` (`cli_args.h:53-59`) |
@@ -247,8 +251,8 @@ writes one layer-sample as a WCTS stream on stdout (`--stream` flag
    JSON subset (integers and quoted strings only, unknown or duplicate key = error).
 2. **Trace bytes -> `StreamHeader`**: `TraceFd` (`apps/cli_args.h:77-102`) -> `FdByteSource`
    (`include/cachesim/trace/byte_source.h:51`) -> `StreamingTileTrace` ctor reads and validates the header
-   (`src/trace/stream_trace.cpp:26`, `decode_header` at `trace/stream_format.h:208`).
-3. **Header -> `WeightShape`** via `shape_of` (`src/trace/stream_trace.cpp:354`).
+   (`src/trace/stream_trace.cpp:26`, `decode_header` at `trace/stream_format.h:210`).
+3. **Header -> `WeightShape`** via `shape_of` (`src/trace/stream_trace.cpp:356`).
 4. **Validation**: a `BlockPackMapper` "probe" computes `lines_per_burst` (`apps/output.h:38-44`), then
    `validate(cfg, lines_per_burst, warnings)` (`src/config.cpp:542`) resolves the `-1` sentinels
    (`l1_demand_reserve`, `l2_demand_reserve`, `cin_lo_blocks`, `l2_policy`) and refuses bad configs.
@@ -269,11 +273,13 @@ writes one layer-sample as a WCTS stream on stdout (`--stream` flag
 driving all engines over one window (`src/sweep.cpp:112`).
 
 **Upstream connection (visible in code).** The WCTS writer is `src/lays/cachesim/stream.py` (2.5). The
-pieces that fix the wire format: `WCTS_VERSION = 2` (`src/lays/cachesim/stream.py:44`),
-`WCTS_ADDR_FIELDS = (0, 1, 2, 3, 4)` (`:53`), `write_stream_header` (`:57`), `write_tile_frame` (`:99`,
-refuses a run that is empty along `burst_dim` at `:125`), `write_stream_trailer` (`:136`),
-`_wcts_tile_frames` (`:141`, measures `burst_span` as the largest `cout_end - cout_start` at `:167`)
-and `stream_weight_trace` (`:178`, refuses any `burst_dim != 3` at `:196`). `scripts/pipeline.py`
+pieces that fix the wire format: `WCTS_VERSION = 2` (`src/lays/cachesim/stream.py:47`),
+`WCTS_VERSION_V3 = 3` (`:48`), `WCTS_ADDR_FIELDS = (0, 1, 2, 3, 4)` (`:57`),
+`write_stream_header` (`:61`), `write_tile_frame` (`:108`,
+refuses a run that is empty along `burst_dim` at `:141`), `write_stream_trailer` (`:152`),
+`_wcts_tile_frames` (`:157`, measures `burst_span` as the largest `cout_end - cout_start` at `:183`)
+and `stream_weight_trace` (`:194`, refuses any `burst_dim != 3` at `:212`, and chooses the format
+version from `trace.arch` at `:219`). `scripts/pipeline.py`
 writes each layer-sample's stream to a `.wcts` file with `python -m lays.weight_trace_gen gen ... --stream`
 and runs `python -m lays.cachesim sweep` on it once per grid file. `--access-log` output is read back
 only by `--oracle` / `--l2-oracle` (`read_oracle_lines`, `apps/oracle_io.h:46-88`).
@@ -393,27 +399,43 @@ The L2 MSHR floor: with `l2_demand_reserve` unset it resolves to `lines_per_burs
 is refused; `tests/test_config.cpp:211` pins both and pins that the message does not mention
 prefetching.
 
-### 1.7 WCTS v2 wire format (as decoded)
+### 1.7 WCTS v2 and v3 wire format (as decoded)
 
-Little-endian, unaligned. Fixed header 56 bytes (`include/cachesim/trace/stream_format.h:46`): magic
-`WCTRACE1` (unchanged from v1, `:41`), u32 version=2 (`:42`), u32 header_bytes, i32 n_tiles, n_cores,
+v2 and v3 share every byte of this layout. The only difference is the value of the version field and
+the per-core tick rule noted on the burst record below; no field changes size, order, meaning or
+presence, and `encode_header` / `decode_header` take the same path for both.
+
+Little-endian, unaligned. Fixed header 56 bytes (`include/cachesim/trace/stream_format.h:47`): magic
+`WCTRACE1` (unchanged from v1, `:41`), u32 version, 2 or 3 (`:42-43`), u32 header_bytes, i32 n_tiles, n_cores,
 weight_bytes, burst_dim (0..3), burst_stride, burst_span, n_addr_fields (=5), n_spatial, n_dims (=7),
 identity_bytes; then 5 i32 field codes, which must be 0..4 in order and mean
-`KH, KW, CIN, COUT, RunEnd` (`FieldCode`, `:54`); n_spatial `(dim,factor)` pairs (ascending,
+`KH, KW, CIN, COUT, RunEnd` (`FieldCode`, `:55`); n_spatial `(dim,factor)` pairs (ascending,
 product must equal n_cores), 7 `(dim,extent)` pairs (ids 0..6: KH,KW,CIN,COUT,HO,WO,T), identity
 block of 4 NUL-terminated strings (arch, workload, layer, sample_idx). Per tile frame
 (`src/trace/stream_trace.cpp:14-18,176`): 24-byte prefix `i32 tile_index, i32 n_core_blocks, i64
 mac_cycles, u64 payload_bytes`; per core block `i32 core_id (ascending), i32 n_bursts (>=1)`; per
-burst 28 bytes `i64 local_tick (strictly ascending per core), i32 kh, kw, cin, cout, run_end`
-(`src/trace/stream_trace.cpp:270-275`). Trailer 12 bytes: `i32 -1, u64 total_bursts`
-(`src/trace/stream_trace.cpp:337`).
+burst 28 bytes `i64 local_tick, i32 kh, kw, cin, cout, run_end`
+(`src/trace/stream_trace.cpp:270-275`). The tick rule is the one version-dependent part of the
+format: strictly ascending per core in v2, only non-decreasing in v3, where equal `local_tick`
+records are concurrent bursts from internal lanes of one core. The reader picks the comparison off
+the decoded header -- `ticks_strictly_ascending = header_.format_version == kFormatVersion`
+(`src/trace/stream_trace.cpp:283-284`) and then `tick <= prev_tick` for v2 against `tick < prev_tick`
+for v3 (`:285`, throwing `std::runtime_error` at `:286-289`); `tick < 0` is refused in both (`:277`).
+The writer applies the mirror-image check, with the word in the message switched the same way
+(`src/lays/cachesim/stream.py:134-140`, format comment `:41-43`). Within one same-tick group nothing
+beyond file order is defined: the reader stores records in wire order
+(`src/trace/stream_trace.cpp:307-308`) and imposes no sort key on their address fields, and neither
+side caps a group's size. One consequence is that `gap` returns 0 inside a group (`:127`), where v2
+guaranteed at least 1; the engine floors it with `core_accept_ii` (`src/core/engine_core.cpp:50`).
+Trailer 12 bytes: `i32 -1, u64 total_bursts` (`src/trace/stream_trace.cpp:339`).
 
-Decode of one record (`src/trace/stream_trace.cpp:289-306`): `anchor = Coord{kh, kw, cin, cout}`;
+Decode of one record (`src/trace/stream_trace.cpp:291-308`): `anchor = Coord{kh, kw, cin, cout}`;
 `run_start = coord_on(anchor, burst_dim)`; refused if `run_end <= run_start`; the burst is
 `Burst{anchor, burst_dim, run_end - run_start, burst_stride}`. The record therefore holds the run's
 full anchor on every axis, and `run_end` is the exclusive end along `burst_dim`. For a COUT stream
 (`burst_dim = 3`, the only kind `stream_weight_trace` writes) the v2 bytes equal the v1 bytes except
-for the version field; `tests/cout_golden.sh:2-8` states this and checks it end to end.
+for the version field; `tests/cout_golden.sh:2-8` states this and checks it end to end. A v3 stream
+is byte-identical again, so the same statement covers it.
 
 ---
 
@@ -612,21 +634,26 @@ is a line of the file the entry is named after (a source file, not the header na
   `parse_config_grid(json)` `:176`, `validate(cfg&, lines_per_burst, warnings&)` `:186` (mutates
   cfg), `to_engine_params(cfg)` `:191`.
 
-**trace/stream_format.h** (namespace `cachesim::stream`, header-only; file comment `:1-3` says WCTS v2 and
-`:10-12` names `src/lays/cachesim/stream.py` as the producer)
-- Constants `kMagic` `:41`, `kFormatVersion = 2` `:42`, `kFixedHeaderBytes`=56 `:46`, `kEndMagic`=-1
-  `:47`, `kAddrFields`=5 `:48`, `kDims`=7 `:49`; `enum DimCode` `:53`, `enum FieldCode {KH, KW, CIN,
-  COUT, RunEnd}` `:54`; `kHostIsLittleEndian` `:56` (requires
+**trace/stream_format.h** (namespace `cachesim::stream`, header-only; file comment `:1-3` says WCTS
+versions 2 and 3 and `:10-12` names `src/lays/cachesim/stream.py` as the producer)
+- Constants `kMagic` `:41`, `kFormatVersion = 2` `:42`, `kFormatVersionV3 = 3` `:43`,
+  `kFixedHeaderBytes`=56 `:47`, `kEndMagic`=-1
+  `:48`, `kAddrFields`=5 `:49`, `kDims`=7 `:50`; `enum DimCode` `:54`, `enum FieldCode {KH, KW, CIN,
+  COUT, RunEnd}` `:55`; `kHostIsLittleEndian` `:57` (requires
   `__BYTE_ORDER__`, `:35-37`).
-- `read_le<T>` `:60`, `write_le<T>` `:73`; `axis_of(int32)` `:86` (only 0..3), `code_of(Axis)` `:98`.
-- `struct StreamHeader` `:102` (the `burst_span` comment `:108-113` says a burst's extent is
-  `run_end` minus the anchor's coordinate on `burst_dim`); `detail::identity_block` `:126`,
-  `detail::append_le` `:137`, `detail::Cursor` `:146`.
-- `encode_header(h, out)` `:174` (no validation; for tests; writes `kFormatVersion`, so it can only
-  produce v2 headers); `decode_header(buf, len)` `:208` validates every field (see 1.7). Version
-  check `:221-228`: any value other than 2 throws, and the message says that v1 records cannot hold a
+- `read_le<T>` `:60`, `write_le<T>` `:73`; `axis_of(int32)` `:87` (only 0..3), `code_of(Axis)` `:99`.
+- `struct StreamHeader` `:103` (the `burst_span` comment `:110-115` says a burst's extent is
+  `run_end` minus the anchor's coordinate on `burst_dim`); its `format_version` member defaults to
+  `kFormatVersion` (`:104`); `detail::identity_block` `:128`,
+  `detail::append_le` `:138`, `detail::Cursor` `:148`.
+- `encode_header(h, out)` `:176` (no validation; for tests) writes whatever `h.format_version` holds
+  (`:183`), so it can emit either version; `decode_header(buf, len)` `:210` validates every field
+  (see 1.7) and stores the version on the header (`:240`). Version
+  check `:222-231`: any value other than 2 or 3 throws, the message names both versions this reader
+  speaks (`:226-227`) and says that v1 records cannot hold a
   non-COUT anchor and to regenerate with `src/lays/cachesim/stream.py`. `burst_span >= 1` is the only check on
-  the span (`:258-262`).
+  the span (`:262-266`). The later field checks are shared by both versions and their messages say
+  so (`:274`, `:283`, `:305`, `:346`, `:367`).
 
 **trace/byte_source.h** (header-only)
 - `class ByteSource` `trace/byte_source.h:28`: `read_exact(dst, n)` `:36` returns false only on clean EOF,
@@ -903,12 +930,19 @@ the shared `src/layout/layout_common.h`.
   (k in [0, n-1)), `distinct_addresses` `:130` (unique `(kh,kw,cin,cout,count)` tuples, `:146-152`),
   `tile_tail` `:157`, `mac_cycles` `:162`, `tick_base` `:167`.
 - `advance` `:176`: decodes one frame into reused buffers; validates tile index, core ordering,
-  n_bursts >= 1, strictly increasing ticks, non-empty runs, payload length, `tail = mac - max_tick
-  >= 1` (`:319-325`). v2 record fields read at `:270-275` (field 3 is `cout`); anchor
-  `Coord{kh, kw, cin, cout}` `:292`; `run_start = coord_on(anchor, axis)` `:293`; empty-run refusal
-  names the axis `:294-301`; `Burst{anchor, header.burst_dim, run_end - run_start,
-  header.burst_stride}` `:306`.
-- `read_trailer` `:337`; `shape_of` `:354`.
+  n_bursts >= 1, tick ordering, non-empty runs, payload length, `tail = mac - max_tick
+  >= 1` (`:321-327`). The tick comparison is chosen per stream from the header version --
+  `ticks_strictly_ascending` `:283-284`, then `tick <= prev_tick` (v2) or `tick < prev_tick` (v3)
+  `:285`, refusal `:286-289`; the `tick < 0` check `:277` is unconditional. Record fields, identical
+  in both versions, read at `:270-275` (field 3 is `cout`); anchor
+  `Coord{kh, kw, cin, cout}` `:294`; `run_start = coord_on(anchor, axis)` `:295`; empty-run refusal
+  names the axis `:296-303`; `Burst{anchor, header.burst_dim, run_end - run_start,
+  header.burst_stride}` `:308`, pushed in wire order (`:307-308`) so a v3 same-tick group keeps its
+  file order and no sort key is applied to it.
+- `gap` is a plain difference (`:127`), so a v3 same-tick group yields 0 where v2 guaranteed at least
+  1; `core_accept_ii` is the floor that keeps the engine advancing
+  (`src/core/engine_core.cpp:50`).
+- `read_trailer` `:339`; `shape_of` `:356`.
 
 **instrument/stats.cpp**
 - Uses the shared `name_of` overloads from `include/cachesim/enum_names.h`; `total` and `quantile`
@@ -994,9 +1028,11 @@ Harness and shared fixtures:
   invariant probe.
 - `mapper_conformance.h`: interface checks parameterised over `const AddressMapper&` (append-only,
   strictly increasing, nothing appended on throw, exception types).
-- `stream_builder.h`: an independent second WCTS writer used by the reader tests. Writes
-  version 2 (`stream_builder.h:104`), takes a `burst_dim` argument defaulting to COUT (`:23`), and
-  `add_burst(tick, kh, kw, cin, cout, run_end)` (`:44`).
+- `stream_builder.h`: an independent second WCTS writer used by the reader tests. Takes a
+  `burst_dim` argument defaulting to COUT and a `format_version` defaulting to 2
+  (`stream_builder.h:23-24`, member `:132`), written into the header at `:106`, so the v2 tests are
+  unaffected and a v3 test selects it positionally -- `StreamBuilder b(1, 1, 3, 3)`
+  (`tests/trace/test_stream_trace.cpp:217`). `add_burst(tick, kh, kw, cin, cout, run_end)` (`:46`).
 
 Unit test binaries (`Makefile:58`, one binary per `tests/test_*.cpp`):
 - `test_types.cpp`: Tagged scalars and tensor geometry helpers.
@@ -1063,7 +1099,8 @@ Drivers:
   version.)
 - `cout_golden.sh` + `cout_golden.csv` (run by `make test-cli`,
   `Makefile:147`): converts the committed loas example to a v2 stream, asserts the stream's version
-  is 2 (`cout_golden.sh:35-36`), runs a 4-point grid through `build/fixture/cachesim_sweep`
+  is 2 (`cout_golden.sh:35-36`) -- it stays v2 because the fixture's arch is not `gustavsnn`
+  (`src/lays/cachesim/stream.py:219`) -- runs a 4-point grid through `build/fixture/cachesim_sweep`
   (`:12,30-31`), and requires the CSV to equal the golden captured from the v1 reader on the same
   stream, ignoring only `git_commit` and `sim_wall_seconds` (`:38-48`).
 
@@ -1078,16 +1115,24 @@ Drivers:
   `:20` (the points at one line size; keys stay in `base.json` order); `full_grid` `:44` (line size
   slowest); `write_grid(out_dir, grid, name="khkw")` `:51` (one file per `cin_block` in order of first
   appearance, because `cachesim_sweep` builds one mapper per grid file; returns `{cin_block: path}`).
-- `src/lays/cachesim/stream.py`: the WCTS v2 writer (module docstring `:1-5`; byte layout comment `:29-40`). Constants
-  `WCTS_MAGIC` `:43`, `WCTS_VERSION = 2` `:44`, `WCTS_FIXED_HEADER_BYTES = 56` `:45`,
-  `WCTS_END_MAGIC = -1` `:46`, `WCTS_DIM_CODES` `:50`, `WCTS_ADDR_FIELDS` `:53`.
-  `write_stream_header` `:57`; `write_tile_frame` `:99` (core ids strictly ascending `:112`, no empty
-  core `:114`, ticks strictly ascending `:120`, non-empty run `:125`); `write_stream_trailer` `:136`;
-  `_wcts_tile_frames(tiles, n_cores)` `:141` (tick-major to core-major, core id range check `:155`,
-  `burst_span` = largest `cout_end - cout_start` `:167`, no bursts refused `:173`);
+- `src/lays/cachesim/stream.py`: the WCTS v2 and v3 writer (module docstring `:1-6`; byte layout and
+  tick-rule comment `:29-43`). Constants
+  `WCTS_MAGIC` `:46`, `WCTS_VERSION = 2` `:47`, `WCTS_VERSION_V3 = 3` `:48`,
+  `WCTS_FIXED_HEADER_BYTES = 56` `:49`,
+  `WCTS_END_MAGIC = -1` `:50`, `WCTS_DIM_CODES` `:54`, `WCTS_ADDR_FIELDS` `:57`.
+  `write_stream_header` `:61`; `write_tile_frame` `:108` (core ids strictly ascending `:126`, no empty
+  core `:128`, tick ordering `:134-140`, which is `<=` for v2 and `<` for v3 with the word in the
+  message switched to match `:138`, non-empty run `:141`); `write_stream_trailer` `:152`;
+  `_wcts_tile_frames(tiles, n_cores)` `:157` (tick-major to core-major with no re-sorting or dedup of
+  same-tick records, core id range check `:171`,
+  `burst_span` = largest `cout_end - cout_start` `:183`, no bursts refused `:190`);
   `stream_weight_trace(trace, fh, *, n_cores, spatial_factors, burst_dim=3, burst_stride=1,
-  weight_bytes=1, max_tiles=None)` `:178` (only `burst_dim = 3` `:196`; `max_tiles` cut before the
-  header `:202`; returns the burst count `:220`).
+  weight_bytes=1, max_tiles=None)` `:194` (only `burst_dim = 3` `:212`; `max_tiles` cut before the
+  header `:218`; `format_version` chosen from `trace.arch` `:219` and threaded to the header `:230`
+  and every tile frame `:236`; returns the burst count `:238`). `write_stream_header` `:71` and
+  `write_tile_frame` `:116` each refuse a `format_version` outside (2, 3). The header's version is
+  validated on read as well (`trace/stream_format.h:222-231`); the per-frame check is the one with no
+  reader counterpart, because a tile frame carries no version field to validate.
 - `examples/cachesim/to_stream.py`: `python3 to_stream.py <fixture.json> [max_tiles] > slice.wcts`
   (docstring `:3`). `load(path)` `:41` turns a v2 example JSON into `lays.weight_trace_gen.weight_trace`
   dataclasses; `main` `:60` calls `stream_weight_trace(..., n_cores=N_CORES, spatial_factors={3:
@@ -1212,13 +1257,13 @@ Drivers:
    (`src/layout/layout_common.h:138-139`). For stride `s > 1` a run `[start, end)` holds
    `ceil((end - start) / s)` elements, but the decoder asks for `end - start` of them, so the walk
    runs past `run_end` (or is refused as out of range). The writer does the same: `burst_span` is the
-   largest `cout_end - cout_start` (`src/lays/cachesim/stream.py:167`) and `lines_per_burst` expands
+   largest `cout_end - cout_start` (`src/lays/cachesim/stream.py:183`) and `lines_per_burst` expands
    `burst_span` elements at `burst_stride` (`apps/output.h:38-44`). Unreachable today because
-   `stream_weight_trace` defaults `burst_stride=1` (`src/lays/cachesim/stream.py:178`) and every test uses 1
-   (`tests/stream_builder.h:110`).
+   `stream_weight_trace` defaults `burst_stride=1` (`src/lays/cachesim/stream.py:194`) and every test uses 1
+   (`tests/stream_builder.h:112`).
 6. **H9** The header's `burst_span` is never checked against the bursts. `decode_header` only
-   requires `burst_span >= 1` (`trace/stream_format.h:258-262`) and `advance` never reads it
-   (`src/trace/stream_trace.cpp:176-335`), yet `lines_per_burst` (`apps/output.h:38-44`) is computed
+   requires `burst_span >= 1` (`trace/stream_format.h:262-266`) and `advance` never reads it
+   (`src/trace/stream_trace.cpp:176-337`), yet `lines_per_burst` (`apps/output.h:38-44`) is computed
    from it and sets the `l1_mshrs` check (`config.cpp:648-650`) and both demand-reserve defaults
    (`config.cpp:706,734`). A header that understates the span passes validation. Separately,
    `lines_per_burst` expands the burst at the origin; a burst whose anchor is not block-aligned can
@@ -1281,8 +1326,9 @@ What the code needs:
   bash >= 4.3. `make test-cli` needs `python3` (override with `PYTHON`) and importable `lays.cachesim.stream`
   and `lays.weight_trace_gen.weight_trace` (`examples/cachesim/to_stream.py:20`, `:34-36`); numpy is optional thanks to the
   stub.
-- **Inputs**: real runs need WCTS **v2** streams, written by `python -m lays.weight_trace_gen gen --stream`
-  (`stream_weight_trace`, `src/lays/cachesim/stream.py:178`) from a schedule and the input traces under
+- **Inputs**: real runs need WCTS **v2 or v3** streams, written by `python -m lays.weight_trace_gen gen --stream`
+  (`stream_weight_trace`, `src/lays/cachesim/stream.py:194`; v3 only for the `gustavsnn` arch, `:219`)
+  from a schedule and the input traces under
   `examples/input_trace/`; `scripts/pipeline.py` writes them under its output directory. Only the five small
   example slices are committed (`examples/cachesim/`). A version-1 stream is refused (top note).
   For COUT streams a v2 stream gives the same rows as the v1 reader did (`tests/cout_golden.sh` checks
@@ -1297,7 +1343,7 @@ What the code needs:
   `LineTrace::flush` sorts its map keys `instrument/line_trace.h:148-151`).
 - **Binary formats**: the AccessLog is written in host byte order with no endianness marker
   (`include/cachesim/instrument/access_log.h:129-130`), unlike WCTS, which is explicitly little-endian. The WCTS magic did not
-  change between v1 and v2 (`trace/stream_format.h:41`); only the version field tells them apart.
+  change across v1, v2 and v3 (`trace/stream_format.h:41`); only the version field tells them apart.
 - **Paths**: `src/lays/cachesim/cli.py` and `scripts/pipeline.py` locate the binaries and configs from the
   repo root (`ROOT`, `src/lays/cachesim/grid.py:7`), not through absolute paths.
 

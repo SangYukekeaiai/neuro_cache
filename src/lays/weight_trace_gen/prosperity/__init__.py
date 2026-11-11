@@ -12,7 +12,7 @@ canonical 6-row/4-column illustration exactly) and against a real
 captured LoAS trace (examples/input_trace/loas/) used purely as sample spike data.
 
 This deployment uses: tile size m=ho_n*wo_n*t_n with full-T residency (HO=16, WO=16), k=16 (KH=4, KW=4,
-CIN barred -- one input channel per node visit), n=128 (COUT), per Wei,
+resident CINs reconstructed as one input channel per native invocation), n=128 (COUT), per Wei,
 Guo, Cheng, Li, Yang, Li & Chen, "Prosperity: Accelerating Spiking Neural
 Networks via Product Sparsity" (HPCA 2025), Table III's own evaluated
 config -- this pilot's node size was given to match that table exactly,

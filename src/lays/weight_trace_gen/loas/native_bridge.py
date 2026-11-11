@@ -31,7 +31,7 @@ def _pack_task(trace_shape: Sequence[int], tiles: Sequence[NodeTileSpec], sample
         parts.append(struct.pack(
             "<11i",
             tile.dram_i,
-            tile.tile_offset[DIM_HO], tile.tile_offset[DIM_WO],
+            tile.tile_offset.get(DIM_HO, 0), tile.tile_offset.get(DIM_WO, 0),
             tile.node_bound[DIM_KH], tile.node_bound[DIM_KW],
             tile.tile_offset.get(DIM_CIN, 0), tile.node_bound[DIM_CIN],
             tile.tile_offset.get(DIM_T, 0), tile.node_bound[DIM_T],

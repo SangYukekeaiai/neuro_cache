@@ -1,0 +1,12 @@
+dataflow:
+  # Campaign copy (2026-11-10) of fig3's gustavsnn_fig3.yaml, kept as-is
+  # per user instruction: full reduction row resident; COUT fanout 2 and HO
+  # fanout 2 (down from the published 4/4), so the spatial product 2x2 = 4
+  # exactly fills the 4-PE node; WO capped at 4; T barred from NodeLevel.
+  node_dim_capacity:
+    KH:   full
+    KW:   full
+    CIN:  full
+    COUT: {spatial: 2}
+    HO:   {spatial: 2}
+    WO:   4

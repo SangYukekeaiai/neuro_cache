@@ -8,6 +8,7 @@ through read_artifact.
 from __future__ import annotations
 
 import json
+import hashlib
 import pathlib
 import tempfile
 from dataclasses import asdict, dataclass
@@ -34,6 +35,17 @@ class ScheduleArtifact:
     result: Dict[str, Any]  # raw solve_schedule() output (has_solution, strategy, ...)
     dram_num_steps: int
     mode: str = "base"  # winning TrafficMode's .value; default keeps old caches loadable
+    arch_yaml_sha256: str = ""
+    mapspace_yaml_sha256: str = ""
+
+
+def sha256_file(path: pathlib.Path | str) -> str:
+    """Return the SHA-256 digest of a configuration file's bytes."""
+    digest = hashlib.sha256()
+    with pathlib.Path(path).open("rb") as fh:
+        for block in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def _dump_workload_path(workload: Dict[str, Any]) -> str:
@@ -97,6 +109,8 @@ def solve_and_cache_schedule(
         result=best_result,
         dram_num_steps=schedule.dram_num_steps,
         mode=best_mode.value,
+        arch_yaml_sha256=sha256_file(arch_yaml),
+        mapspace_yaml_sha256=sha256_file(dataflow_yaml),
     )
     out_path = cache_dir / arch_name / trace_dir_name / f"{layer_name}.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)

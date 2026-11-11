@@ -190,7 +190,7 @@ def _default_arch_yaml(args: argparse.Namespace) -> pathlib.Path:
 
 
 def _run_solve_trace(args: argparse.Namespace) -> int:
-    from lays.scheduler.artifact import solve_and_cache_schedule
+    from lays.scheduler.artifact import sha256_file, solve_and_cache_schedule
     from lays.weight_trace_gen.trace import valid_layer_names
 
     arch = args.arch
@@ -220,9 +220,18 @@ def _run_solve_trace(args: argparse.Namespace) -> int:
             out_path = cache_dir / arch / trace_dir_name / f"{layer_name}.json"
             row = {"arch": arch, "trace_dir": trace_dir_name, "layer": layer_name}
             if out_path.exists() and not args.force:
-                print(f"  skip (exists): {arch}/{trace_dir_name}/{layer_name}")
-                rows.append({**row, "status": "SKIPPED"})
-                continue
+                try:
+                    cached = json.loads(out_path.read_text())
+                    cache_matches_configs = (
+                        cached.get("arch_yaml_sha256") == sha256_file(arch_yaml)
+                        and cached.get("mapspace_yaml_sha256") == sha256_file(node_mapspace)
+                    )
+                except (OSError, AttributeError, ValueError):
+                    cache_matches_configs = False
+                if cache_matches_configs:
+                    print(f"  skip (exists): {arch}/{trace_dir_name}/{layer_name}")
+                    rows.append({**row, "status": "SKIPPED"})
+                    continue
             print(f"  solve: {arch}/{trace_dir_name}/{layer_name} ...")
             try:
                 artifact = solve_and_cache_schedule(

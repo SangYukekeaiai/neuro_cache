@@ -155,7 +155,7 @@ above are the user-approved consequence.
 
 ## 4. Pipeline and grid changes
 
-Per `docs/REPRODUCE.md:214-243`, new sweeps should be a thin script that imports
+Per `docs/REPRODUCE.md:218-247`, new sweeps should be a thin script that imports
 `scripts/pipeline.py` helpers rather than editing the demo. So:
 
 - **New grid file** `configs/cache/l2pf_demo.json`: `line_bytes: [64]`,

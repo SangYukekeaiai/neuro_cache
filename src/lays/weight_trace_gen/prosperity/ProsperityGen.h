@@ -1,9 +1,7 @@
-// ProsperityGen.h -- C++ port of Prosperity's per-tile weight-address/tick
-// reconstruction
-// (a port of the former pure-Python reconstruct/address/cycles modules).
+// ProsperityGen.h -- native Prosperity per-tile weight-address/tick
+// reconstruction.
 //
-// ProSparsity compression, two parts (reconstruct.py's own docstring,
-// Wei et al. HPCA 2025):
+// ProSparsity compression, two parts (Wei et al. HPCA 2025):
 //
 //   1. Temporal ordering: the tile's M = ho_n*wo_n*t_n rows (row-major, ho
 //      outer, wo middle, t inner; each row's k = kh_n*kw_n bits, kh outer kw inner,
@@ -12,36 +10,31 @@
 //
 //   2. Prefix selection + XOR pattern: for each row in that order, among
 //      ALREADY-PROCESSED rows whose bit-set is a SUBSET of the current
-//      row's, pick the one processed MOST RECENTLY (== largest
+//      row's, pick the one processed MOST RECENTLY: the largest
 //      (popcount, original_index), since `processed` is itself built in
-//      that ascending order -- see reconstruct.py's own correctness
-//      argument for why the last/most-recent match is always the
-//      (popcount, idx)-maximal one, no separate argmax needed). The
-//      row's `pattern` = its own bits XOR the chosen prefix's bits (or
+//      that ascending order. The last/most-recent match is therefore the
+//      (popcount, idx)-maximal one, with no separate argmax needed.
+//      The row's `pattern` = its own bits XOR the chosen prefix's bits (or
 //      its own bits unchanged if no valid prefix exists).
 //
-// CRITICAL ordering detail: reconstruct.py's `ProsperityReconstructed.rows`
-// -- and therefore event_to_address's emitted addresses -- are in
+// CRITICAL ordering detail: reconstructed rows and emitted addresses are in
 // PROCESSING order (ascending popcount), NOT original (ho, wo, t) row-major
-// order. This port replicates that: rows are built row-major first (for
-// bit extraction), then iterated/emitted in the popcount-sorted order.
+// order. Rows are built row-major first for bit extraction, then iterated and
+// emitted in the popcount-sorted order.
 //
-// event_to_address (address.py): each row's `pattern`'s set bits become
-// address (kh, kw, cin, cout_start, cout_end), kh/kw = divmod(bit_idx,
-// kw_n), in row-processing-order then bit-index order.
-// event_to_ticks / mac_cycles: strictly sequential, one cycle per
-// pattern bit (cycles.py: access_cycle_count == compute_cycle_count ==
-// total pattern popcount == len(addresses), no dominance case).
+// Address traversal: each row's `pattern`'s set bits become address
+// (kh, kw, cin, cout_start, cout_end), with kh = bit_idx / kw_n and
+// kw = bit_idx % kw_n, in row-processing-order then bit-index order.
+// Tick/cycle accounting is strictly sequential, one cycle per pattern bit
+// (access_cycle_count == compute_cycle_count == total pattern popcount ==
+// len(addresses)), with no dominance case.
 //
 // Row bits are packed into a uint64_t bitmask (k is always small in this
 // deployment, Table III's k=16; 64 bits comfortably covers any realistic
-// kh_n*kw_n), making the subset test and XOR single bitwise ops instead
-// of per-bit loops -- this is the one arch whose Python version needed
-// its own O(M^2) inner-loop vectorization (M=256) to get any speedup at
-// all (reconstruct.py's own docstring), so the equivalent C++ tightness
-// matters here more than elsewhere.
+// kh_n*kw_n). This makes the subset test and XOR single bitwise operations
+// instead of per-bit loops, keeping the hot walk compact.
 //
-// "same" padding, matching reconstruct.py: hin = ho + kh - pad_h,
+// "same" padding convention: hin = ho + kh - pad_h,
 // win = wo + kw - pad_w, pad_h=(kh_n-1)/2, pad_w=(kw_n-1)/2.
 
 #pragma once
@@ -55,7 +48,7 @@ struct TileSpec {
     int32_t ho_off, ho_n;
     int32_t wo_off, wo_n;
     int32_t kh_n, kw_n;
-    int32_t cin;               // single fixed channel (CIN barred from NodeLevel)
+    int32_t cin;               // one channel per native invocation; the Python bridge expands resident CINs
     int32_t t_off, t_n;
     int32_t cout_off, cout_n;
 };
@@ -132,8 +125,8 @@ inline SampleResult reconstruct_sample(
     // Sequential ProSparsity walk: processed_bits/processed_idx track
     // steps [0, step) in the SAME order results are emitted in, so
     // scanning backward from step-1 finds the most-recently-processed
-    // (== (popcount, idx)-maximal, per reconstruct.py's own correctness
-    // argument) subset match first, with no separate max needed.
+    // (== (popcount, idx)-maximal, by the ordering invariant above)
+    // subset match first, with no separate max needed.
     std::vector<uint64_t> processed_bits(m);
     std::vector<int32_t> processed_idx(m);
 
@@ -155,8 +148,7 @@ inline SampleResult reconstruct_sample(
         }
 
         // Emit this row's pattern bits as addresses, kh outer/kw inner
-        // (bit_idx = kh*kw_n+kw), matching event_to_address's
-        // divmod(bit_idx, kw_n) exactly.
+        // (bit_idx = kh*kw_n+kw).
         for (int32_t bit_idx = 0; bit_idx < k; ++bit_idx) {
             if (pattern & ((uint64_t)1 << bit_idx)) {
                 AddressRow row;

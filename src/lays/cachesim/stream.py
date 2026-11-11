@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 # ----------------------------------------------------------------------
-# WCTS (weight cache trace stream), version 2
+# WCTS (weight cache trace stream), versions 2 and 3
 #
 # The in-flight sibling of save_step_cycles: it carries the weight
 # addresses that file leaves out, as a stream, so a producer can feed the cache simulator down a
@@ -38,10 +38,14 @@ if TYPE_CHECKING:
 # n_dims (dim_id, extent) pairs, and the identity block. Each burst record is
 # <q5i: local_tick, then the run's full anchor kh, kw, cin, cout, then run_end.
 # The run walks burst_dim from the anchor's coordinate on that axis to run_end.
+# Version 2 requires strictly ascending local ticks within each core. Version 3
+# permits non-decreasing ticks, so equal ticks represent concurrent bursts from
+# internal lanes of one core (the GustavSNN stream).
 # ----------------------------------------------------------------------
 
 WCTS_MAGIC = b"WCTRACE1"
 WCTS_VERSION = 2
+WCTS_VERSION_V3 = 3
 WCTS_FIXED_HEADER_BYTES = 56
 WCTS_END_MAGIC = -1
 
@@ -56,13 +60,18 @@ _WCTS_BURST_BYTES = 8 + 4 * len(WCTS_ADDR_FIELDS)
 
 def write_stream_header(fh, *, n_tiles, n_cores, weight_bytes, burst_dim,
                         burst_stride, burst_span, spatial_factors, dims,
-                        arch, workload, layer, sample_idx) -> None:
+                        arch, workload, layer, sample_idx,
+                        format_version=WCTS_VERSION) -> None:
     """Writes the WCTS stream header. `spatial_factors` and `dims` are
     {dim_id: value} mappings using the wire codes 0=KH 1=KW 2=CIN 3=COUT
     4=HO 5=WO 6=T. `burst_dim` is one of those codes. Raises ValueError when
     prod(spatial_factors.values()) != n_cores, which is U25's check on the
     producer side, when `dims` is not exactly the seven codes, and when
     `burst_dim` is not one of KH, KW, CIN, COUT (0..3)."""
+    if format_version not in (WCTS_VERSION, WCTS_VERSION_V3):
+        raise ValueError(
+            f"write_stream_header: format_version {format_version} is not supported"
+        )
     if burst_dim not in (0, 1, 2, 3):
         raise ValueError(f"write_stream_header: burst_dim {burst_dim} is not one of 0=KH 1=KW 2=CIN 3=COUT")
     product = 1
@@ -84,7 +93,7 @@ def write_stream_header(fh, *, n_tiles, n_cores, weight_bytes, burst_dim,
 
     fh.write(WCTS_MAGIC)
     fh.write(struct.pack(
-        "<IIiiiiiiiiii", WCTS_VERSION, header_bytes, n_tiles, n_cores, weight_bytes,
+        "<IIiiiiiiiiii", format_version, header_bytes, n_tiles, n_cores, weight_bytes,
         burst_dim, burst_stride, burst_span, len(WCTS_ADDR_FIELDS),
         len(spatial_factors), len(dims), len(identity),
     ))
@@ -96,13 +105,18 @@ def write_stream_header(fh, *, n_tiles, n_cores, weight_bytes, burst_dim,
     fh.write(identity)
 
 
-def write_tile_frame(fh, *, tile_index, mac_cycles, cores, burst_dim) -> int:
+def write_tile_frame(fh, *, tile_index, mac_cycles, cores, burst_dim,
+                     format_version=WCTS_VERSION) -> int:
     """Writes one tile frame and returns the number of burst records written.
     `cores` is [(core_id, [(local_tick, (kh, kw, cin, cout, run_end)), ...]),
     ...], which MUST be sorted by core_id and, inside each core, by local_tick.
     A core with no bursts must be omitted, never passed as an empty list.
     Raises ValueError when a run is empty along `burst_dim`, i.e. run_end is
     not past the anchor's coordinate on that axis."""
+    if format_version not in (WCTS_VERSION, WCTS_VERSION_V3):
+        raise ValueError(
+            f"write_tile_frame: format_version {format_version} is not supported"
+        )
     payload_bytes = sum(8 + _WCTS_BURST_BYTES * len(bursts) for _cid, bursts in cores)
     fh.write(struct.pack("<iiqQ", tile_index, len(cores), mac_cycles, payload_bytes))
 
@@ -117,9 +131,11 @@ def write_tile_frame(fh, *, tile_index, mac_cycles, cores, burst_dim) -> int:
         fh.write(struct.pack("<ii", core_id, len(bursts)))
         prev_tick = -1
         for local_tick, addr in bursts:
-            if local_tick <= prev_tick:
+            if (local_tick <= prev_tick if format_version == WCTS_VERSION
+                    else local_tick < prev_tick):
                 raise ValueError(
-                    f"write_tile_frame: local_tick {local_tick} not strictly ascending in "
+                    f"write_tile_frame: local_tick {local_tick} not "
+                    f"{'strictly ascending' if format_version == WCTS_VERSION else 'ascending'} in "
                     f"core {core_id} of tile {tile_index} (previous {prev_tick})"
                 )
             if addr[4] <= addr[burst_dim]:
@@ -145,7 +161,7 @@ def _wcts_tile_frames(tiles, n_cores):
     [(mac_cycles, [(core_id, [(tick, addr), ...]), ...]), ...]. Ticks are
     neither renumbered nor re-sorted and an absent core is never padded:
     t.ticks is already ascending in tick, so appending in that order is
-    already ascending inside each core -- write_tile_frame asserts it."""
+    already non-decreasing inside each core -- write_tile_frame asserts it."""
     frames = []
     max_span = 0
     for tile in tiles:
@@ -191,7 +207,7 @@ def stream_weight_trace(trace: LayerWeightTrace, fh, *, n_cores, spatial_factors
     the maximum burst span in this layer, used to size l1_demand_reserve; each
     burst's actual extent is derivable from its own cout_start and cout_end, so
     a ragged final run is emitted normally. The addresses are COUT runs, which
-    are exactly v2 records [kh, kw, cin, cout, run_end] with burst_dim 3, so any
+    are the v2/v3 records [kh, kw, cin, cout, run_end] with burst_dim 3, so any
     other `burst_dim` is refused rather than mislabelled."""
     if burst_dim != 3:
         raise ValueError(
@@ -200,6 +216,7 @@ def stream_weight_trace(trace: LayerWeightTrace, fh, *, n_cores, spatial_factors
             "write_stream_header and write_tile_frame"
         )
     tiles = trace.tiles if max_tiles is None else trace.tiles[:max_tiles]
+    format_version = WCTS_VERSION_V3 if trace.arch == "gustavsnn" else WCTS_VERSION
     # max_tiles is applied before the header, because n_tiles is a header field.
     frames, burst_span = _wcts_tile_frames(tiles, n_cores)
 
@@ -210,11 +227,12 @@ def stream_weight_trace(trace: LayerWeightTrace, fh, *, n_cores, spatial_factors
         dims={WCTS_DIM_CODES[name]: int(extent)
               for name, extent in trace.workload_dims.items() if name in WCTS_DIM_CODES},
         arch=trace.arch, workload=trace.trace_dir, layer=trace.layer_name,
-        sample_idx=trace.sample_idx,
+        sample_idx=trace.sample_idx, format_version=format_version,
     )
     total_bursts = 0
     for tile_index, (mac_cycles, cores) in enumerate(frames):
         total_bursts += write_tile_frame(fh, tile_index=tile_index,
-                                         mac_cycles=mac_cycles, cores=cores, burst_dim=3)
+                                         mac_cycles=mac_cycles, cores=cores, burst_dim=3,
+                                         format_version=format_version)
     write_stream_trailer(fh, total_bursts)
     return total_bursts

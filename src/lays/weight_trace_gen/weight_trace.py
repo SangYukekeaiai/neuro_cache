@@ -34,6 +34,31 @@ def load_schedule(path: pathlib.Path) -> Tuple[ScheduleArtifact, SNNProb, List[N
     return artifact, prob, tiles
 
 
+def node_level_spatial_product(strategy: Dict[str, Any]) -> int:
+    """Return the schedule's NodeLevel spatial-split product.
+
+    GustavSNN's wave width is the number of internal PE lanes selected by the
+    solved NodeLevel mapping, not a property of an individual tile.  Keep the
+    extraction next to schedule loading so every CLI path passes the same
+    persisted schedule value to the native bridge.
+    """
+    try:
+        factors = strategy["NodeLevel"]["spatial_split"]["factors"]
+    except (KeyError, TypeError) as exc:
+        raise ValueError("schedule is missing NodeLevel spatial_split factors") from exc
+    if not isinstance(factors, list):
+        raise ValueError("schedule NodeLevel spatial_split factors must be a list")
+    product = 1
+    for factor in factors:
+        if not isinstance(factor, dict) or not isinstance(factor.get("size"), int):
+            raise ValueError(f"invalid NodeLevel spatial_split factor: {factor!r}")
+        size = factor["size"]
+        if isinstance(size, bool) or size <= 0:
+            raise ValueError(f"invalid NodeLevel spatial_split factor size: {size!r}")
+        product *= size
+    return product
+
+
 @dataclass
 class CoreEntry:
     """One core's weight fetches at one tick, within one (dram_i, noc_i)
@@ -169,6 +194,8 @@ def reconstruct_samples(
     layer_name: str,
     workload_dims: Dict[str, Any],
     dram_num_steps: int,
+    *,
+    wave_width: Optional[int] = None,
 ) -> List[LayerWeightTrace]:
     """One LayerWeightTrace per requested sample, dispatching to arch_name's
     native C++ bridge (lays.weight_trace_gen.ARCH_NATIVE_BRIDGES). The single dispatch
@@ -185,11 +212,16 @@ def reconstruct_samples(
             f"no native bridge registered for arch '{arch_name}'; "
             f"known archs: {sorted(ARCH_NATIVE_BRIDGES)}"
         )
+    if arch_name != "gustavsnn" and wave_width is not None:
+        raise ValueError("wave_width is only valid for gustavsnn reconstruction")
     native_fn = importlib.import_module(module_name).reconstruct_samples_native
-    return native_fn(
+    args = (
         trace, tiles, sample_indices, arch_name, trace_dir_name, layer_name,
         workload_dims, dram_num_steps,
     )
+    if arch_name == "gustavsnn":
+        return native_fn(*args, wave_width=wave_width)
+    return native_fn(*args)
 
 
 _CANONICAL_N = 100

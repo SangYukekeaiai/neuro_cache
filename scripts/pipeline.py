@@ -276,7 +276,8 @@ def schedules_for(bench, layers, out, record):
         dirs = list(dict.fromkeys(p.parent.name for p in missing))
         names = list(dict.fromkeys(p.stem for p in missing))
         # One call so summary.csv holds every row; solve-trace applies each layer
-        # name only to the dirs whose meta.json has it and skips cached schedules.
+        # name only to the dirs whose meta.json has it and reuses cached schedules
+        # only when their stored arch/mapspace content hashes still match.
         run_all([[sys.executable, "-m", "lays.scheduler", "solve-trace", "--arch", bench,
                   "--trace-root", str(INPUT_TRACE / bench), "--trace-dirs", *dirs,
                   "--layers", *names, "--cache-dir", str(root)]],

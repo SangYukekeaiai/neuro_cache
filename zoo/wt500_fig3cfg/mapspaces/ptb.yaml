@@ -1,0 +1,16 @@
+dataflow:
+  # Campaign variant (2026-11-10): fig3's ptb_t4.yaml had T {spatial: 4};
+  # with num_pes limited to 4 the T fanout is removed and T reverts to the
+  # published temporal window of examples/node_mapspace/ptb.yaml.
+  #
+  # REVIEW FLAG: the published window is T: 64, matching the generator
+  # hardware (PTBGen.h: TW_SIZE 8 x PE_COLS_MAX 8 = 64 ticks). The user
+  # recalled 32; 64 is what the previous config actually says. Confirm or
+  # change on review. (All current captures have T <= 32, so either value
+  # admits every benchmark; it only caps a future longer-T capture.)
+  node_dim_capacity:
+    KH:   4
+    KW:   4
+    CIN:  full
+    COUT: {spatial: 4}
+    T:    64

@@ -111,15 +111,15 @@ void test_bad_magic_throws() {
 }
 
 void test_v1_header_is_refused_with_the_regenerate_message() {
-    check::group("5d: format_version other than 2 is refused, naming the fix");
-    for (std::uint32_t v : {1u, 3u}) {
+    check::group("5d: unsupported format versions are refused, naming the fix");
+    for (std::uint32_t v : {1u, 4u}) {
         std::vector<unsigned char> buf = encoded(good_header());
         stream::write_le<std::uint32_t>(buf.data() + 8, v);
         std::string msg;
         try { (void)stream::decode_header(buf.data(), buf.size()); }
         catch (const std::invalid_argument& e) { msg = e.what(); }
         CHECK_TRUE(msg.find("format_version is " + std::to_string(v)) != std::string::npos);
-        CHECK_TRUE(msg.find("speaks only 2") != std::string::npos);
+        CHECK_TRUE(msg.find("speaks 2 and 3") != std::string::npos);
         CHECK_TRUE(msg.find("regenerate the stream with the current src/lays/cachesim/stream.py") !=
                    std::string::npos);
     }

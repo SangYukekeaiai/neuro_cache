@@ -1,6 +1,4 @@
-// PTBGen.h -- C++ port of PTB's per-tile weight-address/tick
-// reconstruction
-// (a port of the former pure-Python reconstruct/address/cycles modules).
+// PTBGen.h -- native PTB per-tile weight-address/tick reconstruction.
 //
 // One tile = one fixed (ho, wo) output pixel's full reduction row.
 // stSAP compression, two passes, [KH, KW, CIN] nested iteration order:
@@ -16,20 +14,18 @@
 //   all-zero), else line i is its own group. `ln` = number of Pass-2
 //   groups.
 //
-// event_to_address (address.py): addresses come from Pass-1 lines
-// directly (NOT Pass-2 groups), same [KH,KW,CIN] order.
-// event_to_ticks: tick i == Pass-1 line i (sequential, matches
-// access_cycle_count == len(lines_pass1)).
+// Address traversal uses Pass-1 lines directly (NOT Pass-2 groups), in the
+// same [KH,KW,CIN] order. Tick assignment is sequential, tick i == Pass-1
+// line i (access_cycle_count == len(lines_pass1)).
 //
 // mac_cycles is NOT len(lines_pass1) here (unlike LoAS/SpinalFlow/
-// Prosperity) -- PTB's own cycles.py: total_cycle_count =
+// Prosperity) -- PTB's cycle model: total_cycle_count =
 // max(access_cycle_count, compute_cycle_count), where
 // compute_cycle_count is a systolic-pipeline fill/drain formula using
-// `ln` (Pass-2 group count) and the tile's COUT/T bounds. Ported
-// verbatim below (TW_SIZE/PE_ROWS_MAX/PE_COLS_MAX match cycles.py's own
-// constants for this deployment).
+// `ln` (Pass-2 group count) and the tile's COUT/T bounds. The deployment's
+// TW_SIZE/PE_ROWS_MAX/PE_COLS_MAX constants are used below.
 //
-// "same" padding, matching reconstruct.py: hin = ho + kh - pad_h,
+// "same" padding convention: hin = ho + kh - pad_h,
 // win = wo + kw - pad_w, pad_h=(kh_n-1)/2, pad_w=(kw_n-1)/2.
 
 #pragma once
@@ -73,7 +69,7 @@ struct Pass1Line {
     std::vector<uint8_t> bits;  // length t_n
 };
 
-// compute_cycle_count (cycles.py), ported verbatim.
+// Compute cycle count using the deployment's published PTB formula.
 inline int32_t compute_cycle_count(int32_t ln, int32_t cout_n, int32_t total_t) {
     const int32_t active_rows = std::min(cout_n, PE_ROWS_MAX);
     const int32_t active_cols = std::min((total_t + TW_SIZE - 1) / TW_SIZE, PE_COLS_MAX);  // ceil div

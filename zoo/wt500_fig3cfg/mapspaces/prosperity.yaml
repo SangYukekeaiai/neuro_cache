@@ -1,0 +1,14 @@
+dataflow:
+  # Campaign copy (2026-11-10) of fig3's prosperity_fig3.yaml: COUT fanout 4
+  # (down from the published 8); CIN resident at up to 16 instead of barred;
+  # capped KH/KW/HO/WO block; T fully resident. COUT spatial 4 exactly fills
+  # the 4-PE node. KH/KW are explicit so every native tile receives the full
+  # kernel window (the bridge has no kernel-offset field).
+  node_dim_capacity:
+    KH:   4
+    KW:   4
+    CIN:  16
+    COUT: {spatial: 4}
+    HO:   4
+    WO:   4
+    T:    full
