@@ -44,7 +44,7 @@ node_mapspaces:           # one per architecture, swept against every benchmark
   loas:       {file: mapspaces/loas.yaml,       KH: full, KW: full, CIN: full, T: full, COUT: {spatial: 4}}
   ptb:        {file: mapspaces/ptb.yaml,        KH: 4, KW: 4, CIN: full, T: 64, COUT: {spatial: 4}}  # review flag: T 64 vs 32
   spinalflow: {file: mapspaces/spinalflow.yaml, KH: 4, KW: 4, CIN: full, T: full, COUT: {spatial: 4}}
-  prosperity: {file: mapspaces/prosperity.yaml, KH: 4, KW: 4, CIN: 16, T: full, COUT: {spatial: 4}, HO: 4, WO: 4}
+  prosperity: {file: mapspaces/prosperity.yaml, KH: 4, KW: 4, CIN: 16, T: full, COUT: {spatial: 4}, HO: 8}
   gustavsnn:  {file: mapspaces/gustavsnn.yaml,  KH: full, KW: full, CIN: full, COUT: {spatial: 2}, HO: {spatial: 2}, WO: 1}
 
 scheduling:               # stage S2, runs on DeltaAI

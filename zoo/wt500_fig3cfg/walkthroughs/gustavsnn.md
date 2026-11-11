@@ -455,27 +455,24 @@ by 18x across the solved tile order, so a subset mean is not usable.
   neighbourhood sum over the capture - and should be preferred to timing a
   slice.
 
-### G4a. The campaign config contradicts the mapspace on two values
+### G4a. The campaign config disagreed with the mapspace: RESOLVED
 
-*Caveat:* `mapspaces/gustavsnn.yaml`'s own comment says the output column is
-"capped at 4" while the value on the next lines is `WO: 1`. Separately,
-`sweep_config.yaml:48` records `WO: 4` for this arch and `:67` carries
-`gustavsnn_wave_width: 4` as a hardcoded value, under a comment saying it is
-"never hardcoded; derived per" schedule.
+*Caveat (resolved):* `mapspaces/gustavsnn.yaml`'s comment formerly said the
+output column was "capped at 4" while the value was `WO: 1`, and
+`sweep_config.yaml` recorded `WO: 4` with a hardcoded
+`gustavsnn_wave_width: 4`. All three now agree with the mapspace: the comment
+reads `WO` capped at 1, `sweep_config.yaml:48` records `WO: 1`, and `:67` names
+the derivation `schedule_nodelevel_spatial_product` rather than a value.
 
-- **Affects generation? No.** The mapspace value is what the scheduler reads;
-  the comment and the sweep-config entry are documentation, and nothing consumes
-  them. But this document's tile-count figures depend on `WO: 1`, so a reader
-  checking `sweep_config.yaml` would conclude the figures are wrong by a factor
-  of four.
-- **Severity: a correctness trap for readers, not for runs.** The hardcoded
-  width of 4 is additionally wrong for 6 of the 151 layers (section 1.2), and
-  wrong in a way section 1.2a shows is inert - so it would mislead without
-  misbehaving.
-- **Fix sketch:** correct the mapspace comment to `WO: 1`, correct
-  `sweep_config.yaml`'s `WO` entry, and replace the hardcoded wave width with a
-  note that it is per-schedule, since the file's own comment already says it
-  should be.
+- **Affects generation? No, and it never did** - the mapspace value is what the
+  scheduler reads, and nothing consumed the comment or the sweep-config entry.
+  The risk was to readers: this document's tile-count figures depend on
+  `WO: 1`, so a reader checking the sweep config would have concluded they were
+  wrong by a factor of four.
+- **Severity: was a correctness trap for readers, not for runs.**
+- **What remains:** the durable half of G2 - take the wave width from the
+  schedule's NodeLevel spatial product, never from a constant, since it is 4 on
+  145 layers, 2 on five and 1 on one.
 
 ### G5. Running last is not an ordering guarantee
 
