@@ -100,3 +100,5 @@ core.*
 /data/
 /neuro_cache_bench_trace/
 innovation_summary/
+# Platform-specific native builds: each host builds its own; never carried by git
+zoo/fig12_edp/demo/native_build/
