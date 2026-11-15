@@ -1,0 +1,11 @@
+{
+  "source": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/src/archx/interface/csv_cmos/csv_cmos_extract.py",
+  "copy": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/asap7_500mhz/csv_cmos_extract.py",
+  "sha256": "9b16bf335a8ea65fff6133b5f2f453e6225b4043a3223d06aa27da6291008b0a",
+  "byte_identical": true,
+  "entry": "extract(\"ASAP7\",500)",
+  "input": "syn_pnr_rpt/ASAP7/<module>/<module>_DETAILS.rpt",
+  "output": "syn_pnr_csv/<module>.csv",
+  "params": "fixed variants; no parameter interpolation",
+  "status": "staged, not executed; no accepted reports yet"
+}

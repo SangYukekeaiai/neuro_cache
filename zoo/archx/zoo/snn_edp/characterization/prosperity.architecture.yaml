@@ -1,0 +1,79 @@
+architecture:
+  attribute: {technology: 7, frequency: 500, interface: csv_cmos}
+  module:
+    adder16:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, prosperity]
+      query: {frequency: 500, class: adder, width: 16}
+      operations: {add: A_p}
+      physical_instances: 4
+    reg16:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, prosperity]
+      query: {frequency: 500, class: register, width: 16}
+      operations: {rmw: A_p}
+      physical_instances: 4
+    tcam:
+      tag: [compute, prosperity]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: tcam_256x16, width: 16, depth: 256}
+      operations: {search: N_rows, write: N_rows}
+      physical_instances: 2
+      assumption: Double-buffered TCAM; one bank active per search, all 256x16 cells searched.
+    popcount16:
+      tag: [compute, prosperity]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: popcount16, width: 16}
+      operations: {count: N_rows}
+      physical_instances: 8
+    pruner:
+      tag: [compute, prosperity]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: pruner, width: 16, channels: 256}
+      operations: {prune: N_rows}
+      assumption: Includes proper-subset filter, argmax and XOR; once per tile/CIN walk, reused over COUT slabs.
+    bitonic_cmp:
+      tag: [compute, prosperity]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: bitonic_cmp, width: 13}
+      operations: {compare: SORT}
+      assumption: 5-bit popcount plus 8-bit stable row index; one reused compare-exchange unit assumed pending sorter RTL inventory.
+    bsf16:
+      tag: [compute, prosperity]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: bsf16, width: 16}
+      operations: {scan: R_p}
+      physical_instances: 4
+    ps_table:
+      tag: [memory, prosperity]
+      query: {interface: cacti_fn, class: sram, bank: 1, width: 48, depth: 256}
+      operations: {read: N_rows, write: N_rows}
+      assumption: 1.5 KiB table, one 48-bit row per access.
+    psum_buffer:
+      tag: [memory, prosperity]
+      query: {interface: cacti_fn, class: sram, bank: 1, width: 16, depth: 512}
+      operations: {read: seed_reads_bound, write: psum_writes}
+      assumption: Seed reads use the accepted N_rows*COUT upper bound; each access is 16 bits.
+    l1_weight_spad:
+      tag: [memory, prosperity]
+      query: {interface: cacti_fn, class: sram, bank: 1, width: 32, depth: 8192}
+      operations: {read: R_p, write: '0'}
+      assumption: Scratchpad arm only.
+    spike_row_buffer:
+      tag: [memory, prosperity]
+      query: {interface: cacti_fn, class: sram, bank: 1, width: 16, depth: 512}
+      operations: {read: N_rows, write: N_rows}
+      assumption: Two 256x16-bit row banks, 1 KiB total; one load and one read per row.
+    lif_core:
+      tag: [compute, prosperity]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: lif_unit, width: 32, input_width: 16, state_register: false}
+      operations: {step: L}
+      physical_instances: 4
+      assumption: Shared LIF stages 1-4 only; state is charged as a separate register RMW; SFU excluded.
+    lif_state:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, prosperity]
+      query: {frequency: 500, class: register, width: 32}
+      operations: {rmw: L}
+      physical_instances: 4

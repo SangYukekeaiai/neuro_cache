@@ -1,0 +1,65 @@
+architecture:
+  attribute: {technology: 7, frequency: 500, interface: csv_cmos}
+  module:
+    adder16:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, loas]
+      query: {frequency: 500, class: adder, width: 16}
+      operations: {add: A}
+      physical_instances: 128
+    reg16:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, loas]
+      query: {frequency: 500, class: register, width: 16}
+      operations: {rmw: A, read: L}
+      physical_instances: 128
+      assumption: Four TPPEs with 32 physical lanes each; register read uses event proxy.
+    l1_weight_spad:
+      tag: [memory, loas]
+      query: {interface: cacti_fn, class: sram, bank: 1, width: 32, depth: 8192}
+      operations: {read: B, write: '0'}
+      assumption: Scratchpad arm only; cache arms use cache counters for weights.
+    lif_unit:
+      tag: [compute, loas]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: lif_unit, width: 32, input_width: 16}
+      operations: {step: L}
+      physical_instances: 4
+      assumption: Shared LIF RTL; shift leak k=1 or 2, hard reset, includes state.
+    weight_fifo:
+      tag: [compute, loas]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: fifo, width: 16, depth: 8}
+      operations: {push: B, pop: B}
+    spike_fifo:
+      tag: [compute, loas]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: fifo, width: 32, depth: 8}
+      operations: {push: B, pop: B}
+    output_fifo:
+      tag: [compute, loas]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: fifo, width: 32, depth: 8}
+      operations: {push: W_o}
+      assumption: One shared output staging FIFO per node.
+    bsf32:
+      tag: [compute, loas]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: bsf32, width: 32}
+      operations: {scan: 'A/cout_n'}
+      physical_instances: 4
+      assumption: TPPE scan subblock; charge per set-bit step, not once per word.
+    spike_prefix_scan32:
+      tag: [compute, loas]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: psum_scan32, width: 32}
+      operations: {scan: B}
+      physical_instances: 4
+      assumption: TPPE scan subblock; five-level prefix popcount, about 80 full-adder equivalents.
+    and_gate:
+      tag: [compute, loas]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: and_gate, width: 1}
+      operations: {and: '32*B'}
+      physical_instances: 128
+      assumption: TPPE scan subblock; physically present despite dense weights.

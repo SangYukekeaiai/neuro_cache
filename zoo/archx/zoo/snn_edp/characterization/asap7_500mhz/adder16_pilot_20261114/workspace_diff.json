@@ -1,0 +1,13 @@
+{
+  "authorized_change": "lp_insert_clock_gating true -> false",
+  "changed_files": {
+    "Flows/template_design/scripts/cadence/run_genus_hybrid.tcl": {
+      "after_sha256": "a585d52220caf55313e46438597cc91324dd239d3de9531bb289cd43ea399a9d",
+      "before_sha256": "9d4e2ac8686fa8061333ed55cb44bbb377e54d55575feb4b0840869c53e4bb34"
+    }
+  },
+  "diff_sha256": "01e50cbd7ef22ce35639edc1c13ba226fb6e6a2d8e9eb3746d71ec02b2997d56",
+  "other_flow_files_unchanged": true,
+  "project_commit": "d60655d3be4f2efee81402ff8becf2b4b6f34580",
+  "tracked_files": 143
+}

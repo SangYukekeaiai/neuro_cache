@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--************************************************************************-->
+<!--                 Standard 7nm FinFET Process Technology                 -->
+<!--************************************************************************-->
+<!--                               06/16/2014                               -->
+<!--************************************************************************-->
+<!--  Notes:                                                                -->
+<!--    * This is the standard 7nm FinFET designed by Shuang Chen, USC.     -->
+<!--************************************************************************-->
+
+<device_definition>
+	<geometries>
+		<Lphy>0.007</Lphy>
+		<Xj>0.00175</Xj>
+		<t_ox>0.00033</t_ox>
+		<FinFET>
+			<t_si>0.0035</t_si>
+			<h_fin>0.014</h_fin>
+		</FinFET>
+	</geometries>
+	
+	<voltages>
+		<vdd>
+			<super_threshold>0.45</super_threshold>
+			<near_threshold>0.3</near_threshold>
+		</vdd>
+		<v_th>0.235</v_th>
+		<Vdsat>
+			<super_threshold>0.01101</super_threshold>
+			<near_threshold>0.01101</near_threshold>
+		</Vdsat>
+	</voltages>
+	
+	<capacitances>
+		<c_ox>4.73e-14</c_ox>
+		<c_fringe>0.8e-16</c_fringe>
+		<c_junc>5.0e-16</c_junc>
+		<c_junc_sidewall>5.0e-16</c_junc_sidewall>
+		<c_junc_sidewall_gate>0</c_junc_sidewall_gate>
+	</capacitances>
+	
+	<sense_amplifier>
+		<delay>
+			<super_threshold>3.101e-12</super_threshold>
+			<near_threshold>9.947e-12</near_threshold>
+		</delay>
+		<energy>
+			<super_threshold>3.630e-19</super_threshold>
+			<near_threshold>1.106e-19</near_threshold>
+		</energy>
+	</sense_amplifier>
+	
+	<mobility_eff>1242e8</mobility_eff>
+	<gmp_to_gmn_multiplier>1.38</gmp_to_gmn_multiplier>
+	
+	<currents>
+		<ON_current>
+			<NMOS>
+				<super_threshold>
+					<temp val="300">1.716e-03</temp>
+					<temp val="310">1.713e-03</temp>
+					<temp val="320">1.711e-03</temp>
+					<temp val="330">1.709e-03</temp>
+					<temp val="340">1.708e-03</temp>
+					<temp val="350">1.707e-03</temp>
+					<temp val="360">1.707e-03</temp>
+					<temp val="370">1.707e-03</temp>
+					<temp val="380">1.708e-03</temp>
+					<temp val="390">1.709e-03</temp>
+					<temp val="400">1.710e-03</temp>
+				</super_threshold>
+				<near_threshold>
+					<temp val="300">2.845e-04</temp>
+					<temp val="310">3.079e-04</temp>
+					<temp val="320">3.305e-04</temp>
+					<temp val="330">3.526e-04</temp>
+					<temp val="340">3.747e-04</temp>
+					<temp val="350">3.958e-04</temp>
+					<temp val="360">4.170e-04</temp>
+					<temp val="370">4.382e-04</temp>
+					<temp val="380">4.588e-04</temp>
+					<temp val="390">4.789e-04</temp>
+					<temp val="400">4.987e-04</temp>
+				</near_threshold>
+			</NMOS>
+			<PMOS>
+				<super_threshold>
+					<temp val="300">1.075e-03</temp>
+					<temp val="310">1.071e-03</temp>
+					<temp val="320">1.067e-03</temp>
+					<temp val="330">1.064e-03</temp>
+					<temp val="340">1.061e-03</temp>
+					<temp val="350">1.058e-03</temp>
+					<temp val="360">1.056e-03</temp>
+					<temp val="370">1.054e-03</temp>
+					<temp val="380">1.052e-03</temp>
+					<temp val="390">1.051e-03</temp>
+					<temp val="400">1.050e-03</temp>
+				</super_threshold>
+				<near_threshold>
+					<temp val="300">2.610e-04</temp>
+					<temp val="310">2.737e-04</temp>
+					<temp val="320">2.861e-04</temp>
+					<temp val="330">2.981e-04</temp>
+					<temp val="340">3.102e-04</temp>
+					<temp val="350">3.220e-04</temp>
+					<temp val="360">3.334e-04</temp>
+					<temp val="370">3.446e-04</temp>
+					<temp val="380">3.555e-04</temp>
+					<temp val="390">3.660e-04</temp>
+					<temp val="400">3.763e-04</temp>
+				</near_threshold>
+			</PMOS>
+		</ON_current>
+		<OFF_current>
+			<NMOS>
+				<super_threshold>
+					<temp val="300">6.890e-08</temp>
+					<temp val="310">1.006e-07</temp>
+					<temp val="320">1.440e-07</temp>
+					<temp val="330">2.021e-07</temp>
+					<temp val="340">2.789e-07</temp>
+					<temp val="350">3.784e-07</temp>
+					<temp val="360">5.058e-07</temp>
+					<temp val="370">6.671e-07</temp>
+					<temp val="380">8.683e-07</temp>
+					<temp val="390">1.116e-06</temp>
+					<temp val="400">1.417e-06</temp>
+				</super_threshold>
+				<near_threshold>
+					<temp val="300">6.355e-08</temp>
+					<temp val="310">9.204e-08</temp>
+					<temp val="320">1.310e-07</temp>
+					<temp val="330">1.832e-07</temp>
+					<temp val="340">2.521e-07</temp>
+					<temp val="350">3.416e-07</temp>
+					<temp val="360">4.562e-07</temp>
+					<temp val="370">6.009e-07</temp>
+					<temp val="380">7.820e-07</temp>
+					<temp val="390">1.005e-06</temp>
+					<temp val="400">1.277e-06</temp>
+				</near_threshold>
+			</NMOS>
+			<PMOS>
+				<super_threshold>
+					<temp val="300">1.040e-07</temp>
+					<temp val="310">1.427e-07</temp>
+					<temp val="320">1.934e-07</temp>
+					<temp val="330">2.591e-07</temp>
+					<temp val="340">3.429e-07</temp>
+					<temp val="350">4.484e-07</temp>
+					<temp val="360">5.799e-07</temp>
+					<temp val="370">7.417e-07</temp>
+					<temp val="380">9.388e-07</temp>
+					<temp val="390">1.178e-06</temp>
+					<temp val="400">1.463e-06</temp>
+				</super_threshold>
+				<near_threshold>
+					<temp val="300">1.027e-07</temp>
+					<temp val="310">1.382e-07</temp>
+					<temp val="320">1.843e-07</temp>
+					<temp val="330">2.436e-07</temp>
+					<temp val="340">3.190e-07</temp>
+					<temp val="350">4.138e-07</temp>
+					<temp val="360">5.316e-07</temp>
+					<temp val="370">6.766e-07</temp>
+					<temp val="380">8.530e-07</temp>
+					<temp val="390">1.066e-06</temp>
+					<temp val="400">1.321e-06</temp>
+				</near_threshold>
+			</PMOS>
+		</OFF_current>
+	</currents>
+</device_definition>

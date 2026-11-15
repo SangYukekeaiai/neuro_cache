@@ -1,0 +1,1454 @@
+{
+  "cache.distance_logic.step": {
+    "applies_to": [
+      "cacheA"
+    ],
+    "count_expression": "l2_pf_issued",
+    "physical_instances": 1,
+    "query": {
+      "class": "prefetcher",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 64
+    },
+    "role": "L2 distance-aware prefetch control; d1 and touch threshold nine",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.distance_metadata.read": {
+    "applies_to": [
+      "cacheA"
+    ],
+    "count_expression": "l1_accesses",
+    "implementation": {
+      "entries": 8192,
+      "entry_bits": 64,
+      "finite_capacity_model": true,
+      "storage": "direct-indexed SRAM"
+    },
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 8192,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 64
+    },
+    "role": "L2 bounded 8192x64-bit touch-history SRAM",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.distance_metadata.write": {
+    "applies_to": [
+      "cacheA"
+    ],
+    "count_expression": "l1_accesses",
+    "implementation": {
+      "entries": 8192,
+      "entry_bits": 64,
+      "finite_capacity_model": true,
+      "storage": "direct-indexed SRAM"
+    },
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 8192,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 64
+    },
+    "role": "L2 bounded 8192x64-bit touch-history SRAM",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.l1.read": {
+    "count_expression": "l1_accesses",
+    "physical_instances": 16,
+    "query": {
+      "associativity": 8,
+      "bank": 1,
+      "class": "cache",
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "size": 131072,
+      "technology": 7,
+      "width": 512
+    },
+    "role": "Per-core L1 weight-cache data/tag array",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.l1.write": {
+    "count_expression": "l1_accesses-l1_hits+pf_issued-pf_dropped_array_hit-pf_dropped_matching-pf_dropped_no_slot-pf_dropped_targets_full-pf_dropped_reserve",
+    "physical_instances": 16,
+    "query": {
+      "associativity": 8,
+      "bank": 1,
+      "class": "cache",
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "size": 131072,
+      "technology": 7,
+      "width": 512
+    },
+    "role": "Per-core L1 weight-cache data/tag array",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.l1_tags.read": {
+    "count_expression": "2*pf_issued+pf_budget_exhausted",
+    "physical_instances": 0,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 32,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 256
+    },
+    "role": "Extra L1 prefetch tag-probe energy; standing inventory already in L1",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.l2.read": {
+    "count_expression": "l2_accesses",
+    "physical_instances": 1,
+    "query": {
+      "associativity": 16,
+      "bank": 1,
+      "class": "cache",
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "size": 4194304,
+      "technology": 7,
+      "width": 512
+    },
+    "role": "Shared L2 weight-cache data/tag array",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.l2.write": {
+    "count_expression": "dram_accesses",
+    "physical_instances": 1,
+    "query": {
+      "associativity": 16,
+      "bank": 1,
+      "class": "cache",
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "size": 4194304,
+      "technology": 7,
+      "width": 512
+    },
+    "role": "Shared L2 weight-cache data/tag array",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.l2_tags.read": {
+    "count_expression": "l2_pf_issued+pf_issued-pf_dropped_array_hit-pf_dropped_matching-pf_dropped_no_slot-pf_dropped_targets_full-pf_dropped_reserve",
+    "physical_instances": 0,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 512,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 512
+    },
+    "role": "Extra L2 prefetch tag-probe energy; standing inventory already in L2",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.mshr_cam_l1.search": {
+    "count_expression": "l1_accesses-l1_hits+l1_accesses-l1_hits+pf_issued-pf_dropped_array_hit-pf_dropped_matching-pf_dropped_no_slot-pf_dropped_targets_full-pf_dropped_reserve",
+    "physical_instances": 16,
+    "query": {
+      "class": "mshr_cam",
+      "depth": 16,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 64
+    },
+    "role": "L1 outstanding-miss tag matching CAM",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.mshr_cam_l2.search": {
+    "count_expression": "l2_accesses-l2_hits+dram_accesses",
+    "physical_instances": 1,
+    "query": {
+      "class": "mshr_cam",
+      "depth": 32,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 64
+    },
+    "role": "L2 outstanding-miss tag matching CAM",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.mshr_targets_l1.write": {
+    "count_expression": "l1_accesses-l1_hits",
+    "physical_instances": 16,
+    "query": {
+      "class": "register_file",
+      "depth": 320,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 64
+    },
+    "role": "L1 merged-miss target register file",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.mshr_targets_l2.write": {
+    "count_expression": "l2_accesses-l2_hits",
+    "physical_instances": 1,
+    "query": {
+      "class": "register_file",
+      "depth": 384,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 64
+    },
+    "role": "L2 merged-miss target register file",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.next_access_logic.step": {
+    "applies_to": [
+      "cacheA"
+    ],
+    "count_expression": "pf_issued",
+    "implementation": {
+      "address_bits": 64,
+      "address_queue_entries": 4,
+      "data_buffer_bytes": 0,
+      "queue_activity": "one enqueue/dequeue per pf_issued as dummy activity proxy",
+      "state_registers": "separately priced cache.next_access_state: three32-bit registers per core"
+    },
+    "physical_instances": 16,
+    "query": {
+      "class": "prefetcher",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 64
+    },
+    "role": "L1 next-access lookahead controller and address-only queue; distance four",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.next_access_state.rmw": {
+    "applies_to": [
+      "cacheA"
+    ],
+    "count_expression": "3*pf_issued",
+    "physical_instances": 48,
+    "query": {
+      "class": "register",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Three persistent 32-bit cursor/tile/burst words per L1 core",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.next_line_l1.add": {
+    "applies_to": [
+      "cacheB"
+    ],
+    "count_expression": "pf_issued",
+    "physical_instances": 16,
+    "query": {
+      "class": "adder",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 64
+    },
+    "role": "L1 neighbour-policy COUT-block address addition",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "cache.next_line_l2.add": {
+    "applies_to": [
+      "cacheB"
+    ],
+    "count_expression": "l2_pf_issued",
+    "physical_instances": 1,
+    "query": {
+      "class": "adder",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 64
+    },
+    "role": "L2 neighbour-policy COUT-block address addition",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "gustavsnn.adder16.add": {
+    "count_expression": "A",
+    "physical_instances": 4,
+    "query": {
+      "class": "adder",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "16-bit weight/partial-sum accumulation lane",
+    "technology_nm": 7
+  },
+  "gustavsnn.l1_weight_spad.read": {
+    "count_expression": "R_g",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 16384,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Node-local weight SRAM used only by the scratchpad arm",
+    "technology_nm": 7
+  },
+  "gustavsnn.l1_weight_spad.write": {
+    "count_expression": "0",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 16384,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Node-local weight SRAM used only by the scratchpad arm",
+    "technology_nm": 7
+  },
+  "gustavsnn.leading_spike_detector.scan": {
+    "count_expression": "R_g",
+    "physical_instances": 2,
+    "query": {
+      "class": "l1d",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Leading-one spike detector for each GustavSNN HO lane",
+    "technology_nm": 7
+  },
+  "gustavsnn.lif_core.step": {
+    "count_expression": "L",
+    "physical_instances": 4,
+    "query": {
+      "class": "lif_unit",
+      "frequency": 500,
+      "input_width": 16,
+      "interface": "csv_cmos",
+      "state_register": false,
+      "technology": 7,
+      "width": 32
+    },
+    "role": "LIF leak/integrate/threshold/reset logic with external state storage",
+    "technology_nm": 7
+  },
+  "gustavsnn.merger_tree2.merge": {
+    "count_expression": "R_g",
+    "physical_instances": 1,
+    "query": {
+      "class": "merger_tree2",
+      "frequency": 500,
+      "inputs": 2,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Two-input GustavSNN spike-record merge selector",
+    "technology_nm": 7
+  },
+  "gustavsnn.output_fifo.push": {
+    "count_expression": "W_o/32",
+    "physical_instances": 1,
+    "query": {
+      "class": "fifo",
+      "depth": 8,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Packed output-spike word FIFO",
+    "technology_nm": 7
+  },
+  "gustavsnn.potential_regfile.rmw": {
+    "count_expression": "L",
+    "physical_instances": 4,
+    "query": {
+      "class": "register_file",
+      "depth": 64,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "External per-PE membrane potential register file for lif_core",
+    "technology_nm": 7
+  },
+  "gustavsnn.reg16.rmw": {
+    "count_expression": "A",
+    "physical_instances": 4,
+    "query": {
+      "class": "register",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "16-bit per-lane accumulated potential or partial sum",
+    "technology_nm": 7
+  },
+  "gustavsnn.spike_fifo.pop": {
+    "count_expression": "R_g",
+    "physical_instances": 1,
+    "query": {
+      "class": "fifo",
+      "depth": 8,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Input spike/time-vector staging FIFO",
+    "technology_nm": 7
+  },
+  "loas.adder16.add": {
+    "count_expression": "A",
+    "physical_instances": 128,
+    "query": {
+      "class": "adder",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "16-bit weight/partial-sum accumulation lane",
+    "technology_nm": 7
+  },
+  "loas.and_gate.and": {
+    "count_expression": "32*B",
+    "physical_instances": 128,
+    "query": {
+      "class": "and_gate",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 1
+    },
+    "role": "LoAS per-lane spike/weight-mask AND gate",
+    "technology_nm": 7
+  },
+  "loas.bsf32.scan": {
+    "count_expression": "A/cout_n",
+    "physical_instances": 4,
+    "query": {
+      "class": "bsf32",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "32-bit LoAS spike-vector bit-scan-forward decoder",
+    "technology_nm": 7
+  },
+  "loas.l1_weight_spad.read": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 8192,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Node-local weight SRAM used only by the scratchpad arm",
+    "technology_nm": 7
+  },
+  "loas.l1_weight_spad.write": {
+    "count_expression": "0",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 8192,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Node-local weight SRAM used only by the scratchpad arm",
+    "technology_nm": 7
+  },
+  "loas.lif_unit.step": {
+    "count_expression": "L",
+    "physical_instances": 4,
+    "query": {
+      "class": "lif_unit",
+      "frequency": 500,
+      "input_width": 16,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Stateful LIF: leak, integrate, threshold, hard reset and internal state",
+    "technology_nm": 7
+  },
+  "loas.output_fifo.push": {
+    "count_expression": "W_o",
+    "physical_instances": 1,
+    "query": {
+      "class": "fifo",
+      "depth": 8,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Packed output-spike word FIFO",
+    "technology_nm": 7
+  },
+  "loas.reg16.read": {
+    "count_expression": "L",
+    "physical_instances": 128,
+    "query": {
+      "class": "register",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "16-bit per-lane accumulated potential or partial sum",
+    "technology_nm": 7
+  },
+  "loas.reg16.rmw": {
+    "count_expression": "A",
+    "physical_instances": 128,
+    "query": {
+      "class": "register",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "16-bit per-lane accumulated potential or partial sum",
+    "technology_nm": 7
+  },
+  "loas.spike_fifo.pop": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "class": "fifo",
+      "depth": 8,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Input spike/time-vector staging FIFO",
+    "technology_nm": 7
+  },
+  "loas.spike_fifo.push": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "class": "fifo",
+      "depth": 8,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Input spike/time-vector staging FIFO",
+    "technology_nm": 7
+  },
+  "loas.spike_prefix_scan32.scan": {
+    "count_expression": "B",
+    "physical_instances": 4,
+    "query": {
+      "class": "psum_scan32",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "32-bit spike-vector prefix-popcount scan for LoAS TPPE ranks",
+    "technology_nm": 7
+  },
+  "loas.weight_fifo.pop": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "class": "fifo",
+      "depth": 8,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Weight staging FIFO before arithmetic lanes",
+    "technology_nm": 7
+  },
+  "loas.weight_fifo.push": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "class": "fifo",
+      "depth": 8,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Weight staging FIFO before arithmetic lanes",
+    "technology_nm": 7
+  },
+  "prosperity.adder16.add": {
+    "count_expression": "A_p",
+    "physical_instances": 4,
+    "query": {
+      "class": "adder",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "16-bit weight/partial-sum accumulation lane",
+    "technology_nm": 7
+  },
+  "prosperity.bitonic_cmp.compare": {
+    "count_expression": "SORT",
+    "physical_instances": 1,
+    "query": {
+      "class": "bitonic_cmp",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 13
+    },
+    "role": "Prosperity sorter compare-exchange key: popcount plus original row index",
+    "technology_nm": 7
+  },
+  "prosperity.bsf16.scan": {
+    "count_expression": "R_p",
+    "physical_instances": 4,
+    "query": {
+      "class": "bsf16",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "16-bit residual spike-pattern bit-scan-forward decoder",
+    "technology_nm": 7
+  },
+  "prosperity.l1_weight_spad.read": {
+    "count_expression": "R_p",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 8192,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Node-local weight SRAM used only by the scratchpad arm",
+    "technology_nm": 7
+  },
+  "prosperity.l1_weight_spad.write": {
+    "count_expression": "0",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 8192,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Node-local weight SRAM used only by the scratchpad arm",
+    "technology_nm": 7
+  },
+  "prosperity.lif_core.step": {
+    "count_expression": "L",
+    "physical_instances": 4,
+    "query": {
+      "class": "lif_unit",
+      "frequency": 500,
+      "input_width": 16,
+      "interface": "csv_cmos",
+      "state_register": false,
+      "technology": 7,
+      "width": 32
+    },
+    "role": "LIF leak/integrate/threshold/reset logic with external state storage",
+    "technology_nm": 7
+  },
+  "prosperity.lif_state.rmw": {
+    "count_expression": "L",
+    "physical_instances": 4,
+    "query": {
+      "class": "register",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "External membrane-state register paired with lif_core",
+    "technology_nm": 7
+  },
+  "prosperity.popcount16.count": {
+    "count_expression": "N_rows",
+    "physical_instances": 8,
+    "query": {
+      "class": "popcount16",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Population count of one 16-bit spike row",
+    "technology_nm": 7
+  },
+  "prosperity.pruner.prune": {
+    "count_expression": "N_rows",
+    "physical_instances": 1,
+    "query": {
+      "channels": 256,
+      "class": "pruner",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Select a processed subset prefix and produce the residual XOR spike pattern",
+    "technology_nm": 7
+  },
+  "prosperity.ps_table.read": {
+    "count_expression": "N_rows",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 48
+    },
+    "role": "Prosperity prefix-selection/pattern descriptor SRAM shared across COUT slabs",
+    "technology_nm": 7
+  },
+  "prosperity.ps_table.write": {
+    "count_expression": "N_rows",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 48
+    },
+    "role": "Prosperity prefix-selection/pattern descriptor SRAM shared across COUT slabs",
+    "technology_nm": 7
+  },
+  "prosperity.psum_buffer.read": {
+    "count_expression": "seed_reads_bound",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 512,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Prosperity partial-sum seed/readback and row writeback SRAM",
+    "technology_nm": 7
+  },
+  "prosperity.psum_buffer.write": {
+    "count_expression": "psum_writes",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 512,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Prosperity partial-sum seed/readback and row writeback SRAM",
+    "technology_nm": 7
+  },
+  "prosperity.reg16.rmw": {
+    "count_expression": "A_p",
+    "physical_instances": 4,
+    "query": {
+      "class": "register",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "16-bit per-lane accumulated potential or partial sum",
+    "technology_nm": 7
+  },
+  "prosperity.spike_row_buffer.read": {
+    "count_expression": "N_rows",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 512,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Double-buffered spike-row SRAM for the detector frontend",
+    "technology_nm": 7
+  },
+  "prosperity.spike_row_buffer.write": {
+    "count_expression": "N_rows",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 512,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Double-buffered spike-row SRAM for the detector frontend",
+    "technology_nm": 7
+  },
+  "prosperity.tcam.search": {
+    "count_expression": "N_rows",
+    "implementation": {
+      "banks": 2,
+      "entries_per_bank": 256,
+      "entry_bits": 16,
+      "match_vector_bits": 256,
+      "matching": "(entry AND query) == entry",
+      "storage": "flop-based masked-match array"
+    },
+    "physical_instances": 2,
+    "query": {
+      "class": "tcam_256x16",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Flop-based 256x16 subset-match array; two banks, not a ternary storage macro",
+    "technology_nm": 7
+  },
+  "prosperity.tcam.write": {
+    "count_expression": "N_rows",
+    "implementation": {
+      "banks": 2,
+      "entries_per_bank": 256,
+      "entry_bits": 16,
+      "match_vector_bits": 256,
+      "matching": "(entry AND query) == entry",
+      "storage": "flop-based masked-match array"
+    },
+    "physical_instances": 2,
+    "query": {
+      "class": "tcam_256x16",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Flop-based 256x16 subset-match array; two banks, not a ternary storage macro",
+    "technology_nm": 7
+  },
+  "ptb.adder16.add": {
+    "count_expression": "A",
+    "physical_instances": 32,
+    "query": {
+      "class": "adder",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "16-bit weight/partial-sum accumulation lane",
+    "technology_nm": 7
+  },
+  "ptb.l1_weight_spad.read": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 8192,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Node-local weight SRAM used only by the scratchpad arm",
+    "technology_nm": 7
+  },
+  "ptb.l1_weight_spad.write": {
+    "count_expression": "0",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 8192,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Node-local weight SRAM used only by the scratchpad arm",
+    "technology_nm": 7
+  },
+  "ptb.lif_unit.step": {
+    "count_expression": "L",
+    "physical_instances": 4,
+    "query": {
+      "class": "lif_unit",
+      "frequency": 500,
+      "input_width": 16,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Stateful LIF: leak, integrate, threshold, hard reset and internal state",
+    "technology_nm": 7
+  },
+  "ptb.output_spike_queue.read": {
+    "count_expression": "0",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Output spike-record staging SRAM",
+    "technology_nm": 7
+  },
+  "ptb.output_spike_queue.write": {
+    "count_expression": "O",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Output spike-record staging SRAM",
+    "technology_nm": 7
+  },
+  "ptb.reg16.read": {
+    "count_expression": "L",
+    "physical_instances": 128,
+    "query": {
+      "class": "register",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "16-bit per-lane accumulated potential or partial sum",
+    "technology_nm": 7
+  },
+  "ptb.reg16.rmw": {
+    "count_expression": "A",
+    "physical_instances": 128,
+    "query": {
+      "class": "register",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "16-bit per-lane accumulated potential or partial sum",
+    "technology_nm": 7
+  },
+  "ptb.spike_fifo.pop": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "class": "fifo",
+      "depth": 8,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Input spike/time-vector staging FIFO",
+    "technology_nm": 7
+  },
+  "ptb.spike_fifo.push": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "class": "fifo",
+      "depth": 8,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Input spike/time-vector staging FIFO",
+    "technology_nm": 7
+  },
+  "ptb.spike_mask_overlap.check": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "class": "and_gate",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "reduction": true,
+      "technology": 7,
+      "width": 32
+    },
+    "role": "T-bit spike-mask disjointness/overlap check before PTB merging",
+    "technology_nm": 7
+  },
+  "ptb.spike_vector_buffer.read": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "PTB time-vector staging SRAM",
+    "technology_nm": 7
+  },
+  "ptb.spike_vector_buffer.write": {
+    "count_expression": "0",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "PTB time-vector staging SRAM",
+    "technology_nm": 7
+  },
+  "ptb.weight_fifo.pop": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "class": "fifo",
+      "depth": 8,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Weight staging FIFO before arithmetic lanes",
+    "technology_nm": 7
+  },
+  "ptb.weight_fifo.push": {
+    "count_expression": "B",
+    "physical_instances": 1,
+    "query": {
+      "class": "fifo",
+      "depth": 8,
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 16
+    },
+    "role": "Weight staging FIFO before arithmetic lanes",
+    "technology_nm": 7
+  },
+  "shared.ddr4.read": {
+    "count_expression": "dram_accesses",
+    "physical_instances": 1,
+    "query": {
+      "class": "ddr4",
+      "frequency": 500,
+      "interface": "cacti7",
+      "size": 8589934592,
+      "technology": 22
+    },
+    "role": "Off-chip DDR4 array access per 64-byte burst",
+    "scope": "system",
+    "technology_nm": 22
+  },
+  "shared.ddr4_io.byte": {
+    "count_expression": "dram_bytes",
+    "physical_instances": 0,
+    "role": "Incremental off-chip DDR4 IO energy per transferred byte",
+    "scope": "system",
+    "technology_nm": 22
+  },
+  "shared.gb.read": {
+    "applies_to": [
+      "spad"
+    ],
+    "count_expression": "gb_reads",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 65536,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 256
+    },
+    "role": "Global weight-buffer SRAM for scratchpad weight movement",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "shared.gb.write": {
+    "applies_to": [
+      "spad"
+    ],
+    "count_expression": "gb_writes",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 65536,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 256
+    },
+    "role": "Global weight-buffer SRAM for scratchpad weight movement",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "shared.link.hop": {
+    "applies_to": [
+      "spad",
+      "cacheA",
+      "cacheB"
+    ],
+    "count_expression": "packet_hops",
+    "physical_instances": 48,
+    "role": "Physics-based wire energy per 320-bit packet over one mesh hop",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "shared.router.hop": {
+    "applies_to": [
+      "spad",
+      "cacheA",
+      "cacheB"
+    ],
+    "count_expression": "packet_hops",
+    "physical_instances": 16,
+    "role": "Five-port 64-bit-flit mesh router; hop event covers a 320-bit packet",
+    "scope": "system",
+    "technology_nm": 7
+  },
+  "spinalflow.adder32.add": {
+    "physical_instances": 1,
+    "query": {
+      "class": "adder",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "32-bit weight/partial-sum accumulation lane",
+    "technology_nm": 7
+  },
+  "spinalflow.cmp32.compare": {
+    "count_expression": null,
+    "physical_instances": 1,
+    "query": {
+      "class": "comparator",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "32-bit threshold comparison in a SpinalFlow lane",
+    "technology_nm": 7
+  },
+  "spinalflow.input_spike_buffer.read": {
+    "count_expression": "R",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Incoming spike records held before SpinalFlow lane dispatch",
+    "technology_nm": 7
+  },
+  "spinalflow.input_spike_buffer.write": {
+    "count_expression": "R",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Incoming spike records held before SpinalFlow lane dispatch",
+    "technology_nm": 7
+  },
+  "spinalflow.l1_weight_spad.read": {
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 8192,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Node-local weight SRAM used only by the scratchpad arm",
+    "technology_nm": 7
+  },
+  "spinalflow.l1_weight_spad.write": {
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 8192,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Node-local weight SRAM used only by the scratchpad arm",
+    "technology_nm": 7
+  },
+  "spinalflow.min_tree4.compare": {
+    "count_expression": null,
+    "physical_instances": 1,
+    "query": {
+      "class": "comparator",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "num_instances": 3,
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Four-way minimum timestamp selection across SpinalFlow lanes",
+    "technology_nm": 7
+  },
+  "spinalflow.output_spike_queue.read": {
+    "count_expression": "0",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Output spike-record staging SRAM",
+    "technology_nm": 7
+  },
+  "spinalflow.output_spike_queue.write": {
+    "count_expression": "O",
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Output spike-record staging SRAM",
+    "technology_nm": 7
+  },
+  "spinalflow.psum_l1.read": {
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Reserved local partial-sum SRAM; excluded from this schedule",
+    "technology_nm": 7
+  },
+  "spinalflow.psum_l1.write": {
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Reserved local partial-sum SRAM; excluded from this schedule",
+    "technology_nm": 7
+  },
+  "spinalflow.psum_l2.read": {
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 16384,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Reserved backing partial-sum SRAM; excluded from this schedule",
+    "technology_nm": 7
+  },
+  "spinalflow.psum_l2.write": {
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 16384,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Reserved backing partial-sum SRAM; excluded from this schedule",
+    "technology_nm": 7
+  },
+  "spinalflow.reg32.rmw": {
+    "physical_instances": 1,
+    "query": {
+      "class": "register",
+      "frequency": 500,
+      "interface": "csv_cmos",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "32-bit per-lane accumulated membrane state",
+    "technology_nm": 7
+  },
+  "spinalflow.vmem_l1.read": {
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Reserved local membrane SRAM; excluded from this schedule",
+    "technology_nm": 7
+  },
+  "spinalflow.vmem_l1.write": {
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 256,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Reserved local membrane SRAM; excluded from this schedule",
+    "technology_nm": 7
+  },
+  "spinalflow.vmem_l2.read": {
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 16384,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Reserved backing membrane SRAM; excluded from this schedule",
+    "technology_nm": 7
+  },
+  "spinalflow.vmem_l2.write": {
+    "physical_instances": 1,
+    "query": {
+      "bank": 1,
+      "class": "sram",
+      "depth": 16384,
+      "frequency": 500,
+      "interface": "cacti_fn",
+      "technology": 7,
+      "width": 32
+    },
+    "role": "Reserved backing membrane SRAM; excluded from this schedule",
+    "technology_nm": 7
+  }
+}

@@ -1,0 +1,564 @@
+{
+  "rtl_repo_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+  "clock_period_ps": 2000,
+  "corner": "ASAP7 RVT TT 0.70V/25C",
+  "library_manifest": "ASAP7_TT_LIBRARIES.json",
+  "status": "staged, not characterized",
+  "variants": [
+    {
+      "variant": "adder1",
+      "top": "snn_adder1",
+      "source": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+      "source_sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_adder1.v",
+      "rtl_sha256": "71549d0366c0a1bd392fa974fcd24897a87f035d895d01b4b211003a537695f6",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "adder",
+        "top_module": "snn_adder1",
+        "fixed_parameters": {
+          "BITWIDTH": 1
+        },
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "adder13",
+      "top": "snn_adder13",
+      "source": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+      "source_sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_adder13.v",
+      "rtl_sha256": "b8691f0e7ffdc486dc07d66134de5ce372d4a41e8c8c3364396bb20bcba89976",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "adder",
+        "top_module": "snn_adder13",
+        "fixed_parameters": {
+          "BITWIDTH": 13
+        },
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "adder16",
+      "top": "snn_adder16",
+      "source": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+      "source_sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_adder16.v",
+      "rtl_sha256": "b7bc9573e606098e9724ec23a00c21f3c3e1db85c9d29b39d7d228c7c442256c",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "adder",
+        "top_module": "snn_adder16",
+        "fixed_parameters": {
+          "BITWIDTH": 16
+        },
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "adder2",
+      "top": "snn_adder2",
+      "source": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+      "source_sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_adder2.v",
+      "rtl_sha256": "508a9fa346318da26f8864ebcdc97f5eb84b4f23c128f7a09a6c981b970a1aab",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "adder",
+        "top_module": "snn_adder2",
+        "fixed_parameters": {
+          "BITWIDTH": 2
+        },
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "adder3",
+      "top": "snn_adder3",
+      "source": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+      "source_sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_adder3.v",
+      "rtl_sha256": "ba17b54c3a5cb3f306f2687b6dd5290caaacfb52e6941e8d8aec3b91f0cc947c",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "adder",
+        "top_module": "snn_adder3",
+        "fixed_parameters": {
+          "BITWIDTH": 3
+        },
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "adder32",
+      "top": "snn_adder32",
+      "source": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+      "source_sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_adder32.v",
+      "rtl_sha256": "a24ef66be790537279e020dd0543f3241cee483c084885aa0146a2204cab58bc",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "adder",
+        "top_module": "snn_adder32",
+        "fixed_parameters": {
+          "BITWIDTH": 32
+        },
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "adder4",
+      "top": "snn_adder4",
+      "source": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+      "source_sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_adder4.v",
+      "rtl_sha256": "547cc0074713f5b6a86b5546b16a3215e8e99b8303e42bdc1f93a051b555f57f",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "adder",
+        "top_module": "snn_adder4",
+        "fixed_parameters": {
+          "BITWIDTH": 4
+        },
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "adder5",
+      "top": "snn_adder5",
+      "source": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+      "source_sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_adder5.v",
+      "rtl_sha256": "a5163a8167f6b54ee6a637426d945257df1d8651161e8f387520682fab820fc8",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "adder",
+        "top_module": "snn_adder5",
+        "fixed_parameters": {
+          "BITWIDTH": 5
+        },
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "and_gate",
+      "top": "snn_and_gate",
+      "source": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+      "source_sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_and_gate.v",
+      "rtl_sha256": "7f2b93cb9939b885b0f491c99e01c6add912c9c176f1fb4c09675d522381c4e9",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "and_gate",
+        "top_module": "snn_and_gate",
+        "fixed_parameters": {},
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "and_gate_5",
+      "top": "snn_and_gate_5",
+      "source": "/u/yyu9/projects/verilog_modules/and_gate_5/and_gate_5.v",
+      "source_sha256": "fc9b513759acbc43dc745049350cb88ef276810dd5c48886d34ea3404f0f6eb6",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_and_gate_5.v",
+      "rtl_sha256": "adfeaa2168387c08440468288fdf4bcb83bccde8845993b35b4e38719ceaa06b",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "and_gate_5",
+        "top_module": "snn_and_gate_5",
+        "fixed_parameters": {},
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "fifo16x8",
+      "top": "snn_fifo16x8",
+      "source": "/u/yyu9/projects/verilog_modules/fifo/fifo.v",
+      "source_sha256": "81cd5b20cbf80a9f520a7074dde466ced9fd1db2eb9ada960a466810572019e8",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_fifo16x8.v",
+      "rtl_sha256": "a8d275121ebeb63825f6765781c5bf5a6e803545e2ad9f80cd2dd6aaf9d30f34",
+      "clock_port": "i_clk",
+      "reset_port": "i_rst_n",
+      "derivation": {
+        "source_module": "fifo",
+        "top_module": "snn_fifo16x8",
+        "fixed_parameters": {
+          "BITWIDTH": 16,
+          "DEPTH": 8,
+          "PTRWIDTH": 3
+        },
+        "renamed_ports": {
+          "iClk": "i_clk",
+          "iRstN": "i_rst_n"
+        },
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "fifo32x8",
+      "top": "snn_fifo32x8",
+      "source": "/u/yyu9/projects/verilog_modules/fifo/fifo.v",
+      "source_sha256": "81cd5b20cbf80a9f520a7074dde466ced9fd1db2eb9ada960a466810572019e8",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_fifo32x8.v",
+      "rtl_sha256": "a3442b07b9d094cd4e3453eca3369c2e9052c5b7cc86e439968f5ea6523e26bf",
+      "clock_port": "i_clk",
+      "reset_port": "i_rst_n",
+      "derivation": {
+        "source_module": "fifo",
+        "top_module": "snn_fifo32x8",
+        "fixed_parameters": {
+          "BITWIDTH": 32,
+          "DEPTH": 8,
+          "PTRWIDTH": 3
+        },
+        "renamed_ports": {
+          "iClk": "i_clk",
+          "iRstN": "i_rst_n"
+        },
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "fifo64x2",
+      "top": "snn_fifo64x2",
+      "source": "/u/yyu9/projects/verilog_modules/fifo/fifo.v",
+      "source_sha256": "81cd5b20cbf80a9f520a7074dde466ced9fd1db2eb9ada960a466810572019e8",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_fifo64x2.v",
+      "rtl_sha256": "e7bf0aadebe2dc5c336604eaa0f3b1b9ad9afee80de9ab066aaa5aba1b89ed12",
+      "clock_port": "i_clk",
+      "reset_port": "i_rst_n",
+      "derivation": {
+        "source_module": "fifo",
+        "top_module": "snn_fifo64x2",
+        "fixed_parameters": {
+          "BITWIDTH": 64,
+          "DEPTH": 2,
+          "PTRWIDTH": 1
+        },
+        "renamed_ports": {
+          "iClk": "i_clk",
+          "iRstN": "i_rst_n"
+        },
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "mux2",
+      "top": "snn_mux2",
+      "source": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/common/mux2.v",
+      "source_sha256": "e3db2804d7f762020f12244c0b216af064cc38bc4f629e95fbb8755e25f80a97",
+      "source_kind": "authored glue gates, repo idiom",
+      "rtl": "rtl_tops/basic/snn_mux2.v",
+      "rtl_sha256": "863c5ca1a58610cbddf69df12432a2c1ee7ecaf9f86d7edfb333d81fe0d4091b",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "mux2",
+        "top_module": "snn_mux2",
+        "fixed_parameters": {},
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "not_gate",
+      "top": "snn_not_gate",
+      "source": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/common/not_gate.v",
+      "source_sha256": "a5633f7eacb0d78f35dfbf9218eee91e8a62efe6f9ecd4935ca3d61730d3ef9e",
+      "source_kind": "authored glue gates, repo idiom",
+      "rtl": "rtl_tops/basic/snn_not_gate.v",
+      "rtl_sha256": "228bcc5a4fe899d19d528cd3a73862bfa6ce0fe83004c9c735fac0a523f0b5b4",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "not_gate",
+        "top_module": "snn_not_gate",
+        "fixed_parameters": {},
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "or_gate",
+      "top": "snn_or_gate",
+      "source": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/common/or_gate.v",
+      "source_sha256": "ca9c6ee7a3a61810079f283ce2c60b3d03934242b317bbbef23062c676fd0fd1",
+      "source_kind": "authored glue gates, repo idiom",
+      "rtl": "rtl_tops/basic/snn_or_gate.v",
+      "rtl_sha256": "0dc8d59882e72467a68d86dbf8f769076e54418963c2322311c8845c5d9da241",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "or_gate",
+        "top_module": "snn_or_gate",
+        "fixed_parameters": {},
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "register1",
+      "top": "snn_register1",
+      "source": "/u/yyu9/projects/verilog_modules/register/register.v",
+      "source_sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_register1.v",
+      "rtl_sha256": "b40ec94085ca3e53fe1b57ba1bdcae697c2dcf28d67e4c7acab1ae9ce374b6a2",
+      "clock_port": "i_clk",
+      "reset_port": "i_rst_n",
+      "derivation": {
+        "source_module": "register",
+        "top_module": "snn_register1",
+        "fixed_parameters": {
+          "WL": 1
+        },
+        "renamed_ports": {
+          "aclk": "i_clk",
+          "rst": "i_rst_n"
+        },
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "register16",
+      "top": "snn_register16",
+      "source": "/u/yyu9/projects/verilog_modules/register/register.v",
+      "source_sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_register16.v",
+      "rtl_sha256": "910635f5f8c8f25aeb524a1c83f72866afdf2b703f3270f534ae0150f61d335f",
+      "clock_port": "i_clk",
+      "reset_port": "i_rst_n",
+      "derivation": {
+        "source_module": "register",
+        "top_module": "snn_register16",
+        "fixed_parameters": {
+          "WL": 16
+        },
+        "renamed_ports": {
+          "aclk": "i_clk",
+          "rst": "i_rst_n"
+        },
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "register2",
+      "top": "snn_register2",
+      "source": "/u/yyu9/projects/verilog_modules/register/register.v",
+      "source_sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_register2.v",
+      "rtl_sha256": "f12ab4db466ccbbc903d461490d355d112227728752cb2bb9a65a9ee6862e814",
+      "clock_port": "i_clk",
+      "reset_port": "i_rst_n",
+      "derivation": {
+        "source_module": "register",
+        "top_module": "snn_register2",
+        "fixed_parameters": {
+          "WL": 2
+        },
+        "renamed_ports": {
+          "aclk": "i_clk",
+          "rst": "i_rst_n"
+        },
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "register3",
+      "top": "snn_register3",
+      "source": "/u/yyu9/projects/verilog_modules/register/register.v",
+      "source_sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_register3.v",
+      "rtl_sha256": "e803314365817414581c987fb26bd6d0aed59ffd103624586fcfb3fae0e75c68",
+      "clock_port": "i_clk",
+      "reset_port": "i_rst_n",
+      "derivation": {
+        "source_module": "register",
+        "top_module": "snn_register3",
+        "fixed_parameters": {
+          "WL": 3
+        },
+        "renamed_ports": {
+          "aclk": "i_clk",
+          "rst": "i_rst_n"
+        },
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "register32",
+      "top": "snn_register32",
+      "source": "/u/yyu9/projects/verilog_modules/register/register.v",
+      "source_sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_register32.v",
+      "rtl_sha256": "be646e19ce0dc7a444a179145927844ab0837116ec80d24889de9fe9f809e232",
+      "clock_port": "i_clk",
+      "reset_port": "i_rst_n",
+      "derivation": {
+        "source_module": "register",
+        "top_module": "snn_register32",
+        "fixed_parameters": {
+          "WL": 32
+        },
+        "renamed_ports": {
+          "aclk": "i_clk",
+          "rst": "i_rst_n"
+        },
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "register5",
+      "top": "snn_register5",
+      "source": "/u/yyu9/projects/verilog_modules/register/register.v",
+      "source_sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_register5.v",
+      "rtl_sha256": "b876457f9852a0c34c86c54f89552087e91b0e473e355e8bd125ba31bef654e3",
+      "clock_port": "i_clk",
+      "reset_port": "i_rst_n",
+      "derivation": {
+        "source_module": "register",
+        "top_module": "snn_register5",
+        "fixed_parameters": {
+          "WL": 5
+        },
+        "renamed_ports": {
+          "aclk": "i_clk",
+          "rst": "i_rst_n"
+        },
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "register64",
+      "top": "snn_register64",
+      "source": "/u/yyu9/projects/verilog_modules/register/register.v",
+      "source_sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734",
+      "source_kind": "repo-pinned",
+      "rtl": "rtl_tops/basic/snn_register64.v",
+      "rtl_sha256": "bd44a33fbec6fc4b71f09fd9055c86831aae81baff872538d880afb9e09f01eb",
+      "clock_port": "i_clk",
+      "reset_port": "i_rst_n",
+      "derivation": {
+        "source_module": "register",
+        "top_module": "snn_register64",
+        "fixed_parameters": {
+          "WL": 64
+        },
+        "renamed_ports": {
+          "aclk": "i_clk",
+          "rst": "i_rst_n"
+        },
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    },
+    {
+      "variant": "xor_gate",
+      "top": "snn_xor_gate",
+      "source": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/common/xor_gate.v",
+      "source_sha256": "fd3c8c4dc1f08968cfae66a4ddecab32e1df6970160f0e04e7a651924a1ed7e5",
+      "source_kind": "authored glue gates, repo idiom",
+      "rtl": "rtl_tops/basic/snn_xor_gate.v",
+      "rtl_sha256": "85f9da67d5d9ba3cf29d9b6f55f38e1fd4522b464ffd38cb9859bccd5e12f584",
+      "clock_port": null,
+      "reset_port": null,
+      "derivation": {
+        "source_module": "xor_gate",
+        "top_module": "snn_xor_gate",
+        "fixed_parameters": {},
+        "renamed_ports": {},
+        "logic_changes": "none; parameter values substituted and module/port identifiers renamed",
+        "module_count": 1,
+        "source_files_per_job": 1
+      }
+    }
+  ],
+  "whole_tops": [],
+  "source_layout": "src/<top>/<top>.v; one module, no hierarchy; rtl_list.tcl lists this one file",
+  "activity": "no VCD; project defaults"
+}

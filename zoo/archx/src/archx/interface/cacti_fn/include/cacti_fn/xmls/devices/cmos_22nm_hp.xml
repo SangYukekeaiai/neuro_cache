@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--************************************************************************-->
+<!--                 HP 22nm Planar CMOS Process Technology                 -->
+<!--************************************************************************-->
+<!--                               06/22/2014                               -->
+<!--************************************************************************-->
+<!--  Notes:                                                                -->
+<!--    * Based on ITRS 2005 System Profiles - hp-DG-2016.pro.              -->
+<!--    * HP: High performance devices.                                     -->
+<!--    * 22nm is the M1 half-pitch (not the gate length).                  -->
+<!--************************************************************************-->
+
+<device_definition>
+	<geometries>
+		<Lphy>0.009</Lphy>
+		<Xj>0.0055</Xj>
+		<t_ox>0.55e-3</t_ox>
+	</geometries>
+	
+	<voltages>
+		<vdd>
+			<super_threshold>0.8</super_threshold>
+		</vdd>
+		<v_th>0.1395</v_th>
+		<Vdsat>
+			<super_threshold>2.33e-2</super_threshold>
+		</Vdsat>
+	</voltages>
+	
+	<capacitances>
+		<c_ox>3.63e-14</c_ox>
+		<c_fringe>0.06e-15</c_fringe>
+		<c_junc>0.5e-15</c_junc>
+		<c_junc_sidewall>0.5e-15</c_junc_sidewall>
+		<c_junc_sidewall_gate>0.5e-15</c_junc_sidewall_gate>
+	</capacitances>
+	
+	<sense_amplifier>
+		<delay> <!-- SENSE_AMP_D in CACTI -->
+			<super_threshold>2.23e-11</super_threshold>
+		</delay>
+		<energy> <!-- SENSE_AMP_P in CACTI -->
+			<super_threshold>1.82e-15</super_threshold>
+		</energy>
+	</sense_amplifier>
+	
+	<mobility_eff>426.07e8</mobility_eff>
+	
+	<gmp_to_gmn_multiplier>1.38</gmp_to_gmn_multiplier>
+	
+	<currents>
+		<ON_current>
+			<NMOS>
+				<super_threshold>
+					<temp val="300">2626.4e-6</temp>
+					<temp val="310">2626.4e-6</temp>
+					<temp val="320">2626.4e-6</temp>
+					<temp val="330">2626.4e-6</temp>
+					<temp val="340">2626.4e-6</temp>
+					<temp val="350">2626.4e-6</temp>
+					<temp val="360">2626.4e-6</temp>
+					<temp val="370">2626.4e-6</temp>
+					<temp val="380">2626.4e-6</temp>
+					<temp val="390">2626.4e-6</temp>
+					<temp val="400">2626.4e-6</temp>
+				</super_threshold>
+			</NMOS>
+			<PMOS>
+				<super_threshold>
+					<temp val="300">1313.2e-6</temp>
+					<temp val="310">1313.2e-6</temp>
+					<temp val="320">1313.2e-6</temp>
+					<temp val="330">1313.2e-6</temp>
+					<temp val="340">1313.2e-6</temp>
+					<temp val="350">1313.2e-6</temp>
+					<temp val="360">1313.2e-6</temp>
+					<temp val="370">1313.2e-6</temp>
+					<temp val="380">1313.2e-6</temp>
+					<temp val="390">1313.2e-6</temp>
+					<temp val="400">1313.2e-6</temp>
+				</super_threshold>
+			</PMOS>
+		</ON_current>
+		<OFF_current>
+			<NMOS>
+				<super_threshold>
+					<temp val="300">9.40e-08</temp>
+					<temp val="310">1.13e-07</temp>
+					<temp val="320">1.33e-07</temp>
+					<temp val="330">1.57e-07</temp>
+					<temp val="340">1.83e-07</temp>
+					<temp val="350">2.12e-07</temp>
+					<temp val="360">2.44e-07</temp>
+					<temp val="370">2.79e-07</temp>
+					<temp val="380">3.18e-07</temp>
+					<temp val="390">3.59e-07</temp>
+					<temp val="400">4.03e-07</temp>
+				</super_threshold>
+			</NMOS>
+			<PMOS>
+				<super_threshold>
+					<temp val="300">9.90e-08</temp>
+					<temp val="310">1.15e-07</temp>
+					<temp val="320">1.33e-07</temp>
+					<temp val="330">1.53e-07</temp>
+					<temp val="340">1.74e-07</temp>
+					<temp val="350">1.96e-07</temp>
+					<temp val="360">2.20e-07</temp>
+					<temp val="370">2.46e-07</temp>
+					<temp val="380">2.74e-07</temp>
+					<temp val="390">3.03e-07</temp>
+					<temp val="400">3.34e-07</temp>
+				</super_threshold>
+			</PMOS>
+		</OFF_current>
+	</currents>
+</device_definition>

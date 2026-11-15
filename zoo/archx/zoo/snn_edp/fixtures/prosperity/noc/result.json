@@ -1,0 +1,77 @@
+{
+  "arch": "prosperity",
+  "chain_packet_hops": 196608,
+  "cycle_source": {
+    "format": "wcts",
+    "lif_none_means": "zero_extra_count_cycles",
+    "mac_reduction": "max_over_cores",
+    "steps": 512
+  },
+  "dram_accesses": 18432,
+  "dram_bytes": 1179648,
+  "dram_payload_bytes": 1179648,
+  "dram_transactions": 128,
+  "eventsim": {
+    "count_cycles": 1168384,
+    "dram_cycles": 9216,
+    "multicast_cycles": 0,
+    "total_cycles": 140690,
+    "unicast_cycles": 797728
+  },
+  "free_boundaries": {
+    "is_psum_dram_free": true,
+    "is_psum_gb_free": true,
+    "is_vmem_dram_free": true,
+    "is_vmem_gb_free": true
+  },
+  "frequency_hz": 500000000,
+  "gb_reads": 1152,
+  "gb_writes": 36864,
+  "inputs": {
+    "arch_config": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/wt500_fig3cfg/arch.yaml",
+      "sha256": "f92339bfd9aeb2a2c1d0bb83d10a0842f242ee5c8195b5cb0cddfefaf2d76504"
+    },
+    "arch_name": "prosperity",
+    "eventsim": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/src/lays/nocsim/eventsim/eventsim",
+      "sha256": "28e3dad50ad0ad71481ed64ff40671fa7605f56961237b3fd93845da3437e3d0"
+    },
+    "frequency_hz": 500000000,
+    "sample": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/demo/vgg16_full/cases/prosperity/B09/loas_vgg16_T4_n500/layer_01_core_features_3/sample_00000/sample_00000.wcts",
+      "sha256": "b97cd33d719061fd7b7459352050a5419b47e4bdc873c2ce941ea36a2a7cccfa"
+    },
+    "schedule": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/wt500_fig3cfg/outputs/schedules/prosperity/loas_vgg16_T4_n500/layer_01_core_features_3.json",
+      "sha256": "46dbf4a839b2a0a7ade07b1a7bd681d8c5e8c27d01f28fc75d7eef868104ea4b"
+    },
+    "schema": "fig12_noc_v1",
+    "source_sha256": "a1ee54478870fab5fd7ec5803467097f08c125d05575cf53e4ba41f53afc865d"
+  },
+  "k_chain_packet_hops": 196608,
+  "l1_delivery_bytes": 36864,
+  "layer_name": "layer_01_core_features_3",
+  "psum_boundary_bytes": 0,
+  "sample_idx": 0,
+  "t_chain_packet_hops": 0,
+  "tc_sha256": "2734c1aa6e6b2648b441fb0d2bc1c46fda6c95d1c71e7a0af17fa225c737fc99",
+  "time_seconds": 0.00028138,
+  "topology": {
+    "X": 1,
+    "Y": 16,
+    "dram_port": 33,
+    "gb_port": 16
+  },
+  "total_cycles": 140690,
+  "trace_dir": "loas_vgg16_T4_n500",
+  "transaction_count": 22720,
+  "units": {
+    "dram_burst_bytes": 64,
+    "gb_access_bytes": 32
+  },
+  "vmem_boundary_bytes": 0,
+  "weight_multicast_packet_hops": 0,
+  "weight_packet_hops": 9792,
+  "weight_unicast_packet_hops": 9792
+}

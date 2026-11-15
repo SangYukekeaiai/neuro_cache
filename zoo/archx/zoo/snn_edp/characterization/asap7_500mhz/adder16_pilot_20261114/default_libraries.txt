@@ -1,0 +1,20 @@
+5ab6bc43c29983f2b8b7f7b0ffbafa8db0c4bcbc755e2ef5fad7448ba2033235  Enablements/ASAP7/lib/asap7sc7p5t_AO_RVT_FF_nldm_201020.lib
+  nom_voltage : 0.77;
+  nom_temperature : 0;
+  nom_process : 1;
+01da239387a47f7a1bb0d2e975e6b7fb54b7c7ffa88a33974e7d9052292c328c  Enablements/ASAP7/lib/asap7sc7p5t_INVBUF_RVT_FF_nldm_201020.lib
+  nom_voltage : 0.77;
+  nom_temperature : 0;
+  nom_process : 1;
+25fc912d32753055eb548a055924c6a38ca134a8d15940ae26fa749b2762def1  Enablements/ASAP7/lib/asap7sc7p5t_OA_RVT_FF_nldm_201020.lib
+  nom_voltage : 0.77;
+  nom_temperature : 0;
+  nom_process : 1;
+b18d0548addbecb49f496ff420b1c160714bfc46543615b7879a6a6d0ad11794  Enablements/ASAP7/lib/asap7sc7p5t_SEQ_RVT_FF_nldm_201020.lib
+  nom_voltage : 0.77;
+  nom_temperature : 0;
+  nom_process : 1;
+f357e2c73d55d380da20b8f32b6275827b98fd35ec672c64a86f8902e1319ed4  Enablements/ASAP7/lib/asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020.lib
+  nom_voltage : 0.7;
+  nom_temperature : 25;
+  nom_process : 1;

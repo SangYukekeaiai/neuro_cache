@@ -1,0 +1,8 @@
+{
+  "variants": 24,
+  "one_module_per_file": true,
+  "parameter_substitution_only": true,
+  "wrapper_archive": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/wrappers_before_flat.tar.gz",
+  "wrapper_archive_sha256": "17bc444674880f51aa0b79d6f53f2564ece17f52665054680f9fb614ff82c493",
+  "flat_bundle_sha256": "63bf20e12c2ddc9b4a68b2535aa7172f9f5cbc3167f1c78ccaa797b787e1bf20"
+}

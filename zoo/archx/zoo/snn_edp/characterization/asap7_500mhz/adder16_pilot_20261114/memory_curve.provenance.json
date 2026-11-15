@@ -1,0 +1,13 @@
+{
+  "font": "DejaVu Sans",
+  "outputs": {
+    "memory_curve.pdf": "1c17170789c88a73aded2671f3fa6a3424218e1e5bbe1493d35b81fb9e11689b",
+    "memory_curve.png": "b438446b96dd6b2f38d73f746d936536a3bd06b79ad49f6f5c025e7f8644e085"
+  },
+  "sources": {
+    "host_memory_after_stop.txt": "9e5a61cb84d6b5787287d833015fa34231640249cc4aef8750bedff94359dd8e",
+    "host_memory_recovered.txt": "2e2dcb28d44324e8ced94b0646845eb0ed0e0bd6c353af665daedb5112f4fc36",
+    "rss.tsv": "387384c74a8b3fb9bee64d3358259b79c641adbe90fea3108cac87d3a46ae40a",
+    "rss_swap.tsv": "92e48d00d66ab820ec032ca30b9eb724b8ca063d54e3b21caf1e3f4c53e432cc"
+  }
+}

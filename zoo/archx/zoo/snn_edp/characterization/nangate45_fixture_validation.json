@@ -1,0 +1,10 @@
+{
+  "rows": 15,
+  "terms": 386,
+  "table_sha256": "2d8e4ea0b0f836a547ee6ec9301bff004928a8b19814aeb007f102afdc8295a3",
+  "count_files_unchanged": 305,
+  "archx_file": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/src/archx/__init__.py",
+  "counts_recomputed": false,
+  "default_table_sha256": "8c3589272e2a68dc9b01847be61f2076fb5dbb84eee7a4dc582671da9ff79942",
+  "dummy_table_sha256": "892e6e2c77b920232f0db0caf81fbd69eb35925f825750e9e1f8cb333c78cbcb"
+}

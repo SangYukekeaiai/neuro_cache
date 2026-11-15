@@ -1,0 +1,14 @@
+{
+  "excluded_operations": [
+    "cache.next_access_logic.step",
+    "cache.distance_logic.step",
+    "cache.next_access_state.rmw",
+    "cache.distance_metadata.read",
+    "cache.distance_metadata.write",
+    "cache.l1_tags.read",
+    "cache.next_line_l1.add",
+    "cache.next_line_l2.add",
+    "cache.l2_tags.read"
+  ],
+  "marker": "excluded by decision (prefetch control)"
+}

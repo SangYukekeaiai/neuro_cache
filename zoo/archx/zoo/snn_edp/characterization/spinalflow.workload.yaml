@@ -1,0 +1,4 @@
+workload:
+  name: spinalflow_stub
+  configuration:
+    events: 1

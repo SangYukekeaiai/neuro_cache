@@ -1,0 +1,19 @@
+{
+  "A": 18409024,
+  "CIN": 64,
+  "COUT": 64,
+  "HO": 32,
+  "Hin": 32,
+  "L": 262144,
+  "O": 37756.0,
+  "O_source": "next_layer_input_density",
+  "R": 4602256,
+  "S_win": 287641,
+  "T": 4,
+  "WO": 32,
+  "Win": 32,
+  "cout_n": 4,
+  "d_out": 0.1440277099609375,
+  "density_layer": "layer_02_core_features_7",
+  "kernel": 3
+}

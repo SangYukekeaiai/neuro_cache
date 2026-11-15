@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--************************************************************************-->
+<!--                 Planar CMOS-based Standard 8T SRAM Cell                -->
+<!--************************************************************************-->
+<!--                               06/22/2014                               -->
+<!--************************************************************************-->
+
+<sram_cell>
+	<type>8T</type>
+	<device_type>xmls/devices/cmos_14nm_std.xml</device_type>
+	<transistor_parameters>
+		<acc> <!-- access transistors -->
+			<device_type>xmls/devices/cmos_14nm_std.xml</device_type>
+		</acc>
+		<pup> <!-- pull up transistors -->
+			<device_type>xmls/devices/cmos_14nm_std.xml</device_type>
+		</pup>
+		<pdn> <!-- pull down transistors -->
+			<device_type>xmls/devices/cmos_14nm_std.xml</device_type>
+		</pdn>
+		<iso> <!-- isolator transistor (M7) in 8T SRAM -->
+			<device_type>xmls/devices/cmos_14nm_std.xml</device_type>
+		</iso>
+		<rac> <!-- read access transistor (M8) in 8T SRAM -->
+			<device_type>xmls/devices/cmos_14nm_std.xml</device_type>
+		</rac>
+	</transistor_parameters>
+</sram_cell>

@@ -1,0 +1,57 @@
+{
+  "cases": {
+    "gustavsnn": {
+      "files": {
+        "cache_a.csv": "8e165813270dad6759dcb7aae9de7d3cefaf7f96a3d21262e00cfa0dbc47b8b0",
+        "cache_b.csv": "81b233c4c8f8c4a65291386a34dcbe68170c050bba13c1f1c56872dc2afdbaf9",
+        "case.json": "90811ae6ff2dc9103156bce124b24db9007b7b57f801602aaf830456c747e03f",
+        "counts.json": "2a286dce31e520395bdaf0de26b53c3d51bf6b0ff1bca9f493714cb31a1e27f7",
+        "noc/result.json": "a7707ac056fe0a1df0166e7e6043c58afec32ea4f06e8281663d19b8e304132a"
+      },
+      "source_case": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/demo/all_bench/cases/gustavsnn/B09/loas_vgg16_T4_n500/layer_01_core_features_3/sample_00000"
+    },
+    "loas": {
+      "files": {
+        "cache_a.csv": "417ec605ed1be05a55b181810511e330533976682469351da8c3c72097d4d92f",
+        "cache_b.csv": "3da7c3e1a5deb83b70466d50de43195783d728de040c5da660aaaecd904d7401",
+        "case.json": "8d0aae934ce5d44c5eab04976ed06138fbbd403113866ec7ed290d687e525e7a",
+        "counts.json": "1d1c78fdf8a7d81bc91de51c20067307d49da033c81ac67881968ecbcf035a6d",
+        "noc/result.json": "cf6706cd1bfcebfcd642000621032aa9ef2b910dbcffb7725b5d1b31d7948dfe"
+      },
+      "source_case": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/demo/all_bench/cases/loas/B09/loas_vgg16_T4_n500/layer_01_core_features_3/sample_00000"
+    },
+    "prosperity": {
+      "files": {
+        "cache_a.csv": "c390b356bc05e45a89af00f00997d3fe8c5cc56c76c993bfdb449e4ca80c0072",
+        "cache_b.csv": "e8b80cef397feaa71666f4575b60b9318e8041b8cf1f039827f5e545f46b59dd",
+        "case.json": "e57f4d3b8bd4003346cca54da23bb68e02daedb73c3d8359042b8a5d4fbeb4ed",
+        "counts.json": "b3521d162b0ff7b6cc4856687443524344747a2f661a50eb378f770abe3790bd",
+        "noc/result.json": "a280e7c95f38dc01336be1dd8badb207d6ec72b903a0a9cfcdc4c0b4af4f4a7d",
+        "record_count.csv": "f356163507e5615e6c34aaff375964fbbdf48e0fc0c309dbcd7d982444cecc43"
+      },
+      "source_case": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/demo/all_bench/cases/prosperity/B09/loas_vgg16_T4_n500/layer_01_core_features_3/sample_00000"
+    },
+    "ptb": {
+      "files": {
+        "cache_a.csv": "dec218e003d4da13f76071ff474ec25a83689973580344167c6bcdcacc4e4d76",
+        "cache_b.csv": "a9060fbe37483309a4d2d900dcc4f75e8ddbe2c9120a0f7d6ae4c74fcdbe4f31",
+        "case.json": "79a6fbbbb56693783274720ced567426edd17a28b798e9e6c88de67b06fc904e",
+        "counts.json": "8f2a749821c6932c3a21a25a26e6d640da28cf4d3248a2cf2ba0ee15c1f02b2b",
+        "noc/result.json": "3b714e5af97dd27ed32d059031d50625b8c54857bca5f3f1ba8b3816cfe405a6"
+      },
+      "source_case": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/demo/all_bench/cases/ptb/B09/loas_vgg16_T4_n500/layer_01_core_features_3/sample_00000"
+    },
+    "spinalflow": {
+      "files": {
+        "cache_a.csv": "313a252d6cd8761e0722ca472d555fde122be803890423c6db257115892ecb4a",
+        "cache_b.csv": "ae5fba2245b12aa84c60e3d77c93f1cf231745556d1d505de03b6181ca23fe56",
+        "case.json": "b0e23e58e26d29fa33598d57171dc4fc5b12668f4a69514143411ef2fece31a6",
+        "counts.json": "a1f5c8d4b9daa0456f64fb5948c15aa988d72e218b973ef761110a33cb749c83",
+        "noc/result.json": "132934f3c9e1fe38f5fac2ac8297985fd7fba7ccb6cf2ae8574526f106b913ac"
+      },
+      "source_case": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/demo/all_bench/cases/spinalflow/B09/loas_vgg16_T4_n500/layer_01_core_features_3/sample_00000"
+    }
+  },
+  "reference_csv": "reference_t84_results.csv",
+  "reference_sha256": "8de5ccdd0fbf00fea665f0b67544516c2ce4e3a82e7b99a7783ca75cbb468211"
+}

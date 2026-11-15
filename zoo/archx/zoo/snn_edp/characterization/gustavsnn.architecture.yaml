@@ -1,0 +1,57 @@
+architecture:
+  attribute: {technology: 7, frequency: 500, interface: csv_cmos}
+  module:
+    adder16:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, gustavsnn]
+      query: {frequency: 500, class: adder, width: 16}
+      operations: {add: A}
+      physical_instances: 4
+    reg16:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, gustavsnn]
+      query: {frequency: 500, class: register, width: 16}
+      operations: {rmw: A}
+      physical_instances: 4
+    l1_weight_spad:
+      tag: [memory, gustavsnn]
+      query: {interface: cacti_fn, class: sram, bank: 1, width: 16, depth: 16384}
+      operations: {read: R_g, write: '0'}
+      assumption: Two-byte fetch word in 32 KiB; scratchpad arm only.
+    leading_spike_detector:
+      tag: [compute, gustavsnn]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: l1d, width: 32}
+      operations: {scan: R_g}
+      physical_instances: 2
+    merger_tree2:
+      tag: [compute, gustavsnn]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: merger_tree2, width: 32, inputs: 2}
+      operations: {merge: R_g}
+      assumption: Single compare-exchange stage for the two HO lanes.
+    spike_fifo:
+      tag: [compute, gustavsnn]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: fifo, width: 32, depth: 8}
+      operations: {pop: R_g}
+    lif_core:
+      tag: [compute, gustavsnn]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: lif_unit, width: 32, input_width: 16, state_register: false}
+      operations: {step: L}
+      physical_instances: 4
+      assumption: Shared LIF stages 1-4 only; state lives in the separately charged potential register file.
+    potential_regfile:
+      tag: [compute, gustavsnn]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: register_file, width: 32, depth: 64}
+      operations: {rmw: L}
+      physical_instances: 4
+      assumption: Per-PE 64x32-bit registers; 1 KiB total node potential capacity, not SRAM.
+    output_fifo:
+      tag: [compute, gustavsnn]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: fifo, width: 32, depth: 8}
+      operations: {push: 'W_o/32'}
+      assumption: Output bits packed into 32-bit words; fractional expected word count without per-tile tail padding.

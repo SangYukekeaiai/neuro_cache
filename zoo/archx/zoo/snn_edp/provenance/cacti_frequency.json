@@ -1,0 +1,1139 @@
+{
+  "conclusion": "Frequency is accepted output metadata and is removed before FN-CACTI configuration/cache signature construction. Separate native runs have identical energy, leakage, area and input cfg at100 and500MHz. This is not clock-constrained SRAM timing closure.",
+  "ddr4_note": "cacti7 query frequency is also metadata: query() removes it; shared_harvest excludes it from cacti7_run. The separately specified1600MHz DDR bus, READ/IDLE reports and all pinned DDR prices are unchanged.",
+  "interface_source": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/src/archx/interface/cacti_fn/cacti_fn.py",
+  "interface_source_sha256": "dd5da6a996a59891e8de8496741f8e846cab0017036d77f6133c3c8f1fc412bf",
+  "isolated_copy": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/cacti_fn",
+  "native_runs": 24,
+  "pinned_before_rows_matched_exactly": 42,
+  "query_frequency_MHz": 500,
+  "results": [
+    {
+      "config_sha256": {
+        "100": "0398461dec4306f28c0d8b52ea19fbe67319e1a790316ddcc6cdd19ff9b9e7a3",
+        "500": "0398461dec4306f28c0d8b52ea19fbe67319e1a790316ddcc6cdd19ff9b9e7a3"
+      },
+      "identical": true,
+      "keys": [
+        "cache.distance_metadata.read",
+        "cache.distance_metadata.write"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.018883581232
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00155178
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.00141797
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 4.62287
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.018883581232
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00155178
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.00141797
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 4.62287
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 8192,
+        "technology": 7,
+        "width": 64
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            0.00155178,
+            0.00141797,
+            4.62287,
+            0.018883581232,
+            13970.031488450975
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q00_100/memory.sram.width64.depth8192.bank1.tech7.bbe973b4ec77.cacti_fn.rpt",
+          "sha256": "1822fb3795b8dfedade064497c740606a540763f5e7ccaca8f8db5facf4f6ab8"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            0.00155178,
+            0.00141797,
+            4.62287,
+            0.018883581232,
+            13970.031488450975
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q00_500/memory.sram.width64.depth8192.bank1.tech7.bbe973b4ec77.cacti_fn.rpt",
+          "sha256": "1822fb3795b8dfedade064497c740606a540763f5e7ccaca8f8db5facf4f6ab8"
+        }
+      }
+    },
+    {
+      "config_sha256": {
+        "100": "c28667a9437511fcafca2897289fa34b26b6ae164d1be55f655cb5d1134449ee",
+        "500": "c28667a9437511fcafca2897289fa34b26b6ae164d1be55f655cb5d1134449ee"
+      },
+      "identical": true,
+      "keys": [
+        "cache.l1.read",
+        "cache.l1.write"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.013041024695999999
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00175708
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.00131724
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 1.12483
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.013041024695999999
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00175708
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.00131724
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 1.12483
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "associativity": 8,
+        "bank": 1,
+        "class": "cache",
+        "size": 131072,
+        "technology": 7,
+        "width": 512
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            0.00175708,
+            0.00131724,
+            1.12483,
+            0.013041024695999999,
+            646.3956975902369
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q01_100/memory.cache.size131072.width512.assoc8.bank1.tech7.8f079999f798.cacti_fn.rpt",
+          "sha256": "5407f7c13c03109ce24955b062882d3f5790d7e383079a4a3e8d6167fcdd60c5"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            0.00175708,
+            0.00131724,
+            1.12483,
+            0.013041024695999999,
+            646.3956975902369
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q01_500/memory.cache.size131072.width512.assoc8.bank1.tech7.8f079999f798.cacti_fn.rpt",
+          "sha256": "5407f7c13c03109ce24955b062882d3f5790d7e383079a4a3e8d6167fcdd60c5"
+        }
+      }
+    },
+    {
+      "config_sha256": {
+        "100": "cfa57ca13ecea7a2172a47c5987a5fa838245973541a5d10d8c27c8c6a399e1a",
+        "500": "cfa57ca13ecea7a2172a47c5987a5fa838245973541a5d10d8c27c8c6a399e1a"
+      },
+      "identical": true,
+      "keys": [
+        "cache.l1_tags.read"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.0015063556635
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.000298219
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000289672
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 0.0789755
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.0015063556635
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.000298219
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000289672
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 0.0789755
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 32,
+        "technology": 7,
+        "width": 256
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            0.000298219,
+            0.000289672,
+            0.0789755,
+            0.0015063556635,
+            37227.17136783796
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q02_100/memory.sram.width256.depth32.bank1.tech7.54a4b1750a95.cacti_fn.rpt",
+          "sha256": "82f3ef5fc945ce64a2e3294189f8deb11cb62575f5738cd722191e20e66eba05"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            0.000298219,
+            0.000289672,
+            0.0789755,
+            0.0015063556635,
+            37227.17136783796
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q02_500/memory.sram.width256.depth32.bank1.tech7.54a4b1750a95.cacti_fn.rpt",
+          "sha256": "82f3ef5fc945ce64a2e3294189f8deb11cb62575f5738cd722191e20e66eba05"
+        }
+      }
+    },
+    {
+      "config_sha256": {
+        "100": "f1331a8a74741c6fff06bcce88e08ffed855bcfe0952df0f3d63dd9a3200f185",
+        "500": "f1331a8a74741c6fff06bcce88e08ffed855bcfe0952df0f3d63dd9a3200f185"
+      },
+      "identical": true,
+      "keys": [
+        "cache.l2.read",
+        "cache.l2.write"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.11804375961600001
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.055955
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.0556467
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 37.0514
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.11804375961600001
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.055955
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.0556467
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 37.0514
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "associativity": 16,
+        "bank": 1,
+        "class": "cache",
+        "size": 4194304,
+        "technology": 7,
+        "width": 512
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            0.055955,
+            0.0556467,
+            37.0514,
+            0.11804375961600001,
+            2303.99351195427
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q03_100/memory.cache.size4194304.width512.assoc16.bank1.tech7.7867f579be11.cacti_fn.rpt",
+          "sha256": "be5e4a4cbe8cde431b8ecb9e627590dd6fb79ed5a5e9e6c86a9649eb8e61b6e7"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            0.055955,
+            0.0556467,
+            37.0514,
+            0.11804375961600001,
+            2303.99351195427
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q03_500/memory.cache.size4194304.width512.assoc16.bank1.tech7.7867f579be11.cacti_fn.rpt",
+          "sha256": "be5e4a4cbe8cde431b8ecb9e627590dd6fb79ed5a5e9e6c86a9649eb8e61b6e7"
+        }
+      }
+    },
+    {
+      "config_sha256": {
+        "100": "132986088cc11fcdf1c586614671962d2e0a712610dc109b15a156e92bb0b3e3",
+        "500": "132986088cc11fcdf1c586614671962d2e0a712610dc109b15a156e92bb0b3e3"
+      },
+      "identical": true,
+      "keys": [
+        "cache.l2_tags.read"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.011481977862
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00179353
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.00355123
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 2.28963
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.011481977862
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00179353
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.00355123
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 2.28963
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 512,
+        "technology": 7,
+        "width": 512
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            0.00179353,
+            0.00355123,
+            2.28963,
+            0.011481977862,
+            13036.41592424278
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q04_100/memory.sram.width512.depth512.bank1.tech7.f9fa3a3bd655.cacti_fn.rpt",
+          "sha256": "d5172a4ab6629c6a565d18add3a5f372dafa1c032a3614998b57a4120aaf261a"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            0.00179353,
+            0.00355123,
+            2.28963,
+            0.011481977862,
+            13036.41592424278
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q04_500/memory.sram.width512.depth512.bank1.tech7.f9fa3a3bd655.cacti_fn.rpt",
+          "sha256": "d5172a4ab6629c6a565d18add3a5f372dafa1c032a3614998b57a4120aaf261a"
+        }
+      }
+    },
+    {
+      "config_sha256": {
+        "100": "3c4df43bcfeda9c64c387abde9b608dd2c95e09ef2ea9524c82bda5c794092e8",
+        "500": "3c4df43bcfeda9c64c387abde9b608dd2c95e09ef2ea9524c82bda5c794092e8"
+      },
+      "identical": true,
+      "keys": [
+        "gustavsnn.l1_weight_spad.read",
+        "gustavsnn.l1_weight_spad.write"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.0082538608264
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.000651488
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000409766
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 2.25567
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.0082538608264
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.000651488
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000409766
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 2.25567
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 16384,
+        "technology": 7,
+        "width": 16
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            0.000651488,
+            0.000409766,
+            2.25567,
+            0.0082538608264,
+            13970.031488450975
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q05_100/memory.sram.width16.depth16384.bank1.tech7.7da6f3328e08.cacti_fn.rpt",
+          "sha256": "25804bbf4ba0540666ebf04f4297b973efd47e9b10efaf9a4f6b7acd627a04ad"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            0.000651488,
+            0.000409766,
+            2.25567,
+            0.0082538608264,
+            13970.031488450975
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q05_500/memory.sram.width16.depth16384.bank1.tech7.7da6f3328e08.cacti_fn.rpt",
+          "sha256": "25804bbf4ba0540666ebf04f4297b973efd47e9b10efaf9a4f6b7acd627a04ad"
+        }
+      }
+    },
+    {
+      "config_sha256": {
+        "100": "a74800e7f3c1ed4d6e65ddbb119f3d6111ff42efd143e8b4d3752ea15e25a58d",
+        "500": "a74800e7f3c1ed4d6e65ddbb119f3d6111ff42efd143e8b4d3752ea15e25a58d"
+      },
+      "identical": true,
+      "keys": [
+        "loas.l1_weight_spad.read",
+        "loas.l1_weight_spad.write",
+        "prosperity.l1_weight_spad.read",
+        "prosperity.l1_weight_spad.write",
+        "ptb.l1_weight_spad.read",
+        "ptb.l1_weight_spad.write",
+        "spinalflow.l1_weight_spad.read",
+        "spinalflow.l1_weight_spad.write"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.00834676910375
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00074366
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000537909
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 2.2591
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.00834676910375
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00074366
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000537909
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 2.2591
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 8192,
+        "technology": 7,
+        "width": 32
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            0.00074366,
+            0.000537909,
+            2.2591,
+            0.00834676910375,
+            13970.031488450975
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q06_100/memory.sram.width32.depth8192.bank1.tech7.159a4f76b0cc.cacti_fn.rpt",
+          "sha256": "983d74acf343cd2d5729a3e906fd43ed8fefc3315ad7d9af918101d1d255265d"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            0.00074366,
+            0.000537909,
+            2.2591,
+            0.00834676910375,
+            13970.031488450975
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q06_500/memory.sram.width32.depth8192.bank1.tech7.159a4f76b0cc.cacti_fn.rpt",
+          "sha256": "983d74acf343cd2d5729a3e906fd43ed8fefc3315ad7d9af918101d1d255265d"
+        }
+      }
+    },
+    {
+      "config_sha256": {
+        "100": "7d3efb03cb5cd12e759e49a92724254df40045300ac366be47759dbbf3a024dc",
+        "500": "7d3efb03cb5cd12e759e49a92724254df40045300ac366be47759dbbf3a024dc"
+      },
+      "identical": true,
+      "keys": [
+        "prosperity.ps_table.read",
+        "prosperity.ps_table.write"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.0005779324304399999
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.000147584
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000144455
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 0.118397
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.0005779324304399999
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.000147584
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000144455
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 0.118397
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 256,
+        "technology": 7,
+        "width": 48
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            0.000147584,
+            0.000144455,
+            0.118397,
+            0.0005779324304399999,
+            48347.48303003346
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q07_100/memory.sram.width48.depth256.bank1.tech7.15940086b20d.cacti_fn.rpt",
+          "sha256": "c647f05ca51432061922b3f38a810952179fe947b202823019e7fa5d71603ecd"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            0.000147584,
+            0.000144455,
+            0.118397,
+            0.0005779324304399999,
+            48347.48303003346
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q07_500/memory.sram.width48.depth256.bank1.tech7.15940086b20d.cacti_fn.rpt",
+          "sha256": "c647f05ca51432061922b3f38a810952179fe947b202823019e7fa5d71603ecd"
+        }
+      }
+    },
+    {
+      "config_sha256": {
+        "100": "fe9a0a1c0efcf236041e7412791c9cf44cbd040ad005981807ea306445374aa1",
+        "500": "fe9a0a1c0efcf236041e7412791c9cf44cbd040ad005981807ea306445374aa1"
+      },
+      "identical": true,
+      "keys": [
+        "prosperity.psum_buffer.read",
+        "prosperity.psum_buffer.write",
+        "prosperity.spike_row_buffer.read",
+        "prosperity.spike_row_buffer.write"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.00030083498799
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 7.3802e-05
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 7.35268e-05
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 0.0856126
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.00030083498799
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 7.3802e-05
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 7.35268e-05
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 0.0856126
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 512,
+        "technology": 7,
+        "width": 16
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            7.3802e-05,
+            7.35268e-05,
+            0.0856126,
+            0.00030083498799,
+            62463.302809599365
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q08_100/memory.sram.width16.depth512.bank1.tech7.3fbe956e5d33.cacti_fn.rpt",
+          "sha256": "463c2f6079fe016f41afcebee6400a3e4c5175ea3d8b216ee7bb7fd4fcf045c7"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            7.3802e-05,
+            7.35268e-05,
+            0.0856126,
+            0.00030083498799,
+            62463.302809599365
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q08_500/memory.sram.width16.depth512.bank1.tech7.3fbe956e5d33.cacti_fn.rpt",
+          "sha256": "463c2f6079fe016f41afcebee6400a3e4c5175ea3d8b216ee7bb7fd4fcf045c7"
+        }
+      }
+    },
+    {
+      "config_sha256": {
+        "100": "eb9421515994ab40eb084b82f0a557a9fa98fb1df188752294770134f61f6c67",
+        "500": "eb9421515994ab40eb084b82f0a557a9fa98fb1df188752294770134f61f6c67"
+      },
+      "identical": true,
+      "keys": [
+        "ptb.output_spike_queue.read",
+        "ptb.output_spike_queue.write",
+        "ptb.spike_vector_buffer.read",
+        "ptb.spike_vector_buffer.write",
+        "spinalflow.input_spike_buffer.read",
+        "spinalflow.input_spike_buffer.write",
+        "spinalflow.output_spike_queue.read",
+        "spinalflow.output_spike_queue.write",
+        "spinalflow.psum_l1.read",
+        "spinalflow.psum_l1.write",
+        "spinalflow.vmem_l1.read",
+        "spinalflow.vmem_l1.write"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.00035989600196
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00010333
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000101244
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 0.0856998
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.00035989600196
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00010333
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000101244
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 0.0856998
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 256,
+        "technology": 7,
+        "width": 32
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            0.00010333,
+            0.000101244,
+            0.0856998,
+            0.00035989600196,
+            65367.59466861898
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q09_100/memory.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            0.00010333,
+            0.000101244,
+            0.0856998,
+            0.00035989600196,
+            65367.59466861898
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q09_500/memory.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        }
+      }
+    },
+    {
+      "config_sha256": {
+        "100": "680b8b36f4d642c5af708ba954151644fda9c627ac1b458a37a8a2618756d656",
+        "500": "680b8b36f4d642c5af708ba954151644fda9c627ac1b458a37a8a2618756d656"
+      },
+      "identical": true,
+      "keys": [
+        "shared.gb.read",
+        "shared.gb.write"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.62102173458
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.0396593
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.0398298
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 143.51
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.62102173458
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.0396593
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.0398298
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 143.51
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 65536,
+        "technology": 7,
+        "width": 256
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            0.0396593,
+            0.0398298,
+            143.51,
+            0.62102173458,
+            4478.841950625246
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q10_100/memory.sram.width256.depth65536.bank1.tech7.401e269d7f0c.cacti_fn.rpt",
+          "sha256": "41a42be8f974a41531cfc55617f382b43b49ef5b97cffa25ea9f25cb49eac322"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            0.0396593,
+            0.0398298,
+            143.51,
+            0.62102173458,
+            4478.841950625246
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q10_500/memory.sram.width256.depth65536.bank1.tech7.401e269d7f0c.cacti_fn.rpt",
+          "sha256": "41a42be8f974a41531cfc55617f382b43b49ef5b97cffa25ea9f25cb49eac322"
+        }
+      }
+    },
+    {
+      "config_sha256": {
+        "100": "2dc018804d3b14b8b3c47a0d1a621c6ec311b338827cfd44f0ccbae4f8e4e039",
+        "500": "2dc018804d3b14b8b3c47a0d1a621c6ec311b338827cfd44f0ccbae4f8e4e039"
+      },
+      "identical": true,
+      "keys": [
+        "spinalflow.psum_l2.read",
+        "spinalflow.psum_l2.write",
+        "spinalflow.vmem_l2.read",
+        "spinalflow.vmem_l2.write"
+      ],
+      "outputs": {
+        "100": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.017217714521
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00112713
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000921378
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 4.55468
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        },
+        "500": {
+          "area": {
+            "unit": "mm^2",
+            "value": 0.017217714521
+          },
+          "dynamic_energy": {
+            "read": {
+              "unit": "nJ",
+              "value": 0.00112713
+            },
+            "write": {
+              "unit": "nJ",
+              "value": 0.000921378
+            }
+          },
+          "leakage_power": {
+            "unit": "mW",
+            "value": 4.55468
+          },
+          "technology": {
+            "unit": "nm",
+            "value": 7
+          }
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 16384,
+        "technology": 7,
+        "width": 32
+      },
+      "reports": {
+        "100": {
+          "metrics_and_fmax_MHz": [
+            0.00112713,
+            0.000921378,
+            4.55468,
+            0.017217714521,
+            13970.031488450975
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q11_100/memory.sram.width32.depth16384.bank1.tech7.2ce1709053e6.cacti_fn.rpt",
+          "sha256": "fffabd0cf0a8868366e10d1f6d6a8e7ab415aa827af74c33e4de453083020141"
+        },
+        "500": {
+          "metrics_and_fmax_MHz": [
+            0.00112713,
+            0.000921378,
+            4.55468,
+            0.017217714521,
+            13970.031488450975
+          ],
+          "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/frequency_probe/q11_500/memory.sram.width32.depth16384.bank1.tech7.2ce1709053e6.cacti_fn.rpt",
+          "sha256": "fffabd0cf0a8868366e10d1f6d6a8e7ab415aa827af74c33e4de453083020141"
+        }
+      }
+    }
+  ],
+  "system_frequency_MHz": 500,
+  "unique_queries": 12,
+  "wall_seconds": 48.79815096396487
+}

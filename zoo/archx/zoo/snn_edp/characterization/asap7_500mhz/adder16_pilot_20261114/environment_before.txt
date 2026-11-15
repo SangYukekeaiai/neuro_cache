@@ -1,0 +1,48 @@
+2026-11-14T22:20:01-05:00
+net1580
+project_root=/home/net/ya867177/auto_syn_pnr
+command=export CLK_PERIOD_NS=2; bash auto_syn_pnr.sh ASAP7 snn_adder16
+launcher_pid=1379812
+launcher_pgid=1379812
+/home/net/cadence/installs/GENUS211/bin/genus
+/home/net/cadence/installs/INNOVUSEXPORT21/bin/innovus
+core file size          (blocks, -c) 0
+data seg size           (kbytes, -d) unlimited
+scheduling priority             (-e) 0
+file size               (blocks, -f) unlimited
+pending signals                 (-i) 190889
+max locked memory       (kbytes, -l) 64
+max memory size         (kbytes, -m) unlimited
+open files                      (-n) 1024
+pipe size            (512 bytes, -p) 8
+POSIX message queues     (bytes, -q) 819200
+real-time priority              (-r) 0
+stack size              (kbytes, -s) 8192
+cpu time               (seconds, -t) unlimited
+max user processes              (-u) 190889
+virtual memory          (kbytes, -v) unlimited
+file locks                      (-x) unlimited
+12:rdma:/
+11:memory:/user.slice/user-1227910567.slice/session-301630.scope
+10:perf_event:/
+9:hugetlb:/
+8:cpuset:/
+7:net_cls,net_prio:/
+6:blkio:/user.slice
+5:cpu,cpuacct:/user.slice
+4:devices:/user.slice
+3:pids:/user.slice/user-1227910567.slice/session-301630.scope
+2:freezer:/
+1:name=systemd:/user.slice/user-1227910567.slice/session-301630.scope
+memory.limit_in_bytes
+10737418240
+memory.usage_in_bytes
+1109094400
+memory.max_usage_in_bytes
+10737426432
+memory.failcnt
+2289976
+memory.oom_control
+oom_kill_disable 0
+under_oom 0
+oom_kill 0

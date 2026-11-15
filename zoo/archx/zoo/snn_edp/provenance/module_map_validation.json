@@ -1,0 +1,106 @@
+{
+  "renames": {
+    "ptb.merge.compare": "ptb.spike_mask_overlap.check",
+    "gustavsnn.l1d.scan": "gustavsnn.leading_spike_detector.scan",
+    "loas.psum_scan32.scan": "loas.spike_prefix_scan32.scan"
+  },
+  "manual_map": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/docs/manual_check_map.md",
+  "operation_rows": 98,
+  "archive": {
+    "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T94-20261114-module-map/before.tar.gz",
+    "sha256": "1e232cb85e3a1679d4971ee05a9093b6ce7e09a0117677408232fd09d1f61365"
+  },
+  "validation": {
+    "archx_backend": "AGraph compile/extract/execute; aggregate_event_count + aggregate_event_metric",
+    "archx_file": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/src/archx/__init__.py",
+    "cases": [
+      {
+        "arch": "spinalflow",
+        "max_term_relative_error": 0,
+        "max_total_relative_error": 1.9041912374072347e-16,
+        "rows": 3,
+        "terms": 67
+      },
+      {
+        "arch": "ptb",
+        "max_term_relative_error": 0,
+        "max_total_relative_error": 2.8671770660415207e-16,
+        "rows": 3,
+        "terms": 82
+      },
+      {
+        "arch": "loas",
+        "max_term_relative_error": 0,
+        "max_total_relative_error": 2.1876667139931425e-16,
+        "rows": 3,
+        "terms": 79
+      },
+      {
+        "arch": "gustavsnn",
+        "max_term_relative_error": 0,
+        "max_total_relative_error": 2.0272922038939511e-16,
+        "rows": 3,
+        "terms": 67
+      },
+      {
+        "arch": "prosperity",
+        "max_term_relative_error": 0,
+        "max_total_relative_error": 1.873755102466182e-16,
+        "rows": 3,
+        "terms": 91
+      }
+    ],
+    "energy_table_sha256": "d8a5325db032ae8cd50327ade44ba2beb3715a7b76bdf5719bea16e24e28ce3d",
+    "performance_cache_disabled": true,
+    "reference_csv": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/reference_t84_results.csv",
+    "reference_sha256": "8de5ccdd0fbf00fea665f0b67544516c2ce4e3a82e7b99a7783ca75cbb468211",
+    "retirement_record": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/provenance/retired_logic.json",
+    "rows": 15,
+    "terms": 386,
+    "validation_basis": "historical independent CSV minus14 retired operation prices; deduplicated explicit physical inventory",
+    "wall_seconds": 1.9765871729468927
+  },
+  "exactly_equal_pre_rename_rows": 15,
+  "model_tests": "20 passed",
+  "caller_tests": "13 passed,1 deselected (capture selection intentionally not run)",
+  "test_commands": [
+    "conda run -n fig12-archx python -B -m pytest zoo/archx/zoo/snn_edp/test_model.py zoo/archx/zoo/snn_edp/test_dummy_model.py zoo/archx/zoo/snn_edp/test_logic_lineage.py zoo/archx/zoo/snn_edp/test_names.py -q -p no:cacheprovider",
+    "conda run -n fig12-archx python -B -m pytest zoo/fig12_edp/demo/test_run.py zoo/fig12_edp/demo/test_energy_driver.py zoo/fig12_edp/demo/test_cache_configs.py -q -p no:cacheprovider -k \"not selection\""
+  ],
+  "document_audit": {
+    "manual_map": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/docs/manual_check_map.md",
+    "visible_operation_rows": 98,
+    "definition_links_checked": true,
+    "hardware_only_changes": "three operation keys and role strings",
+    "historical_reference_bytes_unchanged": true,
+    "renames": {
+      "ptb.merge.compare": "ptb.spike_mask_overlap.check",
+      "gustavsnn.l1d.scan": "gustavsnn.leading_spike_detector.scan",
+      "loas.psum_scan32.scan": "loas.spike_prefix_scan32.scan"
+    },
+    "table_changes_limited_to_operation_keys_and_module_operation_identity_fields": true,
+    "all_numeric_prices_queries_and_inventory_unchanged": true
+  },
+  "trace_path": "demo/all_bench/cases/<arch>/<group>/<benchmark>/<layer>/sample_00000/sample_00000.wcts",
+  "trace_provenance": [
+    "generation.json",
+    "result.json rows[].input_count_provenance.trace"
+  ],
+  "trace_retention": "delete after durable result.json commit; an uncommitted old generation without generator_command is regenerated rather than inventing provenance",
+  "default_sha256": "d8a5325db032ae8cd50327ade44ba2beb3715a7b76bdf5719bea16e24e28ce3d",
+  "dummy_sha256": "492dcb64b69e6f7644747547a2e19be575f7a582afb088bee73ed3ef0385a012",
+  "campaign_compute": false,
+  "frozen_review_archive": "/u/yyu9/peon-snapshots/energy-performance-estimation/T94-20261114-module-map/rework/completed.tar.gz",
+  "identity_and_regeneration_checks": {
+    "table_identity_rows_checked": 196,
+    "identity_test_failed_before_fix": true,
+    "pending_generation_test": "valid prewritten trace23 records without generator_command; exactly one new invocation,17 records and saved actual command",
+    "exactly_equal_repriced_rows": 15,
+    "unchanged_count_files": 305,
+    "archive": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T94-20261114-module-map/rework/before.tar.gz",
+      "sha256": "bd7473329522c0c09f5033253c389a24b2d2b02fb5923a7c39c3524b56d8cf7c"
+    },
+    "logs": "/u/yyu9/peon-snapshots/energy-performance-estimation/T94-20261114-module-map/rework"
+  }
+}

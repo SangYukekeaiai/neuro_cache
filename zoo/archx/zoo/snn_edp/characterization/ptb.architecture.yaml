@@ -1,0 +1,53 @@
+architecture:
+  attribute: {technology: 7, frequency: 500, interface: csv_cmos}
+  module:
+    adder16:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, ptb]
+      query: {frequency: 500, class: adder, width: 16}
+      operations: {add: A}
+      physical_instances: 32
+    reg16:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, ptb]
+      query: {frequency: 500, class: register, width: 16}
+      operations: {rmw: A, read: L}
+      physical_instances: 128
+      assumption: Four rows by eight columns, four 16-bit potentials per column; read uses the register event proxy.
+    l1_weight_spad:
+      tag: [memory, ptb]
+      query: {interface: cacti_fn, class: sram, bank: 1, width: 32, depth: 8192}
+      operations: {read: B, write: '0'}
+      assumption: Weight broadcast wire energy folded into the scratchpad read; scratchpad arm only. Fixed physical 4-byte word also charged for 2-byte classifier bursts, overestimating active-lane energy.
+    spike_vector_buffer:
+      tag: [memory, ptb]
+      query: {interface: cacti_fn, class: sram, bank: 1, width: 32, depth: 256}
+      operations: {read: B, write: '0'}
+    output_spike_queue:
+      tag: [memory, ptb]
+      query: {interface: cacti_fn, class: sram, bank: 1, width: 32, depth: 256}
+      operations: {read: '0', write: O}
+      assumption: One 32-bit spike record in a 1 KiB output queue.
+    lif_unit:
+      tag: [compute, ptb]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: lif_unit, width: 32, input_width: 16}
+      operations: {step: L}
+      physical_instances: 4
+      assumption: Shared LIF RTL; shift leak k=1 or 2, hard reset to zero, includes state register.
+    spike_mask_overlap:
+      tag: [compute, ptb]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: and_gate, width: 32, reduction: true}
+      operations: {check: B}
+      assumption: One T-bit disjointness check per surviving line; physical T=32.
+    weight_fifo:
+      tag: [compute, ptb]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: fifo, width: 16, depth: 8}
+      operations: {push: B, pop: B}
+    spike_fifo:
+      tag: [compute, ptb]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: fifo, width: 16, depth: 8}
+      operations: {push: B, pop: B}

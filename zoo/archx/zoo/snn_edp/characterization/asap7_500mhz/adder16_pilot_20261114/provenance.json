@@ -1,0 +1,186 @@
+{
+  "accepted_postroute_rows": 0,
+  "admin_memory_request_GiB": 32,
+  "admin_request": "At least 32 GiB physical-memory allocation, possibly more, on a host with sufficient free resources; measured peak was still growing. A higher-cap trial or a known-good scooby environment is a boss decision, not armed.",
+  "authorized_flow_delta": "Flows/template_design/scripts/cadence/run_genus_hybrid.tcl: lp_insert_clock_gating true -> false",
+  "before_archive": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/adder16_pilot/before.tar.gz",
+  "before_archive_sha256": "da88da7b6e27bda9c27f736b8dd85e36eaa6e6082135a506f3879dbe804d06a1",
+  "cgroup_memory_limit_bytes": 10737418240,
+  "clock_gating": false,
+  "clock_period_ns": 2,
+  "command": "export CLK_PERIOD_NS=2; bash auto_syn_pnr.sh ASAP7 snn_adder16",
+  "deadline_action": "Superseded by immediate operator stop; watchdog exited at 22:50:16 host time without deadline action.",
+  "deadline_host_time": "2026-11-14T23:50:01-05:00",
+  "default_libraries": [
+    {
+      "nom_process": 1.0,
+      "nom_temperature_C": 0.0,
+      "nom_voltage_V": 0.77,
+      "path": "Enablements/ASAP7/lib/asap7sc7p5t_AO_RVT_FF_nldm_201020.lib",
+      "sha256": "5ab6bc43c29983f2b8b7f7b0ffbafa8db0c4bcbc755e2ef5fad7448ba2033235"
+    },
+    {
+      "nom_process": 1.0,
+      "nom_temperature_C": 0.0,
+      "nom_voltage_V": 0.77,
+      "path": "Enablements/ASAP7/lib/asap7sc7p5t_INVBUF_RVT_FF_nldm_201020.lib",
+      "sha256": "01da239387a47f7a1bb0d2e975e6b7fb54b7c7ffa88a33974e7d9052292c328c"
+    },
+    {
+      "nom_process": 1.0,
+      "nom_temperature_C": 0.0,
+      "nom_voltage_V": 0.77,
+      "path": "Enablements/ASAP7/lib/asap7sc7p5t_OA_RVT_FF_nldm_201020.lib",
+      "sha256": "25fc912d32753055eb548a055924c6a38ca134a8d15940ae26fa749b2762def1"
+    },
+    {
+      "nom_process": 1.0,
+      "nom_temperature_C": 0.0,
+      "nom_voltage_V": 0.77,
+      "path": "Enablements/ASAP7/lib/asap7sc7p5t_SEQ_RVT_FF_nldm_201020.lib",
+      "sha256": "b18d0548addbecb49f496ff420b1c160714bfc46543615b7879a6a6d0ad11794"
+    },
+    {
+      "nom_process": 1.0,
+      "nom_temperature_C": 25.0,
+      "nom_voltage_V": 0.7,
+      "path": "Enablements/ASAP7/lib/asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020.lib",
+      "sha256": "f357e2c73d55d380da20b8f32b6275827b98fd35ec672c64a86f8902e1319ed4"
+    }
+  ],
+  "evidence_root": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/adder16_pilot",
+  "fanout": false,
+  "flow_archive": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/adder16_pilot/flow_artifacts.tar.gz",
+  "flow_archive_sha256": "e651f369724879804bcf19b537e3cb8d534f1278332973d14a3bf0b57ff38656",
+  "frequency_MHz": 500,
+  "genus": {
+    "combinational_cells": 107,
+    "handoff_netlist": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/adder16_pilot/flow_artifacts/Flows/ASAP7/snn_adder16/scripts/cadence/syn_handoff/snn_adder16.v",
+    "reports": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/adder16_pilot/flow_artifacts/Flows/ASAP7/snn_adder16/scripts/cadence/syn_rpt",
+    "sequential_cells": 0,
+    "status": "normal_exit",
+    "timing": "Unconstrained I/O paths; no 500MHz closure claim.",
+    "version": "21.18-s082_1"
+  },
+  "host": "net1580",
+  "host_memory": {
+    "after_term_before_kill": {
+      "MemAvailable_KiB": 4031172,
+      "MemTotal_KiB": 48929092,
+      "SwapFree_KiB": 2339672,
+      "SwapTotal_KiB": 116940780,
+      "memory.failcnt": 5660776,
+      "memory.memsw.usage_in_bytes": 27204755456,
+      "memory.usage_in_bytes": 10729873408,
+      "timestamp": "2026-11-14T22:51:13-05:00"
+    },
+    "midrun": {
+      "MemAvailable_KiB": 4210980,
+      "MemTotal_KiB": 48929092,
+      "SwapFree_KiB": 4872612,
+      "SwapTotal_KiB": 116940780,
+      "timestamp": "2026-11-14T22:47:40-05:00"
+    },
+    "recovered": {
+      "MemAvailable_KiB": 13854176,
+      "MemTotal_KiB": 48929092,
+      "SwapFree_KiB": 17734908,
+      "SwapTotal_KiB": 116940780,
+      "memory.failcnt": 5779713,
+      "memory.memsw.usage_in_bytes": 1690230784,
+      "memory.usage_in_bytes": 771465216,
+      "timestamp": "2026-11-14T22:52:57-05:00"
+    }
+  },
+  "innovus": {
+    "group_absent_at": "2026-11-14T22:52:57-05:00",
+    "kernel_oom_kill_count": 0,
+    "kill_timestamp": "2026-11-14T22:52:27-05:00",
+    "stop_phase": "init_design: importing ASAP7.tch for two active RC corners, before floorplan/routing",
+    "term_timestamp": "2026-11-14T22:50:11-05:00",
+    "terminal_log": "Innovus terminated by external (TERM) signal.",
+    "tool_reported_current_memory_M": 24927.395,
+    "version": "21.38-s099_1"
+  },
+  "instrumentation_sha256": {
+    "launcher.sh": "a02ff72d52f65734de1da3506d25f770a2811bd6bca83b26971042eb6c65332b",
+    "watchdog.sh": "05766494e3f55c342be56a2a05e13e6ae9cec57d0d250ee5c93c9edb4dfa7b82"
+  },
+  "job": "snn_adder16",
+  "library_policy": "Default five-group RVT FF filenames as shipped; mixed declared nominal corners, not a uniform TT or FF operating point. libbest=libworst. No library headers edited.",
+  "no_further_licensed_runs": true,
+  "note": "Genus artifacts are not postRoute prices. Timing acceptance and CSV harvest require completed reports.",
+  "other_flow_configuration": "Project defaults: CPU settings,70% utilization,square floorplan,I/O constraints; no VCD",
+  "patience_minutes": 90,
+  "peak_innovus_rss_plus_swap": {
+    "GiB": 23.785083770751953,
+    "KiB": 24940468,
+    "sample": {
+      "cgroup_failcnt": "5550819",
+      "cgroup_ram_bytes": "10737168384",
+      "cgroup_ram_plus_swap_bytes": "26969522176",
+      "comm": "innovus",
+      "epoch_seconds": "1794714606",
+      "pid": "1381130",
+      "rss_kib": "10039728",
+      "rss_plus_swap_kib": "24940468",
+      "state": "R",
+      "swap_kib": "14900740"
+    }
+  },
+  "peak_scope_note": "Directly observed Innovus RSS+VmSwap and user-cgroup RAM+swap; these are lower bounds from an interrupted, still-growing import, not a proven sufficient allocation.",
+  "peak_user_cgroup_ram_plus_swap": {
+    "GiB": 25.336402893066406,
+    "bytes": 27204755456
+  },
+  "pgid": 1379812,
+  "pid": 1379812,
+  "price_tables_unchanged": true,
+  "project_commit": "d60655d3be4f2efee81402ff8becf2b4b6f34580",
+  "resource_samples": {
+    "rss": 167,
+    "swap_all_processes": 564,
+    "swap_first_sample_elapsed_s": 593,
+    "swap_innovus": 112
+  },
+  "rss_sample_interval_s": 10,
+  "rtl_repository_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+  "status": "stopped_by_authorized_operator_due_to_shared_host_memory_pressure",
+  "swap_sampling_note": "RSS and cgroup limit-hit series starts at launch; explicit VmSwap and cgroup RAM+swap sampling added after the patience-bound directive. An earlier snapshot at22:25:47 measured1480462336bytes total_swap and12217163776bytes RAM+swap. No earlier swap samples reconstructed.",
+  "unchanged_input_sha256": {
+    "zoo/archx/zoo/snn_edp/characterization/auto_syn_pnr_worklist.json": "6aa020df873f4a271f0748fe4054801a933dca1bb29e3568597ab6b6ae99e035",
+    "zoo/archx/zoo/snn_edp/characterization/energy_table_dummy.json": "892e6e2c77b920232f0db0caf81fbd69eb35925f825750e9e1f8cb333c78cbcb",
+    "zoo/archx/zoo/snn_edp/characterization/energy_table_nangate45.json": "2d8e4ea0b0f836a547ee6ec9301bff004928a8b19814aeb007f102afdc8295a3",
+    "zoo/archx/zoo/snn_edp/energy_table.json": "8c3589272e2a68dc9b01847be61f2076fb5dbb84eee7a4dc582671da9ff79942",
+    "zoo/archx/zoo/snn_edp/hardware.json": "b640ca5a71dc22f2c3a246f3db45ee6441b6e2b97d04109bd3d8cb90ccca2053"
+  },
+  "variant": {
+    "clock_port": "i_clk",
+    "derivation": {
+      "added_unused_input_ports": [
+        "i_clk",
+        "i_rst_n"
+      ],
+      "before_ports_sha256": "b7bc9573e606098e9724ec23a00c21f3c3e1db85c9d29b39d7d228c7c442256c",
+      "fixed_parameters": {
+        "BITWIDTH": 16
+      },
+      "logic_changes": "none; fixed parameters and existing identifiers retained; unused i_clk/i_rst_n input wires added to combinational modules only",
+      "module_count": 1,
+      "renamed_ports": {},
+      "source_files_per_job": 1,
+      "source_module": "adder",
+      "top_module": "snn_adder16"
+    },
+    "reset_port": "i_rst_n",
+    "rtl": "rtl_tops/basic/snn_adder16.v",
+    "rtl_sha256": "fbed08b7920ee58e87ed3ae8278bfcb6c0bd687eff3047ed653546f51c6336c5",
+    "source": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+    "source_kind": "repo-pinned",
+    "source_sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9",
+    "top": "snn_adder16",
+    "variant": "adder16"
+  },
+  "worklist_unchanged": true,
+  "workspace": "/home/net/ya867177/auto_syn_pnr"
+}

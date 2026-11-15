@@ -1,0 +1,6 @@
+timestamp=2026-11-14T22:52:27-0500
+reason=TERM acknowledged but Innovus remains in D-state cleanup; shared-host swap remains critically low
+pid=1381130
+pgid=1379812
+signal=KILL
+scope=the same owned pilot group only

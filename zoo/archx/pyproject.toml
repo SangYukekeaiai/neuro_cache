@@ -1,0 +1,61 @@
+[build-system]
+requires = ["maturin>=1.5"]
+build-backend = "maturin"
+
+[project]
+name = "archx"
+version = "0.1.1"
+authors = [
+  { name="Di Wu", email="di.wu@ucf.edu" },
+  { name="Daniel Price", email="daniel.price@ucf.edu" },
+]
+description = "A framework to explore the design space of computer systems."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+keywords = ["computer-system", "design-space-exploration", "cost-modeling"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Rust",
+  "Topic :: Scientific/Engineering"
+]
+
+dependencies = [
+  "loguru",
+  "numpy",
+  "ortools",
+  "pandas",
+  "Pillow",
+  "pyfiglet",
+  "pyyaml",
+  "tqdm",
+  "yamlordereddictloader"
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+# Map script name to the main entry point (archx/main.py -> main())
+[project.scripts]
+archx = "archx.main:main"
+
+[project.urls]
+Homepage = "https://github.com/UnaryLab/archx"
+Issues = "https://github.com/UnaryLab/archx/issues"
+
+[tool.maturin]
+manifest-path = "src/archx/rust-core/Cargo.toml"
+python-source = "src"
+module-name = "archx._core"
+bindings = "pyo3"
+features = ["pyo3/extension-module", "pyo3/abi3-py310"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra"
+testpaths = ["tests"]

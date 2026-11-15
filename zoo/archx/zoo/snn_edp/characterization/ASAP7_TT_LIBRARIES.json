@@ -1,0 +1,55 @@
+{
+  "commit": "adb6d0d354e76e46a782ad06498f1977257d5742",
+  "files": {
+    "asap7sc7p5t_AO_RVT_TT_nldm_201020.lib": {
+      "archive_bytes": 3024088,
+      "archive_sha256": "dd55eead0799de875df4f91421129a22dec1fee2fa838ce5d9b074955756cbaa",
+      "bytes": 22136706,
+      "local_file": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/official_tt/asap7sc7p5t_AO_RVT_TT_nldm_201020.lib",
+      "sha256": "0f766ef983c9ef0707bb5cb2fe3670de528e38193c1ad5da497b549555bb5e92",
+      "source_url": "https://raw.githubusercontent.com/The-OpenROAD-Project/asap7sc7p5t_27/adb6d0d354e76e46a782ad06498f1977257d5742/LIB/NLDM/asap7sc7p5t_AO_RVT_TT_nldm_201020.lib.7z"
+    },
+    "asap7sc7p5t_INVBUF_RVT_TT_nldm_201020.lib": {
+      "archive_bytes": 54364,
+      "archive_sha256": "712c866817a303c642e160139a8342ffe71c17efd557aa48bc5df356e45dc6c7",
+      "bytes": 310012,
+      "local_file": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/official_tt/asap7sc7p5t_INVBUF_RVT_TT_nldm_201020.lib",
+      "sha256": "1cacef2d14ca2e1522f0a910ec629b2b4f9d67cb4b866602e9a556849049bb6b",
+      "source_url": "https://raw.githubusercontent.com/The-OpenROAD-Project/asap7sc7p5t_27/adb6d0d354e76e46a782ad06498f1977257d5742/LIB/NLDM/asap7sc7p5t_INVBUF_RVT_TT_nldm_201020.lib.7z"
+    },
+    "asap7sc7p5t_OA_RVT_TT_nldm_201020.lib": {
+      "archive_bytes": 2768806,
+      "archive_sha256": "74057ce48f89b97ba7813b3b46be4a1a53d4a0dc84c408f07f6f412b2b41b5b8",
+      "bytes": 19915253,
+      "local_file": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/official_tt/asap7sc7p5t_OA_RVT_TT_nldm_201020.lib",
+      "sha256": "6e6fc5dc758b5f70f4a5bf12292770dc19fec0e98b5f45e4583544ffc5c742ad",
+      "source_url": "https://raw.githubusercontent.com/The-OpenROAD-Project/asap7sc7p5t_27/adb6d0d354e76e46a782ad06498f1977257d5742/LIB/NLDM/asap7sc7p5t_OA_RVT_TT_nldm_201020.lib.7z"
+    },
+    "asap7sc7p5t_SEQ_RVT_TT_nldm_201020.lib": {
+      "archive_bytes": 174218,
+      "archive_sha256": "1ba296bd6f2286c8514da1fa5a040dc1c6ef88e8e078668e8dbd08e0231bd6a8",
+      "bytes": 1510340,
+      "local_file": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/official_tt/asap7sc7p5t_SEQ_RVT_TT_nldm_201020.lib",
+      "sha256": "d32271ec3d05901f3734354b87804a463cc4c03fad3a698c82e75c88e9c54d41",
+      "source_url": "https://raw.githubusercontent.com/The-OpenROAD-Project/asap7sc7p5t_27/adb6d0d354e76e46a782ad06498f1977257d5742/LIB/NLDM/asap7sc7p5t_SEQ_RVT_TT_nldm_201020.lib.7z"
+    },
+    "asap7sc7p5t_SIMPLE_RVT_TT_nldm_201020.lib": {
+      "archive_bytes": 334000,
+      "archive_sha256": "8de72a1f7cf1844db7e8ee84df7394931ce1cd6f71f7fe8a0c62ff285fd059fd",
+      "bytes": 2306883,
+      "local_file": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/official_tt/asap7sc7p5t_SIMPLE_RVT_TT_nldm_201020.lib",
+      "sha256": "8889367e7b8c2345cab7d0c638945b8e0fbc66e9a095568ee75d4761af75520c",
+      "source_url": "https://raw.githubusercontent.com/The-OpenROAD-Project/asap7sc7p5t_27/adb6d0d354e76e46a782ad06498f1977257d5742/LIB/NLDM/asap7sc7p5t_SIMPLE_RVT_TT_nldm_201020.lib.7z"
+    }
+  },
+  "release": "ASAP7 7.5-track release27; NLDM201020",
+  "target_library": {
+    "corner": "TT",
+    "family": "ASAP7_75t_R",
+    "operating_conditions": "PVT_0P7V_25C",
+    "temperature_C": 25,
+    "voltage_V": 0.7
+  },
+  "upstream": "https://github.com/The-OpenROAD-Project/asap7sc7p5t_27",
+  "verification": "Independently fetched, decompressed and byte-hash matched all five official TT libraries; nom and operating conditions verified. No header edits."
+}

@@ -1,0 +1,101 @@
+# SpinalFlow node slice for the Fig. 12 energy model.
+# Pending ASAP7 modules are declared here but excluded from priced graph queries.
+architecture:
+  attribute:
+    technology: 7
+    frequency: 500
+    interface: csv_cmos
+  module:
+    l1_weight_spad:
+      tag: [memory, spinalflow]
+      instance: [1]
+      query:
+        interface: cacti_fn
+        class: sram
+        bank: 1
+        width: 32
+        depth: 8192
+    input_spike_buffer:
+      tag: [memory, spinalflow]
+      instance: [1]
+      query:
+        interface: cacti_fn
+        class: sram
+        bank: 1
+        width: 32 # assumed 16-bit timestamp + 16-bit neuron id
+        depth: 256
+    output_spike_queue:
+      tag: [memory, spinalflow]
+      instance: [1]
+      query:
+        interface: cacti_fn
+        class: sram
+        bank: 1
+        width: 32 # assumed 16-bit timestamp + 16-bit neuron id
+        depth: 256
+    psum_l1:
+      tag: [memory, spinalflow]
+      instance: [1]
+      query:
+        interface: cacti_fn
+        class: sram
+        bank: 1
+        width: 32
+        depth: 256
+    vmem_l1:
+      tag: [memory, spinalflow]
+      instance: [1]
+      query:
+        interface: cacti_fn
+        class: sram
+        bank: 1
+        width: 32
+        depth: 256
+    psum_l2:
+      tag: [memory, spinalflow]
+      instance: [1]
+      query:
+        interface: cacti_fn
+        class: sram
+        bank: 1
+        width: 32
+        depth: 16384
+    vmem_l2:
+      tag: [memory, spinalflow]
+      instance: [1]
+      query:
+        interface: cacti_fn
+        class: sram
+        bank: 1
+        width: 32
+        depth: 16384
+
+    adder32:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, spinalflow]
+      query:
+        frequency: 500
+        class: adder
+        width: 32
+    cmp32:
+      tag: [compute, spinalflow]
+      placeholder: pending-ASAP7-synthesis
+      query:
+        frequency: 500
+        class: comparator
+        width: 32
+    reg32:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, spinalflow]
+      query:
+        frequency: 500
+        class: register
+        width: 32
+    min_tree4:
+      tag: [compute, spinalflow]
+      placeholder: pending-ASAP7-synthesis
+      query:
+        frequency: 500
+        class: comparator
+        width: 32
+        num_instances: 3

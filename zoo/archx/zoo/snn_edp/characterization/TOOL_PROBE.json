@@ -1,0 +1,62 @@
+{
+  "timestamp_utc": "2026-11-14T01:46:33.232687+00:00",
+  "host": "dt-login02.delta.ncsa.illinois.edu",
+  "executables": {
+    "genus": null,
+    "innovus": null,
+    "lmutil": null,
+    "yosys": null,
+    "openroad": null
+  },
+  "license_environment_present": {
+    "CDS_LIC_FILE": false,
+    "LM_LICENSE_FILE": false,
+    "SNPSLMD_LICENSE_FILE": false
+  },
+  "module_queries": [
+    {
+      "command": "source /etc/profile.d/modules.sh; module -t avail 2>&1 | grep -Ei 'cadence|genus|innovus|asap|synopsys|yosys|openroad|eda'",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": "source /etc/profile.d/modules.sh; module spider genus",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Lmod has detected the following error: Unable to find: \"genus\".\n\n\n"
+    },
+    {
+      "command": "source /etc/profile.d/modules.sh; module spider innovus",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Lmod has detected the following error: Unable to find: \"innovus\".\n\n\n"
+    },
+    {
+      "command": "source /etc/profile.d/modules.sh; module spider cadence",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Lmod has detected the following error: Unable to find: \"cadence\".\n\n\n"
+    }
+  ],
+  "flow_revision": "d60655d3be4f2efee81402ff8becf2b4b6f34580",
+  "readable_assets": {
+    "/u/yyu9/projects/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_AO_RVT_FF_nldm_201020.lib": "5ab6bc43c29983f2b8b7f7b0ffbafa8db0c4bcbc755e2ef5fad7448ba2033235",
+    "/u/yyu9/projects/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_INVBUF_RVT_FF_nldm_201020.lib": "01da239387a47f7a1bb0d2e975e6b7fb54b7c7ffa88a33974e7d9052292c328c",
+    "/u/yyu9/projects/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_OA_RVT_FF_nldm_201020.lib": "25fc912d32753055eb548a055924c6a38ca134a8d15940ae26fa749b2762def1",
+    "/u/yyu9/projects/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_SEQ_RVT_FF_nldm_201020.lib": "b18d0548addbecb49f496ff420b1c160714bfc46543615b7879a6a6d0ad11794",
+    "/u/yyu9/projects/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020.lib": "f357e2c73d55d380da20b8f32b6275827b98fd35ec672c64a86f8902e1319ed4",
+    "/u/yyu9/projects/auto_syn_pnr/Enablements/ASAP7/lef/asap7_tech_1x_201209.lef": "90da9af246a79ad11d2704019b0c1ec6d000442030f16a1dd8bc72c3949f6935",
+    "/u/yyu9/projects/auto_syn_pnr/Enablements/ASAP7/lef/asap7sc7p5t_27_R_1x_201211.lef": "558b2129232a363e9b0ea85e95e56855fc6ac753265a693fd8f8bbfd54c6a5c6",
+    "/u/yyu9/projects/auto_syn_pnr/Enablements/ASAP7/qrc/ASAP7.tch": "3fab20686dcdb4f9ea1053504f50e4fbbf47de46668545c7c350a7359e4d9aae",
+    "/u/yyu9/projects/auto_syn_pnr/auto_syn_pnr.sh": "0db5dba425c6e92045297e08d3fdce568567d5a1582a7c9c592ae36afebd8cfa",
+    "/u/yyu9/projects/auto_syn_pnr/Flows/template_design/constraints/ASAP7/template_design.sdc": "1acc6baea4d16eb2fedcaa7045ae7b2c1cb87521453bff2941da037d44e9a13a",
+    "/u/yyu9/projects/auto_syn_pnr/Flows/template_design/scripts/setup/ASAP7/lib_setup.tcl": "435ec0ca4448d6e7d24b77c7cc69e9748b603dc2fc78f73e661cf74a5798fa62",
+    "/u/yyu9/projects/auto_syn_pnr/Flows/template_design/scripts/setup/ASAP7/mmmc_setup.tcl": "0d6a30cffeb585cbaaaed6ceb631eea63cc51ba3aefca0c6a77762a32deb6bd9",
+    "/u/yyu9/projects/auto_syn_pnr/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl": "9d4e2ac8686fa8061333ed55cb44bbb377e54d55575feb4b0840869c53e4bb34",
+    "/u/yyu9/projects/auto_syn_pnr/Flows/template_design/scripts/cadence/run_invs.tcl": "3b9f6b01c1e7ac5f2c412a0ec15620ebb7ee24e7f4e8b94f30092ad7f8220dec",
+    "/u/yyu9/projects/auto_syn_pnr/Flows/util/extract_report.tcl": "2e812633000e5fdb5d99b3374065148ee0f130298a31986d5542df3af2269703"
+  },
+  "execution": "No tool/license checkout, remote login, RTL generation, or synthesis job attempted",
+  "limitations": "PATH and advertised modules only; hidden/private cluster installations and remote licenses are not ruled out."
+}

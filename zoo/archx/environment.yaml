@@ -1,0 +1,26 @@
+# environment.yaml
+name: archx
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.10
+  - graphviz
+  - python-graphviz
+  - loguru
+  - matplotlib
+  - numpy
+  - pandas
+  - Pillow
+  - pyfiglet
+  - pyyaml
+  - tqdm
+  - yamlordereddictloader
+  - pytest
+  - pytest-cov
+  - maturin>=1.5
+  - pip
+  - bs4
+  - PyMuPDF
+  - pip:
+    - ortools

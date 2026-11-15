@@ -1,0 +1,18 @@
+2026-11-14T22:52:57-05:00
+    PID    PPID    PGID     ELAPSED   RSS STAT COMMAND
+MemTotal:       48929092 kB
+MemAvailable:   13854176 kB
+SwapTotal:      116940780 kB
+SwapFree:       17734908 kB
+memory.usage_in_bytes
+771465216
+memory.memsw.usage_in_bytes
+1690230784
+memory.failcnt
+5779713
+memory.oom_control
+oom_kill_disable 0
+under_oom 0
+oom_kill 0
+    PID    PGID   RSS STAT COMMAND
+1350467 1350431  5448 Sl+  genus

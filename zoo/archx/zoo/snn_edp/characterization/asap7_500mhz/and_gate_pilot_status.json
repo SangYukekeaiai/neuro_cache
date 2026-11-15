@@ -1,0 +1,147 @@
+{
+  "recorded_at": "2026-11-14T22:27:57.439867+00:00",
+  "accepted_variants": 0,
+  "catalog_variants": 24,
+  "whole_top_jobs": 0,
+  "driver": "auto_syn_pnr.sh ASAP7 snn_and_gate",
+  "host": "net1580",
+  "workspace": "/home/net/ya867177/snn_edp_syn",
+  "attempt1": {
+    "status": "failed",
+    "exit_code": 1,
+    "reason": "Genus POPT-78 no usable ICG with native lp_insert_clock_gating true; no handoff netlist",
+    "evidence": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/and_gate_project.log"
+  },
+  "attempt2": {
+    "status": "terminated with exit137 during QRC import; no postRoute reports",
+    "clock_gating": false,
+    "owned_launcher_pgid": 1326944,
+    "innovus_pid": 1327541,
+    "monitor_pid": 1327802,
+    "postroute_reports_observed": false,
+    "timing_evidence": "Native Genus snn_and_gate_unconstrained_timing.rpt reports Path1 UNCONSTRAINED iDataB -> oData, data path28ps; final_time.rpt reports no constrained path",
+    "last_resource_observation": {
+      "host_time": "2026-11-14T16:55:16-05:00",
+      "host_available_MiB": 1243,
+      "host_swap_used_MiB": 105036,
+      "pilot_RSS_KiB": 9654780,
+      "pilot_swap_KiB": 982804
+    },
+    "launcher": "nohup setsid -f bash; fresh SSH polling; no dependency on tunnel lifetime",
+    "exit_code": 137,
+    "maximum_RSS_KiB": 9907716,
+    "elapsed": "14:47.58"
+  },
+  "bridge_status": "reconnected; previous attempt reconciled before replacement",
+  "workspace_changes": {
+    "changes": [
+      {
+        "path": "Flows/template_design/scripts/setup/ASAP7/lib_setup.tcl",
+        "before_sha256": "435ec0ca4448d6e7d24b77c7cc69e9748b603dc2fc78f73e661cf74a5798fa62",
+        "after_sha256": "dc0bd3ffa76f19e007365fb4087bd1c0382d4fc96b78b0be8428f8f99917c64d",
+        "diff": "--- original/Flows/template_design/scripts/setup/ASAP7/lib_setup.tcl\n+++ workspace/Flows/template_design/scripts/setup/ASAP7/lib_setup.tcl\n@@ -14,11 +14,11 @@\n \n # set libworst [glob ${libdir}/*.lib]\n set libworst \"  \n-    ${libdir}/asap7sc7p5t_AO_RVT_FF_nldm_201020.lib \\\n-    ${libdir}/asap7sc7p5t_INVBUF_RVT_FF_nldm_201020.lib \\\n-    ${libdir}/asap7sc7p5t_OA_RVT_FF_nldm_201020.lib \\\n-    ${libdir}/asap7sc7p5t_SEQ_RVT_FF_nldm_201020.lib \\\n-    ${libdir}/asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020.lib \\\n+    ${libdir}/asap7sc7p5t_AO_RVT_TT_nldm_201020.lib \\\n+    ${libdir}/asap7sc7p5t_INVBUF_RVT_TT_nldm_201020.lib \\\n+    ${libdir}/asap7sc7p5t_OA_RVT_TT_nldm_201020.lib \\\n+    ${libdir}/asap7sc7p5t_SEQ_RVT_TT_nldm_201020.lib \\\n+    ${libdir}/asap7sc7p5t_SIMPLE_RVT_TT_nldm_201020.lib \\\n     \"\n \n set libbest $libworst\n"
+      },
+      {
+        "path": "Flows/template_design/scripts/cadence/run_genus_hybrid.tcl",
+        "before_sha256": "9d4e2ac8686fa8061333ed55cb44bbb377e54d55575feb4b0840869c53e4bb34",
+        "after_sha256": "eddbf02fac4b0b1aab0f3de21c6235e69a77166713370e1b5a18e64b17ecb434",
+        "diff": "--- original/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl\n+++ workspace/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl\n@@ -55,7 +55,7 @@\n set_db / .optimize_constant_1_flops                                 true\n \n # Clock gating\n-set_db / .lp_insert_clock_gating                                    true\n+set_db / .lp_insert_clock_gating                                    false\n \n # Ungroup policy\n set_db / .auto_ungroup                                              both\n@@ -77,7 +77,7 @@\n # set_db hdl_architecture:default/example(example1) .hdl_preserve_signals \\\n \n set_db / .auto_super_thread false\n-set_db / .max_cpus_per_server 8\n+set_db / .max_cpus_per_server 2\n # set_db / .super_thread_servers \"localhost\"\n \n \n"
+      },
+      {
+        "path": "Flows/template_design/scripts/cadence/run_invs.tcl",
+        "before_sha256": "3b9f6b01c1e7ac5f2c412a0ec15620ebb7ee24e7f4e8b94f30092ad7f8220dec",
+        "after_sha256": "537d39efd68f141e4c9862911313ca19459b895a753daaab2ea9e7cb541b95a5",
+        "diff": "--- original/Flows/template_design/scripts/cadence/run_invs.tcl\n+++ workspace/Flows/template_design/scripts/cadence/run_invs.tcl\n@@ -20,7 +20,7 @@\n }\n puts \"INFO: Using handoff SDC: $sdc\"\n \n-# setMultiCpuUsage -localCpu 8\n+setMultiCpuUsage -localCpu 2\n \n set rptDir summaryReport/ \n set encDir enc/\n"
+      }
+    ],
+    "added_TT_libs": {
+      "asap7sc7p5t_AO_RVT_TT_nldm_201020.lib": "0f766ef983c9ef0707bb5cb2fe3670de528e38193c1ad5da497b549555bb5e92",
+      "asap7sc7p5t_INVBUF_RVT_TT_nldm_201020.lib": "1cacef2d14ca2e1522f0a910ec629b2b4f9d67cb4b866602e9a556849049bb6b",
+      "asap7sc7p5t_OA_RVT_TT_nldm_201020.lib": "6e6fc5dc758b5f70f4a5bf12292770dc19fec0e98b5f45e4583544ffc5c742ad",
+      "asap7sc7p5t_SEQ_RVT_TT_nldm_201020.lib": "d32271ec3d05901f3734354b87804a463cc4c03fad3a698c82e75c88e9c54d41",
+      "asap7sc7p5t_SIMPLE_RVT_TT_nldm_201020.lib": "8889367e7b8c2345cab7d0c638945b8e0fbc66e9a095568ee75d4761af75520c"
+    },
+    "rtl_jobs": 20,
+    "configuration": "CLK_PERIOD_NS=2; native defaults for I/O and activity",
+    "clock_gating": "disabled uniformly; no ICG insertion into measured primitives"
+  },
+  "gates": [
+    "native default I/O constraints leave combinational paths unconstrained; 2ns acceptance not established",
+    "attempt3 exited 137; required CRITICAL_PATH/DETAILS reports absent; no variant accepted",
+    "no parallel runs under measured host memory pressure"
+  ],
+  "no_prices_harvested": true,
+  "attempt3": {
+    "status": "exited 137 during native QRC import; no required P&R reports; not accepted",
+    "owned_launcher_pgid": 1331144,
+    "innovus_pid": 1332303,
+    "monitor_pid": 1332907,
+    "flat_source_checks": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/flat_conformance.json",
+    "lint": "24/24 Verilator lint passed",
+    "source_configuration": {
+      "changes": [
+        {
+          "path": "Flows/template_design/scripts/setup/ASAP7/lib_setup.tcl",
+          "before_sha256": "435ec0ca4448d6e7d24b77c7cc69e9748b603dc2fc78f73e661cf74a5798fa62",
+          "after_sha256": "dc0bd3ffa76f19e007365fb4087bd1c0382d4fc96b78b0be8428f8f99917c64d",
+          "diff": "--- original/Flows/template_design/scripts/setup/ASAP7/lib_setup.tcl\n+++ workspace/Flows/template_design/scripts/setup/ASAP7/lib_setup.tcl\n@@ -14,11 +14,11 @@\n \n # set libworst [glob ${libdir}/*.lib]\n set libworst \"  \n-    ${libdir}/asap7sc7p5t_AO_RVT_FF_nldm_201020.lib \\\n-    ${libdir}/asap7sc7p5t_INVBUF_RVT_FF_nldm_201020.lib \\\n-    ${libdir}/asap7sc7p5t_OA_RVT_FF_nldm_201020.lib \\\n-    ${libdir}/asap7sc7p5t_SEQ_RVT_FF_nldm_201020.lib \\\n-    ${libdir}/asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020.lib \\\n+    ${libdir}/asap7sc7p5t_AO_RVT_TT_nldm_201020.lib \\\n+    ${libdir}/asap7sc7p5t_INVBUF_RVT_TT_nldm_201020.lib \\\n+    ${libdir}/asap7sc7p5t_OA_RVT_TT_nldm_201020.lib \\\n+    ${libdir}/asap7sc7p5t_SEQ_RVT_TT_nldm_201020.lib \\\n+    ${libdir}/asap7sc7p5t_SIMPLE_RVT_TT_nldm_201020.lib \\\n     \"\n \n set libbest $libworst\n"
+        },
+        {
+          "path": "Flows/template_design/scripts/cadence/run_genus_hybrid.tcl",
+          "before_sha256": "9d4e2ac8686fa8061333ed55cb44bbb377e54d55575feb4b0840869c53e4bb34",
+          "after_sha256": "a585d52220caf55313e46438597cc91324dd239d3de9531bb289cd43ea399a9d",
+          "diff": "--- original/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl\n+++ workspace/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl\n@@ -55,7 +55,7 @@\n set_db / .optimize_constant_1_flops                                 true\n \n # Clock gating\n-set_db / .lp_insert_clock_gating                                    true\n+set_db / .lp_insert_clock_gating                                    false\n \n # Ungroup policy\n set_db / .auto_ungroup                                              both\n"
+        }
+      ],
+      "added_TT_libs": {
+        "asap7sc7p5t_AO_RVT_TT_nldm_201020.lib": "0f766ef983c9ef0707bb5cb2fe3670de528e38193c1ad5da497b549555bb5e92",
+        "asap7sc7p5t_INVBUF_RVT_TT_nldm_201020.lib": "1cacef2d14ca2e1522f0a910ec629b2b4f9d67cb4b866602e9a556849049bb6b",
+        "asap7sc7p5t_OA_RVT_TT_nldm_201020.lib": "6e6fc5dc758b5f70f4a5bf12292770dc19fec0e98b5f45e4583544ffc5c742ad",
+        "asap7sc7p5t_SEQ_RVT_TT_nldm_201020.lib": "d32271ec3d05901f3734354b87804a463cc4c03fad3a698c82e75c88e9c54d41",
+        "asap7sc7p5t_SIMPLE_RVT_TT_nldm_201020.lib": "8889367e7b8c2345cab7d0c638945b8e0fbc66e9a095568ee75d4761af75520c"
+      },
+      "rtl_jobs": 20,
+      "configuration": "CLK_PERIOD_NS=2; native CPU/I/O/activity/floorplan defaults; clock gating off",
+      "clock_gating": "disabled uniformly; no ICG insertion into measured primitives",
+      "thread_settings": "project defaults, CPU source edits reverted"
+    },
+    "expected_reports": [
+      "/home/net/ya867177/snn_edp_syn/auto_syn_pnr/syn_pnr_rpt/ASAP7/snn_and_gate/snn_and_gate_CRITICAL_PATH.rpt",
+      "/home/net/ya867177/snn_edp_syn/auto_syn_pnr/syn_pnr_rpt/ASAP7/snn_and_gate/snn_and_gate_DETAILS.rpt"
+    ],
+    "report_files_observed": false,
+    "resource_blocker": {
+      "cgroup": "/sys/fs/cgroup/memory/user.slice/user-1227910567.slice",
+      "memory_limit_bytes": 10737418240,
+      "memory_usage_bytes": 10737328128,
+      "memory_memsw_usage_bytes": 14207029248,
+      "memory_failcnt": 1870233,
+      "oom_kill_counter": 0,
+      "session_limit": "unlimited; parent account limit applies",
+      "action": "no cgroup edits; no fan-out; manager notified that adequate account allocation is required"
+    },
+    "exit_code": 137,
+    "exit_cause": "unproven; observed 10 GiB parent-cgroup saturation does not establish the cause of exit 137",
+    "maximum_RSS_KiB": 10071772,
+    "elapsed": "8:23.62",
+    "post_exit_observation": {
+      "host_time": "2026-11-14T17:27:08-05:00",
+      "innovus_pid_present": false,
+      "memory_limit_bytes": 10737418240,
+      "memory_usage_bytes": 902422528,
+      "memory_max_usage_bytes": 10737426432,
+      "memory_memsw_usage_bytes": 1538723840,
+      "memory_failcnt": 2289976,
+      "oom_kill_counter": 0,
+      "under_oom": 0,
+      "required_reports_present": false
+    },
+    "evidence": {
+      "archive": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/A91-attempt3-exit137-20261114T2226Z",
+      "remote_project_log": "/home/net/ya867177/snn_edp_syn/runs/and_gate/project.log",
+      "remote_exit_code": "/home/net/ya867177/snn_edp_syn/runs/and_gate/exit_code",
+      "archive_manifest": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/A91-attempt3-exit137-20261114T2226Z/archive_manifest.json"
+    }
+  },
+  "status": "blocked"
+}

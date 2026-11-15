@@ -1,0 +1,2969 @@
+{
+  "authored_glue_files": {
+    "mux2": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/common/mux2.v",
+      "sha256": "e3db2804d7f762020f12244c0b216af064cc38bc4f629e95fbb8755e25f80a97"
+    },
+    "not_gate": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/common/not_gate.v",
+      "sha256": "a5633f7eacb0d78f35dfbf9218eee91e8a62efe6f9ecd4935ca3d61730d3ef9e"
+    },
+    "or_gate": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/common/or_gate.v",
+      "sha256": "ca9c6ee7a3a61810079f283ce2c60b3d03934242b317bbbef23062c676fd0fd1"
+    },
+    "xor_gate": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/common/xor_gate.v",
+      "sha256": "fd3c8c4dc1f08968cfae66a4ddecab32e1df6970160f0e04e7a651924a1ed7e5"
+    }
+  },
+  "authored_glue_manifest": {
+    "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/common/authored_glue.json",
+    "sha256": "5f677db70b050c1e1e06c8f53fe24ce03f92beb61716ba1ac636cd18dcc1c55f"
+  },
+  "basic_modules_catalog": "BASIC_MODULES.md",
+  "characterization_split": {
+    "basic_union_rule": "Union of primitive_counts across all48 priced logic operations",
+    "basic_variants": 24,
+    "catalog_source": "BASIC_MODULES.md",
+    "operation_rows_by_pricing_mode": {
+      "composition": 48
+    },
+    "whole_tops": 0
+  },
+  "characterization_variant_count": 24,
+  "clock_period_ns": 2,
+  "composed_tops_written": true,
+  "coverage_by_architecture": {
+    "cache": {
+      "excluded_rows": 9,
+      "hardware_rows": 17,
+      "keys": [
+        "cache.distance_logic.step",
+        "cache.distance_metadata.read",
+        "cache.distance_metadata.write",
+        "cache.l1.read",
+        "cache.l1.write",
+        "cache.l1_tags.read",
+        "cache.l2.read",
+        "cache.l2.write",
+        "cache.l2_tags.read",
+        "cache.mshr_cam_l1.search",
+        "cache.mshr_cam_l2.search",
+        "cache.mshr_targets_l1.write",
+        "cache.mshr_targets_l2.write",
+        "cache.next_access_logic.step",
+        "cache.next_access_state.rmw",
+        "cache.next_line_l1.add",
+        "cache.next_line_l2.add"
+      ],
+      "listed_rows": 17,
+      "physics_rows": 4,
+      "rtl_mapped": 4
+    },
+    "gustavsnn": {
+      "excluded_rows": 0,
+      "hardware_rows": 10,
+      "keys": [
+        "gustavsnn.adder16.add",
+        "gustavsnn.l1_weight_spad.read",
+        "gustavsnn.l1_weight_spad.write",
+        "gustavsnn.leading_spike_detector.scan",
+        "gustavsnn.lif_core.step",
+        "gustavsnn.merger_tree2.merge",
+        "gustavsnn.output_fifo.push",
+        "gustavsnn.potential_regfile.rmw",
+        "gustavsnn.reg16.rmw",
+        "gustavsnn.spike_fifo.pop"
+      ],
+      "listed_rows": 10,
+      "physics_rows": 2,
+      "rtl_mapped": 8
+    },
+    "loas": {
+      "excluded_rows": 0,
+      "hardware_rows": 14,
+      "keys": [
+        "loas.adder16.add",
+        "loas.and_gate.and",
+        "loas.bsf32.scan",
+        "loas.l1_weight_spad.read",
+        "loas.l1_weight_spad.write",
+        "loas.lif_unit.step",
+        "loas.output_fifo.push",
+        "loas.spike_prefix_scan32.scan",
+        "loas.reg16.read",
+        "loas.reg16.rmw",
+        "loas.spike_fifo.pop",
+        "loas.spike_fifo.push",
+        "loas.weight_fifo.pop",
+        "loas.weight_fifo.push"
+      ],
+      "listed_rows": 14,
+      "physics_rows": 2,
+      "rtl_mapped": 12
+    },
+    "prosperity": {
+      "excluded_rows": 0,
+      "hardware_rows": 18,
+      "keys": [
+        "prosperity.adder16.add",
+        "prosperity.bitonic_cmp.compare",
+        "prosperity.bsf16.scan",
+        "prosperity.l1_weight_spad.read",
+        "prosperity.l1_weight_spad.write",
+        "prosperity.lif_core.step",
+        "prosperity.lif_state.rmw",
+        "prosperity.popcount16.count",
+        "prosperity.pruner.prune",
+        "prosperity.ps_table.read",
+        "prosperity.ps_table.write",
+        "prosperity.psum_buffer.read",
+        "prosperity.psum_buffer.write",
+        "prosperity.reg16.rmw",
+        "prosperity.spike_row_buffer.read",
+        "prosperity.spike_row_buffer.write",
+        "prosperity.tcam.search",
+        "prosperity.tcam.write"
+      ],
+      "listed_rows": 18,
+      "physics_rows": 8,
+      "rtl_mapped": 10
+    },
+    "ptb": {
+      "excluded_rows": 0,
+      "hardware_rows": 15,
+      "keys": [
+        "ptb.adder16.add",
+        "ptb.l1_weight_spad.read",
+        "ptb.l1_weight_spad.write",
+        "ptb.lif_unit.step",
+        "ptb.spike_mask_overlap.check",
+        "ptb.output_spike_queue.read",
+        "ptb.output_spike_queue.write",
+        "ptb.reg16.read",
+        "ptb.reg16.rmw",
+        "ptb.spike_fifo.pop",
+        "ptb.spike_fifo.push",
+        "ptb.spike_vector_buffer.read",
+        "ptb.spike_vector_buffer.write",
+        "ptb.weight_fifo.pop",
+        "ptb.weight_fifo.push"
+      ],
+      "listed_rows": 15,
+      "physics_rows": 6,
+      "rtl_mapped": 9
+    },
+    "shared": {
+      "excluded_rows": 0,
+      "hardware_rows": 6,
+      "keys": [
+        "shared.ddr4.read",
+        "shared.ddr4_io.byte",
+        "shared.gb.read",
+        "shared.gb.write",
+        "shared.link.hop",
+        "shared.router.hop"
+      ],
+      "listed_rows": 6,
+      "physics_rows": 5,
+      "rtl_mapped": 1
+    },
+    "spinalflow": {
+      "excluded_rows": 0,
+      "hardware_rows": 18,
+      "keys": [
+        "spinalflow.adder32.add",
+        "spinalflow.cmp32.compare",
+        "spinalflow.input_spike_buffer.read",
+        "spinalflow.input_spike_buffer.write",
+        "spinalflow.l1_weight_spad.read",
+        "spinalflow.l1_weight_spad.write",
+        "spinalflow.min_tree4.compare",
+        "spinalflow.output_spike_queue.read",
+        "spinalflow.output_spike_queue.write",
+        "spinalflow.psum_l1.read",
+        "spinalflow.psum_l1.write",
+        "spinalflow.psum_l2.read",
+        "spinalflow.psum_l2.write",
+        "spinalflow.reg32.rmw",
+        "spinalflow.vmem_l1.read",
+        "spinalflow.vmem_l1.write",
+        "spinalflow.vmem_l2.read",
+        "spinalflow.vmem_l2.write"
+      ],
+      "listed_rows": 18,
+      "physics_rows": 14,
+      "rtl_mapped": 4
+    }
+  },
+  "document_hashes": {
+    "../CONFIGURATION.md": "9228ae5d3ddd34b75660eb63674c20e0f6097bd4d3f4f438327cf8e743eeee7a",
+    "../README.md": "389f85ddf2440df5154a0336b638d494b9dd58cd7f565b2337468a09615ed8c2",
+    "ASAP7_SYNTHESIS_PLAN.md": "31ae6b1dc31d3940a1fe072189197e647c429d2dffd4399f5756eb2d44259f3d",
+    "BASIC_MODULES.md": "a1fa1563bf8b0376622ea159bba45ccc1bb281b31de899573d658f2219eec2c5",
+    "MODULE_MAPPING.md": "52d5b2744c56a06a66709ae8885361269e21489b2decea9783292705026bebe8",
+    "README.md": "072e18bc268ce035276a40ed5787f7d9da51b6a6709d71fa601de45822290fea",
+    "auto_syn_pnr_worklist.json": "6aa020df873f4a271f0748fe4054801a933dca1bb29e3568597ab6b6ae99e035",
+    "docs/manual_check_map.md": "4778eb3895e72c5c4f6079d846994042c1a20b8d892333a0ebb5f1280be13603",
+    "rtl_tops/README.md": "f53f08c94bcd26919fd7e19a5a24a1ab45089b8704ee6732dcb0a0b9214f1435"
+  },
+  "excluded_archive": {
+    "forward_cout_boundary": "The archived next_line rows each mapped one adder64, not full forward-COUT decode; all next-line/next-access/distance consumers are now excluded. No active adder64 consumer remains.",
+    "note": "Historical prefetch proposals and FF target are retained as prior intent only; active target is TT PVT_0P7V_25C.",
+    "operation_mapping": {
+      "cache.distance_logic.step": {
+        "built_from": "common distance(d1,t9): adder32/64 + tag/tile/count/FSM glue",
+        "status": "RTL mapped"
+      },
+      "cache.distance_metadata.read": {
+        "built_from": "cacti_fn SRAM 64×8192",
+        "status": "Physics: SRAM/cache"
+      },
+      "cache.distance_metadata.write": {
+        "built_from": "cacti_fn SRAM 64×8192",
+        "status": "Physics: SRAM/cache"
+      },
+      "cache.l1_tags.read": {
+        "built_from": "cacti_fn SRAM 256×32",
+        "status": "Physics: SRAM/cache"
+      },
+      "cache.l2_tags.read": {
+        "built_from": "cacti_fn SRAM 512×512",
+        "count_expression": "l2_pf_issued+pf_issued-pf_dropped_array_hit-pf_dropped_matching-pf_dropped_no_slot-pf_dropped_targets_full-pf_dropped_reserve",
+        "physical_instances": 0,
+        "status": "Physics: SRAM/cache"
+      },
+      "cache.next_access_logic.step": {
+        "built_from": "common next_access(d4): adder32/64 + fifo64×4 + register/FSM glue",
+        "status": "RTL mapped"
+      },
+      "cache.next_access_state.rmw": {
+        "built_from": "common register32, three words/core",
+        "status": "RTL mapped"
+      },
+      "cache.next_line_l1.add": {
+        "built_from": "repo adder(64)",
+        "status": "RTL mapped"
+      },
+      "cache.next_line_l2.add": {
+        "built_from": "repo adder(64)",
+        "status": "RTL mapped"
+      }
+    },
+    "prefetcher_worklist_entry": {
+      "clock_period_ns": 2,
+      "component": "prefetcher",
+      "contracts": {
+        "distance": {
+          "activity_boundary": "current distance_logic count l2_pf_issued is a price proxy; touch-update logic runs on l1_accesses. Characterization must report these activity streams separately; this document changes no counts/table.",
+          "bounded_entry_proposal": {
+            "collision": "tag mismatch replaces direct-indexed record with count1 for current tile",
+            "index_bits": 13,
+            "initial_tile": "0xffffffff (invalid); clear sweep before use",
+            "line_id_domain": "0 <= line < 2^41",
+            "saturating_count_bits": 4,
+            "tag_bits": 28,
+            "tile_bits": 32,
+            "trigger": "same tag+tile and old_count<9 and new_count==9; fresh record starts1; hold count9 thereafter"
+          },
+          "fidelity": "64-bit payload cannot contain tag plus full tile32+count32. Proposed tag28/tile32/count4 packing preserves threshold9 decisions for resident records but collisions lose history, unlike simulator unordered_map. It is an explicit bounded hardware design, not a claim of full simulator equivalence; hardware.json geometry and simulator remain unchanged.",
+          "implementation": "metadata RMW sequencer,adder32/64,register/FSM,tag/tile/count compare,mux; forward-neighbour address helper; SRAM remains separately priced",
+          "parameters": {
+            "distance_cout_blocks": 1,
+            "entries": 8192,
+            "entry_bits": 64,
+            "min_touches": 9,
+            "trigger": "touch"
+          },
+          "ports": "L1 demand touch(line64,tile32),metadata64 read/write,index13; trigger/retrigger; layer stride/radix; candidate64,valid",
+          "source": "src/lays/cachesim/native/src/prefetch/distance_aware.cpp",
+          "transitions": [
+            "every demand L1 probe, including L1 hit/reprobe, is a touch",
+            "lazy reset on changed tile; increment count; touch trigger iff post-increment==9",
+            "on_demand without retrigger requires count>=9; retrigger bypasses this filter",
+            "emit one forward COUT neighbour iff target block within extent",
+            "production touch mode disables L2 miss/retrigger firing; miss mode is separately supported"
+          ]
+        },
+        "neighbour": {
+          "boundary": "khkw_split indexing is a separate shared address helper; characterize it separately from one adder if including decode, rather than claim the existing adder-only row prices it.",
+          "contract": "stride=ceil(CIN/16)*min(8,KH*KW); radix=ceil(COUT/4); block=(line/stride)%radix; valid=(block+1<radix),target=line+stride. Config B neighbour up-only d1 uses same arithmetic at both levels.",
+          "implementation": "adder64,compare,mux; decode via finite restoring divide/remainder built from adder/compare/register or specialize layer constants; no divider library primitive needed",
+          "source": "src/lays/cachesim/native/src/layout/khkw_split.cpp"
+        },
+        "next_access": {
+          "bounds": "32-bit nonnegative tile/burst ids; finite descriptor port is supplied by schedule/trace address generator, not predicted from current address. Current burst/end counters are explicit controller glue; no per-entry burst-tag array if one burst drains at a time. No4x64B data buffer.",
+          "implementation": "adder32/64,register32,common fifo64x4,equality/max/boundary mux,FSM/status; persistent three state words are input/output ports of logic top and priced separately",
+          "parameters": {
+            "address_queue": {
+              "entries": 4,
+              "width_bits": 64
+            },
+            "distance_bursts": 4
+          },
+          "persistent_state": "per core pf_cursor32=0,last_tile32=-1,last_burst32=-1; existing next_access_state row owns these words",
+          "ports": "demand_valid,tile32,k32,n_bursts32; indexed future-burst descriptor/expanded-line stream(line64,last_line); candidate64; resident,inflight,budget_ok; whole_burst_handled,abort",
+          "separation": "cache-tag/MSHR probes, credits and ports are engine inputs, already separately accounted. FIFO streaming preserves order but circuit cycle equivalence is not claimed.",
+          "source": "src/lays/cachesim/native/src/prefetch/next_access.cpp",
+          "state_encoding": "store complemented last_tile/last_burst so existing zero-reset register decodes logical-1; pf_cursor is plain zero-reset; no extra persistent valid bit",
+          "transitions": [
+            "tile-start resets all three state words",
+            "suppress repeated(tile,k), then remember current pair",
+            "cursor=max(cursor,k+1); visit cursor..min(k+4,n_bursts-1)",
+            "stream mapper-expanded distinct increasing lines one burst at a time through4x64 address queue",
+            "resident/MSHR redundancy drops count as handled; budget refusal aborts remaining batch",
+            "advance cursor only on fully handled burst; partial burst keeps cursor until next demand pull-forward"
+          ]
+        }
+      },
+      "flow": "pinned /u/yyu9/projects/auto_syn_pnr copy with characterization/flow overlay; synthesize composed top whole at 500 MHz",
+      "frequency_MHz": 500,
+      "historical_target_library": {
+        "corner": "FF",
+        "family": "ASAP7_75t_R",
+        "temperature_C": 25,
+        "voltage_V": 0.7,
+        "vt": "RVT"
+      },
+      "included_in_round": false,
+      "library_primitives": [
+        {
+          "module": "adder",
+          "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+          "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+        },
+        {
+          "module": "register",
+          "path": "/u/yyu9/projects/verilog_modules/register/register.v",
+          "sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734"
+        },
+        {
+          "module": "fifo",
+          "path": "/u/yyu9/projects/verilog_modules/fifo/fifo.v",
+          "sha256": "81cd5b20cbf80a9f520a7074dde466ced9fd1db2eb9ada960a466810572019e8"
+        },
+        {
+          "module": "and_gate",
+          "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+          "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+        }
+      ],
+      "module_keys": [
+        "cache.distance_logic.step",
+        "cache.next_access_logic.step"
+      ],
+      "module_mapping": "MODULE_MAPPING.md",
+      "placeholder_policy": "pending-ASAP7-synthesis",
+      "process": "ASAP7",
+      "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+      "rtl_interface": "see contracts: explicit demand/touch events,descriptor/metadata interfaces,candidate and whole-burst feedback",
+      "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+      "rtl_source": "/u/yyu9/projects/verilog_modules/adder/adder.v; /u/yyu9/projects/verilog_modules/register/register.v; /u/yyu9/projects/verilog_modules/fifo/fifo.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_next_access_controller/snn_next_access_controller.sv (mapped structural top, not authored); /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_distance_controller/snn_distance_controller.sv (mapped structural top, not authored)",
+      "status": "Archived by decision: prefetch control; not an active worklist entry",
+      "storage": {
+        "l1_address_bits": 64,
+        "l1_address_queue_entries": 4,
+        "l1_data_buffer_bytes": 0,
+        "l1_state_register_width": 32,
+        "l1_state_registers_per_core": 3,
+        "l2_metadata_entries": 8192,
+        "l2_metadata_width": 64
+      },
+      "structural_glue": "source-defined duplicate suppression/cursor feedback,finite burst-line stream,address FIFO,status/abort FSM; touch metadata sequencer/tag/tile/threshold logic and forward-COUT neighbour arithmetic",
+      "structural_tops": [
+        {
+          "module": "snn_next_access_controller",
+          "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_next_access_controller/snn_next_access_controller.sv",
+          "status": "mapped specification; no RTL file authored"
+        },
+        {
+          "module": "snn_distance_controller",
+          "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_distance_controller/snn_distance_controller.sv",
+          "status": "mapped specification; no RTL file authored"
+        }
+      ],
+      "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+      "target_technology_nm": 7
+    },
+    "source_contracts": {
+      "distance": {
+        "activity_boundary": "current distance_logic count l2_pf_issued is a price proxy; touch-update logic runs on l1_accesses. Characterization must report these activity streams separately; this document changes no counts/table.",
+        "bounded_entry_proposal": {
+          "collision": "tag mismatch replaces direct-indexed record with count1 for current tile",
+          "index_bits": 13,
+          "initial_tile": "0xffffffff (invalid); clear sweep before use",
+          "line_id_domain": "0 <= line < 2^41",
+          "saturating_count_bits": 4,
+          "tag_bits": 28,
+          "tile_bits": 32,
+          "trigger": "same tag+tile and old_count<9 and new_count==9; fresh record starts1; hold count9 thereafter"
+        },
+        "fidelity": "64-bit payload cannot contain tag plus full tile32+count32. Proposed tag28/tile32/count4 packing preserves threshold9 decisions for resident records but collisions lose history, unlike simulator unordered_map. It is an explicit bounded hardware design, not a claim of full simulator equivalence; hardware.json geometry and simulator remain unchanged.",
+        "implementation": "metadata RMW sequencer,adder32/64,register/FSM,tag/tile/count compare,mux; forward-neighbour address helper; SRAM remains separately priced",
+        "parameters": {
+          "distance_cout_blocks": 1,
+          "entries": 8192,
+          "entry_bits": 64,
+          "min_touches": 9,
+          "trigger": "touch"
+        },
+        "ports": "L1 demand touch(line64,tile32),metadata64 read/write,index13; trigger/retrigger; layer stride/radix; candidate64,valid",
+        "source": "src/lays/cachesim/native/src/prefetch/distance_aware.cpp",
+        "transitions": [
+          "every demand L1 probe, including L1 hit/reprobe, is a touch",
+          "lazy reset on changed tile; increment count; touch trigger iff post-increment==9",
+          "on_demand without retrigger requires count>=9; retrigger bypasses this filter",
+          "emit one forward COUT neighbour iff target block within extent",
+          "production touch mode disables L2 miss/retrigger firing; miss mode is separately supported"
+        ]
+      },
+      "next_access": {
+        "bounds": "32-bit nonnegative tile/burst ids; finite descriptor port is supplied by schedule/trace address generator, not predicted from current address. Current burst/end counters are explicit controller glue; no per-entry burst-tag array if one burst drains at a time. No4x64B data buffer.",
+        "implementation": "adder32/64,register32,common fifo64x4,equality/max/boundary mux,FSM/status; persistent three state words are input/output ports of logic top and priced separately",
+        "parameters": {
+          "address_queue": {
+            "entries": 4,
+            "width_bits": 64
+          },
+          "distance_bursts": 4
+        },
+        "persistent_state": "per core pf_cursor32=0,last_tile32=-1,last_burst32=-1; existing next_access_state row owns these words",
+        "ports": "demand_valid,tile32,k32,n_bursts32; indexed future-burst descriptor/expanded-line stream(line64,last_line); candidate64; resident,inflight,budget_ok; whole_burst_handled,abort",
+        "separation": "cache-tag/MSHR probes, credits and ports are engine inputs, already separately accounted. FIFO streaming preserves order but circuit cycle equivalence is not claimed.",
+        "source": "src/lays/cachesim/native/src/prefetch/next_access.cpp",
+        "state_encoding": "store complemented last_tile/last_burst so existing zero-reset register decodes logical-1; pf_cursor is plain zero-reset; no extra persistent valid bit",
+        "transitions": [
+          "tile-start resets all three state words",
+          "suppress repeated(tile,k), then remember current pair",
+          "cursor=max(cursor,k+1); visit cursor..min(k+4,n_bursts-1)",
+          "stream mapper-expanded distinct increasing lines one burst at a time through4x64 address queue",
+          "resident/MSHR redundancy drops count as handled; budget refusal aborts remaining batch",
+          "advance cursor only on fully handled burst; partial burst keeps cursor until next demand pull-forward"
+        ]
+      }
+    },
+    "status": "historical proposal; excluded from current synthesis and Stage B pricing"
+  },
+  "excluded_by_decision": {
+    "module_keys": [
+      "cache.next_access_logic.step",
+      "cache.distance_logic.step",
+      "cache.next_access_state.rmw",
+      "cache.distance_metadata.read",
+      "cache.distance_metadata.write",
+      "cache.l1_tags.read",
+      "cache.next_line_l1.add",
+      "cache.next_line_l2.add",
+      "cache.l2_tags.read"
+    ],
+    "reason": "prefetch control",
+    "stage_a_counts_retained": true,
+    "stage_b_pricing": "excluded"
+  },
+  "excluded_rows": 9,
+  "flat_basic_source_manifest": {
+    "path": "rtl_tops/basic_variants.json",
+    "role": "Active basic source of record with original-source provenance and per-file flat derivation",
+    "sha256": "5a2b6d16975347b2b0df2779293b22531fa453cb2e6d20c89c56f5941483d047",
+    "variant_count": 24
+  },
+  "hardware_rows": 98,
+  "hardware_sha256": "b640ca5a71dc22f2c3a246f3db45ee6441b6e2b97d04109bd3d8cb90ccca2053",
+  "included_families": 18,
+  "manual_map_links": {
+    "default_table_field_links": 98,
+    "default_table_sha256": "8c3589272e2a68dc9b01847be61f2076fb5dbb84eee7a4dc582671da9ff79942",
+    "dummy_table_sha256": "892e6e2c77b920232f0db0caf81fbd69eb35925f825750e9e1f8cb333c78cbcb",
+    "hardware_count_expression_fields": 78,
+    "hardware_operation_rows": 98,
+    "note": "Supplied manual map had no energy-table/YAML anchors; added one exact energy/pricing_status field link per operation and refreshed existing hardware field links.",
+    "semantic_row_anchors_checked": 274
+  },
+  "native_flow_policy": {
+    "clock_period_environment": "CLK_PERIOD_NS=2",
+    "cpu_policy": "All CPU/thread source edits reverted; no CPU environment knob; native settings retained",
+    "driver": "auto_syn_pnr.sh ASAP7 <flat-basic-top>",
+    "execution_status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed.",
+    "harvest": "archx own csv_cmos_extract; no custom report parser",
+    "native_activity_defaults": "Without VCD the native scripts log50% switch activity; actual tool/report default provenance must be retained, not claimed as per-operation annotation",
+    "native_floorplan": "Original70% square floorplan retained",
+    "native_io_defaults": "Native SDC creates core clock if clock port exists, virtual clock otherwise; explicit input/output delays, output loads and uncertainty settings are commented out",
+    "native_scripts": "Own project driver only; no replacement TCL/SDC; native I/O/activity defaults; no VCD",
+    "project_config_edits": {
+      "Flows/template_design/scripts/cadence/run_genus_hybrid.tcl": "Authorized lp_insert_clock_gating=false only",
+      "Flows/template_design/scripts/setup/ASAP7/lib_setup.tcl": "Verified TT library paths only"
+    },
+    "source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json"
+  },
+  "no_new_runs": true,
+  "no_new_runs_scope": "This documentation update only; parent owns native licensed pilot execution",
+  "numeric_less_equal_used": false,
+  "operation_mapping": {
+    "cache.distance_logic.step": {
+      "built_from": "common distance(d1,t9): adder32/64 + tag/tile/count/FSM glue",
+      "status": "Excluded by decision: prefetch control (Stage A count retained)"
+    },
+    "cache.distance_metadata.read": {
+      "built_from": "cacti_fn SRAM 64×8192",
+      "status": "Excluded by decision: prefetch control (Stage A count retained)"
+    },
+    "cache.distance_metadata.write": {
+      "built_from": "cacti_fn SRAM 64×8192",
+      "status": "Excluded by decision: prefetch control (Stage A count retained)"
+    },
+    "cache.l1.read": {
+      "built_from": "cacti_fn cache 16 KiB/8-way",
+      "status": "Physics: SRAM/cache"
+    },
+    "cache.l1.write": {
+      "built_from": "cacti_fn cache 16 KiB/8-way",
+      "status": "Physics: SRAM/cache"
+    },
+    "cache.l1_tags.read": {
+      "built_from": "cacti_fn SRAM 256×32",
+      "status": "Excluded by decision: prefetch control (Stage A count retained)"
+    },
+    "cache.l2.read": {
+      "built_from": "cacti_fn cache 512 KiB/16-way",
+      "status": "Physics: SRAM/cache"
+    },
+    "cache.l2.write": {
+      "built_from": "cacti_fn cache 512 KiB/16-way",
+      "status": "Physics: SRAM/cache"
+    },
+    "cache.l2_tags.read": {
+      "built_from": "cacti_fn SRAM 512×512",
+      "status": "Excluded by decision: prefetch control (Stage A count retained)"
+    },
+    "cache.mshr_cam_l1.search": {
+      "built_from": "common regfile64×16 + valid/equality/priority glue",
+      "status": "RTL mapped"
+    },
+    "cache.mshr_cam_l2.search": {
+      "built_from": "common regfile64×32 + valid/equality/priority glue",
+      "status": "RTL mapped"
+    },
+    "cache.mshr_targets_l1.write": {
+      "built_from": "common regfile64×320, write decoder",
+      "status": "RTL mapped"
+    },
+    "cache.mshr_targets_l2.write": {
+      "built_from": "common regfile64×384, write decoder",
+      "status": "RTL mapped"
+    },
+    "cache.next_access_logic.step": {
+      "built_from": "common next_access(d4): adder32/64 + fifo64×4 + register/FSM glue",
+      "status": "Excluded by decision: prefetch control (Stage A count retained)"
+    },
+    "cache.next_access_state.rmw": {
+      "built_from": "common register32, three words/core",
+      "status": "Excluded by decision: prefetch control (Stage A count retained)"
+    },
+    "cache.next_line_l1.add": {
+      "built_from": "repo adder(64)",
+      "status": "Excluded by decision: prefetch control (Stage A count retained)"
+    },
+    "cache.next_line_l2.add": {
+      "built_from": "repo adder(64)",
+      "status": "Excluded by decision: prefetch control (Stage A count retained)"
+    },
+    "gustavsnn.adder16.add": {
+      "built_from": "repo adder(16)",
+      "status": "RTL mapped"
+    },
+    "gustavsnn.l1_weight_spad.read": {
+      "built_from": "cacti_fn SRAM 16×16384",
+      "status": "Physics: SRAM/cache"
+    },
+    "gustavsnn.l1_weight_spad.write": {
+      "built_from": "cacti_fn SRAM 16×16384",
+      "status": "Physics: SRAM/cache"
+    },
+    "gustavsnn.leading_spike_detector.scan": {
+      "built_from": "common priority32 (and_gate + prefix/reduction glue)",
+      "status": "RTL mapped"
+    },
+    "gustavsnn.lif_core.step": {
+      "built_from": "common LIF core",
+      "status": "RTL mapped"
+    },
+    "gustavsnn.merger_tree2.merge": {
+      "built_from": "compare32 + two key/lane/valid muxes",
+      "status": "RTL mapped"
+    },
+    "gustavsnn.output_fifo.push": {
+      "built_from": "common fifo 32×8",
+      "status": "RTL mapped"
+    },
+    "gustavsnn.potential_regfile.rmw": {
+      "built_from": "common regfile 32×64, selected read",
+      "status": "RTL mapped"
+    },
+    "gustavsnn.reg16.rmw": {
+      "built_from": "common register 16",
+      "status": "RTL mapped"
+    },
+    "gustavsnn.spike_fifo.pop": {
+      "built_from": "common fifo 32×8",
+      "status": "RTL mapped"
+    },
+    "loas.adder16.add": {
+      "built_from": "repo adder(16)",
+      "status": "RTL mapped"
+    },
+    "loas.and_gate.and": {
+      "built_from": "repo and_gate (scalar)",
+      "status": "RTL mapped"
+    },
+    "loas.bsf32.scan": {
+      "built_from": "common priority32 + selected-bit clear",
+      "status": "RTL mapped"
+    },
+    "loas.l1_weight_spad.read": {
+      "built_from": "cacti_fn SRAM 32×8192",
+      "status": "Physics: SRAM/cache"
+    },
+    "loas.l1_weight_spad.write": {
+      "built_from": "cacti_fn SRAM 32×8192",
+      "status": "Physics: SRAM/cache"
+    },
+    "loas.lif_unit.step": {
+      "built_from": "common LIF stateful",
+      "status": "RTL mapped"
+    },
+    "loas.output_fifo.push": {
+      "built_from": "common fifo 32×8",
+      "status": "RTL mapped"
+    },
+    "loas.reg16.read": {
+      "built_from": "common register 16",
+      "status": "RTL mapped"
+    },
+    "loas.reg16.rmw": {
+      "built_from": "common register 16",
+      "status": "RTL mapped"
+    },
+    "loas.spike_fifo.pop": {
+      "built_from": "common fifo 32×8",
+      "status": "RTL mapped"
+    },
+    "loas.spike_fifo.push": {
+      "built_from": "common fifo 32×8",
+      "status": "RTL mapped"
+    },
+    "loas.spike_prefix_scan32.scan": {
+      "built_from": "adder1..5 five-level prefix-popcount",
+      "status": "RTL mapped"
+    },
+    "loas.weight_fifo.pop": {
+      "built_from": "common fifo 16×8",
+      "status": "RTL mapped"
+    },
+    "loas.weight_fifo.push": {
+      "built_from": "common fifo 16×8",
+      "status": "RTL mapped"
+    },
+    "prosperity.adder16.add": {
+      "built_from": "repo adder(16)",
+      "status": "RTL mapped"
+    },
+    "prosperity.bitonic_cmp.compare": {
+      "built_from": "compare13 + two key muxes",
+      "status": "RTL mapped"
+    },
+    "prosperity.bsf16.scan": {
+      "built_from": "common priority16 + selected-bit clear",
+      "status": "RTL mapped"
+    },
+    "prosperity.l1_weight_spad.read": {
+      "built_from": "cacti_fn SRAM 32×8192",
+      "status": "Physics: SRAM/cache"
+    },
+    "prosperity.l1_weight_spad.write": {
+      "built_from": "cacti_fn SRAM 32×8192",
+      "status": "Physics: SRAM/cache"
+    },
+    "prosperity.lif_core.step": {
+      "built_from": "common LIF core",
+      "status": "RTL mapped"
+    },
+    "prosperity.lif_state.rmw": {
+      "built_from": "common register 32",
+      "status": "RTL mapped"
+    },
+    "prosperity.popcount16.count": {
+      "built_from": "8×adder1 +4×adder2 +2×adder3 +adder4",
+      "status": "RTL mapped"
+    },
+    "prosperity.pruner.prune": {
+      "built_from": "compare13 tree + eligibility/mux/XOR glue",
+      "status": "RTL mapped"
+    },
+    "prosperity.ps_table.read": {
+      "built_from": "cacti_fn SRAM 48×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "prosperity.ps_table.write": {
+      "built_from": "cacti_fn SRAM 48×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "prosperity.psum_buffer.read": {
+      "built_from": "cacti_fn SRAM 16×512",
+      "status": "Physics: SRAM/cache"
+    },
+    "prosperity.psum_buffer.write": {
+      "built_from": "cacti_fn SRAM 16×512",
+      "status": "Physics: SRAM/cache"
+    },
+    "prosperity.reg16.rmw": {
+      "built_from": "common register 16",
+      "status": "RTL mapped"
+    },
+    "prosperity.spike_row_buffer.read": {
+      "built_from": "cacti_fn SRAM 16×512",
+      "status": "Physics: SRAM/cache"
+    },
+    "prosperity.spike_row_buffer.write": {
+      "built_from": "cacti_fn SRAM 16×512",
+      "status": "Physics: SRAM/cache"
+    },
+    "prosperity.tcam.search": {
+      "built_from": "common subset array16×256 (register + match glue)",
+      "status": "RTL mapped"
+    },
+    "prosperity.tcam.write": {
+      "built_from": "common subset array16×256 (register + decode)",
+      "status": "RTL mapped"
+    },
+    "ptb.adder16.add": {
+      "built_from": "repo adder(16)",
+      "status": "RTL mapped"
+    },
+    "ptb.l1_weight_spad.read": {
+      "built_from": "cacti_fn SRAM 32×8192",
+      "status": "Physics: SRAM/cache"
+    },
+    "ptb.l1_weight_spad.write": {
+      "built_from": "cacti_fn SRAM 32×8192",
+      "status": "Physics: SRAM/cache"
+    },
+    "ptb.lif_unit.step": {
+      "built_from": "common LIF stateful",
+      "status": "RTL mapped"
+    },
+    "ptb.output_spike_queue.read": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "ptb.output_spike_queue.write": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "ptb.reg16.read": {
+      "built_from": "common register 16",
+      "status": "RTL mapped"
+    },
+    "ptb.reg16.rmw": {
+      "built_from": "common register 16",
+      "status": "RTL mapped"
+    },
+    "ptb.spike_fifo.pop": {
+      "built_from": "common fifo 16×8",
+      "status": "RTL mapped"
+    },
+    "ptb.spike_fifo.push": {
+      "built_from": "common fifo 16×8",
+      "status": "RTL mapped"
+    },
+    "ptb.spike_mask_overlap.check": {
+      "built_from": "32×and_gate + OR/invert",
+      "status": "RTL mapped"
+    },
+    "ptb.spike_vector_buffer.read": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "ptb.spike_vector_buffer.write": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "ptb.weight_fifo.pop": {
+      "built_from": "common fifo 16×8",
+      "status": "RTL mapped"
+    },
+    "ptb.weight_fifo.push": {
+      "built_from": "common fifo 16×8",
+      "status": "RTL mapped"
+    },
+    "shared.ddr4.read": {
+      "built_from": "cacti7 DDR4 array/access",
+      "status": "Physics: DRAM/IO"
+    },
+    "shared.ddr4_io.byte": {
+      "built_from": "cacti7 DDR4 IO per byte",
+      "status": "Physics: DRAM/IO"
+    },
+    "shared.gb.read": {
+      "built_from": "cacti_fn SRAM 256×65536",
+      "status": "Physics: SRAM/cache"
+    },
+    "shared.gb.write": {
+      "built_from": "cacti_fn SRAM 256×65536",
+      "status": "Physics: SRAM/cache"
+    },
+    "shared.link.hop": {
+      "built_from": "ASAP7 wire 0.5CV²",
+      "status": "Physics: wire"
+    },
+    "shared.router.hop": {
+      "built_from": "5×common fifo64×2/4 + register/arbiter/mux/mask glue",
+      "status": "RTL mapped"
+    },
+    "spinalflow.adder32.add": {
+      "built_from": "repo adder(32)",
+      "status": "RTL mapped"
+    },
+    "spinalflow.cmp32.compare": {
+      "built_from": "adder32 + signed compare glue",
+      "status": "RTL mapped"
+    },
+    "spinalflow.input_spike_buffer.read": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.input_spike_buffer.write": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.l1_weight_spad.read": {
+      "built_from": "cacti_fn SRAM 32×8192",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.l1_weight_spad.write": {
+      "built_from": "cacti_fn SRAM 32×8192",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.min_tree4.compare": {
+      "built_from": "3×compare32 + mux/valid glue",
+      "status": "RTL mapped"
+    },
+    "spinalflow.output_spike_queue.read": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.output_spike_queue.write": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.psum_l1.read": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.psum_l1.write": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.psum_l2.read": {
+      "built_from": "cacti_fn SRAM 32×16384",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.psum_l2.write": {
+      "built_from": "cacti_fn SRAM 32×16384",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.reg32.rmw": {
+      "built_from": "common register 32",
+      "status": "RTL mapped"
+    },
+    "spinalflow.vmem_l1.read": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.vmem_l1.write": {
+      "built_from": "cacti_fn SRAM 32×256",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.vmem_l2.read": {
+      "built_from": "cacti_fn SRAM 32×16384",
+      "status": "Physics: SRAM/cache"
+    },
+    "spinalflow.vmem_l2.write": {
+      "built_from": "cacti_fn SRAM 32×16384",
+      "status": "Physics: SRAM/cache"
+    }
+  },
+  "physics_rows": 41,
+  "previous_mapping_archive": {
+    "archive": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261113-all98-mapping/previous_mapping.tar.gz",
+    "files": {
+      "characterization/ASAP7_SYNTHESIS_PLAN.md": "84cb010557f5104ac52466f6f18c8923536771b28b103edcb05ea95fbc4ea754",
+      "characterization/MODULE_MAPPING.md": "75986744ae9fb5d119e51a0034b1d53bcc6f0edd3698e5c617134e01b00faee8",
+      "characterization/STRUCTURAL_AUDIT.json": "dadfcb15a42bf68d1076908b816122260b96ff1e95769907439b3d3057e202d9",
+      "characterization/auto_syn_pnr_worklist.json": "b2e9c645b9000fb51bedf4616af911696a2fa3c67eb228f01e424ccf2878fa41"
+    },
+    "sha256": "a409b9d5e5f32fcc265e229b1193ca01339ff5c88012101665ec78427e7de9b7"
+  },
+  "primitive_sources": {
+    "adder": {
+      "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+      "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+    },
+    "and_gate": {
+      "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+      "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+    },
+    "and_gate_5": {
+      "path": "/u/yyu9/projects/verilog_modules/and_gate_5/and_gate_5.v",
+      "sha256": "fc9b513759acbc43dc745049350cb88ef276810dd5c48886d34ea3404f0f6eb6"
+    },
+    "fifo": {
+      "path": "/u/yyu9/projects/verilog_modules/fifo/fifo.v",
+      "sha256": "81cd5b20cbf80a9f520a7074dde466ced9fd1db2eb9ada960a466810572019e8"
+    },
+    "less_equal": {
+      "path": "/u/yyu9/projects/verilog_modules/less_equal/less_equal.sv",
+      "sha256": "d2ca2806005e81ba8586bfb46808cd7a582a9e7bcf91f031f121000c11b16c6b"
+    },
+    "multiplier": {
+      "path": "/u/yyu9/projects/verilog_modules/multiplier/multiplier.v",
+      "sha256": "d5a7fcf49ba90c3dccbc2e179059068eadfcd5e85c26d0fc30668fdc89854789"
+    },
+    "register": {
+      "path": "/u/yyu9/projects/verilog_modules/register/register.v",
+      "sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734"
+    }
+  },
+  "prior_comparator_evidence": {
+    "all_library_hashes_match": true,
+    "check_scope": "Source declarations, manifest/document coverage and arithmetic proposal only; not RTL simulation or EDA elaboration",
+    "covered_operation_rows": 53,
+    "families": 19,
+    "historical_only": true,
+    "included_families": 18,
+    "no_rtl_tops_written": true,
+    "note": "Prior evidence retained verbatim; not a T95 run or current policy coverage count",
+    "numeric_compare_unsigned_and_signed_cases": 5460
+  },
+  "prior_sdc_evidence": {
+    "actual_period_ps": 2000,
+    "source": "/u/yyu9/projects/auto_syn_pnr/Flows/template_design/constraints/ASAP7/template_design.sdc",
+    "stdout": "INFO: CLK_PERIOD_NS found in environment: 2 ns\nINFO: Clock period (ns): 2000\nAUDIT_CLOCK -name core_clock -period 2000 -waveform {0 1000.0} i_clk\n",
+    "tool": "tclsh with mocked EDA commands; SDC expression only"
+  },
+  "quantified_composition": {
+    "activity_basis": "Native project I/O/activity defaults, no operation-specific VCD; the no-VCD branch logs a50% switch-activity fallback. Record actual report/default provenance; do not claim verified per-event activity. N*register arrays omit inactive-word gating; composed wiring, fanout, optimization and timing are not measured by additive sums.",
+    "area_mm2_formula": "sum(primitive_counts[variant] * measured_variant.area_mm2)",
+    "basis": "All48 per-physical-unit integer structural vectors are the pricing basis: composition of24 individually measured basics, including single-leaf direct operations. No whole-top report enters pricing.",
+    "catalog_source": "BASIC_MODULES.md",
+    "constant_rule": "Fixed preoptimization structural recipe; count declared comparator outputs and BASIC_MODULES priority-chain gates even where later constant folding or unused-output elimination could simplify them. Wires, constants and sign extension add no leaf count.",
+    "dynamic_energy_nJ_formula": "dynamic_event_cycles * sum(primitive_counts[variant] * measured_variant.dynamic_energy_nJ_per_cycle)",
+    "dynamic_energy_per_cycle_nJ_formula": "measured_variant.dynamic_power_mW / 500 (500 MHz)",
+    "leakage_power_mW_formula": "sum(primitive_counts[variant] * measured_variant.leakage_power_mW)",
+    "operations": {
+      "cache.mshr_cam_l1.search": {
+        "boundary": "Lowest-hit search; allocation/free indices are input ports, not an extra free-slot allocator. Target storage separate.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 176,
+          "not_gate": 56,
+          "or_gate": 1067,
+          "register1": 16,
+          "register64": 16,
+          "xor_gate": 1024
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "cache.mshr_cam_l1",
+          "scope": "system",
+          "system_units": 16,
+          "units": 16
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register1": 16,
+              "register64": 16
+            },
+            "formula": "16 tag64 + 16 valid1 words.",
+            "name": "records"
+          },
+          {
+            "counts": {
+              "not_gate": 16,
+              "or_gate": 1008,
+              "xor_gate": 1024
+            },
+            "formula": "16 equality64 trees: 64 XOR+63 OR+1 NOT each; no adder64.",
+            "name": "tag_equalities"
+          },
+          {
+            "counts": {
+              "and_gate": 16
+            },
+            "formula": "16 valid AND equality.",
+            "name": "valid_matches"
+          },
+          {
+            "counts": {
+              "and_gate": 16,
+              "not_gate": 16,
+              "or_gate": 43
+            },
+            "formula": "16 AND + 16 NOT + 15 prefix/valid OR + 28 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.",
+            "name": "priority16"
+          },
+          {
+            "counts": {
+              "and_gate": 96,
+              "not_gate": 8
+            },
+            "formula": "2 × decoder: A=4, N=16; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+            "name": "decoder16"
+          },
+          {
+            "counts": {
+              "and_gate": 32
+            },
+            "formula": "16 allocation decode AND allocate-enable; 16 free decode AND free-enable.",
+            "name": "allocate_free_enable"
+          },
+          {
+            "counts": {
+              "and_gate": 16,
+              "not_gate": 16,
+              "or_gate": 16
+            },
+            "formula": "Per slot next_valid=allocate OR (valid AND NOT free), always-enabled valid register; allocate wins. Tag wen=qualified allocate.",
+            "name": "valid_next"
+          }
+        ]
+      },
+      "cache.mshr_cam_l2.search": {
+        "boundary": "Lowest-hit search; allocation/free indices are input ports, not an extra free-slot allocator. Target storage separate.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 416,
+          "not_gate": 106,
+          "or_gate": 2154,
+          "register1": 32,
+          "register64": 32,
+          "xor_gate": 2048
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "cache.mshr_cam_l2",
+          "scope": "system",
+          "system_units": 1,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register1": 32,
+              "register64": 32
+            },
+            "formula": "32 tag64 + 32 valid1 words.",
+            "name": "records"
+          },
+          {
+            "counts": {
+              "not_gate": 32,
+              "or_gate": 2016,
+              "xor_gate": 2048
+            },
+            "formula": "32 equality64 trees: 64 XOR+63 OR+1 NOT each; no adder64.",
+            "name": "tag_equalities"
+          },
+          {
+            "counts": {
+              "and_gate": 32
+            },
+            "formula": "32 valid AND equality.",
+            "name": "valid_matches"
+          },
+          {
+            "counts": {
+              "and_gate": 32,
+              "not_gate": 32,
+              "or_gate": 106
+            },
+            "formula": "32 AND + 32 NOT + 31 prefix/valid OR + 75 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.",
+            "name": "priority32"
+          },
+          {
+            "counts": {
+              "and_gate": 256,
+              "not_gate": 10
+            },
+            "formula": "2 × decoder: A=5, N=32; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+            "name": "decoder32"
+          },
+          {
+            "counts": {
+              "and_gate": 64
+            },
+            "formula": "32 allocation decode AND allocate-enable; 32 free decode AND free-enable.",
+            "name": "allocate_free_enable"
+          },
+          {
+            "counts": {
+              "and_gate": 32,
+              "not_gate": 32,
+              "or_gate": 32
+            },
+            "formula": "Per slot next_valid=allocate OR (valid AND NOT free), always-enabled valid register; allocate wins. Tag wen=qualified allocate.",
+            "name": "valid_next"
+          }
+        ]
+      },
+      "cache.mshr_targets_l1.write": {
+        "boundary": "Write-only row exposes all words; selected read is external. Invalid 9-bit addresses assert no decoded word; no extra comparator.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 2880,
+          "not_gate": 9,
+          "register64": 320
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "cache.mshr_targets_l1",
+          "scope": "system",
+          "system_units": 16,
+          "units": 16
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register64": 320
+            },
+            "formula": "320 independent register64 words.",
+            "name": "words"
+          },
+          {
+            "counts": {
+              "and_gate": 2560,
+              "not_gate": 9
+            },
+            "formula": "1 × decoder: A=9, N=320; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+            "name": "decoder320"
+          },
+          {
+            "counts": {
+              "and_gate": 320
+            },
+            "formula": "320 write-enable AND gates.",
+            "name": "write_enable"
+          }
+        ]
+      },
+      "cache.mshr_targets_l2.write": {
+        "boundary": "Write-only row exposes all words; selected read is external. Invalid 9-bit addresses assert no decoded word; no extra comparator.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 3456,
+          "not_gate": 9,
+          "register64": 384
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "cache.mshr_targets_l2",
+          "scope": "system",
+          "system_units": 1,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register64": 384
+            },
+            "formula": "384 independent register64 words.",
+            "name": "words"
+          },
+          {
+            "counts": {
+              "and_gate": 3072,
+              "not_gate": 9
+            },
+            "formula": "1 × decoder: A=9, N=384; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+            "name": "decoder384"
+          },
+          {
+            "counts": {
+              "and_gate": 384
+            },
+            "formula": "384 write-enable AND gates.",
+            "name": "write_enable"
+          }
+        ]
+      },
+      "gustavsnn.adder16.add": {
+        "boundary": "One arithmetic lane; full W+1 sum.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder16": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "gustavsnn.adder16",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder16": 1
+            },
+            "formula": "One library adder; port wires only.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "gustavsnn.leading_spike_detector.scan": {
+        "boundary": "Lowest-set-bit convention; all-zero valid=0, index=0.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 32,
+          "not_gate": 32,
+          "or_gate": 106
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "gustavsnn.leading_spike_detector",
+          "scope": "node",
+          "system_units": 32,
+          "units": 2
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "and_gate": 32,
+              "not_gate": 32,
+              "or_gate": 106
+            },
+            "formula": "32 AND + 32 NOT + 31 prefix/valid OR + 75 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.",
+            "name": "priority32"
+          }
+        ]
+      },
+      "gustavsnn.lif_core.step": {
+        "boundary": "Input scale folded into weights as lif_unit.md specifies; no decay subtractor/multiplier. State/spike registers excluded; state port owned by potential RF/lif_state.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder32": 2,
+          "mux2": 66,
+          "not_gate": 35,
+          "or_gate": 33,
+          "xor_gate": 33
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "gustavsnn.lif_core",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder32": 1
+            },
+            "formula": "One 32-bit integration adder; discard carry for modulo2^32.",
+            "name": "integration"
+          },
+          {
+            "counts": {
+              "adder32": 1,
+              "mux2": 2,
+              "not_gate": 35,
+              "or_gate": 33,
+              "xor_gate": 33
+            },
+            "formula": "a+~b carry=unsigned gt; equality: W XOR +(W-1) OR +1 NOT; unsigned ge=gt OR eq, lt=NOT ge. Signed adds sign XOR, sign NOT, two one-bit sign-select muxes and signed ge OR.",
+            "name": "signed_compare32"
+          },
+          {
+            "counts": {
+              "mux2": 64
+            },
+            "formula": "32 scalar mux2 select arithmetic shift1/2; 32 scalar mux2 select integrated value/zero; sign extension and shifts are wires.",
+            "name": "leak_and_reset_mux"
+          }
+        ]
+      },
+      "gustavsnn.merger_tree2.merge": {
+        "boundary": "Unsigned compact key; valid first; stable lane0 ties; preserve both equal records.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder32": 1,
+          "and_gate": 1,
+          "mux2": 68,
+          "not_gate": 35,
+          "or_gate": 33,
+          "xor_gate": 32
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "gustavsnn.merger_tree2",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder32": 1,
+              "not_gate": 34,
+              "or_gate": 32,
+              "xor_gate": 32
+            },
+            "formula": "a+~b carry=gt; equality W XOR +(W-1) OR +1 NOT; ge=gt OR eq; lt=NOT ge; b inversion W NOT.",
+            "name": "unsigned_compare32"
+          },
+          {
+            "counts": {
+              "and_gate": 1,
+              "not_gate": 1,
+              "or_gate": 1
+            },
+            "formula": "swap=vb AND (NOT va OR gt).",
+            "name": "swap_control"
+          },
+          {
+            "counts": {
+              "mux2": 68
+            },
+            "formula": "Two records × (key32 + lane1 + valid1) scalar mux2.",
+            "name": "two_record_muxes"
+          }
+        ]
+      },
+      "gustavsnn.output_fifo.push": {
+        "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "fifo32x8": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "gustavsnn.output_fifo",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo32x8": 1
+            },
+            "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "gustavsnn.potential_regfile.rmw": {
+        "boundary": "One 32x64 RF with selected read; RMW shares same array.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 384,
+          "mux2": 2016,
+          "not_gate": 6,
+          "register32": 64
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "gustavsnn.potential_regfile",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register32": 64
+            },
+            "formula": "64 independent 32-bit words.",
+            "name": "words"
+          },
+          {
+            "counts": {
+              "and_gate": 320,
+              "not_gate": 6
+            },
+            "formula": "1 × decoder: A=6, N=64; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+            "name": "decoder64"
+          },
+          {
+            "counts": {
+              "and_gate": 64
+            },
+            "formula": "64 decoded word enables AND write-enable.",
+            "name": "write_enable"
+          },
+          {
+            "counts": {
+              "mux2": 2016
+            },
+            "formula": "(64-1)*32 scalar mux2; six-bit read address.",
+            "name": "selected_read"
+          }
+        ]
+      },
+      "gustavsnn.reg16.rmw": {
+        "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "register16": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "gustavsnn.reg16",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register16": 1
+            },
+            "formula": "One library register word; reset/enable and storage are internal.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "gustavsnn.spike_fifo.pop": {
+        "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "fifo32x8": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "gustavsnn.spike_fifo",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo32x8": 1
+            },
+            "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "loas.adder16.add": {
+        "boundary": "One arithmetic lane; full W+1 sum.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder16": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.adder16",
+          "scope": "node",
+          "system_units": 2048,
+          "units": 128
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder16": 1
+            },
+            "formula": "One library adder; port wires only.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "loas.and_gate.and": {
+        "boundary": "Count expression 32*B already accounts for word work; do not multiply inventory or this primitive count by 32.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.and_gate",
+          "scope": "node",
+          "system_units": 2048,
+          "units": 128
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "and_gate": 1
+            },
+            "formula": "One scalar repo AND.",
+            "name": "scalar_AND"
+          }
+        ]
+      },
+      "loas.bsf32.scan": {
+        "boundary": "Lowest-set-bit convention; all-zero valid=0, index=0.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 32,
+          "not_gate": 32,
+          "or_gate": 106,
+          "xor_gate": 32
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.bsf32",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "and_gate": 32,
+              "not_gate": 32,
+              "or_gate": 106
+            },
+            "formula": "32 AND + 32 NOT + 31 prefix/valid OR + 75 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.",
+            "name": "priority32"
+          },
+          {
+            "counts": {
+              "xor_gate": 32
+            },
+            "formula": "32 XOR: input XOR selected onehot; no adder.",
+            "name": "clear_selected"
+          }
+        ]
+      },
+      "loas.lif_unit.step": {
+        "boundary": "Input scale folded into weights as lif_unit.md specifies; no decay subtractor/multiplier. State/spike included.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder32": 2,
+          "mux2": 66,
+          "not_gate": 35,
+          "or_gate": 33,
+          "register1": 1,
+          "register32": 1,
+          "xor_gate": 33
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.lif_unit",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder32": 1
+            },
+            "formula": "One 32-bit integration adder; discard carry for modulo2^32.",
+            "name": "integration"
+          },
+          {
+            "counts": {
+              "adder32": 1,
+              "mux2": 2,
+              "not_gate": 35,
+              "or_gate": 33,
+              "xor_gate": 33
+            },
+            "formula": "a+~b carry=unsigned gt; equality: W XOR +(W-1) OR +1 NOT; unsigned ge=gt OR eq, lt=NOT ge. Signed adds sign XOR, sign NOT, two one-bit sign-select muxes and signed ge OR.",
+            "name": "signed_compare32"
+          },
+          {
+            "counts": {
+              "mux2": 64
+            },
+            "formula": "32 scalar mux2 select arithmetic shift1/2; 32 scalar mux2 select integrated value/zero; sign extension and shifts are wires.",
+            "name": "leak_and_reset_mux"
+          },
+          {
+            "counts": {
+              "register1": 1,
+              "register32": 1
+            },
+            "formula": "State and spike words; step drives wen directly; step=0 holds both.",
+            "name": "state"
+          }
+        ]
+      },
+      "loas.output_fifo.push": {
+        "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "fifo32x8": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.output_fifo",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo32x8": 1
+            },
+            "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "loas.reg16.read": {
+        "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "register16": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.reg16",
+          "scope": "node",
+          "system_units": 2048,
+          "units": 128
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register16": 1
+            },
+            "formula": "One library register word; reset/enable and storage are internal.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "loas.reg16.rmw": {
+        "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "register16": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.reg16",
+          "scope": "node",
+          "system_units": 2048,
+          "units": 128
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register16": 1
+            },
+            "formula": "One library register word; reset/enable and storage are internal.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "loas.spike_fifo.pop": {
+        "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "fifo32x8": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.spike_fifo",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo32x8": 1
+            },
+            "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "loas.spike_fifo.push": {
+        "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "fifo32x8": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.spike_fifo",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo32x8": 1
+            },
+            "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "loas.spike_prefix_scan32.scan": {
+        "boundary": "129 adders; inclusive count/total6; exclusive rank[i]=inclusive[i-1], rank[0]=0, low5 bits; wires only.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder1": 31,
+          "adder2": 30,
+          "adder3": 28,
+          "adder4": 24,
+          "adder5": 16
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.spike_prefix_scan32",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder1": 31,
+              "adder2": 30,
+              "adder3": 28,
+              "adder4": 24,
+              "adder5": 16
+            },
+            "formula": "Five levels at distances1/2/4/8/16: 31/30/28/24/16 adders; retain carry and zero-extend pass-throughs; no glue gates.",
+            "name": "prefix_network"
+          }
+        ]
+      },
+      "loas.weight_fifo.pop": {
+        "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "fifo16x8": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.weight_fifo",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo16x8": 1
+            },
+            "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "loas.weight_fifo.push": {
+        "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "fifo16x8": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "loas.weight_fifo",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo16x8": 1
+            },
+            "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "prosperity.adder16.add": {
+        "boundary": "One arithmetic lane; full W+1 sum.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder16": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "prosperity.adder16",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder16": 1
+            },
+            "formula": "One library adder; port wires only.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "prosperity.bitonic_cmp.compare": {
+        "boundary": "Ascending (popcount5,index8); stable equal keys.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder13": 1,
+          "mux2": 26,
+          "not_gate": 15,
+          "or_gate": 13,
+          "xor_gate": 13
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "prosperity.bitonic_cmp",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder13": 1,
+              "not_gate": 15,
+              "or_gate": 13,
+              "xor_gate": 13
+            },
+            "formula": "a+~b carry=gt; equality W XOR +(W-1) OR +1 NOT; ge=gt OR eq; lt=NOT ge; b inversion W NOT.",
+            "name": "unsigned_compare13"
+          },
+          {
+            "counts": {
+              "mux2": 26
+            },
+            "formula": "Two 13-bit key muxes = 26 scalar mux2.",
+            "name": "key_exchange"
+          }
+        ]
+      },
+      "prosperity.bsf16.scan": {
+        "boundary": "Lowest-set-bit convention; all-zero valid=0, index=0.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 16,
+          "not_gate": 16,
+          "or_gate": 43,
+          "xor_gate": 16
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "prosperity.bsf16",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "and_gate": 16,
+              "not_gate": 16,
+              "or_gate": 43
+            },
+            "formula": "16 AND + 16 NOT + 15 prefix/valid OR + 28 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.",
+            "name": "priority16"
+          },
+          {
+            "counts": {
+              "xor_gate": 16
+            },
+            "formula": "16 XOR: input XOR selected onehot; no adder.",
+            "name": "clear_selected"
+          }
+        ]
+      },
+      "prosperity.lif_core.step": {
+        "boundary": "Input scale folded into weights as lif_unit.md specifies; no decay subtractor/multiplier. State/spike registers excluded; state port owned by potential RF/lif_state.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder32": 2,
+          "mux2": 66,
+          "not_gate": 35,
+          "or_gate": 33,
+          "xor_gate": 33
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "prosperity.lif_core",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder32": 1
+            },
+            "formula": "One 32-bit integration adder; discard carry for modulo2^32.",
+            "name": "integration"
+          },
+          {
+            "counts": {
+              "adder32": 1,
+              "mux2": 2,
+              "not_gate": 35,
+              "or_gate": 33,
+              "xor_gate": 33
+            },
+            "formula": "a+~b carry=unsigned gt; equality: W XOR +(W-1) OR +1 NOT; unsigned ge=gt OR eq, lt=NOT ge. Signed adds sign XOR, sign NOT, two one-bit sign-select muxes and signed ge OR.",
+            "name": "signed_compare32"
+          },
+          {
+            "counts": {
+              "mux2": 64
+            },
+            "formula": "32 scalar mux2 select arithmetic shift1/2; 32 scalar mux2 select integrated value/zero; sign extension and shifts are wires.",
+            "name": "leak_and_reset_mux"
+          }
+        ]
+      },
+      "prosperity.lif_state.rmw": {
+        "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "register32": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "prosperity.lif_state",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register32": 1
+            },
+            "formula": "One library register word; reset/enable and storage are internal.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "prosperity.popcount16.count": {
+        "boundary": "15 adders; 5-bit result.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder1": 8,
+          "adder2": 4,
+          "adder3": 2,
+          "adder4": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "prosperity.popcount16",
+          "scope": "node",
+          "system_units": 128,
+          "units": 8
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder1": 8,
+              "adder2": 4,
+              "adder3": 2,
+              "adder4": 1
+            },
+            "formula": "8+4+2+1 carry-preserving adders; no glue.",
+            "name": "balanced_tree"
+          }
+        ]
+      },
+      "prosperity.pruner.prune": {
+        "boundary": "256-entry combinational boundary; subset lines, processed-valid, keys and original rows are input ports. TCAM and key/processed-valid storage are not silently duplicated or claimed priced here; equal subsets remain eligible.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder13": 255,
+          "and_gate": 511,
+          "mux2": 9451,
+          "not_gate": 4080,
+          "or_gate": 3825,
+          "xor_gate": 3331
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "prosperity.pruner",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "and_gate": 256
+            },
+            "formula": "256 processed_valid AND subset_match.",
+            "name": "eligibility"
+          },
+          {
+            "counts": {
+              "adder13": 255,
+              "not_gate": 3825,
+              "or_gate": 3315,
+              "xor_gate": 3315
+            },
+            "formula": "255 × (a+~b carry=gt; equality W XOR +(W-1) OR +1 NOT; ge=gt OR eq; lt=NOT ge; b inversion W NOT.)",
+            "name": "unsigned_compare13"
+          },
+          {
+            "counts": {
+              "and_gate": 255,
+              "mux2": 5355,
+              "not_gate": 255,
+              "or_gate": 510
+            },
+            "formula": "255 nodes: select_right=er AND (NOT el OR lt), valid=el OR er; key13 + slot8 mux per node =>255*21 scalar mux2.",
+            "name": "max_tournament"
+          },
+          {
+            "counts": {
+              "mux2": 4080
+            },
+            "formula": "(256-1)*16 scalar mux2 selects original stored row by winning slot.",
+            "name": "original_row_select"
+          },
+          {
+            "counts": {
+              "mux2": 16,
+              "xor_gate": 16
+            },
+            "formula": "16 XOR with chosen original prefix; 16 scalar mux2 bypass unchanged input when no eligible prefix.",
+            "name": "residual"
+          }
+        ]
+      },
+      "prosperity.reg16.rmw": {
+        "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "register16": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "prosperity.reg16",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register16": 1
+            },
+            "formula": "One library register word; reset/enable and storage are internal.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "prosperity.tcam.search": {
+        "boundary": "ONE bank; search/write share this whole bank. Two banks/node is standing inventory; processed-valid masking is in pruner.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 6144,
+          "not_gate": 280,
+          "or_gate": 3840,
+          "register16": 256
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "prosperity.tcam",
+          "scope": "node",
+          "system_units": 32,
+          "units": 2
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register16": 256
+            },
+            "formula": "One bank, 256 original 16-bit rows.",
+            "name": "bank_words"
+          },
+          {
+            "counts": {
+              "and_gate": 4096,
+              "not_gate": 16,
+              "or_gate": 3840
+            },
+            "formula": "16 shared query NOT; 256*16 entry AND NOT query; 256*(16-1) OR reductions.",
+            "name": "subset_terms"
+          },
+          {
+            "counts": {
+              "not_gate": 256
+            },
+            "formula": "One NOT per reduced row gives non-strict subset match.",
+            "name": "subset_invert"
+          },
+          {
+            "counts": {
+              "and_gate": 1792,
+              "not_gate": 8
+            },
+            "formula": "1 × decoder: A=8, N=256; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+            "name": "decoder256"
+          },
+          {
+            "counts": {
+              "and_gate": 256
+            },
+            "formula": "256 decoded word enables AND write-enable.",
+            "name": "write_enable"
+          }
+        ]
+      },
+      "prosperity.tcam.write": {
+        "boundary": "ONE bank; search/write share this whole bank. Two banks/node is standing inventory; processed-valid masking is in pruner.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 6144,
+          "not_gate": 280,
+          "or_gate": 3840,
+          "register16": 256
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "prosperity.tcam",
+          "scope": "node",
+          "system_units": 32,
+          "units": 2
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register16": 256
+            },
+            "formula": "One bank, 256 original 16-bit rows.",
+            "name": "bank_words"
+          },
+          {
+            "counts": {
+              "and_gate": 4096,
+              "not_gate": 16,
+              "or_gate": 3840
+            },
+            "formula": "16 shared query NOT; 256*16 entry AND NOT query; 256*(16-1) OR reductions.",
+            "name": "subset_terms"
+          },
+          {
+            "counts": {
+              "not_gate": 256
+            },
+            "formula": "One NOT per reduced row gives non-strict subset match.",
+            "name": "subset_invert"
+          },
+          {
+            "counts": {
+              "and_gate": 1792,
+              "not_gate": 8
+            },
+            "formula": "1 × decoder: A=8, N=256; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+            "name": "decoder256"
+          },
+          {
+            "counts": {
+              "and_gate": 256
+            },
+            "formula": "256 decoded word enables AND write-enable.",
+            "name": "write_enable"
+          }
+        ]
+      },
+      "ptb.adder16.add": {
+        "boundary": "One arithmetic lane; full W+1 sum.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder16": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "ptb.adder16",
+          "scope": "node",
+          "system_units": 512,
+          "units": 32
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder16": 1
+            },
+            "formula": "One library adder; port wires only.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "ptb.lif_unit.step": {
+        "boundary": "Input scale folded into weights as lif_unit.md specifies; no decay subtractor/multiplier. State/spike included.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder32": 2,
+          "mux2": 66,
+          "not_gate": 35,
+          "or_gate": 33,
+          "register1": 1,
+          "register32": 1,
+          "xor_gate": 33
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "ptb.lif_unit",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder32": 1
+            },
+            "formula": "One 32-bit integration adder; discard carry for modulo2^32.",
+            "name": "integration"
+          },
+          {
+            "counts": {
+              "adder32": 1,
+              "mux2": 2,
+              "not_gate": 35,
+              "or_gate": 33,
+              "xor_gate": 33
+            },
+            "formula": "a+~b carry=unsigned gt; equality: W XOR +(W-1) OR +1 NOT; unsigned ge=gt OR eq, lt=NOT ge. Signed adds sign XOR, sign NOT, two one-bit sign-select muxes and signed ge OR.",
+            "name": "signed_compare32"
+          },
+          {
+            "counts": {
+              "mux2": 64
+            },
+            "formula": "32 scalar mux2 select arithmetic shift1/2; 32 scalar mux2 select integrated value/zero; sign extension and shifts are wires.",
+            "name": "leak_and_reset_mux"
+          },
+          {
+            "counts": {
+              "register1": 1,
+              "register32": 1
+            },
+            "formula": "State and spike words; step drives wen directly; step=0 holds both.",
+            "name": "state"
+          }
+        ]
+      },
+      "ptb.reg16.read": {
+        "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "register16": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "ptb.reg16",
+          "scope": "node",
+          "system_units": 2048,
+          "units": 128
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register16": 1
+            },
+            "formula": "One library register word; reset/enable and storage are internal.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "ptb.reg16.rmw": {
+        "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "register16": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "ptb.reg16",
+          "scope": "node",
+          "system_units": 2048,
+          "units": 128
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register16": 1
+            },
+            "formula": "One library register word; reset/enable and storage are internal.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "ptb.spike_fifo.pop": {
+        "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "fifo16x8": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "ptb.spike_fifo",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo16x8": 1
+            },
+            "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "ptb.spike_fifo.push": {
+        "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "fifo16x8": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "ptb.spike_fifo",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo16x8": 1
+            },
+            "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "ptb.spike_mask_overlap.check": {
+        "boundary": "T=32 disjointness output.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "and_gate": 32,
+          "not_gate": 1,
+          "or_gate": 31
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "ptb.spike_mask_overlap",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "and_gate": 32,
+              "not_gate": 1,
+              "or_gate": 31
+            },
+            "formula": "32 pairwise AND; 31-OR reduction; one NOT gives disjointness.",
+            "name": "disjointness"
+          }
+        ]
+      },
+      "ptb.weight_fifo.pop": {
+        "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "fifo16x8": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "ptb.weight_fifo",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo16x8": 1
+            },
+            "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "ptb.weight_fifo.push": {
+        "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "fifo16x8": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "ptb.weight_fifo",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo16x8": 1
+            },
+            "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "shared.router.hop": {
+        "boundary": "Fixed depth2. Head/mask replace only after all destinations handshake; zero mask discards. Reset held through a clock edge for sync helper registers; handshakes suppressed in reset. One 320-bit packet is five 64-bit flits: dynamic_event_cycles=5, never multiply area/leakage by5.",
+        "dynamic_event_cycles": 5,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder2": 10,
+          "adder3": 5,
+          "and_gate": 225,
+          "and_gate_5": 5,
+          "fifo64x2": 5,
+          "mux2": 1560,
+          "not_gate": 115,
+          "or_gate": 65,
+          "register1": 10,
+          "register2": 10,
+          "register3": 10,
+          "register5": 15,
+          "xor_gate": 10
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "shared.router",
+          "scope": "system",
+          "system_units": 16,
+          "units": 16
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "fifo64x2": 5
+            },
+            "formula": "Five unchanged FIFO64x2; native output registers hold head data; no extra register64.",
+            "name": "data_queues"
+          },
+          {
+            "counts": {
+              "adder2": 10,
+              "register2": 10
+            },
+            "formula": "Two 2-bit mirror pointers per input, one increment adder each; pointer enables are accepted push/pop.",
+            "name": "mirrored_pointers"
+          },
+          {
+            "counts": {
+              "register5": 15
+            },
+            "formula": "Five inputs*(2 queued masks +1 pending head mask); register5 words, no new FIFO variant.",
+            "name": "queued_and_head_masks"
+          },
+          {
+            "counts": {
+              "register1": 5
+            },
+            "formula": "One valid bit per FIFO output/head.",
+            "name": "head_valid"
+          },
+          {
+            "counts": {
+              "adder3": 5,
+              "register1": 5,
+              "register3": 10
+            },
+            "formula": "Per output RR pointer3, held index3, lock1; adder3 computes chosen index+1.",
+            "name": "arbiter_state"
+          },
+          {
+            "counts": {
+              "and_gate": 25
+            },
+            "formula": "Five outputs*five inputs: head-valid AND pending destination bit.",
+            "name": "requests"
+          },
+          {
+            "counts": {
+              "and_gate": 25,
+              "not_gate": 25,
+              "or_gate": 20
+            },
+            "formula": "5 × (5 AND + 5 NOT + 4 prefix/valid OR + 0 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.)",
+            "name": "five_priority_chains"
+          },
+          {
+            "counts": {
+              "and_gate_5": 5,
+              "not_gate": 25
+            },
+            "formula": "Per input pending5 AND NOT ack5; one and_gate_5, five NOT; do not also count five scalar ANDs.",
+            "name": "pending_mask_clear"
+          },
+          {
+            "counts": {
+              "and_gate": 35,
+              "not_gate": 20,
+              "xor_gate": 10
+            },
+            "formula": "Per input: two pointer XOR, four NOT (same-low, wrap, full, empty), two full/empty AND + ready/enW/push/enR/pop AND. ready=NOT full AND rst; enW=valid AND rst; push=enW AND NOT full; enR=can_load AND rst; pop=enR AND NOT empty. iClr tied0.",
+            "name": "fifo_status_acceptance"
+          },
+          {
+            "counts": {
+              "not_gate": 5
+            },
+            "formula": "Per input two-output A=1 decoder: one shared NOT, zero AND-tree gates; low mirror write pointer selects slot.",
+            "name": "mask_slot_decode"
+          },
+          {
+            "counts": {
+              "and_gate": 10
+            },
+            "formula": "Two slot selects AND accepted push per input.",
+            "name": "mask_write_enables"
+          },
+          {
+            "counts": {
+              "mux2": 25
+            },
+            "formula": "Per input 2:1 read mux over two register5 words: five scalar mux2.",
+            "name": "mask_queue_read"
+          },
+          {
+            "counts": {
+              "mux2": 25
+            },
+            "formula": "Per input pop selects queued mask versus cleared pending mask: five scalar mux2.",
+            "name": "head_mask_update"
+          },
+          {
+            "counts": {
+              "and_gate": 25
+            },
+            "formula": "ack[input][output]=selected_grant[input][output] AND output_handshake.",
+            "name": "ack_matrix"
+          },
+          {
+            "counts": {
+              "and_gate": 5,
+              "not_gate": 5,
+              "or_gate": 20
+            },
+            "formula": "Per input OR4+NOT1 tests cleared pending5==0; finished=head_valid AND zero.",
+            "name": "head_completion"
+          },
+          {
+            "counts": {
+              "not_gate": 5,
+              "or_gate": 5
+            },
+            "formula": "can_load=NOT head_valid OR finished; feeds reset-gated enR above.",
+            "name": "head_load"
+          },
+          {
+            "counts": {
+              "and_gate": 5,
+              "not_gate": 5,
+              "or_gate": 5
+            },
+            "formula": "next_head_valid=pop OR (head_valid AND NOT finished); always-enabled valid word.",
+            "name": "head_valid_update"
+          },
+          {
+            "counts": {
+              "mux2": 200
+            },
+            "formula": "Per output two 5:1,5-bit mux trees: 2*(5-1)*5=40 scalar mux2, five outputs.",
+            "name": "cyclic_rotate_unrotate"
+          },
+          {
+            "counts": {
+              "or_gate": 10
+            },
+            "formula": "Per output index bits OR onehot[1,3] and OR onehot[2,3]; bit2=onehot4; two OR.",
+            "name": "original_grant_index"
+          },
+          {
+            "counts": {
+              "mux2": 15
+            },
+            "formula": "Per output lock selects held index3 versus new index3; three scalar mux2.",
+            "name": "held_grant_select"
+          },
+          {
+            "counts": {
+              "or_gate": 5
+            },
+            "formula": "Per output grant_valid=locked OR priority_valid.",
+            "name": "grant_valid"
+          },
+          {
+            "counts": {
+              "and_gate": 50,
+              "not_gate": 15
+            },
+            "formula": "Per output N=5,A=3 decoder: 5*(3-1) AND +3 shared NOT; five outputs.",
+            "name": "grant_decode"
+          },
+          {
+            "counts": {
+              "and_gate": 25
+            },
+            "formula": "Per output five decoded grant bits AND grant_valid.",
+            "name": "grant_valid_mask"
+          },
+          {
+            "counts": {
+              "and_gate": 10
+            },
+            "formula": "Per output handshake=grant_valid AND output_ready AND rst: two AND.",
+            "name": "output_handshake"
+          },
+          {
+            "counts": {
+              "and_gate": 5,
+              "not_gate": 5
+            },
+            "formula": "Per output held-index wen=NOT locked AND priority_valid.",
+            "name": "capture_held_index"
+          },
+          {
+            "counts": {
+              "and_gate": 5,
+              "not_gate": 5
+            },
+            "formula": "Per output next_locked=grant_valid AND NOT handshake; always-enabled lock word.",
+            "name": "lock_update"
+          },
+          {
+            "counts": {
+              "mux2": 15
+            },
+            "formula": "Per output chosen_index[2] selects0 versus increment low3 (legal indices0..4); three mux2. RR wen=handshake.",
+            "name": "rr_wrap"
+          },
+          {
+            "counts": {
+              "mux2": 1280
+            },
+            "formula": "Five outputs*(5-1)*64 scalar mux2; selected index drives 5:1 data mux.",
+            "name": "crossbar"
+          }
+        ]
+      },
+      "spinalflow.adder32.add": {
+        "boundary": "One arithmetic lane; full W+1 sum.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder32": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "spinalflow.adder32",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder32": 1
+            },
+            "formula": "One library adder; port wires only.",
+            "name": "primitive"
+          }
+        ]
+      },
+      "spinalflow.cmp32.compare": {
+        "boundary": "Signed threshold compare; numeric, not repo temporal less_equal.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder32": 1,
+          "mux2": 2,
+          "not_gate": 35,
+          "or_gate": 33,
+          "xor_gate": 33
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "spinalflow.cmp32",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder32": 1,
+              "mux2": 2,
+              "not_gate": 35,
+              "or_gate": 33,
+              "xor_gate": 33
+            },
+            "formula": "a+~b carry=unsigned gt; equality: W XOR +(W-1) OR +1 NOT; unsigned ge=gt OR eq, lt=NOT ge. Signed adds sign XOR, sign NOT, two one-bit sign-select muxes and signed ge OR.",
+            "name": "signed_compare32"
+          }
+        ]
+      },
+      "spinalflow.min_tree4.compare": {
+        "boundary": "Unsigned timestamps; two-level minimum tree, invalid suppression, stable low-index ties; invalid data is unspecified.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "adder32": 3,
+          "and_gate": 3,
+          "mux2": 102,
+          "not_gate": 105,
+          "or_gate": 102,
+          "xor_gate": 96
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "spinalflow.min_tree4",
+          "scope": "node",
+          "system_units": 16,
+          "units": 1
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "adder32": 3,
+              "not_gate": 102,
+              "or_gate": 96,
+              "xor_gate": 96
+            },
+            "formula": "3 × (a+~b carry=gt; equality W XOR +(W-1) OR +1 NOT; ge=gt OR eq; lt=NOT ge; b inversion W NOT.)",
+            "name": "unsigned_compare32"
+          },
+          {
+            "counts": {
+              "and_gate": 3,
+              "mux2": 102,
+              "not_gate": 3,
+              "or_gate": 6
+            },
+            "formula": "Three nodes: choose_right=vr AND (NOT vl OR gt); valid=vl OR vr; mux32 key + mux2 index per node, 3*(32+2) scalar mux2.",
+            "name": "valid_winner_mux"
+          }
+        ]
+      },
+      "spinalflow.reg32.rmw": {
+        "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+        "dynamic_event_cycles": 1,
+        "pricing_mode": "composition",
+        "primitive_counts": {
+          "register32": 1
+        },
+        "standing_inventory": {
+          "operations_share_inventory": true,
+          "physical_module": "spinalflow.reg32",
+          "scope": "node",
+          "system_units": 64,
+          "units": 4
+        },
+        "structural_vector_usage": "pricing",
+        "terms": [
+          {
+            "counts": {
+              "register32": 1
+            },
+            "formula": "One library register word; reset/enable and storage are internal.",
+            "name": "primitive"
+          }
+        ]
+      }
+    },
+    "schema_version": 4,
+    "standing_inventory_rule": "Apply standing_inventory once per physical_module, shared across operations; it is NOT included in primitive_counts. dynamic_event_cycles multiplies dynamic energy only.",
+    "variant_id_syntax": "adderW, registerW, fifoWxD and six named gate variants; exact24-variant union of all48 primitive_counts vectors, catalogued in BASIC_MODULES.md. mux2 counts scalar bits."
+  },
+  "reference_only_rtl": {
+    "files": {
+      "helpers.v": "3336305148cf4607373d9a3d89ef15d6fcad19a6da45e6a827291d4e98b80f26",
+      "test_whole_tops.py": "28d5ae83d053dabd7604bd664e546cb27e7a4d867dc3fa5afb54a31e125795f8",
+      "test_whole_tops.sv": "3f270bfeb2e77f87f7bbcfb560c5617f2d58e87d6476963a7bf65d8fecb94245",
+      "whole_tops.v": "e93f6fd1dbe772304069fb259a53794c3b795c2dcf28f5d2cec930e05a1215c5"
+    },
+    "status": "unsynthesized reference only; no whole-top synthesis or functional work scheduled",
+    "whole_top_count": 13
+  },
+  "rework9_archive": {
+    "archive": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/rework9/before.tar.gz",
+    "provenance": "User-supplied archive location before nine-row rework; no SHA supplied in this update"
+  },
+  "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+  "rtl_mapped_rows": 48,
+  "rtl_repository": "https://github.com/UnaryLab/verilog_modules.git",
+  "rtl_tops_written": true,
+  "scope": "T91 documentation only:24 flat-derived single-module basic jobs and composition pricing;48RTL/41physical/9excluded. Whole13 RTL tops remain unsynthesized reference-only. No source, flow, price or test changes.",
+  "source_contracts": {
+    "merger": {
+      "contract": "two unsigned32-bit keys K=(kh*KW+kw)*CIN+cin with lane/valid sideband; valid first,ascending K,stable lane0 tie; preserve both equal keys,never dedup. Empty output valid0.",
+      "implementation": "compare32 plus two key muxes and lane/valid mux; compact key assumes KH*KW*CIN<=2^32",
+      "qualification": "source emits per-HO streams in kh,kw,cin order with same-tick lane refetches and no global sort. Hardware row is the specified NR2 compare-exchange energy component; it does not rewrite source emission/timing or mean192-bit AddressRow comparison.",
+      "source": "src/lays/weight_trace_gen/gustavsnn/GustavGen.h"
+    },
+    "pruner": {
+      "contract": "original16-bit rows,processed-valid256 and keys(popcount5,original_index8); non-strict subset includes equal rows; choose maximum key among processed matches, then original row XOR chosen original prefix; no candidate=>original row; no storing residual in TCAM",
+      "implementation": "256 eligibility gates,255 compare13/mux nodes,row16 mux,XOR; no strict-popcount filter in source-aligned top",
+      "source": "src/lays/weight_trace_gen/prosperity/ProsperityGen.h",
+      "tie": "stable ascending popcount then original index; reverse processed search equals maximum key; physical slot tie only if duplicate identical key, choose low slot"
+    },
+    "psum_scan": {
+      "composition": "31 adder1 +30 adder2 +28 adder3 +24 adder4 +16 adder5,pass-through extension; no state",
+      "contract": "input32-bit spike mask; inclusive prefix[32][6],exclusive rank[32][5],total6; five stages distances1,2,4,8,16; carry width1..6",
+      "qualification": "LoASGen only computes non-silent rows, not gate-level scan. Counts/doc define prefix-popcount semantics; this is an explicit realization, not an extracted simulator netlist or the approximate80-FA gate budget.",
+      "source": "zoo/fig12_edp/docs/loas_energy.md"
+    }
+  },
+  "source_files": {
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/cachesim/native/include/cachesim/config.h": "1fa5b97b48aac61291d33bbb01ecee1a3ea829c9375ff41e4efd677927da72de",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/cachesim/native/include/cachesim/prefetch/distance_aware.h": "bbc9883abdb49ee3d17ce783dd1ffb24b7f4fceec212b6e6c6b1a14764b19c50",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/cachesim/native/include/cachesim/prefetch/next_access.h": "572af5cb3d5e3f5de95ed86e85889fa3051d989d352eed20052f80fd8cbb286e",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/cachesim/native/include/cachesim/prefetch/prefetcher.h": "e78f5cd854645bc9db47c0aad3fafd5b45d5200f1c010414009f020332e76bac",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/cachesim/native/src/config.cpp": "303648b353b887d36ddcb42f607146b9c887270c681660e712b9325dfa0d6e3a",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/cachesim/native/src/core/engine.cpp": "4d7606c5e68bc9c9b00db1d82c25e4030ff931cdddff2615ada202c1bf5714d6",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/cachesim/native/src/core/engine_core.cpp": "8f1371d493fdff64a3ca4f602ea5384d5dafee5f1a41b58d59c83fa1bed3a37f",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/cachesim/native/src/layout/khkw_split.cpp": "82bc8d5deb72c50fb2d061a6d100354767e5402403aaf56ced7d84db7e90cc33",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/cachesim/native/src/prefetch/distance_aware.cpp": "0eef4b01f41948a82494469c81b9cdc7aeef6255d9c9de656ae05c968c1ca61c",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/cachesim/native/src/prefetch/neighbour.cpp": "edd565af08d3a13f57c532be9d530dabaa7af0b8610b60f92db8154146a9429c",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/cachesim/native/src/prefetch/next_access.cpp": "3400fbe3e00b7a8359e44af543cd0691be8b296eb155b991a8b88977c66e7ae8",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/weight_trace_gen/gustavsnn/GustavGen.h": "f8338cdf51fb669d49f8c2d5d452b4ac45e3106f237fc5788a535bdc048e930b",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/weight_trace_gen/loas/LoASGen.h": "16cd6feceff2712a6622ec9a6ae9004015be73e2c43abb8755332365f6105ca0",
+    "/u/yyu9/projects/neuro_cache_wcache/src/lays/weight_trace_gen/prosperity/ProsperityGen.h": "7fa74657def0929e81309261e4ea891a479ee9c3540b78178097efe675694e29",
+    "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/configs/production_cache_a.json": "a08ec1f85b637c2c83827dbb4009996fd929dd76fad0e22bddcbaae6b9628d3c",
+    "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/configs/production_cache_b.json": "fb4519d03dd4e6787d30ee924241cb5dee99ecf290acaece4f1d44400e752c2b",
+    "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/counts/gustavsnn_counts.py": "7b663c2abf7bf52ce4f08d33142354a05d98b7fde2f780ccbf8efbe1b20934ee",
+    "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/counts/loas_counts.py": "7c22f3e90a23b6201b3043ad78a8f00004d22b9c6e25f9cc7d8c0e1b4a867faf",
+    "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/docs/gustavsnn_energy.md": "183c72a9aa9d9baa4c5cc37b5dc594ad4ed223b4a4b784738f63dda2d27fa84a",
+    "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/docs/loas_energy.md": "e563fbe77b88bfbec142a75a3ea9a5fd3ae8092756ed29e5908b35191f6699a7"
+  },
+  "target_frequency_MHz": 500,
+  "target_library": {
+    "corner": "TT",
+    "family": "ASAP7_75t_R",
+    "pvt": "PVT_0P7V_25C",
+    "temperature_C": 25,
+    "voltage_V": 0.7,
+    "vt": "RVT"
+  },
+  "target_library_provenance": "ASAP7_TT_LIBRARIES.json",
+  "task_archive": {
+    "archive": "/u/yyu9/peon-snapshots/energy-performance-estimation/T95-20261114-pricing-policy/before.tar.gz",
+    "provenance": "Archive-completed signal and SHA supplied by user before edits",
+    "sha256": "88a010ff1d3da31c797250904f87191ca21649717cecb075e9a913bf2d14537e"
+  },
+  "tt_library_manifest": {
+    "path": "ASAP7_TT_LIBRARIES.json",
+    "sha256": "65b0faeb93afff4c1fc6efa405ad7f0062c21afe347458ea32c2642dd314d51d",
+    "status": "Official TT set fetched and verified by main agent; use pinned manifest"
+  },
+  "unmapped_categories": [
+    "DRAM cells/IO PHY",
+    "SRAM/cache/GB macros",
+    "physical wire"
+  ],
+  "worklist_families": 18
+}

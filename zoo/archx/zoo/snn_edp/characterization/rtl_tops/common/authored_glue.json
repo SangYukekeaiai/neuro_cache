@@ -1,0 +1,11 @@
+{
+  "files": {
+    "rtl_tops/common/mux2.v": "e3db2804d7f762020f12244c0b216af064cc38bc4f629e95fbb8755e25f80a97",
+    "rtl_tops/common/not_gate.v": "a5633f7eacb0d78f35dfbf9218eee91e8a62efe6f9ecd4935ca3d61730d3ef9e",
+    "rtl_tops/common/or_gate.v": "ca9c6ee7a3a61810079f283ce2c60b3d03934242b317bbbef23062c676fd0fd1",
+    "rtl_tops/common/xor_gate.v": "fd3c8c4dc1f08968cfae66a4ddecab32e1df6970160f0e04e7a651924a1ed7e5"
+  },
+  "logic": "one combinational assign per module; no gate-equivalent substitution",
+  "provenance": "authored glue gates, repo idiom",
+  "specification": "BASIC_MODULES.md#glue-gates-authored-in-the-repo-idiom-4-variants"
+}

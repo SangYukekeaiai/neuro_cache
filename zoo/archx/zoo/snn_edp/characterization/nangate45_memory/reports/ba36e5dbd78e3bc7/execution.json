@@ -1,0 +1,15 @@
+{
+  "binary_sha256": "0df9e0775e7194a1f2c9c40065ad35e3d74ac249287f467421a2521ad13369c0",
+  "command": [
+    "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/src/archx/interface/cacti7/include/cacti7/cacti-Linux-x86_64",
+    "-infile",
+    "query.cfg"
+  ],
+  "cpu_affinity": [
+    0
+  ],
+  "cpu_limit_seconds": 120,
+  "cwd": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/nangate45_memory/reports/ba36e5dbd78e3bc7",
+  "returncode": 0,
+  "wall_seconds": 3.0236693040351383
+}

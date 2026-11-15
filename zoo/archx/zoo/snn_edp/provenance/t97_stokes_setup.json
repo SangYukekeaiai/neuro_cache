@@ -1,0 +1,121 @@
+{
+  "task": "T97",
+  "status": "stokes_setup_validated",
+  "evidence_mode": "Existing local archived Stokes logs only; no remote operation for this record.",
+  "archive_path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes",
+  "reproduction_log": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/repro.md",
+  "build": {
+    "exit_code": 0,
+    "script": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/t97_build_validate2.sh",
+    "script_sha256": "899aaa29570549d211b5befa42675bd89728f6ec5fe51539714518e84b9ba35f",
+    "original_script": "/tmp/t97_build_validate2.sh",
+    "copy_byte_exact": true
+  },
+  "validation": {
+    "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/validation.json",
+    "sha256": "b5955af62493312242bebad891eb9be3e70f7dac35dde98222394e72245d5e3a",
+    "rows": 15,
+    "terms": 386,
+    "max_total_relative_error": 2.692250735113692e-16,
+    "max_term_relative_error": 0,
+    "native_production_config_tests_passed": 2,
+    "energy_table_sha256": "8c3589272e2a68dc9b01847be61f2076fb5dbb84eee7a4dc582671da9ff79942",
+    "reference_sha256": "8de5ccdd0fbf00fea665f0b67544516c2ce4e3a82e7b99a7783ca75cbb468211",
+    "basis": "historical independent CSV minus retired logic prices and nine explicit prefetch-control exclusions; deduplicated physical inventory"
+  },
+  "backend_paths": {
+    "archx.__file__": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/src/archx/__init__.py",
+    "archx._core.__file__": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/src/archx/_core.abi3.so"
+  },
+  "checksums": {
+    "scientific_sources": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/scientific_sources.sha256",
+      "sha256": "0be28ebffebc9956dfadcb9fe7795cd9ffacba137ed670566aa1b737312fe3fe",
+      "verified_paths": 252
+    },
+    "subset": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/input_trace_sample0/SHA256SUMS",
+      "sha256": "897c282b873e38d3feb423c313b76fb5c3ee468c100b7c2e133ce863c82a4464",
+      "verified_paths": 175
+    },
+    "native_sha256": {
+      "zoo/archx/src/archx/_core.abi3.so": "92fbfaa145ebd2c4f09d708427dd7ecc1630d113083ca2a90a443f30e7b0386e",
+      "src/lays/cachesim/native/build/release/cachesim_run": "2500622500c8c8af98ae2a7cba7edfff86e9a63e04a008cabc7dda2372a4ebb2",
+      "src/lays/cachesim/native/build/release/cachesim_sweep": "2e67c3ba82f7bedb1c8a894281570737d290cf239fbb563a71bd7e03be01fe9b",
+      "src/lays/nocsim/eventsim/eventsim": "6c14a1ad5a7c076ea64574f602baf884594bfea6a1ce4604a104bbe60d5b20e5",
+      "src/lays/weight_trace_gen/spinalflow/spinalflowgen": "b80746efc25427a3f8ee22f7c2bacff5a726db87ac07a8d07df99f451617f0a0",
+      "src/lays/weight_trace_gen/ptb/ptbgen": "a56740839f1619d1aebec3db6df78111b5a1365178edbf49446ed59f88747246",
+      "src/lays/weight_trace_gen/loas/loasgen": "e85fab193ae8c56a0e2ea4133b298adf6fa5cb8e10b96ded8bb2df81fa448133",
+      "src/lays/weight_trace_gen/gustavsnn/gustavgen": "722d9b1e41a43e4601757c8c3340dad497ec3a4e19224a7b46f8e6e967639aa4",
+      "src/lays/weight_trace_gen/prosperity/prosperitygen": "71a40d569e2b477eae99a083f59f127db3f25239315277a70b7d8c4719bebacd"
+    },
+    "native_hash_provenance": "Recorded remote build hashes from remote_logs/native_sha256.txt; not rehashed remotely by this checkpoint task."
+  },
+  "input": {
+    "source": "/work/nvme/bebv/yyu9/input_trace_delta",
+    "source_access": "STRICT READ ONLY",
+    "layout": "TNCHW",
+    "sample_axis": 1,
+    "slice": "array[:, 0:1, ...]",
+    "meta_source": "byte-exact original meta.source.json",
+    "meta": "derived meta.json matching sample-0 shapes and sample counts",
+    "original_large_array_hashes": "source-advertised SHA256SUMS values, not newly rehashed originals"
+  },
+  "scope": {
+    "kept_cases": 559,
+    "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/kept_case_keys.json",
+    "sha256": "b88d702c5eb475d4b649148fdb5555164b1a04b4a75b9b5c6a48fc9de987161f",
+    "memory_proxy": "estimated_records * 512 bytes + 2 GiB; not measured sample-0 peak memory"
+  },
+  "stage1": {
+    "sbatch_submitted": false,
+    "checkpoint_gate": "awaiting boss Stage 1 go at setup validation checkpoint",
+    "latest_directive": "Boss subsequently authorized submission; main agent handles submission. This task prepares local records only."
+  },
+  "logs": {
+    "build_validate2.exit": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/remote_logs/build_validate2.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "build_validate2.log": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/remote_logs/build_validate2.log",
+      "sha256": "89ef0e50ec61ce7d2e6df7a97bcb6da5373305b3a50507f82cba565672dadfe8"
+    },
+    "native_config_tests.log": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/remote_logs/native_config_tests.log",
+      "sha256": "ac84d31254b1f0be729bbe2e90dcf691256875726c8d4a6bf0802d69e59cc6ed"
+    },
+    "backend_import.log": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/remote_logs/backend_import.log",
+      "sha256": "db45d5f8cbe6a0cc1d642d64b5c168a957c8e1ae5279a7ad9b226d160f9442b6"
+    },
+    "fixture_validation.log": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/remote_logs/fixture_validation.log",
+      "sha256": "6c795aad24ce305017d5e7b5b536b7ba593f414a40519fbf67efc3604f59640f"
+    },
+    "input_sha_verify.log": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/remote_logs/input_sha_verify.log",
+      "sha256": "69cade1e1b9cdc685641edb146b615fdeddba7f5eb3ad9692b2a183b7ea6afa1"
+    },
+    "scientific_sources_verify.log": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/remote_logs/scientific_sources_verify.log",
+      "sha256": "128676239b8c35c984723e6e5f47f01b08c2ca3cca1145b6906f88eafbd35efa"
+    },
+    "schedule_sha_verify.log": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/remote_logs/schedule_sha_verify.log",
+      "sha256": "7008a58433d62a0b3ca07e0c628adaf6b59d324795fa009d43ef8430c9a724f4"
+    },
+    "native_sha256.txt": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/remote_logs/native_sha256.txt",
+      "sha256": "3e43afc0758bf74fdccd02a0382ccbc45af0d3b0c8d5f372b2f511e466107c18"
+    },
+    "pip_freeze.txt": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/remote_logs/pip_freeze.txt",
+      "sha256": "b5082b89524b6cfe101ccf290018498e0cca1382a9e0201efe331f4118ff4c92"
+    },
+    "environment.explicit.txt": {
+      "path": "/u/yyu9/peon-snapshots/energy-performance-estimation/T97-20261114-stokes/remote_logs/environment.explicit.txt",
+      "sha256": "2abdc6186624d2084a57df51a43a84df25c564802a8b9eed690e8bf86cd8e5d1"
+    }
+  }
+}

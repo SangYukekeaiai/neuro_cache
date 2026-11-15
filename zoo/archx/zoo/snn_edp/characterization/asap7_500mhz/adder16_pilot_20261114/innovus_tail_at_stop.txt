@@ -1,0 +1,20 @@
+Extraction setup Started 
+Initializing multi-corner RC extraction with 2 active RC Corners ...
+Process node set using 'setDesignMode' is less than or equal to 32nm, for which captable file(s) would be ignored as preRoute extraction would instead use technology file. For postRoute extraction, default value for effort level would be 'medium' and effort level 'low' would not be allowed.
+Generating auto layer map file.
+Importing multi-corner technology file(s) for preRoute extraction...
+../../../../../Enablements/ASAP7/qrc/ASAP7.tch
+Generating auto layer map file.
+Innovus terminated by external (TERM) signal.
+
+*** Memory Usage v#1 (Current mem = 24927.395M, initial mem = 486.996M) ***
+*** Message Summary: 3 warning(s), 0 error(s)
+
+--- Ending "Innovus" (totcpu=0:03:37, real=0:29:33, mem=24927.4M) ---
+Lic Summary:
+[22:50:51.312088] Cdslmd servers: license
+[22:50:51.312130] Feature usage summary:
+[22:50:51.312131] Innovus_Impl_System
+[22:50:51.312131] Innovus_7nm_Opt
+
+

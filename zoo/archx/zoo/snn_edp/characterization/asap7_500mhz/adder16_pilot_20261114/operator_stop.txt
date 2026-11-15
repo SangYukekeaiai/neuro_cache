@@ -1,0 +1,5 @@
+timestamp=2026-11-14T22:50:11-0500
+reason=Boss-authorized early stop: growing >=22GiB footprint threatens shared-host swap exhaustion
+pgid=1379812
+signal=TERM
+authorization=stop now; do not wait for the 90-minute watchdog

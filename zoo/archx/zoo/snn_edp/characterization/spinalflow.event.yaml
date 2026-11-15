@@ -1,0 +1,15 @@
+event:
+  spinalflow_stub:
+    performance: zoo/snn_edp/characterization/spinalflow_performance.py
+    subevent:
+      - l1_weight_spad
+      - input_spike_buffer
+      - output_spike_queue
+      - psum_l1
+      - vmem_l1
+      - psum_l2
+      - vmem_l2
+      - adder32
+      - cmp32
+      - reg32
+      - min_tree4

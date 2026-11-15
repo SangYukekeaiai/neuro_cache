@@ -1,0 +1,17 @@
+2026-11-14T22:51:13-05:00
+    PID    PPID    PGID     ELAPSED     TIME   RSS STAT COMMAND
+1381130       1 1379812       30:30 00:03:38 9905484 Dl innovus
+MemTotal:       48929092 kB
+MemAvailable:    4031172 kB
+SwapTotal:      116940780 kB
+SwapFree:        2339672 kB
+memory.usage_in_bytes
+10729873408
+memory.memsw.usage_in_bytes
+27204755456
+memory.failcnt
+5660776
+memory.oom_control
+oom_kill_disable 0
+under_oom 0
+oom_kill 0

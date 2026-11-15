@@ -1,0 +1,12 @@
+{
+  "visible_operation_rows": 98,
+  "composed_operations": 48,
+  "excluded_operations": 9,
+  "physical_rows": 41,
+  "basic_variants": 24,
+  "whole_tops": 0,
+  "characterization_jobs": 24,
+  "term_sums_equal_declared_counts": true,
+  "rendered_compositions_equal_audit": true,
+  "manual_links_resolved": 392
+}

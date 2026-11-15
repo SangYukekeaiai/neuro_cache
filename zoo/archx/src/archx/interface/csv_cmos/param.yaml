@@ -1,0 +1,58 @@
+# fft_pe:
+# systolic_pe:
+# adder:
+#   width: 32
+# multiplier:
+#   width: 32
+# pe_32:
+#   width: 32
+# pe_16:
+#   width: 16
+# pe_8:
+#   width: 8
+# pe_4:
+#   width: 4
+tnn_adder:
+  width: 4
+tnn_and_gate:
+  width: 1
+tnn_and_gate_5:
+  width: 5
+tnn_reg:
+  width: 1
+edge2pulse:
+flogic:
+fsm_output:
+fsm_simple:
+fsm_weight_update:
+incdec:
+less_equal:
+pulse2edge:
+stdp_case_gen:
+tnn_reg_3:
+  width: 3
+wta:
+stdp:
+neuron_body:
+  width: 16
+fsm_synapse:
+pac:
+  width: 96
+mult_4:
+  width: 4
+mult_8:
+  width: 8
+mult_16:
+  width: 16
+mult_32:
+  width: 32
+adder_8:
+  width: 8
+adder_16:
+  width: 16
+adder_32:
+  width: 32
+adder_64:
+  width: 64
+pulse2edge_96:
+  width: 96

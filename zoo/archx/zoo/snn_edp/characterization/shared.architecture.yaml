@@ -1,0 +1,28 @@
+architecture:
+  module:
+    gb:
+      query: {interface: cacti_fn, class: sram, technology: 7, frequency: 500, bank: 1, width: 256, depth: 65536}
+      operations: {read: gb_reads, write: gb_writes}
+      physical_instances: 1
+    router:
+      reference_query: {interface: csv_cmos_32nm, class: noc_router, technology: 32, frequency: 400, bandwidth: 64}
+      target_technology_nm: 7
+      reference_voltage: 0.9
+      target_voltage: 0.7
+      packet_bits: 320
+      physical_instances: 16
+      # Stillmaker/Baas energy polynomial (32nm at0.9V to7nm at0.7V), area table32->7=0.13.
+      scaling_citation: https://accelergy-project.github.io/hwcomponents/_modules/hwcomponents/scaling/techscaling.html
+    link:
+      packet_bits: 320
+      voltage: 0.7
+      length_mm: 1.0
+      physical_instances: 48
+      assumption: Four64-bit payload flits plus one header;1mm mesh pitch assumption; directed links on4x4 mesh.
+    ddr4:
+      query: {interface: cacti7, class: ddr4, technology: 22, frequency: 500, size: 8589934592}
+      burst_bytes: 64
+      array_read_bytes: 8
+      bus_frequency_MHz: 1600
+      data_pins: 64
+      physical_instances: 1

@@ -1,0 +1,105 @@
+architecture:
+  attribute: {technology: 7, frequency: 500, interface: csv_cmos}
+  module:
+    l1:
+      tag: [memory, cache]
+      query: {interface: cacti_fn, class: cache, size: 131072, width: 512, associativity: 8, bank: 1}
+      operations: {read: l1_accesses, write: l1_accesses-l1_hits+pf_issued-pf_dropped_array_hit-pf_dropped_matching-pf_dropped_no_slot-pf_dropped_targets_full-pf_dropped_reserve}
+      physical_instances: 16
+      scope: system
+      assumption: LRU/pf_lru replacement-state RMW folded into array accesses; khkw_split indexing costs zero. Fill count is demand-miss plus accepted-prefetch upper-bound proxy, including merged/retried demand misses.
+    l2:
+      tag: [memory, cache]
+      query: {interface: cacti_fn, class: cache, size: 4194304, width: 512, associativity: 16, bank: 1}
+      operations: {read: l2_accesses, write: dram_accesses}
+      scope: system
+      assumption: LRU/pf_lru replacement-state RMW folded into array accesses; DRAM costs are shared.ddr4.read and shared.ddr4_io.byte.
+    # Nine operation prices are zero by characterization/pricing_policy.json; counts remain active.
+    l1_tags:
+      tag: [memory, cache]
+      query: {interface: cacti_fn, class: sram, width: 256, depth: 32, bank: 1}
+      operations: {read: 2*pf_issued+pf_budget_exhausted}
+      physical_instances: 0
+      scope: system
+      assumption: 42-bit FN-CACTI address minus 6 offset and 5 index bits plus valid bit; all 8 ways. Leakage/area already in whole cache.
+    l2_tags:
+      tag: [memory, cache]
+      query: {interface: cacti_fn, class: sram, width: 512, depth: 512, bank: 1}
+      operations: {read: l2_pf_issued+pf_issued-pf_dropped_array_hit-pf_dropped_matching-pf_dropped_no_slot-pf_dropped_targets_full-pf_dropped_reserve}
+      physical_instances: 0
+      scope: system
+      assumption: 42-bit address minus 6 offset and 9 index bits plus valid rounded to 32 bits, all 16 ways. Leakage/area already in whole cache.
+    distance_metadata:
+      tag: [memory, cache]
+      query: {interface: cacti_fn, class: sram, width: 64, depth: 8192, bank: 1}
+      operations: {read: l1_accesses, write: l1_accesses}
+      scope: system
+      applies_to: [cacheA]
+      assumption: Bounded 64 KiB hardware model for the simulator's unbounded touch map; 64-bit tile/count payload, no extra tag storage charged. No eviction modeled; probes are an activity upper bound.
+    next_access_state:
+      placeholder: pending-ASAP7-synthesis
+      tag: [compute, cache]
+      query: {frequency: 500, class: register, width: 32}
+      operations: {rmw: '3*pf_issued'}
+      physical_instances: 48
+      scope: system
+      applies_to: [cacheA]
+      assumption: Three int32 state vectors for 16 cores in next_access.h; 192B total, three updates per issued prefetch proxy.
+    mshr_cam_l1:
+      tag: [compute, cache]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: mshr_cam, width: 64, depth: 16}
+      operations: {search: 'l1_accesses-l1_hits+l1_accesses-l1_hits+pf_issued-pf_dropped_array_hit-pf_dropped_matching-pf_dropped_no_slot-pf_dropped_targets_full-pf_dropped_reserve'}
+      physical_instances: 16
+      scope: system
+    mshr_cam_l2:
+      tag: [compute, cache]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: mshr_cam, width: 64, depth: 32}
+      operations: {search: 'l2_accesses-l2_hits+dram_accesses'}
+      scope: system
+    mshr_targets_l1:
+      tag: [compute, cache]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: register_file, width: 64, depth: 320}
+      operations: {write: l1_accesses-l1_hits}
+      physical_instances: 16
+      scope: system
+      assumption: 16 MSHRs x20 targets; 64-bit core/burst payload proxy pending target-list synthesis. Miss count is the request-write proxy.
+    mshr_targets_l2:
+      tag: [compute, cache]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: register_file, width: 64, depth: 384}
+      operations: {write: l2_accesses-l2_hits}
+      scope: system
+      assumption: 32 MSHRs x12 targets; target payload/activity proxy pending synthesis.
+    next_access_logic:
+      tag: [compute, cache]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: prefetcher, width: 64}
+      operations: {step: pf_issued}
+      physical_instances: 16
+      scope: system
+      applies_to: [cacheA]
+    distance_logic:
+      tag: [compute, cache]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: prefetcher, width: 64}
+      operations: {step: l2_pf_issued}
+      scope: system
+      applies_to: [cacheA]
+    next_line_l1:
+      tag: [compute, cache]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: adder, width: 64}
+      operations: {add: pf_issued}
+      physical_instances: 16
+      scope: system
+      applies_to: [cacheB]
+    next_line_l2:
+      tag: [compute, cache]
+      placeholder: pending-ASAP7-synthesis
+      query: {frequency: 500, class: adder, width: 64}
+      operations: {add: l2_pf_issued}
+      scope: system
+      applies_to: [cacheB]

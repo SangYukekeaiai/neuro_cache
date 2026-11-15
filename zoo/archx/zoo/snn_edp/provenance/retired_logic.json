@@ -1,0 +1,135 @@
+{
+  "archive": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261113-retire-tnn/before.tar.gz",
+  "archive_sha256": "6bbe42342a1a8f43b4e30abc3ecfbe7fdd920e7f44ea3590989493a23c0a078d",
+  "baseline_table_sha256": "54632c517548e8bc8641bd73229d38107daeba51a283ceb75cd310b51a928d6d",
+  "current_table_sha256": "8c3589272e2a68dc9b01847be61f2076fb5dbb84eee7a4dc582671da9ff79942",
+  "purpose": "Historical provenance only; not an active characterization or default price source",
+  "rows": {
+    "cache.next_access_state.rmw": {
+      "area_mm2": 0.000246336,
+      "dynamic_energy_nJ": 6.464639999999999e-05,
+      "historical_class": "tnn_reg",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_reg.csv",
+      "leakage_power_mW": 8e-06,
+      "physical_module": "cache.next_access_state",
+      "system_instances": 48
+    },
+    "gustavsnn.adder16.add": {
+      "area_mm2": 9.7044e-05,
+      "dynamic_energy_nJ": 1.0780799999999998e-05,
+      "historical_class": "tnn_adder",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_adder.csv",
+      "leakage_power_mW": 4.04e-06,
+      "physical_module": "gustavsnn.adder16",
+      "system_instances": 64
+    },
+    "gustavsnn.reg16.rmw": {
+      "area_mm2": 0.000123168,
+      "dynamic_energy_nJ": 3.2323199999999996e-05,
+      "historical_class": "tnn_reg",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_reg.csv",
+      "leakage_power_mW": 4e-06,
+      "physical_module": "gustavsnn.reg16",
+      "system_instances": 64
+    },
+    "loas.adder16.add": {
+      "area_mm2": 9.7044e-05,
+      "dynamic_energy_nJ": 1.0780799999999998e-05,
+      "historical_class": "tnn_adder",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_adder.csv",
+      "leakage_power_mW": 4.04e-06,
+      "physical_module": "loas.adder16",
+      "system_instances": 2048
+    },
+    "loas.reg16.read": {
+      "area_mm2": 0.000123168,
+      "dynamic_energy_nJ": 3.2323199999999996e-05,
+      "historical_class": "tnn_reg",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_reg.csv",
+      "leakage_power_mW": 4e-06,
+      "physical_module": "loas.reg16",
+      "system_instances": 2048
+    },
+    "loas.reg16.rmw": {
+      "area_mm2": 0.000123168,
+      "dynamic_energy_nJ": 3.2323199999999996e-05,
+      "historical_class": "tnn_reg",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_reg.csv",
+      "leakage_power_mW": 4e-06,
+      "physical_module": "loas.reg16",
+      "system_instances": 2048
+    },
+    "prosperity.adder16.add": {
+      "area_mm2": 9.7044e-05,
+      "dynamic_energy_nJ": 1.0780799999999998e-05,
+      "historical_class": "tnn_adder",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_adder.csv",
+      "leakage_power_mW": 4.04e-06,
+      "physical_module": "prosperity.adder16",
+      "system_instances": 64
+    },
+    "prosperity.lif_state.rmw": {
+      "area_mm2": 0.000246336,
+      "dynamic_energy_nJ": 6.464639999999999e-05,
+      "historical_class": "tnn_reg",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_reg.csv",
+      "leakage_power_mW": 8e-06,
+      "physical_module": "prosperity.lif_state",
+      "system_instances": 64
+    },
+    "prosperity.reg16.rmw": {
+      "area_mm2": 0.000123168,
+      "dynamic_energy_nJ": 3.2323199999999996e-05,
+      "historical_class": "tnn_reg",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_reg.csv",
+      "leakage_power_mW": 4e-06,
+      "physical_module": "prosperity.reg16",
+      "system_instances": 64
+    },
+    "ptb.adder16.add": {
+      "area_mm2": 9.7044e-05,
+      "dynamic_energy_nJ": 1.0780799999999998e-05,
+      "historical_class": "tnn_adder",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_adder.csv",
+      "leakage_power_mW": 4.04e-06,
+      "physical_module": "ptb.adder16",
+      "system_instances": 512
+    },
+    "ptb.reg16.read": {
+      "area_mm2": 0.000123168,
+      "dynamic_energy_nJ": 3.2323199999999996e-05,
+      "historical_class": "tnn_reg",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_reg.csv",
+      "leakage_power_mW": 4e-06,
+      "physical_module": "ptb.reg16",
+      "system_instances": 2048
+    },
+    "ptb.reg16.rmw": {
+      "area_mm2": 0.000123168,
+      "dynamic_energy_nJ": 3.2323199999999996e-05,
+      "historical_class": "tnn_reg",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_reg.csv",
+      "leakage_power_mW": 4e-06,
+      "physical_module": "ptb.reg16",
+      "system_instances": 2048
+    },
+    "spinalflow.adder32.add": {
+      "area_mm2": 0.000194088,
+      "dynamic_energy_nJ": 2.1561599999999997e-05,
+      "historical_class": "tnn_adder",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_adder.csv",
+      "leakage_power_mW": 8.08e-06,
+      "physical_module": "spinalflow.adder32",
+      "system_instances": 64
+    },
+    "spinalflow.reg32.rmw": {
+      "area_mm2": 0.000246336,
+      "dynamic_energy_nJ": 6.464639999999999e-05,
+      "historical_class": "tnn_reg",
+      "historical_source_csv": "/u/yyu9/projects/archx/src/archx/interface/csv_cmos/include/csv/tnn_reg.csv",
+      "leakage_power_mW": 8e-06,
+      "physical_module": "spinalflow.reg32",
+      "system_instances": 64
+    }
+  }
+}

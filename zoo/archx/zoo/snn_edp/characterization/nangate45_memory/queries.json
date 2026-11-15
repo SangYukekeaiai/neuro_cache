@@ -1,0 +1,290 @@
+{
+  "3a617736606b1219": {
+    "config": "reports/3a617736606b1219/query.cfg",
+    "config_sha256": "ee06f8e95a331b68e897c0f3ce2b51941cd2bc22fa76967653912a6953db5ddc",
+    "geometry": {
+      "access_mode": "normal",
+      "associativity": 1,
+      "bank": 1,
+      "block_bytes": 4,
+      "class": "sram",
+      "depth_per_bank": 256,
+      "size_bytes": 1024,
+      "width_bits": 32
+    },
+    "metrics": {
+      "access_time_ns": 0.515017,
+      "area_mm2": 0.0070558947612,
+      "cycle_time_ns": 0.426183,
+      "fmax_MHz": 2346.409875569884,
+      "gate_leakage_per_bank_mW": 0.117483,
+      "height_mm": 0.135852,
+      "leakage_per_bank_mW": 0.020458,
+      "leakage_power_mW": 0.137941,
+      "read_nJ": 0.000754981,
+      "technology_nm": 45,
+      "temperature_K": 360,
+      "voltage_V": 0.7,
+      "width_mm": 0.0519381,
+      "write_nJ": 0.00104029
+    },
+    "report": "reports/3a617736606b1219/report.txt",
+    "report_sha256": "0c6efb4ac70c45bb1a9ad49dab50bedddaa93428bf3f51c3e3e33c2bb44e2086"
+  },
+  "52367daf5daf6956": {
+    "config": "reports/52367daf5daf6956/query.cfg",
+    "config_sha256": "416a3b751d36902d89487f38970a73d6320088eea56e9ad0d5689518707c1800",
+    "geometry": {
+      "access_mode": "normal",
+      "associativity": 1,
+      "bank": 1,
+      "block_bytes": 4,
+      "class": "sram",
+      "depth_per_bank": 16384,
+      "size_bytes": 65536,
+      "width_bits": 32
+    },
+    "metrics": {
+      "access_time_ns": 1.3,
+      "area_mm2": 0.46524473000399996,
+      "cycle_time_ns": 1.35569,
+      "fmax_MHz": 737.6317594730358,
+      "gate_leakage_per_bank_mW": 4.60832,
+      "height_mm": 0.602804,
+      "leakage_per_bank_mW": 1.18176,
+      "leakage_power_mW": 5.79008,
+      "read_nJ": 0.012225,
+      "technology_nm": 45,
+      "temperature_K": 360,
+      "voltage_V": 0.7,
+      "width_mm": 0.771801,
+      "write_nJ": 0.00841987
+    },
+    "report": "reports/52367daf5daf6956/report.txt",
+    "report_sha256": "301b2e589c1844494fb8c0d99177ffcb2fab7895423c2848d0285d12f59927f1"
+  },
+  "623beeeb714efd88": {
+    "config": "reports/623beeeb714efd88/query.cfg",
+    "config_sha256": "d1bd2a700dcb5487b9b917577d89ba0206937526b33b364acfc42bb2cdd852a7",
+    "geometry": {
+      "access_mode": "normal",
+      "associativity": 8,
+      "bank": 1,
+      "block_bytes": 64,
+      "class": "cache",
+      "depth_per_bank": null,
+      "size_bytes": 16384,
+      "width_bits": 512
+    },
+    "metrics": {
+      "access_time_ns": 2.27648,
+      "area_mm2": 0.26152070021999996,
+      "cycle_time_ns": 7.05696,
+      "fmax_MHz": 141.704076542874,
+      "gate_leakage_per_bank_mW": 1.35369,
+      "height_mm": 0.128934,
+      "leakage_per_bank_mW": 0.316134,
+      "leakage_power_mW": 1.6698240000000002,
+      "read_nJ": 0.0402163,
+      "technology_nm": 45,
+      "temperature_K": 360,
+      "voltage_V": 0.7,
+      "width_mm": 2.02833,
+      "write_nJ": 0.0302404
+    },
+    "report": "reports/623beeeb714efd88/report.txt",
+    "report_sha256": "8556198eff0d8c73e0b1f2d982cbaafb45db686d148f84e5b736066a79f705f2"
+  },
+  "736d87459722251b": {
+    "config": "reports/736d87459722251b/query.cfg",
+    "config_sha256": "275d11b8f745d2154d4071a880ac4aa560ef712753f4a938d12ff64fd9011311",
+    "geometry": {
+      "access_mode": "normal",
+      "associativity": 16,
+      "bank": 1,
+      "block_bytes": 64,
+      "class": "cache",
+      "depth_per_bank": null,
+      "size_bytes": 524288,
+      "width_bits": 512
+    },
+    "metrics": {
+      "access_time_ns": 3.33304,
+      "area_mm2": 2.88611936548,
+      "cycle_time_ns": 2.76295,
+      "fmax_MHz": 361.93199297851936,
+      "gate_leakage_per_bank_mW": 27.586,
+      "height_mm": 0.683644,
+      "leakage_per_bank_mW": 7.82247,
+      "leakage_power_mW": 35.40847,
+      "read_nJ": 0.390384,
+      "technology_nm": 45,
+      "temperature_K": 360,
+      "voltage_V": 0.7,
+      "width_mm": 4.22167,
+      "write_nJ": 0.396006
+    },
+    "report": "reports/736d87459722251b/report.txt",
+    "report_sha256": "dbd299c7442195db93c15cfea460e889da2d67fa52cf3cd42e94e52a72945415"
+  },
+  "9018f29fcd51d3ed": {
+    "config": "reports/9018f29fcd51d3ed/query.cfg",
+    "config_sha256": "eab9dbfc489cf4e04a8c4fae885c5d95c8dc873a8ff1e8f1e592f95e231bb6e4",
+    "geometry": {
+      "access_mode": "normal",
+      "associativity": 1,
+      "bank": 1,
+      "block_bytes": 2,
+      "class": "sram",
+      "depth_per_bank": 16384,
+      "size_bytes": 32768,
+      "width_bits": 16
+    },
+    "metrics": {
+      "access_time_ns": 1.07954,
+      "area_mm2": 0.235749219288,
+      "cycle_time_ns": 0.731914,
+      "fmax_MHz": 1366.280737900901,
+      "gate_leakage_per_bank_mW": 2.70506,
+      "height_mm": 0.579487,
+      "leakage_per_bank_mW": 0.649161,
+      "leakage_power_mW": 3.354221,
+      "read_nJ": 0.00660731,
+      "technology_nm": 45,
+      "temperature_K": 360,
+      "voltage_V": 0.7,
+      "width_mm": 0.406824,
+      "write_nJ": 0.00470475
+    },
+    "report": "reports/9018f29fcd51d3ed/report.txt",
+    "report_sha256": "5904b493a3a38020efa78a0e9fd21543fb7ba8768ae537202429e58f329b8655"
+  },
+  "972dca6ebec61b2f": {
+    "config": "reports/972dca6ebec61b2f/query.cfg",
+    "config_sha256": "128adf100726396aafab29fe5aeccab95e7be886ff9f95a62a1def7845d63442",
+    "geometry": {
+      "access_mode": "normal",
+      "associativity": 1,
+      "bank": 1,
+      "block_bytes": 32,
+      "class": "sram",
+      "depth_per_bank": 65536,
+      "size_bytes": 2097152,
+      "width_bits": 256
+    },
+    "metrics": {
+      "access_time_ns": 4.41574,
+      "area_mm2": 14.5113788184,
+      "cycle_time_ns": 3.82243,
+      "fmax_MHz": 261.6136855351177,
+      "gate_leakage_per_bank_mW": 131.851,
+      "height_mm": 4.59093,
+      "leakage_per_bank_mW": 35.745,
+      "leakage_power_mW": 167.596,
+      "read_nJ": 0.251447,
+      "technology_nm": 45,
+      "temperature_K": 360,
+      "voltage_V": 0.7,
+      "width_mm": 3.16088,
+      "write_nJ": 0.235838
+    },
+    "report": "reports/972dca6ebec61b2f/report.txt",
+    "report_sha256": "a9c5db0087abd54bfed40cc4aaea9920c12a184db9c38a6e5b2e8513935c56d3"
+  },
+  "ba36e5dbd78e3bc7": {
+    "config": "reports/ba36e5dbd78e3bc7/query.cfg",
+    "config_sha256": "bed093d847e83846334842646f3e2f82eb1e0d26a15248f185b4341c16a4575b",
+    "geometry": {
+      "access_mode": "normal",
+      "associativity": 1,
+      "bank": 1,
+      "block_bytes": 4,
+      "class": "sram",
+      "depth_per_bank": 8192,
+      "size_bytes": 32768,
+      "width_bits": 32
+    },
+    "metrics": {
+      "access_time_ns": 1.11339,
+      "area_mm2": 0.239513895472,
+      "cycle_time_ns": 0.731914,
+      "fmax_MHz": 1366.280737900901,
+      "gate_leakage_per_bank_mW": 2.64334,
+      "height_mm": 0.577604,
+      "leakage_per_bank_mW": 0.638698,
+      "leakage_power_mW": 3.282038,
+      "read_nJ": 0.00736881,
+      "technology_nm": 45,
+      "temperature_K": 360,
+      "voltage_V": 0.7,
+      "width_mm": 0.414668,
+      "write_nJ": 0.00574525
+    },
+    "report": "reports/ba36e5dbd78e3bc7/report.txt",
+    "report_sha256": "05882dfbcf8ffc468e3bde5bfa96ca1bf245f64079b9a46da279476a25101d8a"
+  },
+  "bc9a1816f2bb054b": {
+    "config": "reports/bc9a1816f2bb054b/query.cfg",
+    "config_sha256": "09d38ffc5b3087426b525822232646839d6577d43c8f1db82eff4f66d8a9f46e",
+    "geometry": {
+      "access_mode": "normal",
+      "associativity": 1,
+      "bank": 1,
+      "block_bytes": 2,
+      "class": "sram",
+      "depth_per_bank": 512,
+      "size_bytes": 1024,
+      "width_bits": 16
+    },
+    "metrics": {
+      "access_time_ns": 0.515017,
+      "area_mm2": 0.0068523304416,
+      "cycle_time_ns": 0.426183,
+      "fmax_MHz": 2346.409875569884,
+      "gate_leakage_per_bank_mW": 0.122969,
+      "height_mm": 0.131124,
+      "leakage_per_bank_mW": 0.0204232,
+      "leakage_power_mW": 0.1433922,
+      "read_nJ": 0.000668653,
+      "technology_nm": 45,
+      "temperature_K": 360,
+      "voltage_V": 0.7,
+      "width_mm": 0.0522584,
+      "write_nJ": 0.000674958
+    },
+    "report": "reports/bc9a1816f2bb054b/report.txt",
+    "report_sha256": "b898b039c2b62a3373ea718499321bbb07a08e97ea01d93306c26711156547eb"
+  },
+  "fcb7efcad943b67c": {
+    "config": "reports/fcb7efcad943b67c/query.cfg",
+    "config_sha256": "413c31ff2141d48128f2ba2acd9b6b5d62759314394e5c7b7e5c51c20d6601ca",
+    "geometry": {
+      "access_mode": "normal",
+      "associativity": 1,
+      "bank": 1,
+      "block_bytes": 6,
+      "class": "sram",
+      "depth_per_bank": 256,
+      "size_bytes": 1536,
+      "width_bits": 48
+    },
+    "metrics": {
+      "access_time_ns": 0.518079,
+      "area_mm2": 0.011357321346,
+      "cycle_time_ns": 0.422538,
+      "fmax_MHz": 2366.651046769758,
+      "gate_leakage_per_bank_mW": 0.181642,
+      "height_mm": 0.14166,
+      "leakage_per_bank_mW": 0.0357879,
+      "leakage_power_mW": 0.2174299,
+      "read_nJ": 0.00115782,
+      "technology_nm": 45,
+      "temperature_K": 360,
+      "voltage_V": 0.7,
+      "width_mm": 0.0801731,
+      "write_nJ": 0.00158578
+    },
+    "report": "reports/fcb7efcad943b67c/report.txt",
+    "report_sha256": "e36a41131c8dd19e6d8348d68d64c6d20032616e72ca52b6593eb074c30fe8c2"
+  }
+}

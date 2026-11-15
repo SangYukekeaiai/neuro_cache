@@ -1,0 +1,1518 @@
+[
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "cmp32",
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "adder",
+        "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+        "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "spinalflow.cmp32.compare"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "operation": "compare",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "spinalflow.cmp32.compare": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "reason": "Price unchanged structural vector from individually measured basics; no whole-top characterization",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/adder/adder.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_cmp32/snn_cmp32.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "snn_numeric_compare: invert b, retain carry of a+~b (a>b); XOR/reduction equality for >=; signed-MSB correction, no temporal less_equal",
+    "structural_tops": [
+      {
+        "module": "snn_cmp32",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_cmp32/snn_cmp32.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 32
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "comparators": 3,
+    "component": "min_tree4",
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "adder",
+        "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+        "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "spinalflow.min_tree4.compare"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "operation": "compare",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "spinalflow.min_tree4.compare": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "reason": "Price unchanged structural vector from individually measured basics; no whole-top characterization",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/adder/adder.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_min_tree4/snn_min_tree4.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "three snn_numeric_compare instances and word muxes in two levels; validity and stable low-index tie select",
+    "structural_tops": [
+      {
+        "module": "snn_min_tree4",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_min_tree4/snn_min_tree4.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 32
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "characterization_width_bits": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      13,
+      16,
+      32
+    ],
+    "clock_period_ns": 2,
+    "component": "adder",
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "adder",
+        "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+        "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+      }
+    ],
+    "module_keys": [
+      "gustavsnn.adder16.add",
+      "loas.adder16.add",
+      "prosperity.adder16.add",
+      "ptb.adder16.add",
+      "spinalflow.adder32.add"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "gustavsnn.adder16.add": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "loas.adder16.add": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "prosperity.adder16.add": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "ptb.adder16.add": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "spinalflow.adder32.add": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_interface": "iDataA[W-1:0], iDataB[W-1:0] -> oData[W:0]; library adder BITWIDTH=W, combinational, no cin",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/adder/adder.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_adder/snn_adder.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "port adapter only: BITWIDTH=W, iDataA/iDataB -> oData[W:0]; no cin port",
+    "structural_tops": [
+      {
+        "module": "snn_adder",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_adder/snn_adder.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      13,
+      16,
+      32
+    ],
+    "width_uses": {
+      "1,2,3,4,5": "popcount/prefix networks; router uses adder2/3 for counters",
+      "13": "bitonic/pruner comparison",
+      "16": "arithmetic rows",
+      "32": "SpinalFlow arithmetic, comparisons and LIF"
+    }
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "characterization_width_bits": [
+      1,
+      2,
+      3,
+      5,
+      16,
+      32,
+      64
+    ],
+    "clock_period_ns": 2,
+    "component": "register",
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "register",
+        "path": "/u/yyu9/projects/verilog_modules/register/register.v",
+        "sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "gustavsnn.potential_regfile.rmw",
+      "gustavsnn.reg16.rmw",
+      "loas.reg16.read",
+      "loas.reg16.rmw",
+      "prosperity.lif_state.rmw",
+      "prosperity.reg16.rmw",
+      "ptb.reg16.read",
+      "ptb.reg16.rmw",
+      "spinalflow.reg32.rmw"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "gustavsnn.potential_regfile.rmw": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "gustavsnn.reg16.rmw": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "loas.reg16.read": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "loas.reg16.rmw": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "prosperity.lif_state.rmw": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "prosperity.reg16.rmw": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "ptb.reg16.read": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "ptb.reg16.rmw": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "spinalflow.reg32.rmw": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "regfile_variants": [
+      {
+        "consumer": "GustavSNN potential_regfile",
+        "depth": 64,
+        "ports": "read_addr6 -> read32; write_addr6,write32,we; RMW",
+        "width_bits": 32
+      },
+      {
+        "consumer": "L1 mshr_targets",
+        "depth": 320,
+        "ports": "addr9,data64,we -> words[D][64]; invalid writes ignored; selected service read is external to write-only row",
+        "width_bits": 64
+      },
+      {
+        "consumer": "L2 mshr_targets",
+        "depth": 384,
+        "ports": "addr9,data64,we -> words[D][64]; invalid writes ignored; selected service read is external to write-only row",
+        "width_bits": 64
+      },
+      {
+        "consumer": "L1 MSHR tag storage inside CAM",
+        "depth": 16,
+        "ports": "tag read/search and index4 write/free/allocate",
+        "width_bits": 64
+      },
+      {
+        "consumer": "L2 MSHR tag storage inside CAM",
+        "depth": 32,
+        "ports": "tag read/search and index5 write/free/allocate",
+        "width_bits": 64
+      },
+      {
+        "consumer": "one TCAM bank; two banks in inventory",
+        "depth": 256,
+        "ports": "addr8,data16,we; query16 -> subset-match256",
+        "width_bits": 16
+      }
+    ],
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_interface": "top i_clk,i_rst_n,en,d[W] -> q[W]; library register WL=W: aclk=i_clk,rst=i_rst_n,wen=en; synchronous active-low reset",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/register/register.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_register/snn_register.sv (mapped structural top, not authored); /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_register_file/snn_register_file.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "state_variants": [
+      "1-bit valid/head/lock flags",
+      "2-bit router mirror pointers",
+      "3-bit router round-robin and held-grant indices",
+      "5-bit router queued/head masks",
+      "16-bit direct state and TCAM words",
+      "32-bit direct potential state and potential-RF words",
+      "64-bit MSHR tag/target words"
+    ],
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "port adapter WL=W; register arrays use write decoder and selected-word mux; synchronous active-low reset; no replacement storage internals",
+    "structural_tops": [
+      {
+        "module": "snn_register",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_register/snn_register.sv",
+        "status": "Reference specification only; not a synthesis job"
+      },
+      {
+        "module": "snn_register_file",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_register_file/snn_register_file.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "variants": [
+      "register",
+      "regfile"
+    ],
+    "width_bits": [
+      1,
+      2,
+      3,
+      5,
+      16,
+      32,
+      64
+    ]
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "fifo",
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "geometries": [
+      {
+        "consumer": "PTB/LoAS FIFOs",
+        "depth": 8,
+        "width_bits": 16
+      },
+      {
+        "consumer": "LoAS/GustavSNN FIFOs",
+        "depth": 8,
+        "width_bits": 32
+      },
+      {
+        "consumer": "router inputs; final selected depth2",
+        "depth": 2,
+        "width_bits": 64
+      }
+    ],
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "fifo",
+        "path": "/u/yyu9/projects/verilog_modules/fifo/fifo.v",
+        "sha256": "81cd5b20cbf80a9f520a7074dde466ced9fd1db2eb9ada960a466810572019e8"
+      }
+    ],
+    "library_supported_depths": [
+      2,
+      8
+    ],
+    "module_keys": [
+      "gustavsnn.output_fifo.push",
+      "gustavsnn.spike_fifo.pop",
+      "loas.output_fifo.push",
+      "loas.spike_fifo.pop",
+      "loas.spike_fifo.push",
+      "loas.weight_fifo.pop",
+      "loas.weight_fifo.push",
+      "ptb.spike_fifo.pop",
+      "ptb.spike_fifo.push",
+      "ptb.weight_fifo.pop",
+      "ptb.weight_fifo.push"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "gustavsnn.output_fifo.push": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "gustavsnn.spike_fifo.pop": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "loas.output_fifo.push": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "loas.spike_fifo.pop": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "loas.spike_fifo.push": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "loas.weight_fifo.pop": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "loas.weight_fifo.push": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "ptb.spike_fifo.pop": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "ptb.spike_fifo.push": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "ptb.weight_fifo.pop": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "ptb.weight_fifo.push": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_interface": "library fifo: iClk,iRstN,iEnW,iEnR,iClr,iData[W] -> registered oData[W]; full/empty internal only; asynchronous active-low reset",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/fifo/fifo.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_fifo/snn_fifo.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "BITWIDTH=W, DEPTH=D, PTRWIDTH=clog2(D); original registered-read and full/empty boundary semantics; optional external handshake tracker is separately specified, not hidden",
+    "structural_tops": [
+      {
+        "module": "snn_fifo",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_fifo/snn_fifo.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": [
+      16,
+      32,
+      64
+    ]
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "and_gate",
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "loas.and_gate.and",
+      "ptb.spike_mask_overlap.check"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "loas.and_gate.and": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "ptb.spike_mask_overlap.check": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_and/snn_and.sv (mapped structural top, not authored); /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_disjoint32/snn_disjoint32.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "LoAS scalar AND; PTB32 scalar and_gate instances plus reduction OR and inversion",
+    "structural_tops": [
+      {
+        "module": "snn_and",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_and/snn_and.sv",
+        "status": "Reference specification only; not a synthesis job"
+      },
+      {
+        "module": "snn_disjoint32",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_disjoint32/snn_disjoint32.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "variants": [
+      "gate",
+      "PTB disjointness: NOT OR-reduce(a AND b)"
+    ],
+    "width_bits": [
+      1,
+      32
+    ]
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "lif_unit",
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "includes": [
+      "integrate",
+      "threshold",
+      "reset-mux",
+      "state-register",
+      "spike-flop"
+    ],
+    "input_width_bits": 16,
+    "leak_shift_k": [
+      1,
+      2
+    ],
+    "library_primitives": [
+      {
+        "module": "adder",
+        "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+        "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+      },
+      {
+        "module": "register",
+        "path": "/u/yyu9/projects/verilog_modules/register/register.v",
+        "sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "gustavsnn.lif_core.step",
+      "loas.lif_unit.step",
+      "prosperity.lif_core.step",
+      "ptb.lif_unit.step"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "gustavsnn.lif_core.step": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "loas.lif_unit.step": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "prosperity.lif_core.step": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "ptb.lif_unit.step": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "reset": "hard-zero",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/adder/adder.v; /u/yyu9/projects/verilog_modules/register/register.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_lif_stateful/snn_lif_stateful.sv (mapped structural top, not authored); /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_lif_core/snn_lif_core.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "shift wiring and k-select mux; sign extension and truncated 32-bit integration; snn_numeric_compare threshold; zero-reset mux; stateful register WL=32 plus WL=1; core variant excludes both",
+    "structural_tops": [
+      {
+        "module": "snn_lif_stateful",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_lif_stateful/snn_lif_stateful.sv",
+        "status": "Reference specification only; not a synthesis job"
+      },
+      {
+        "module": "snn_lif_core",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_lif_core/snn_lif_core.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "variants": [
+      "stateful",
+      "core-only with external potential register file"
+    ],
+    "width_bits": 32
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "merger_tree2",
+    "contract": {
+      "contract": "two unsigned32-bit keys K=(kh*KW+kw)*CIN+cin with lane/valid sideband; valid first,ascending K,stable lane0 tie; preserve both equal keys,never dedup. Empty output valid0.",
+      "implementation": "compare32 plus two key muxes and lane/valid mux; compact key assumes KH*KW*CIN<=2^32",
+      "qualification": "source emits per-HO streams in kh,kw,cin order with same-tick lane refetches and no global sort. Hardware row is the specified NR2 compare-exchange energy component; it does not rewrite source emission/timing or mean192-bit AddressRow comparison.",
+      "source": "src/lays/weight_trace_gen/gustavsnn/GustavGen.h"
+    },
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "inputs": 2,
+    "library_primitives": [
+      {
+        "module": "adder",
+        "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+        "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "gustavsnn.merger_tree2.merge"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "gustavsnn.merger_tree2.merge": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/adder/adder.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_merger_tree2/snn_merger_tree2.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "compare32 and two key muxes,valid/lane sideband; equal keys retained",
+    "structural_tops": [
+      {
+        "module": "snn_merger_tree2",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_merger_tree2/snn_merger_tree2.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 32
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "l1d",
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "gustavsnn.leading_spike_detector.scan"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "gustavsnn.leading_spike_detector.scan": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_l1d32/snn_l1d32.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "prefix OR/NOT and index reduction priority encoder; zero-valid output; pin priority convention",
+    "structural_tops": [
+      {
+        "module": "snn_l1d32",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_l1d32/snn_l1d32.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 32
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "tppe_scan",
+    "contract": {
+      "composition": "31 adder1 +30 adder2 +28 adder3 +24 adder4 +16 adder5,pass-through extension; no state",
+      "contract": "input32-bit spike mask; inclusive prefix[32][6],exclusive rank[32][5],total6; five stages distances1,2,4,8,16; carry width1..6",
+      "qualification": "LoASGen only computes non-silent rows, not gate-level scan. Counts/doc define prefix-popcount semantics; this is an explicit realization, not an extracted simulator netlist or the approximate80-FA gate budget.",
+      "source": "zoo/fig12_edp/docs/loas_energy.md"
+    },
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "includes": [
+      "bsf32",
+      "psum_scan32",
+      "AND-row"
+    ],
+    "library_primitives": [
+      {
+        "module": "adder",
+        "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+        "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "loas.bsf32.scan",
+      "loas.spike_prefix_scan32.scan"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "loas.bsf32.scan": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "loas.spike_prefix_scan32.scan": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/adder/adder.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_bsf32/snn_bsf32.sv (mapped structural top, not authored); /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_psum_scan32/snn_psum_scan32.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "priority32 and selected-onehot clear; specified five-level inclusive prefix-popcount from adder1..5; scalar AND row",
+    "structural_tops": [
+      {
+        "module": "snn_bsf32",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_bsf32/snn_bsf32.sv",
+        "status": "Reference specification only; not a synthesis job"
+      },
+      {
+        "module": "snn_psum_scan32",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_psum_scan32/snn_psum_scan32.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 32
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "banks": 2,
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "tcam_256x16",
+    "depth": 256,
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "implementation": "flop-based masked-match array",
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "register",
+        "path": "/u/yyu9/projects/verilog_modules/register/register.v",
+        "sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "matching": "(entry AND query) == entry",
+    "module_keys": [
+      "prosperity.tcam.search",
+      "prosperity.tcam.write"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "prosperity.tcam.search": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "prosperity.tcam.write": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/register/register.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_tcam_256x16/snn_tcam_256x16.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "256 register WL=16 words per bank, write decoder, subset lines NOT OR(entry AND NOT query); two banks in inventory; optional valid state must be explicit",
+    "structural_tops": [
+      {
+        "module": "snn_tcam_256x16",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_tcam_256x16/snn_tcam_256x16.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 16
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "popcount16",
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "adder",
+        "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+        "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+      }
+    ],
+    "module_keys": [
+      "prosperity.popcount16.count"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "prosperity.popcount16.count": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/adder/adder.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_popcount16/snn_popcount16.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "15-instance balanced tree: BITWIDTH=1 x8, 2 x4, 3 x2, 4 x1; retain every carry",
+    "structural_tops": [
+      {
+        "module": "snn_popcount16",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_popcount16/snn_popcount16.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 16
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "pruner",
+    "contract": {
+      "contract": "original16-bit rows,processed-valid256 and keys(popcount5,original_index8); non-strict subset includes equal rows; choose maximum key among processed matches, then original row XOR chosen original prefix; no candidate=>original row; no storing residual in TCAM",
+      "implementation": "256 eligibility gates,255 compare13/mux nodes,row16 mux,XOR; no strict-popcount filter in source-aligned top",
+      "source": "src/lays/weight_trace_gen/prosperity/ProsperityGen.h",
+      "tie": "stable ascending popcount then original index; reverse processed search equals maximum key; physical slot tie only if duplicate identical key, choose low slot"
+    },
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "adder",
+        "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+        "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "prosperity.pruner.prune"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "prosperity.pruner.prune": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "proper_subset_only": false,
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/adder/adder.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_pruner/snn_pruner.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "processed_valid AND non-strict subset match; maximum13-bit key selection; original16-bit row XOR prefix; preserve equal-row dedup",
+    "structural_tops": [
+      {
+        "module": "snn_pruner",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_pruner/snn_pruner.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 16
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "bitonic_cmp",
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "adder",
+        "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+        "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "prosperity.bitonic_cmp.compare"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "prosperity.bitonic_cmp.compare": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/adder/adder.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_bitonic_cmp13/snn_bitonic_cmp13.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "snn_numeric_compare at13 bits plus two key muxes, ascending select; no dedicated bitonic library cell",
+    "structural_tops": [
+      {
+        "module": "snn_bitonic_cmp13",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_bitonic_cmp13/snn_bitonic_cmp13.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 13
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "bsf16",
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "prosperity.bsf16.scan"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "prosperity.bsf16.scan": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_bsf16/snn_bsf16.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "snn_priority_encode16 and selected-bit clear; zero input invalid",
+    "structural_tops": [
+      {
+        "module": "snn_bsf16",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_bsf16/snn_bsf16.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 16
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "mshr_cam",
+    "entries": {
+      "l1": 16,
+      "l2": 32
+    },
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "register",
+        "path": "/u/yyu9/projects/verilog_modules/register/register.v",
+        "sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "cache.mshr_cam_l1.search",
+      "cache.mshr_cam_l2.search"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "cache.mshr_cam_l1.search": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "cache.mshr_cam_l2.search": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/register/register.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_mshr_cam16/snn_mshr_cam16.sv (mapped structural top, not authored); /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_mshr_cam32/snn_mshr_cam32.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "D=16/32 register WL=64 tags plus WL=1 valid; exact-match XOR/reduction, write decode and priority allocation; targets separate",
+    "structural_tops": [
+      {
+        "module": "snn_mshr_cam16",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_mshr_cam16/snn_mshr_cam16.sv",
+        "status": "Reference specification only; not a synthesis job"
+      },
+      {
+        "module": "snn_mshr_cam32",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_mshr_cam32/snn_mshr_cam32.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "targets_per_entry": {
+      "l1": 20,
+      "l2": 12
+    },
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 64
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "mshr_targets",
+    "entries": [
+      320,
+      384
+    ],
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "library_primitives": [
+      {
+        "module": "register",
+        "path": "/u/yyu9/projects/verilog_modules/register/register.v",
+        "sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      }
+    ],
+    "module_keys": [
+      "cache.mshr_targets_l1.write",
+      "cache.mshr_targets_l2.write"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "cache.mshr_targets_l1.write": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      },
+      "cache.mshr_targets_l2.write": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_interface": "i_clk,i_rst_n,we,addr9,data64 -> words[D][64]; D320/384; decode only valid addresses; no selected-read mux",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/register/register.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_mshr_targets320/snn_mshr_targets320.sv (mapped structural top, not authored); /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_mshr_targets384/snn_mshr_targets384.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "register64 array with9-bit write decode,all-word service outputs; no extra read-event charge",
+    "structural_tops": [
+      {
+        "module": "snn_mshr_targets320",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_mshr_targets320/snn_mshr_targets320.sv",
+        "status": "Reference specification only; not a synthesis job"
+      },
+      {
+        "module": "snn_mshr_targets384",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_mshr_targets384/snn_mshr_targets384.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 64
+  },
+  {
+    "active_source_contract": "Each src/<top>/ job has one fixed-parameter .v source containing one module with no hierarchy; rtl_list.tcl lists that one file. basic_variants.json records the flat-derived file, original repo/glue source hashes and per-file derivation. Only existing clock/reset ports are renamed i_clk/i_rst_n; combinational gates gain no clock ports.",
+    "active_source_manifest": "rtl_tops/basic_variants.json",
+    "arbitration": "round-robin",
+    "characterization_catalog": "BASIC_MODULES.md",
+    "clock_period_ns": 2,
+    "component": "router_5p_64b",
+    "crossbar": "mux tree",
+    "dynamic_event_cycles": 5,
+    "flow": "Own project auto_syn_pnr.sh only;24 flat-derived single-module basics;TT RVT0.70V25C;CLK_PERIOD_NS=2;native70% square/I/O/activity defaults,noVCD;archx csv_cmos_extract",
+    "frequency_MHz": 500,
+    "included_in_round": true,
+    "input_fifo_depth_flits": 2,
+    "input_fifo_storage": "register FIFO, same structure as architecture FIFOs",
+    "library_primitives": [
+      {
+        "module": "fifo",
+        "path": "/u/yyu9/projects/verilog_modules/fifo/fifo.v",
+        "sha256": "81cd5b20cbf80a9f520a7074dde466ced9fd1db2eb9ada960a466810572019e8"
+      },
+      {
+        "module": "register",
+        "path": "/u/yyu9/projects/verilog_modules/register/register.v",
+        "sha256": "61c06c83b1d4833bfcc740976dcab30a63f67d9ae023cb9644dbed856df6c734"
+      },
+      {
+        "module": "adder",
+        "path": "/u/yyu9/projects/verilog_modules/adder/adder.v",
+        "sha256": "703cea9812a3715444eae8a574938fd44d7737f392267fb0d1200689c95cd9c9"
+      },
+      {
+        "module": "and_gate",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate/and_gate.v",
+        "sha256": "7e4f64410794a0825a63431771cc542b1493e6d1e07bb0b1293fb1e9b5c7cd53"
+      },
+      {
+        "module": "and_gate_5",
+        "path": "/u/yyu9/projects/verilog_modules/and_gate_5/and_gate_5.v",
+        "sha256": "fc9b513759acbc43dc745049350cb88ef276810dd5c48886d34ea3404f0f6eb6"
+      }
+    ],
+    "library_supported_fifo_depths": [
+      2
+    ],
+    "module_keys": [
+      "shared.router.hop"
+    ],
+    "module_mapping": "MODULE_MAPPING.md",
+    "multicast": "5-bit output-port mask",
+    "physical_instances": 16,
+    "placeholder_policy": "pending-ASAP7-synthesis",
+    "port_roles": [
+      "neighbor0",
+      "neighbor1",
+      "neighbor2",
+      "neighbor3",
+      "local"
+    ],
+    "ports": 5,
+    "price_basis": "All48 vectors price sum(N*measured basic); native activity defaults without per-operation VCD; no whole-top report",
+    "pricing_by_operation": {
+      "shared.router.hop": {
+        "pricing_mode": "composition",
+        "structural_vector_usage": "pricing"
+      }
+    },
+    "pricing_mode": "composition",
+    "process": "ASAP7",
+    "quantified_composition": "STRUCTURAL_AUDIT.json#quantified_composition.operations",
+    "reason": "Fixed-depth2 composition estimate from measured primitive leaves; 16 standing routers/system",
+    "rtl_commit": "3e6135c9cb8c735439e2968cd3446dbd10fe55b3",
+    "rtl_repo": "https://github.com/UnaryLab/verilog_modules.git",
+    "rtl_source": "/u/yyu9/projects/verilog_modules/fifo/fifo.v; /u/yyu9/projects/verilog_modules/register/register.v; /u/yyu9/projects/verilog_modules/adder/adder.v; /u/yyu9/projects/verilog_modules/and_gate/and_gate.v; /u/yyu9/projects/verilog_modules/and_gate_5/and_gate_5.v; /u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_router_5p_64b/snn_router_5p_64b.sv (mapped structural top, not authored)",
+    "rtl_source_role": "Original repo/glue and historical structural-spec provenance; active job sources are the flat-derived files in active_source_manifest",
+    "scope": "system",
+    "source_config_diff": "Only verified TT library paths and authorized lp_insert_clock_gating=false; CPU/thread edits reverted, no CPU environment knob",
+    "status": "Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is staging. No successful or accepted result is claimed. Whole13 tops remain reference-only.",
+    "structural_glue": "Fixed five FIFO64x2 inputs; 15 register5 mask words; native FIFO output64 holds data; mirror-pointer/RR/lock/decoder/crossbar leaf counts in canonical audit",
+    "structural_tops": [
+      {
+        "module": "snn_router_5p_64b",
+        "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/rtl_tops/snn_router_5p_64b/snn_router_5p_64b.sv",
+        "status": "Reference specification only; not a synthesis job"
+      }
+    ],
+    "synthesis_plan": "ASAP7_SYNTHESIS_PLAN.md",
+    "target_library": {
+      "corner": "TT",
+      "family": "ASAP7_75t_R",
+      "pvt": "PVT_0P7V_25C",
+      "temperature_C": 25,
+      "voltage_V": 0.7,
+      "vt": "RVT"
+    },
+    "target_technology_nm": 7,
+    "tt_library_manifest": "ASAP7_TT_LIBRARIES.json",
+    "width_bits": 64
+  }
+]

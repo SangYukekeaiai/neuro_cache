@@ -1,0 +1,9 @@
+metric:
+  dynamic_energy:
+    unit: nJ
+  leakage_power:
+    unit: mW
+    aggregation: module
+  area:
+    unit: mm^2
+    aggregation: module

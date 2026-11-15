@@ -1,0 +1,90 @@
+{
+  "arch": "spinalflow",
+  "arch_yaml": "zoo/wt500_fig3cfg/arch.yaml",
+  "arch_yaml_sha256": "f92339bfd9aeb2a2c1d0bb83d10a0842f242ee5c8195b5cb0cddfefaf2d76504",
+  "bridge_gate": {
+    "passed": true,
+    "tiles_checked": 16384,
+    "violation_codes": {},
+    "violation_count": 0,
+    "violations": []
+  },
+  "estimated_memory_gib": 4.747731804847717,
+  "estimated_records": 5506411,
+  "layer": "layer_01_core_features_3",
+  "mapspace": "zoo/wt500_fig3cfg/mapspaces/spinalflow.yaml",
+  "mapspace_yaml_sha256": "0fec99f30a712f6a72c67f6d7d5a0354268c24bf295ef2277cb9816a5b01e240",
+  "mode": "gb_oooo",
+  "mode_statuses": [
+    {
+      "mode": "base",
+      "status": "OPTIMAL"
+    },
+    {
+      "mode": "psum_dram_otok",
+      "status": "INFEASIBLE"
+    },
+    {
+      "mode": "psum_gb_otok",
+      "status": "INFEASIBLE"
+    },
+    {
+      "mode": "vmem_dram_xxxt",
+      "status": "INFEASIBLE"
+    },
+    {
+      "mode": "vmem_gb_xxxt",
+      "status": "INFEASIBLE"
+    },
+    {
+      "mode": "dram_oooo",
+      "status": "INFEASIBLE"
+    },
+    {
+      "mode": "dram_ooot",
+      "status": "INFEASIBLE"
+    },
+    {
+      "mode": "dram_oook",
+      "status": "INFEASIBLE"
+    },
+    {
+      "mode": "both_dram_ootk",
+      "status": "INFEASIBLE"
+    },
+    {
+      "mode": "gb_oooo",
+      "status": "OPTIMAL"
+    },
+    {
+      "mode": "gb_ooot",
+      "status": "INFEASIBLE"
+    },
+    {
+      "mode": "gb_oook",
+      "status": "INFEASIBLE"
+    },
+    {
+      "mode": "gb_ootk",
+      "status": "INFEASIBLE"
+    }
+  ],
+  "schedule_path": "schedules/spinalflow/loas_vgg16_T4_n500/layer_01_core_features_3.json",
+  "schedule_sha256": "49ab0d62925858602e91013f72d33dfdc482c5868229b8cda2a975df23ba9542",
+  "solver_status": "CACHED",
+  "status": "CACHED",
+  "trace_dir": "loas_vgg16_T4_n500",
+  "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+  "workload": {
+    "problem": {
+      "CIN": 64,
+      "COUT": 64,
+      "HO": 32,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 32,
+      "shape": "snn-layer"
+    }
+  }
+}

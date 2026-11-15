@@ -1,0 +1,30 @@
+{
+  "assumptions": [
+    "CSV *_uw columns contain mW in these assets, verified against raw postRouteOpt mW fields.",
+    "Per-event energies use each row source frequency, not the 500MHz performance clock.",
+    "Width/storage-bit scaling and additive composition are estimates, not whole-module characterization.",
+    "One-bit COMPARATOR is not used as a numeric comparison: arithmetic/glue vectors preserve the specified compare circuit.",
+    "No fabricated frequency/technology transfer. Default and dummy tables remain selectable and unchanged."
+  ],
+  "baseline_sha256": "8c3589272e2a68dc9b01847be61f2076fb5dbb84eee7a4dc582671da9ff79942",
+  "builder_sha256": "e1669aadfbe1c4ba1a1f316407cd1ade395da4604b8accf386e844d9e9cab818",
+  "caveat": "NanGate45-characterized prices applied to a 7nm/500MHz performance model; interim until ASAP7 synthesis",
+  "ddr4_unchanged": 2,
+  "default_table_modified": false,
+  "excluded": 9,
+  "logic": 48,
+  "logic_technology_nm": 45,
+  "memory_and_wire": 39,
+  "memory_manifest": "nangate45_memory/memory_prices.json",
+  "memory_manifest_sha256": "bb53c148824927dfed04c0b1cde5e5f275bee2607c93fe8dcc358efa5f05b285",
+  "operations": 98,
+  "performance_frequency_MHz": 500,
+  "source_frequency_MHz": [
+    400.0
+  ],
+  "structural_audit_sha256": "969c757408f576d2a68e21931994afde74573212d499c53fc5a90b27e9954269",
+  "substitution_manifest": "nangate45_substitutions.json",
+  "substitution_manifest_sha256": "a642e6de1ff3af2dec11d67f4f606f3746d038fdd1b38c6d93ebe8c5b1eb075d",
+  "table_sha256": "2d8e4ea0b0f836a547ee6ec9301bff004928a8b19814aeb007f102afdc8295a3",
+  "tnn_sources": []
+}

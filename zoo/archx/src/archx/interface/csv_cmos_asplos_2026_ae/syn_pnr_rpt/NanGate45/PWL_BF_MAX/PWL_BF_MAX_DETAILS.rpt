@@ -1,0 +1,4 @@
+Physical Design Stage, Core Area (um^2), Standard Cell Area (um^2), Macro Area (um^2), Report Area (um^2), Total Power (mW), Leakage Power (mW), Dynamic Power (mW), Wirelength(um), WS(ns), TNS(ns), Congestion(H), Congestion(V)
+postSynth,19.005,13.3,0,13.300,0.01031714,0.00030181,0.01001533,0,0.000,0.000,,
+postRoute,19.152,13.3,0,13.300,0.00769109,0.00030166,0.00738942,83.37,0.000,0.000,,
+postRouteOpt,19.152,19.152,0,13.300,0.00769109,0.00030166,0.00738942,83.37,0.000,0.000,,

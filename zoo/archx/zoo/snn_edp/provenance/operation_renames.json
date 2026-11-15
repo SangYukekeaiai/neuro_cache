@@ -1,0 +1,16 @@
+{
+  "operation_keys": {
+    "ptb.merge.compare": "ptb.spike_mask_overlap.check",
+    "gustavsnn.l1d.scan": "gustavsnn.leading_spike_detector.scan",
+    "loas.psum_scan32.scan": "loas.spike_prefix_scan32.scan"
+  },
+  "tables_before": {
+    "energy_table.json": "f63fb510a5e7c6c4be1cdd90185a7b880f5116380c93c5e9616f19c301c1e886",
+    "energy_table_dummy.json": "aa352e92a905e910e8d5039470c748b511a426e4b79286aed9af8a20b0e26a3c"
+  },
+  "tables_after": {
+    "energy_table.json": "d8a5325db032ae8cd50327ade44ba2beb3715a7b76bdf5719bea16e24e28ce3d",
+    "energy_table_dummy.json": "492dcb64b69e6f7644747547a2e19be575f7a582afb088bee73ed3ef0385a012"
+  },
+  "semantics": "Names only; event counts, geometry, inventory and all prices are unchanged. The retained historical reference CSV remains byte-identical."
+}
