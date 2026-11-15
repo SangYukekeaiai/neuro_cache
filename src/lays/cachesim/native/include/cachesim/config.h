@@ -89,9 +89,13 @@ struct RunConfig {
     std::int64_t core_accept_ii   = 1;
 
     // --- prefetch
+    // Explicit neighbour/filter options, retained for NextLine warnings.
+    std::vector<std::string> prefetch_options_set;
     PrefetchKind l1_prefetch_policy   = PrefetchKind::None;
     Axis         l1_prefetch_axis     = Axis::CIN;
     std::int32_t l1_prefetch_distance = 0;
+    // NextLine defaults to degree 1; an explicit zero is still invalid.
+    bool         l1_prefetch_distance_set = false;
     bool         l1_prefetch_up       = true;
     bool         l1_prefetch_down     = true;
 

@@ -8,6 +8,9 @@
 #include <cachesim/replacement/pf_lru.h>
 
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -24,6 +27,123 @@ bool has_warning(const std::vector<Warning>& w, const std::string& code) {
         if (x.code == code) return true;
     }
     return false;
+}
+
+
+void test_next_line_distance_defaults_and_explicit_values() {
+    check::group("next_line: omitted distance is 1 at both levels; explicit nonpositive rejected");
+    for (const std::string l1_policy : {"l1_prefetch_policy", "prefetch_policy"}) {
+        auto c = parse_config("{\"" + l1_policy +
+                              "\":\"next_line\",\"l2_prefetch_policy\":\"next_line\"}");
+        std::vector<Warning> w;
+        validate(c, 1, w);
+        CHECK_EQ(c.l1_prefetch_distance, 1);
+        CHECK_EQ(c.prefetch_distance, 1);
+        CHECK_EQ(c.l2_prefetch_distance, 1);
+        CHECK_EQ(to_engine_params(c).l1.prefetch_params.distance, 1);
+        CHECK_EQ(to_engine_params(c).l2.prefetch_params.distance, 1);
+        CHECK_TRUE(!has_warning(w, "W_NEXT_LINE_IGNORED_OPTION"));
+    }
+    for (const std::string policy : {"l1_prefetch_policy", "l2_prefetch_policy"}) {
+        auto c = parse_config("{\"" + policy + "\":\"next_line\"}");
+        std::vector<Warning> w;
+        validate(c, 1, w);
+        CHECK_EQ(policy == "l1_prefetch_policy" ? c.l1_prefetch_distance : c.l2_prefetch_distance, 1);
+    }
+    for (const std::string distance : {"l1_prefetch_distance", "prefetch_distance",
+                                       "l2_prefetch_distance"}) {
+        for (const int value : {0, -1, 3}) {
+            auto c = parse_config(R"({"l1_prefetch_policy":"next_line",
+                                      "l2_prefetch_policy":"next_line",
+                                      ")" + distance + "\":" + std::to_string(value) + "}");
+            std::vector<Warning> w;
+            if (value <= 0) {
+                CHECK_THROWS(std::invalid_argument, validate(c, 1, w));
+            } else {
+                validate(c, 1, w);
+                const auto params = to_engine_params(c);
+                CHECK_EQ(distance == "l2_prefetch_distance" ? params.l2.prefetch_params.distance
+                                                           : params.l1.prefetch_params.distance, value);
+            }
+        }
+    }
+    auto grid = parse_config_grid(R"({"base":{"l1_prefetch_policy":"next_line",
+        "l2_prefetch_policy":"next_line"},"axes":{"l2_prefetch_distance":[0,-1,2]}})");
+    for (std::size_t i = 0; i < grid.size(); ++i) {
+        std::vector<Warning> w;
+        if (i < 2) {
+            CHECK_THROWS(std::invalid_argument, validate(grid[i], 1, w));
+        } else {
+            validate(grid[i], 1, w);
+            CHECK_EQ(grid[i].l1_prefetch_distance, 1);
+            CHECK_EQ(grid[i].l2_prefetch_distance, 2);
+        }
+    }
+}
+
+void test_next_line_warns_for_explicit_ignored_options() {
+    check::group("next_line: explicit neighbour/touch options warn, including default values");
+    struct Option { const char* key; const char* value; };
+    for (const Option option : {
+            Option{"l1_prefetch_axis", "\"cin\""}, Option{"l1_prefetch_up", "1"},
+            Option{"l1_prefetch_down", "1"}, Option{"l2_prefetch_axis", "\"cin\""},
+            Option{"l2_prefetch_up", "1"}, Option{"l2_prefetch_down", "1"},
+            Option{"l2_prefetch_min_touches", "3"}}) {
+        for (const std::string policy : {"next_line", "neighbour"}) {
+            const std::string level = std::string(option.key).substr(0, 2);
+            auto c = parse_config("{\"" + level + "_prefetch_policy\":\"" + policy +
+                "\",\"" + level + "_prefetch_distance\":1,\"" + option.key + "\":" + option.value + "}");
+            std::vector<Warning> w;
+            validate(c, 1, w);
+            CHECK_TRUE(has_warning(w, "W_NEXT_LINE_IGNORED_OPTION") == (policy == "next_line"));
+            if (policy == "next_line") {
+                CHECK_EQ(check::ssize(w), 1);
+                for (const auto& warning : w) {
+                    CHECK_TRUE(warning.message.find(option.key) != std::string::npos);
+                    CHECK_TRUE(warning.message.find("ignored") != std::string::npos);
+                }
+            }
+        }
+    }
+    // Base fields survive a policy axis; an overridden key must warn only once.
+    auto grid = parse_config_grid(R"({"base":{"l1_prefetch_axis":"cout",
+        "l1_prefetch_up":0,"l1_prefetch_down":0,"l2_prefetch_axis":"kw",
+        "l2_prefetch_up":0,"l2_prefetch_down":0,"l2_prefetch_min_touches":0},
+        "axes":{"prefetch_policy":["none","next_line"],
+                 "l2_prefetch_policy":["next_line"],"l2_prefetch_axis":["kh"]}})");
+    CHECK_EQ(check::ssize(grid), 2);
+    for (auto& c : grid) {
+        std::vector<Warning> w;
+        validate(c, 1, w);
+        CHECK_EQ(check::ssize(w), c.l1_prefetch_policy == PrefetchKind::NextLine ? 7 : 4);
+        CHECK_TRUE(c.l1_prefetch_axis == Axis::COUT);
+        CHECK_TRUE(c.l2_prefetch_axis == Axis::KH);
+        CHECK_TRUE(!c.l1_prefetch_up && !c.l1_prefetch_down);
+        CHECK_TRUE(!c.l2_prefetch_up && !c.l2_prefetch_down);
+        CHECK_EQ(c.l2_prefetch_min_touches, 0);
+    }
+}
+
+void test_next_line_production_config(const char* path) {
+    check::group("next_line: production B retained options warn and distances remain 1");
+    std::ifstream input(path);
+    CHECK_TRUE(input.is_open());
+    if (!input.is_open()) return;
+    const std::string json((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+    auto c = parse_config(json);
+    std::vector<Warning> w;
+    validate(c, 1, w);
+    CHECK_EQ(check::ssize(w), 7);
+    for (const auto& warning : w) CHECK_TRUE(warning.code == "W_NEXT_LINE_IGNORED_OPTION");
+    const auto p = to_engine_params(c);
+    CHECK_TRUE(p.l1.prefetch_kind == PrefetchKind::NextLine);
+    CHECK_TRUE(p.l2.prefetch_kind == PrefetchKind::NextLine);
+    CHECK_EQ(p.l1.prefetch_params.distance, 1);
+    CHECK_EQ(p.l2.prefetch_params.distance, 1);
+    CHECK_TRUE(c.l1_prefetch_axis == Axis::COUT && c.l2_prefetch_axis == Axis::COUT);
+    CHECK_TRUE(c.l1_prefetch_up && c.l2_prefetch_up);
+    CHECK_TRUE(!c.l1_prefetch_down && !c.l2_prefetch_down);
+    CHECK_EQ(c.l2_prefetch_min_touches, 0);
 }
 
 // --- Task 9: parse and defaults ------------------------------------------
@@ -984,7 +1104,17 @@ void test_a_bad_grid_is_refused_the_way_a_bad_config_is() {
 
 }  // namespace
 
-int main() {
+int main(int argc, char** argv) {
+    CHECK_TRUE(argc <= 2);
+    auto root = std::filesystem::current_path();
+    const std::filesystem::path relative = "zoo/fig12_edp/configs/production_cache_b.json";
+    while (root != root.root_path() && !std::filesystem::exists(root / relative)) {
+        root = root.parent_path();
+    }
+    const auto production_config = (root / relative).string();
+    test_next_line_production_config(argc == 2 ? argv[1] : production_config.c_str());
+    test_next_line_distance_defaults_and_explicit_values();
+    test_next_line_warns_for_explicit_ignored_options();
     test_an_empty_object_gives_the_documented_defaults();
     test_every_default_is_overridden_when_the_key_is_present();
     test_line_size_and_geometry_are_derived_not_declared();

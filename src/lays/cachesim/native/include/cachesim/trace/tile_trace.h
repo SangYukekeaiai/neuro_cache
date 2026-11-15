@@ -92,15 +92,14 @@ public:
     //
     // Charged once at the tile level rather than per core, because the trace
     // stores `mac_cycles` already reduced to the max over that tile's cores, so
-    // per-core tails do not exist on disk. Over the 124 format v2 layers the
-    // tail is never 0: it is 1 on 116 of them, and runs 1 to 22 on the other 8,
+    // per-core tails do not exist on disk. Among non-empty tiles in the 124
+    // surveyed format v2 layers, the tail is never 0: it is 1 on 116 of them, and runs 1 to 22 on the other 8,
     // all ptb, the largest being 17 to 22 over 64 tiles with mode 21. So
     // charging nothing was not a safe default.
     //
-    // `>= 1` by construction, which the engine relies on for more than accuracy:
-    // it is what makes the tile seam advance the clock, so a tile whose cores
-    // all issue nothing cannot leave the barrier firing at its own timestamp
-    // forever.
+    // Non-empty tiles have tail >= 1; entirely empty zero-MAC tiles have tail 0.
+    // Every seam advances the tile index, not necessarily the clock. Finite
+    // tile count guarantees termination even across consecutive empty tiles.
     virtual LocalTick tile_tail(std::int32_t tile) const = 0;
 
 protected:

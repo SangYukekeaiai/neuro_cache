@@ -1,6 +1,7 @@
 #include "cachesim/config.h"
 #include "cachesim/enum_names.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -185,6 +186,17 @@ const std::string& enum_text(const std::string& key, const Value& v, std::size_t
 }
 
 void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t pos) {
+    for (const char* option : {"l1_prefetch_axis", "l1_prefetch_up", "l1_prefetch_down",
+                               "l2_prefetch_axis", "l2_prefetch_up", "l2_prefetch_down",
+                               "l2_prefetch_min_touches"}) {
+        if (key == option) {
+            if (std::find(cfg.prefetch_options_set.begin(), cfg.prefetch_options_set.end(), key)
+                    == cfg.prefetch_options_set.end()) {
+                cfg.prefetch_options_set.push_back(key);
+            }
+            break;
+        }
+    }
     // Each key is matched against the typed field tables below. A key that is
     // in no table is an unknown-key error.
     for (const I32Field& f : kI32Fields) {
@@ -204,6 +216,7 @@ void assign(RunConfig& cfg, const std::string& key, const Value& v, std::size_t 
         const std::int32_t distance = to_i32(key, v, pos);
         cfg.prefetch_distance      = distance;
         cfg.l1_prefetch_distance   = distance;
+        cfg.l1_prefetch_distance_set = true;
         return;
     }
 
@@ -556,6 +569,10 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
     if (cfg.prefetch_distance == 0 && cfg.l1_prefetch_distance != 0) {
         cfg.prefetch_distance = cfg.l1_prefetch_distance;
     }
+    if (cfg.l1_prefetch_policy == PrefetchKind::NextLine &&
+        !cfg.l1_prefetch_distance_set && cfg.l1_prefetch_distance == 0) {
+        cfg.l1_prefetch_distance = 1;
+    }
     cfg.prefetch_policy   = cfg.l1_prefetch_policy;
     cfg.prefetch_distance = cfg.l1_prefetch_distance;
 
@@ -668,6 +685,9 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
         reject("l2_prefetch_policy = neighbour with l2_prefetch_distance = 0 would run as "
                "none; set the policy to none or the distance to at least 1");
     }
+    if (cfg.l2_prefetch_policy == PrefetchKind::NextLine && cfg.l2_prefetch_distance == 0) {
+        reject("l2_prefetch_policy = next_line requires distance >= 1");
+    }
     if (cfg.l2_prefetch_policy == PrefetchKind::DistanceAware && cfg.l2_prefetch_distance == 0) {
         reject("l2_prefetch_policy = distance_aware with l2_prefetch_distance = 0 would run as "
                "none; set the policy to none or the distance to at least 1");
@@ -726,6 +746,9 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
         reject("prefetch_policy = neighbour with prefetch_distance = 0 would run as "
                "none; set the policy to none or the distance to at least 1");
     }
+    if (cfg.l1_prefetch_policy == PrefetchKind::NextLine && cfg.l1_prefetch_distance == 0) {
+        reject("l1_prefetch_policy = next_line requires distance >= 1");
+    }
     if (cfg.l1_prefetch_policy == PrefetchKind::Neighbour &&
         !cfg.l1_prefetch_up && !cfg.l1_prefetch_down) {
         reject("prefetch_policy = neighbour with both directions off would run as none");
@@ -740,6 +763,14 @@ void validate(RunConfig& cfg, std::int32_t lines_per_burst, std::vector<Warning>
         reject("l1_demand_reserve = " + std::to_string(cfg.l1_demand_reserve) +
                " leaves no MSHR for a prefetch under l1_mshrs = " +
                std::to_string(cfg.l1_mshrs));
+    }
+
+    for (const auto& key : cfg.prefetch_options_set) {
+        const auto policy = key.rfind("l1_", 0) == 0 ? cfg.l1_prefetch_policy : cfg.l2_prefetch_policy;
+        if (policy == PrefetchKind::NextLine) {
+            warn(warnings, "W_NEXT_LINE_IGNORED_OPTION",
+                 key + " is ignored by next_line; physical-line candidates use only distance");
+        }
     }
 
     if (cfg.l1_mshrs >= cfg.l1_num_lines() / 2) {

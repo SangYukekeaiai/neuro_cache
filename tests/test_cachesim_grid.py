@@ -6,7 +6,7 @@ import sys
 
 import pytest
 
-from lays.cachesim.grid import write_grid
+from lays.cachesim.grid import full_grid, write_grid
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 DEMO_GRID = REPO / "data/demo/loas/grid"
@@ -14,6 +14,16 @@ DEMO_GRID = REPO / "data/demo/loas/grid"
 BASELINE_GRID = {"khkw_0.json": "khkw_16b.json", "khkw_1.json": "khkw_32b.json",
                  "khkw_2.json": "khkw_64b.json"}
 BASELINE_DIR = REPO / ".baseline/wcache/_khkw_grid"
+
+
+def test_next_line_at_both_levels_in_sweep():
+    base = {"cout_block": 4, "weight_bytes": 1}
+    points = full_grid(base, {"line_bytes": [64], "l2_banks": [1],
+                            "prefetch": [["next_line", 1], ["next_line", 3]],
+                            "l2_prefetch": [["next_line", 1]]})
+    assert points == [dict(base, cin_block=16, l2_banks=1, l2_prefetch_policy="next_line",
+                           l2_prefetch_distance=1, prefetch_policy="next_line",
+                           prefetch_distance=distance) for distance in (1, 3)]
 
 
 def test_grid_files_equal_demo_grid(tmp_path):

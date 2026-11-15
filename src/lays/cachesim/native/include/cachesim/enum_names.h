@@ -64,6 +64,7 @@ inline const char* name_of(PrefetchKind k) {
     switch (k) {
         case PrefetchKind::None:      return "none";
         case PrefetchKind::NextAccess: return "next_access";
+        case PrefetchKind::NextLine:   return "next_line";
         case PrefetchKind::DistanceAware:  return "distance_aware";
         case PrefetchKind::Neighbour: return "neighbour";
     }
@@ -73,6 +74,7 @@ inline const char* name_of(PrefetchKind k) {
 inline bool parse(const std::string& text, PrefetchKind& out) {
     if (text == "none") out = PrefetchKind::None;
     else if (text == "next_access") out = PrefetchKind::NextAccess;
+    else if (text == "next_line") out = PrefetchKind::NextLine;
     else if (text == "distance_aware") out = PrefetchKind::DistanceAware;
     else if (text == "neighbour" || text == "neighbor") out = PrefetchKind::Neighbour;
     else return false;

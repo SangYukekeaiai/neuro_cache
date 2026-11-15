@@ -104,8 +104,9 @@ void Engine::barrier_arrive(CoreId c, SimTime now) {
     // `tile_tail[N] = mac_cycles[N] - max_tick[N]`, the compute the tile still
     // owes after its last weights land, charged once at the tile level (Q10,
     // closed with corpus data: 0 across most of the corpus and 20 cycles, 11.7%
-    // of the tile, on all 64 tiles of ptb layer_01 and layer_03). It is >= 1 by
-    // construction, which is also what makes the seam advance the clock.
+    // of the tile, on all 64 tiles of ptb layer_01 and layer_03). Non-empty
+    // tiles have tail >= 1; entirely empty zero-MAC tiles have tail 0. The
+    // seam advances the tile index; finite tile count guarantees termination.
     const std::int32_t tile = cores_.at(idx(c)).tile;
     queue_.schedule(now + as_duration(trace_.tile_tail(tile)), EventKind::Barrier, NoRefusal,
                     CoreId{0}, EventPayload{nullptr, nullptr, BurstIndex{0}, tile});

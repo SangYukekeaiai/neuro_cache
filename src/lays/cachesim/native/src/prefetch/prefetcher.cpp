@@ -5,6 +5,7 @@
 
 #include "cachesim/prefetch/neighbour.h"
 #include "cachesim/prefetch/next_access.h"
+#include "cachesim/prefetch/next_line.h"
 #include "cachesim/prefetch/distance_aware.h"
 #include "cachesim/prefetch/none.h"
 
@@ -22,6 +23,8 @@ std::unique_ptr<Prefetcher> make_prefetcher(PrefetchKind kind,
             return std::make_unique<NoPrefetcher>();
         case PrefetchKind::NextAccess:
             return std::make_unique<NextAccessPrefetcher>(params.distance, n_cores);
+        case PrefetchKind::NextLine:
+            return std::make_unique<NextLinePrefetcher>(params.distance);
         case PrefetchKind::DistanceAware:
             return std::make_unique<DistanceAwarePrefetcher>(params.distance, params.min_touches);
         case PrefetchKind::Neighbour:

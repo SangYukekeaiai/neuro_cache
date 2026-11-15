@@ -201,9 +201,9 @@ bool StreamingTileTrace::advance() {
                                  ": n_core_blocks is " + std::to_string(n_core_blocks) +
                                  ", outside [0, " + std::to_string(header_.n_cores) + "]");
     }
-    if (mac < 1) {
+    if (mac < 0) {
         throw std::runtime_error("WCTS frame " + std::to_string(tile_index) +
-                                 ": mac_cycles is " + std::to_string(mac) + ", must be >= 1");
+                                 ": mac_cycles is " + std::to_string(mac) + ", must be >= 0");
     }
 
     const std::size_t payload = static_cast<std::size_t>(payload_bytes);
@@ -316,10 +316,11 @@ bool StreamingTileTrace::advance() {
                                  " but its core blocks consume " + std::to_string(pos));
     }
 
-    // trace.h: `>= 1` by construction, and the engine relies on it to advance
-    // the tile seam, so it is checked rather than assumed (Q10).
+    // Empty tiles retain their schedule boundary without consuming a cycle.
+    const bool empty_frame = mac == 0 && n_core_blocks == 0 &&
+                             payload_bytes == 0 && bursts_.empty();
     const std::int64_t tail = mac - max_tick;
-    if (tail < 1) {
+    if (tail < 1 && !empty_frame) {
         throw std::runtime_error("WCTS frame " + std::to_string(tile_index) +
                                  ": tile_tail is mac_cycles " + std::to_string(mac) +
                                  " minus max_tick " + std::to_string(max_tick) + " = " +
