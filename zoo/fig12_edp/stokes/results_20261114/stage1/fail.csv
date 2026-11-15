@@ -1,0 +1,1 @@
+index,key,tier,result,worker_status,attempt,started_unix,finished_unix,worker_elapsed_seconds,generation_records,R_p,arms,artifact_sha256_ok,fingerprint_ok,scratch_clear,Bpolicy_verified,cache_config_hashes_verified,complete_path,counts_path,worker_warning,snapshot_status,scheduler_snapshot,error

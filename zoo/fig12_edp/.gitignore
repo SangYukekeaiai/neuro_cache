@@ -1,0 +1,4 @@
+# Manager-side review pulls from Stokes: byte-duplicates of stage-1 case data indexed in stokes/results_20261114/README.md
+review_stokes_stage1/
+# Manager pull duplicate of the canonical NG45 root (results_ng45_20261114/); same bytes, manifested there
+stokes/results_20261114/stage2_ng45/
