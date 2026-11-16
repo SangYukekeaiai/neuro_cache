@@ -4,7 +4,7 @@ Boss spec 2026-11-16 (verbatim decisions) applied on top of `plan.md`:
 
 - Two series only: single-node vs multi-node. **Supersedes plan.md v2's third
   (multi-node cache) series - confirm this is intended before plotting.**
-- Workload: loas_vgg16, samples 000-009 (10), the 12 kept layers (C5/C6).
+- Workload: loas_vgg16, samples 000-009 (10), the 13 kept layers (C5/C6).
 - Utilization: the Row-1 formula in `plan.md` (U = sum_l C_l / (N * sum_l T_l)),
   computed from nocsim total latency + per-core per-tile latency.
 - Traffic: **CoSA weight-traffic formula (analytic, from the solved schedule)**,
@@ -33,7 +33,7 @@ Boss spec 2026-11-16 (verbatim decisions) applied on top of `plan.md`:
   published LoAS lb (32 KB); the x-axis is total on-chip capacity, not
   multiples of published.
 
-Case counts: schedules 2 sides × 5 capacities × 12 layers = **120 solves**;
+Case counts: schedules 2 sides × 5 capacities × 13 layers = **130 solves**;
 trace-gen/sim 120 × 10 samples = **1,200 cases** per stage.
 
 ## Full chain (input → module → intermediate → output)
@@ -56,7 +56,7 @@ trace-gen/sim 120 × 10 samples = **1,200 cases** per stage.
 - **Intermediate:** per-case solver logs.
 - **Output:** `zoo/eval_scaling/outputs/schedules/{side}_x{m}/{layer}.json`
   + `extract_metrics` dump (util, spatial_cost, temporal_traffic, delay)
-  per schedule. 120 solves, minutes each - login-friendly, no Slurm needed.
+  per schedule. 130 solves, minutes each - login-friendly, no Slurm needed.
 
 ### S2. Analytic CoSA weight traffic (Delta; small join script, no sim)
 - **Input:** S1 schedules + metrics.
@@ -92,7 +92,7 @@ trace-gen/sim 120 × 10 samples = **1,200 cases** per stage.
 ### S5. Transfer back + aggregate (Delta; join script in `zoo/eval_scaling/`)
 - **Input:** S4 CSVs (bridge back), S2 traffic.csv.
 - **Formulae (per plan.md):**
-  - U = (sum_l C_l) / (N · sum_l T_l), cycle-weighted over the 12 layers
+  - U = (sum_l C_l) / (N · sum_l T_l), cycle-weighted over the 13 layers
     (sum before divide), per sample → mean ± 95% CI over 10 samples.
   - Traffic y = W(side, x) / W_single(x1), layer-summed, one baseline per panel.
 - **Output:** `zoo/eval_scaling/outputs/aggregate.csv`

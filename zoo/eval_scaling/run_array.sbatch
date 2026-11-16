@@ -14,6 +14,7 @@ export LD_LIBRARY_PATH="/apps/python/python-3.11.4-gcc-12.2.0/lib${LD_LIBRARY_PA
 
 REPO="$HOME/neuro_cache_wcache"
 PYTHON="$REPO/.venv311/bin/python"
+export PYTHONPATH="$REPO/src${PYTHONPATH:+:$PYTHONPATH}"
 ES="$REPO/zoo/eval_scaling"
 TRACE_ROOT=/lustre/fs1/home/ya867177/data/input_trace_delta/B09
 CASES="$ES/outputs/cases.txt"
