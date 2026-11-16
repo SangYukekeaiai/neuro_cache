@@ -1,0 +1,22 @@
+arch:
+  bitwidths:
+    BW_WEIGHT: 8
+    BW_PSUM: 16
+    BW_VMEM: 32
+    DRAM_LATENCY: 0.25
+  # One node, no physical GB. Capacities constrain the scheduler, not nocsim.
+  single_node: true
+  storage:
+  - name: NodeLevel
+    instances: 1
+    pe:
+      num_pes: 256
+    local_buffer:
+      entries:
+        weight: 1179648  # largest tile: 3*3*512*N bytes
+        psum: 36864  # 144*N bytes, proportional to hardware node size
+        vmem: 36864  # 144*N bytes, proportional to hardware node size
+  - name: NoCLevel
+    instances: 1  # entries omitted: no physical global buffer
+  - name: OffChip
+    instances: 1

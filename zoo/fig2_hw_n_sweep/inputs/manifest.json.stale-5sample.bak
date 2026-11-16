@@ -1,0 +1,62 @@
+{
+  "hardware_sizes": [
+    32,
+    64,
+    128,
+    256,
+    512
+  ],
+  "samples": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "networks": {
+    "vgg16": {
+      "trace": "examples/input_trace/loas/vgg16_T4_n5",
+      "included_layers": [
+        "layer_01_features_3",
+        "layer_02_features_7",
+        "layer_03_features_10",
+        "layer_04_features_14",
+        "layer_05_features_17",
+        "layer_06_features_20",
+        "layer_07_features_24",
+        "layer_08_features_27",
+        "layer_09_features_30",
+        "layer_10_features_34",
+        "layer_11_features_37",
+        "layer_12_features_40"
+      ],
+      "excluded_layers": {}
+    },
+    "resnet19": {
+      "trace": "examples/input_trace/loas/resnet19_T4_n5",
+      "included_layers": [
+        "layer_02_layer1_0_conv2",
+        "layer_04_layer1_1_conv1",
+        "layer_05_layer1_1_conv2",
+        "layer_06_layer1_2_conv1",
+        "layer_07_layer1_2_conv2",
+        "layer_09_layer2_0_conv2",
+        "layer_11_layer2_1_conv1",
+        "layer_12_layer2_1_conv2",
+        "layer_13_layer2_2_conv1",
+        "layer_14_layer2_2_conv2",
+        "layer_16_layer3_0_conv2",
+        "layer_18_layer3_1_conv1",
+        "layer_19_layer3_1_conv2"
+      ],
+      "excluded_layers": {
+        "layer_01_layer1_0_conv1": "kernel 3x3, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "layer_03_layer1_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "layer_08_layer2_0_conv1": "kernel 3x3, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "layer_10_layer2_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "layer_15_layer3_0_conv1": "kernel 3x3, stride 2: the arch models replay only 3x3 stride-1 convs",
+        "layer_17_layer3_0_shortcut_0": "kernel 1x1, stride 2: the arch models replay only 3x3 stride-1 convs"
+      }
+    }
+  }
+}

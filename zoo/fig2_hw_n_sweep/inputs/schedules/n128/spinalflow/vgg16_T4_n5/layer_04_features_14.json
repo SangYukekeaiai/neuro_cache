@@ -1,0 +1,82 @@
+{
+  "arch": "spinalflow",
+  "trace_dir": "vgg16_T4_n5",
+  "layer_name": "layer_04_features_14",
+  "workload": {
+    "problem": {
+      "KH": 3,
+      "KW": 3,
+      "CIN": 128,
+      "COUT": 256,
+      "HO": 8,
+      "WO": 8,
+      "T": 4,
+      "shape": "snn-layer"
+    }
+  },
+  "result": {
+    "status": "MANUAL",
+    "has_solution": true,
+    "strategy": {
+      "NodeLevel": {
+        "temporal_tile": {
+          "factors": [
+            {
+              "dim": "KH",
+              "size": 3
+            },
+            {
+              "dim": "KW",
+              "size": 3
+            },
+            {
+              "dim": "CIN",
+              "size": 128
+            },
+            {
+              "dim": "T",
+              "size": 4
+            }
+          ]
+        },
+        "spatial_split": {
+          "factors": [
+            {
+              "dim": "COUT",
+              "size": 128
+            }
+          ]
+        }
+      },
+      "NoCLevel": {
+        "temporal_permutation": {
+          "loops": []
+        },
+        "spatial_splitting": {
+          "loops": []
+        }
+      },
+      "DRAM": {
+        "temporal_permutation": {
+          "order": "HOx8 -> WOx8 -> COUTx2",
+          "loops": [
+            {
+              "dim": "HO",
+              "size": 8
+            },
+            {
+              "dim": "WO",
+              "size": 8
+            },
+            {
+              "dim": "COUT",
+              "size": 2
+            }
+          ]
+        }
+      }
+    }
+  },
+  "dram_num_steps": 128,
+  "mode": "base"
+}
