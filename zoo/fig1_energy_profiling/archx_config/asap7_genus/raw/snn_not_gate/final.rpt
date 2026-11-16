@@ -1,0 +1,52 @@
+
+
+Working Directory = /home/net/ya867177/auto_syn_pnr/Flows/ASAP7/snn_not_gate/scripts/cadence
+QoS Summary for snn_not_gate
+================================================================================
+Metric                          generic         map             final          
+================================================================================
+Slack (ps):                       inf             inf             inf
+  R2R (ps):                  no_value        no_value        no_value
+  I2R (ps):                  no_value        no_value        no_value
+  R2O (ps):                  no_value        no_value        no_value
+  I2O (ps):                  no_value        no_value        no_value
+  CG  (ps):                  no_value        no_value        no_value
+TNS (ps):                           0               0               0
+  R2R (ps):                  no_value        no_value        no_value
+  I2R (ps):                  no_value        no_value        no_value
+  R2O (ps):                  no_value        no_value        no_value
+  I2O (ps):                  no_value        no_value        no_value
+  CG  (ps):                  no_value        no_value        no_value
+Failing Paths:                      0               0               0
+Leakage Power (nW):          no_value               0               0
+Cell Area:                          0               0               0
+Total Cell Area:                    0               0               0
+Leaf Instances:                     1               1               1
+Total Instances:                    1               1               1
+Utilization (%):                 0.00            0.00            0.00
+Tot. Net Length (um):        no_value        no_value        no_value
+Avg. Net Length (um):        no_value        no_value        no_value
+Route Overflow H (%):        no_value        no_value        no_value
+Route Overflow V (%):        no_value        no_value        no_value
+MBCI(%) (bits/gate) :            0.00            0.00            0.00
+Norm Cong Hotspot Area:
+  Max Cong:                  no_value        no_value        no_value
+  Tot Cong:                  no_value        no_value        no_value
+================================================================================
+CPU  Runtime (h:m:s):        00:00:13        00:00:04        00:00:01
+Real Runtime (h:m:s):        00:00:10        00:00:03        00:00:03
+CPU  Elapsed (h:m:s):        00:00:19        00:00:23        00:00:24
+Real Elapsed (h:m:s):        00:00:11        00:00:15        00:00:18
+Memory (MB):                  1377.18         1369.00         1411.64
+================================================================================
+================================================================================
+Flow Settings:
+================================================================================
+Total Runtime (h:m:s): 00:00:16
+Total Memory (MB):     1419.65
+Executable Version:    21.18-s082_1
+================================================================================
+Total Cell Area =  Cell Area + Physical Cell Area
+Total Instances =  Leaf Instances + Physical Instances
+
+

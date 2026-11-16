@@ -1,0 +1,511 @@
+{
+  "caveat": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD.",
+  "operations": {
+    "gustavsnn.adder16.add": {
+      "area_mm2": 6.692e-06,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 1.7104760000000002e-06,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 3.49442e-06,
+      "primitive_counts": {
+        "adder16": 1
+      }
+    },
+    "gustavsnn.leading_spike_detector.scan": {
+      "area_mm2": 1.5484e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 2.524660464e-06,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 7.524736e-06,
+      "primitive_counts": {
+        "and_gate": 32,
+        "not_gate": 32,
+        "or_gate": 106
+      }
+    },
+    "gustavsnn.lif_core.step": {
+      "area_mm2": 4.8998999999999996e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 1.139931403e-05,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 2.3562402999999998e-05,
+      "primitive_counts": {
+        "adder32": 2,
+        "mux2": 66,
+        "not_gate": 35,
+        "or_gate": 33,
+        "xor_gate": 33
+      }
+    },
+    "gustavsnn.merger_tree2.merge": {
+      "area_mm2": 3.5892e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 8.03543633e-06,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 1.6730578e-05,
+      "primitive_counts": {
+        "adder32": 1,
+        "and_gate": 1,
+        "mux2": 68,
+        "not_gate": 35,
+        "or_gate": 33,
+        "xor_gate": 32
+      }
+    },
+    "gustavsnn.output_fifo.push": {
+      "area_mm2": 0.00015881999999999997,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.0007770432,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 8.586100000000001e-05,
+      "primitive_counts": {
+        "fifo32x8": 1
+      }
+    },
+    "gustavsnn.potential_regfile.rmw": {
+      "area_mm2": 0.001377576,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.005347202753372,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 0.000665137576,
+      "primitive_counts": {
+        "and_gate": 384,
+        "mux2": 2016,
+        "not_gate": 6,
+        "register32": 64
+      }
+    },
+    "gustavsnn.reg16.rmw": {
+      "area_mm2": 7.698e-06,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 4.111894e-05,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 3.7326199999999998e-06,
+      "primitive_counts": {
+        "register16": 1
+      }
+    },
+    "gustavsnn.spike_fifo.pop": {
+      "area_mm2": 0.00015881999999999997,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.0007770432,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 8.586100000000001e-05,
+      "primitive_counts": {
+        "fifo32x8": 1
+      }
+    },
+    "loas.adder16.add": {
+      "area_mm2": 6.692e-06,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 1.7104760000000002e-06,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 3.49442e-06,
+      "primitive_counts": {
+        "adder16": 1
+      }
+    },
+    "loas.and_gate.and": {
+      "area_mm2": 1.0199999999999999e-07,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 1.646866e-08,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 5.3294e-08,
+      "primitive_counts": {
+        "and_gate": 1
+      }
+    },
+    "loas.bsf32.scan": {
+      "area_mm2": 2.1083999999999997e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 3.689025264e-06,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 9.501920000000001e-06,
+      "primitive_counts": {
+        "and_gate": 32,
+        "not_gate": 32,
+        "or_gate": 106,
+        "xor_gate": 32
+      }
+    },
+    "loas.lif_unit.step": {
+      "area_mm2": 6.4876125e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 9.620712778e-05,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 3.126093175e-05,
+      "primitive_counts": {
+        "adder32": 2,
+        "mux2": 66,
+        "not_gate": 35,
+        "or_gate": 33,
+        "register1": 1,
+        "register32": 1,
+        "xor_gate": 33
+      }
+    },
+    "loas.output_fifo.push": {
+      "area_mm2": 0.00015881999999999997,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.0007770432,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 8.586100000000001e-05,
+      "primitive_counts": {
+        "fifo32x8": 1
+      }
+    },
+    "loas.reg16.read": {
+      "area_mm2": 7.698e-06,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 4.111894e-05,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 3.7326199999999998e-06,
+      "primitive_counts": {
+        "register16": 1
+      }
+    },
+    "loas.reg16.rmw": {
+      "area_mm2": 7.698e-06,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 4.111894e-05,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 3.7326199999999998e-06,
+      "primitive_counts": {
+        "register16": 1
+      }
+    },
+    "loas.spike_fifo.pop": {
+      "area_mm2": 0.00015881999999999997,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.0007770432,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 8.586100000000001e-05,
+      "primitive_counts": {
+        "fifo32x8": 1
+      }
+    },
+    "loas.spike_fifo.push": {
+      "area_mm2": 0.00015881999999999997,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.0007770432,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 8.586100000000001e-05,
+      "primitive_counts": {
+        "fifo32x8": 1
+      }
+    },
+    "loas.spike_prefix_scan32.scan": {
+      "area_mm2": 0.00014680575,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 3.752356725e-05,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 7.665883875e-05,
+      "primitive_counts": {
+        "adder1": 31,
+        "adder2": 30,
+        "adder3": 28,
+        "adder4": 24,
+        "adder5": 16
+      }
+    },
+    "loas.weight_fifo.pop": {
+      "area_mm2": 7.940999999999999e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.0003885216,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 4.2930500000000005e-05,
+      "primitive_counts": {
+        "fifo16x8": 1
+      }
+    },
+    "loas.weight_fifo.push": {
+      "area_mm2": 7.940999999999999e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.0003885216,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 4.2930500000000005e-05,
+      "primitive_counts": {
+        "fifo16x8": 1
+      }
+    },
+    "ptb.adder16.add": {
+      "area_mm2": 6.692e-06,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 1.7104760000000002e-06,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 3.49442e-06,
+      "primitive_counts": {
+        "adder16": 1
+      }
+    },
+    "ptb.lif_unit.step": {
+      "area_mm2": 6.4876125e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 9.620712778e-05,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 3.126093175e-05,
+      "primitive_counts": {
+        "adder32": 2,
+        "mux2": 66,
+        "not_gate": 35,
+        "or_gate": 33,
+        "register1": 1,
+        "register32": 1,
+        "xor_gate": 33
+      }
+    },
+    "ptb.reg16.read": {
+      "area_mm2": 7.698e-06,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 4.111894e-05,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 3.7326199999999998e-06,
+      "primitive_counts": {
+        "register16": 1
+      }
+    },
+    "ptb.reg16.rmw": {
+      "area_mm2": 7.698e-06,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 4.111894e-05,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 3.7326199999999998e-06,
+      "primitive_counts": {
+        "register16": 1
+      }
+    },
+    "ptb.spike_fifo.pop": {
+      "area_mm2": 7.940999999999999e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.0003885216,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 4.2930500000000005e-05,
+      "primitive_counts": {
+        "fifo16x8": 1
+      }
+    },
+    "ptb.spike_fifo.push": {
+      "area_mm2": 7.940999999999999e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.0003885216,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 4.2930500000000005e-05,
+      "primitive_counts": {
+        "fifo16x8": 1
+      }
+    },
+    "ptb.spike_mask_overlap.check": {
+      "area_mm2": 6.469999999999999e-06,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 1.0464528020000002e-06,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 3.31638e-06,
+      "primitive_counts": {
+        "and_gate": 32,
+        "not_gate": 1,
+        "or_gate": 31
+      }
+    },
+    "ptb.weight_fifo.pop": {
+      "area_mm2": 7.940999999999999e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.0003885216,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 4.2930500000000005e-05,
+      "primitive_counts": {
+        "fifo16x8": 1
+      }
+    },
+    "ptb.weight_fifo.push": {
+      "area_mm2": 7.940999999999999e-05,
+      "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+      "dynamic_energy_nJ": 0.0003885216,
+      "dynamic_event_cycles": 1,
+      "leakage_power_mW": 4.2930500000000005e-05,
+      "primitive_counts": {
+        "fifo16x8": 1
+      }
+    }
+  },
+  "primitives": {
+    "adder1": {
+      "area_mm2": 4.1825e-07,
+      "dimensions": {
+        "width": 1
+      },
+      "dynamic_energy_nJ": 1.0690475000000001e-07,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 2.1840125e-07,
+      "source_csv": "archx_config/asap7_genus/syn_csv/adder.csv",
+      "source_csv_sha256": "c42474859e2c4f8d638a0eb5eb109e809c567e0f96ef0f0c706cfcdd51cac975"
+    },
+    "adder16": {
+      "area_mm2": 6.692e-06,
+      "dimensions": {
+        "width": 16
+      },
+      "dynamic_energy_nJ": 1.7104760000000002e-06,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 3.49442e-06,
+      "source_csv": "archx_config/asap7_genus/syn_csv/adder.csv",
+      "source_csv_sha256": "c42474859e2c4f8d638a0eb5eb109e809c567e0f96ef0f0c706cfcdd51cac975"
+    },
+    "adder2": {
+      "area_mm2": 8.365e-07,
+      "dimensions": {
+        "width": 2
+      },
+      "dynamic_energy_nJ": 2.1380950000000002e-07,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 4.368025e-07,
+      "source_csv": "archx_config/asap7_genus/syn_csv/adder.csv",
+      "source_csv_sha256": "c42474859e2c4f8d638a0eb5eb109e809c567e0f96ef0f0c706cfcdd51cac975"
+    },
+    "adder3": {
+      "area_mm2": 1.25475e-06,
+      "dimensions": {
+        "width": 3
+      },
+      "dynamic_energy_nJ": 3.2071425000000003e-07,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 6.5520375e-07,
+      "source_csv": "archx_config/asap7_genus/syn_csv/adder.csv",
+      "source_csv_sha256": "c42474859e2c4f8d638a0eb5eb109e809c567e0f96ef0f0c706cfcdd51cac975"
+    },
+    "adder32": {
+      "area_mm2": 1.3384e-05,
+      "dimensions": {
+        "width": 32
+      },
+      "dynamic_energy_nJ": 3.4209520000000003e-06,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 6.98884e-06,
+      "source_csv": "archx_config/asap7_genus/syn_csv/adder.csv",
+      "source_csv_sha256": "c42474859e2c4f8d638a0eb5eb109e809c567e0f96ef0f0c706cfcdd51cac975"
+    },
+    "adder4": {
+      "area_mm2": 1.673e-06,
+      "dimensions": {
+        "width": 4
+      },
+      "dynamic_energy_nJ": 4.2761900000000004e-07,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 8.73605e-07,
+      "source_csv": "archx_config/asap7_genus/syn_csv/adder.csv",
+      "source_csv_sha256": "c42474859e2c4f8d638a0eb5eb109e809c567e0f96ef0f0c706cfcdd51cac975"
+    },
+    "adder5": {
+      "area_mm2": 2.0912499999999997e-06,
+      "dimensions": {
+        "width": 5
+      },
+      "dynamic_energy_nJ": 5.3452375e-07,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 1.09200625e-06,
+      "source_csv": "archx_config/asap7_genus/syn_csv/adder.csv",
+      "source_csv_sha256": "c42474859e2c4f8d638a0eb5eb109e809c567e0f96ef0f0c706cfcdd51cac975"
+    },
+    "and_gate": {
+      "area_mm2": 1.0199999999999999e-07,
+      "dimensions": {},
+      "dynamic_energy_nJ": 1.646866e-08,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 5.3294e-08,
+      "source_csv": "archx_config/asap7_genus/syn_csv/and_gate.csv",
+      "source_csv_sha256": "f0b5c82bca7d01c3ac5707bde4ecc36b9948644dd576eb181313e91cd3de03ac"
+    },
+    "fifo16x8": {
+      "area_mm2": 7.940999999999999e-05,
+      "dimensions": {
+        "depth": 8,
+        "width": 16
+      },
+      "dynamic_energy_nJ": 0.0003885216,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 4.2930500000000005e-05,
+      "source_csv": "archx_config/asap7_genus/syn_csv/fifo.csv",
+      "source_csv_sha256": "fc9d06356ef8c4250ade0ffab1e2864219bae29cc6b79886943d42a767db6946"
+    },
+    "fifo32x8": {
+      "area_mm2": 0.00015881999999999997,
+      "dimensions": {
+        "depth": 8,
+        "width": 32
+      },
+      "dynamic_energy_nJ": 0.0007770432,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 8.586100000000001e-05,
+      "source_csv": "archx_config/asap7_genus/syn_csv/fifo.csv",
+      "source_csv_sha256": "fc9d06356ef8c4250ade0ffab1e2864219bae29cc6b79886943d42a767db6946"
+    },
+    "mux2": {
+      "area_mm2": 1.75e-07,
+      "dimensions": {},
+      "dynamic_energy_nJ": 3.849602e-08,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 8.275399999999999e-08,
+      "source_csv": "archx_config/asap7_genus/syn_csv/mux2.csv",
+      "source_csv_sha256": "5c5515ff46465f4e3aa59b444ae2776b89c5aa3ad4f0f80199fcc47e79764c29"
+    },
+    "not_gate": {
+      "area_mm2": 4.4e-08,
+      "dimensions": {},
+      "dynamic_energy_nJ": 7.748602e-09,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 1.0876000000000001e-08,
+      "source_csv": "archx_config/asap7_genus/syn_csv/not_gate.csv",
+      "source_csv_sha256": "875c33c0ae81a0aa2bc48a8a1a30da8e5ae0647b73c54d1119ac7b86960adac6"
+    },
+    "or_gate": {
+      "area_mm2": 1.0199999999999999e-07,
+      "dimensions": {},
+      "dynamic_energy_nJ": 1.650668e-08,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 5.1616000000000004e-08,
+      "source_csv": "archx_config/asap7_genus/syn_csv/or_gate.csv",
+      "source_csv_sha256": "4797a0a4a8704678e4800bf84314c6b8e70c2099fb50225fb29b2aa4d9bc1d32"
+    },
+    "register1": {
+      "area_mm2": 4.81125e-07,
+      "dimensions": {
+        "width": 1
+      },
+      "dynamic_energy_nJ": 2.56993375e-06,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 2.3328874999999999e-07,
+      "source_csv": "archx_config/asap7_genus/syn_csv/register.csv",
+      "source_csv_sha256": "12f293a6566d244cc7772b07ba6d685d0635a733cfeef7f3f3e219bd815fdef8"
+    },
+    "register16": {
+      "area_mm2": 7.698e-06,
+      "dimensions": {
+        "width": 16
+      },
+      "dynamic_energy_nJ": 4.111894e-05,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 3.7326199999999998e-06,
+      "source_csv": "archx_config/asap7_genus/syn_csv/register.csv",
+      "source_csv_sha256": "12f293a6566d244cc7772b07ba6d685d0635a733cfeef7f3f3e219bd815fdef8"
+    },
+    "register32": {
+      "area_mm2": 1.5396e-05,
+      "dimensions": {
+        "width": 32
+      },
+      "dynamic_energy_nJ": 8.223788e-05,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 7.4652399999999995e-06,
+      "source_csv": "archx_config/asap7_genus/syn_csv/register.csv",
+      "source_csv_sha256": "12f293a6566d244cc7772b07ba6d685d0635a733cfeef7f3f3e219bd815fdef8"
+    },
+    "xor_gate": {
+      "area_mm2": 1.75e-07,
+      "dimensions": {},
+      "dynamic_energy_nJ": 3.63864e-08,
+      "interpolation": "linear through origin, independently in width and depth",
+      "leakage_power_mW": 6.1787e-08,
+      "source_csv": "archx_config/asap7_genus/syn_csv/xor_gate.csv",
+      "source_csv_sha256": "89704e5a0eaa6744965fde0455b88b8168b7998c3ff8047c35a818ab9a30703e"
+    }
+  }
+}

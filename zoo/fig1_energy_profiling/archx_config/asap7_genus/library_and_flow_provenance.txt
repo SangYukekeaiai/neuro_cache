@@ -1,0 +1,29 @@
+5ab6bc43c29983f2b8b7f7b0ffbafa8db0c4bcbc755e2ef5fad7448ba2033235  /home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_AO_RVT_FF_nldm_201020.lib
+  nom_voltage : 0.77;
+  nom_temperature : 0;
+01da239387a47f7a1bb0d2e975e6b7fb54b7c7ffa88a33974e7d9052292c328c  /home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_INVBUF_RVT_FF_nldm_201020.lib
+  nom_voltage : 0.77;
+  nom_temperature : 0;
+25fc912d32753055eb548a055924c6a38ca134a8d15940ae26fa749b2762def1  /home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_OA_RVT_FF_nldm_201020.lib
+  nom_voltage : 0.77;
+  nom_temperature : 0;
+b18d0548addbecb49f496ff420b1c160714bfc46543615b7879a6a6d0ad11794  /home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_SEQ_RVT_FF_nldm_201020.lib
+  nom_voltage : 0.77;
+  nom_temperature : 0;
+f357e2c73d55d380da20b8f32b6275827b98fd35ec672c64a86f8902e1319ed4  /home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020.lib
+  nom_voltage : 0.7;
+  nom_temperature : 25;
+d60655d3be4f2efee81402ff8becf2b4b6f34580
+diff --git a/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl b/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl
+index 62a72d5..5b5fcd5 100644
+--- a/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl
++++ b/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl
+@@ -55,7 +55,7 @@ set_db / .optimize_constant_0_flops                                 true
+ set_db / .optimize_constant_1_flops                                 true
+ 
+ # Clock gating
+-set_db / .lp_insert_clock_gating                                    true
++set_db / .lp_insert_clock_gating                                    false
+ 
+ # Ungroup policy
+ set_db / .auto_ungroup                                              both

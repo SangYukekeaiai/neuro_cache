@@ -1,0 +1,159 @@
+{
+  "arch_variants_parser_passed": 12,
+  "area_basis": "cell area; estimated net area shown separately, not added to logic cell area",
+  "characterization": "ASAP7 Genus synthesis only, no P&R; default mixed library declarations; unconstrained I/O; no claim of uniform TT",
+  "modules": {
+    "snn_adder16": {
+      "cell_area_um2": 6.692,
+      "cells": 107,
+      "dynamic_mW": 0.000855238,
+      "dynamic_nJ_per_500MHz_cycle": 1.7104760000000002e-06,
+      "estimated_net_area_um2": 6.201,
+      "leakage_mW": 3.49442e-06,
+      "reported_condition": "PVT_0P77V_0C",
+      "reported_slack_ps": [],
+      "source_paths": [
+        "archx_config/asap7_genus/raw/snn_adder16/snn_adder16_power.rpt",
+        "archx_config/asap7_genus/raw/snn_adder16/snn_adder16_area.rpt",
+        "archx_config/asap7_genus/raw/snn_adder16/snn_adder16_timing.rpt"
+      ],
+      "timing_evidence": "no constrained path reported; I/O unconstrained"
+    },
+    "snn_and_gate": {
+      "cell_area_um2": 0.102,
+      "cells": 2,
+      "dynamic_mW": 8.23433e-06,
+      "dynamic_nJ_per_500MHz_cycle": 1.646866e-08,
+      "estimated_net_area_um2": 0.125,
+      "leakage_mW": 5.3294e-08,
+      "reported_condition": "PVT_0P77V_0C",
+      "reported_slack_ps": [],
+      "source_paths": [
+        "archx_config/asap7_genus/raw/snn_and_gate/snn_and_gate_power.rpt",
+        "archx_config/asap7_genus/raw/snn_and_gate/snn_and_gate_area.rpt",
+        "archx_config/asap7_genus/raw/snn_and_gate/snn_and_gate_timing.rpt"
+      ],
+      "timing_evidence": "no constrained path reported; I/O unconstrained"
+    },
+    "snn_and_gate_5": {
+      "cell_area_um2": 0.51,
+      "cells": 10,
+      "dynamic_mW": 4.117164e-05,
+      "dynamic_nJ_per_500MHz_cycle": 8.234328e-08,
+      "estimated_net_area_um2": 0.623,
+      "leakage_mW": 2.6647000000000003e-07,
+      "reported_condition": "PVT_0P77V_0C",
+      "reported_slack_ps": [],
+      "source_paths": [
+        "archx_config/asap7_genus/raw/snn_and_gate_5/snn_and_gate_5_power.rpt",
+        "archx_config/asap7_genus/raw/snn_and_gate_5/snn_and_gate_5_area.rpt",
+        "archx_config/asap7_genus/raw/snn_and_gate_5/snn_and_gate_5_timing.rpt"
+      ],
+      "timing_evidence": "no constrained path reported; I/O unconstrained"
+    },
+    "snn_fifo32x8": {
+      "cell_area_um2": 158.82,
+      "cells": 849,
+      "dynamic_mW": 0.3885216,
+      "dynamic_nJ_per_500MHz_cycle": 0.0007770432,
+      "estimated_net_area_um2": 49.333,
+      "leakage_mW": 8.586100000000001e-05,
+      "reported_condition": "PVT_0P77V_0C",
+      "reported_slack_ps": [
+        1300.0
+      ],
+      "source_paths": [
+        "archx_config/asap7_genus/raw/snn_fifo32x8/snn_fifo32x8_power.rpt",
+        "archx_config/asap7_genus/raw/snn_fifo32x8/snn_fifo32x8_area.rpt",
+        "archx_config/asap7_genus/raw/snn_fifo32x8/snn_fifo32x8_timing.rpt"
+      ],
+      "timing_evidence": "register-to-register paths only; I/O unconstrained"
+    },
+    "snn_mux2": {
+      "cell_area_um2": 0.175,
+      "cells": 2,
+      "dynamic_mW": 1.924801e-05,
+      "dynamic_nJ_per_500MHz_cycle": 3.849602e-08,
+      "estimated_net_area_um2": 0.171,
+      "leakage_mW": 8.275399999999999e-08,
+      "reported_condition": "PVT_0P77V_0C",
+      "reported_slack_ps": [],
+      "source_paths": [
+        "archx_config/asap7_genus/raw/snn_mux2/snn_mux2_power.rpt",
+        "archx_config/asap7_genus/raw/snn_mux2/snn_mux2_area.rpt",
+        "archx_config/asap7_genus/raw/snn_mux2/snn_mux2_timing.rpt"
+      ],
+      "timing_evidence": "no constrained path reported; I/O unconstrained"
+    },
+    "snn_not_gate": {
+      "cell_area_um2": 0.044,
+      "cells": 1,
+      "dynamic_mW": 3.874301e-06,
+      "dynamic_nJ_per_500MHz_cycle": 7.748602e-09,
+      "estimated_net_area_um2": 0.062,
+      "leakage_mW": 1.0876000000000001e-08,
+      "reported_condition": "PVT_0P77V_0C",
+      "reported_slack_ps": [],
+      "source_paths": [
+        "archx_config/asap7_genus/raw/snn_not_gate/snn_not_gate_power.rpt",
+        "archx_config/asap7_genus/raw/snn_not_gate/snn_not_gate_area.rpt",
+        "archx_config/asap7_genus/raw/snn_not_gate/snn_not_gate_timing.rpt"
+      ],
+      "timing_evidence": "no constrained path reported; I/O unconstrained"
+    },
+    "snn_or_gate": {
+      "cell_area_um2": 0.102,
+      "cells": 2,
+      "dynamic_mW": 8.25334e-06,
+      "dynamic_nJ_per_500MHz_cycle": 1.650668e-08,
+      "estimated_net_area_um2": 0.125,
+      "leakage_mW": 5.1616000000000004e-08,
+      "reported_condition": "PVT_0P77V_0C",
+      "reported_slack_ps": [],
+      "source_paths": [
+        "archx_config/asap7_genus/raw/snn_or_gate/snn_or_gate_power.rpt",
+        "archx_config/asap7_genus/raw/snn_or_gate/snn_or_gate_area.rpt",
+        "archx_config/asap7_genus/raw/snn_or_gate/snn_or_gate_timing.rpt"
+      ],
+      "timing_evidence": "no constrained path reported; I/O unconstrained"
+    },
+    "snn_register16": {
+      "cell_area_um2": 7.698,
+      "cells": 64,
+      "dynamic_mW": 0.02055947,
+      "dynamic_nJ_per_500MHz_cycle": 4.111894e-05,
+      "estimated_net_area_um2": 3.498,
+      "leakage_mW": 3.7326199999999998e-06,
+      "reported_condition": "PVT_0P77V_0C",
+      "reported_slack_ps": [
+        1910.0
+      ],
+      "source_paths": [
+        "archx_config/asap7_genus/raw/snn_register16/snn_register16_power.rpt",
+        "archx_config/asap7_genus/raw/snn_register16/snn_register16_area.rpt",
+        "archx_config/asap7_genus/raw/snn_register16/snn_register16_timing.rpt"
+      ],
+      "timing_evidence": "register-to-register paths only; I/O unconstrained"
+    },
+    "snn_xor_gate": {
+      "cell_area_um2": 0.175,
+      "cells": 3,
+      "dynamic_mW": 1.81932e-05,
+      "dynamic_nJ_per_500MHz_cycle": 3.63864e-08,
+      "estimated_net_area_um2": 0.186,
+      "leakage_mW": 6.1787e-08,
+      "reported_condition": "PVT_0P77V_0C",
+      "reported_slack_ps": [],
+      "source_paths": [
+        "archx_config/asap7_genus/raw/snn_xor_gate/snn_xor_gate_power.rpt",
+        "archx_config/asap7_genus/raw/snn_xor_gate/snn_xor_gate_area.rpt",
+        "archx_config/asap7_genus/raw/snn_xor_gate/snn_xor_gate_timing.rpt"
+      ],
+      "timing_evidence": "no constrained path reported; I/O unconstrained"
+    }
+  },
+  "power_conversion": "dynamic=(internal_W+switching_W)*1000 mW; nJ/event=dynamic_mW/500 MHz",
+  "report_files_sha_verified": 189,
+  "schedule_generation": "HELD_PENDING_ORDER_DECISION",
+  "status": "INSPECTION_ONLY_NOT_ENERGY_TABLE"
+}

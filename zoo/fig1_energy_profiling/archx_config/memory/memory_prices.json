@@ -1,0 +1,500 @@
+{
+  "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+  "queries": {
+    "psum_fixed": {
+      "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+      "fmax_MHz": 13970.031488450975,
+      "meets_500MHz": true,
+      "metrics": {
+        "area": {
+          "unit": "mm^2",
+          "value": 0.064064369136
+        },
+        "dynamic_energy": {
+          "read": {
+            "unit": "nJ",
+            "value": 0.00227039
+          },
+          "write": {
+            "unit": "nJ",
+            "value": 0.00202269
+          }
+        },
+        "frequency": {
+          "unit": "MHz",
+          "value": 500
+        },
+        "leakage_power": {
+          "unit": "mW",
+          "value": 18.0137
+        },
+        "technology": {
+          "unit": "nm",
+          "value": 7
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 131072,
+        "frequency": 500,
+        "technology": 7,
+        "width": 16
+      },
+      "source_config": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.cfg",
+      "source_config_sha256": "5fd829f91546919996f3fd3dcb63a950b4214d0a57cd0f0edf13e27fe453bd68",
+      "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+      "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+    },
+    "ptb_spike_buffer": {
+      "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+      "fmax_MHz": 65367.59466861898,
+      "meets_500MHz": true,
+      "metrics": {
+        "area": {
+          "unit": "mm^2",
+          "value": 0.00035989600196
+        },
+        "dynamic_energy": {
+          "read": {
+            "unit": "nJ",
+            "value": 0.00010333
+          },
+          "write": {
+            "unit": "nJ",
+            "value": 0.000101244
+          }
+        },
+        "frequency": {
+          "unit": "MHz",
+          "value": 500
+        },
+        "leakage_power": {
+          "unit": "mW",
+          "value": 0.0856998
+        },
+        "technology": {
+          "unit": "nm",
+          "value": 7
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 256,
+        "frequency": 500,
+        "technology": 7,
+        "width": 32
+      },
+      "source_config": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.cfg",
+      "source_config_sha256": "eb9421515994ab40eb084b82f0a557a9fa98fb1df188752294770134f61f6c67",
+      "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+      "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+    },
+    "vmem_fixed": {
+      "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+      "fmax_MHz": 4638.778331338659,
+      "meets_500MHz": true,
+      "metrics": {
+        "area": {
+          "unit": "mm^2",
+          "value": 0.13233882595000002
+        },
+        "dynamic_energy": {
+          "read": {
+            "unit": "nJ",
+            "value": 0.0039803
+          },
+          "write": {
+            "unit": "nJ",
+            "value": 0.00348489
+          }
+        },
+        "frequency": {
+          "unit": "MHz",
+          "value": 500
+        },
+        "leakage_power": {
+          "unit": "mW",
+          "value": 34.9777
+        },
+        "technology": {
+          "unit": "nm",
+          "value": 7
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 131072,
+        "frequency": 500,
+        "technology": 7,
+        "width": 32
+      },
+      "source_config": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.cfg",
+      "source_config_sha256": "63089810df09568c22e15a43539ecebccc514c8bb83301f2ed44a66e33205a10",
+      "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+      "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+    },
+    "weight_1048576_w128": {
+      "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+      "fmax_MHz": 4478.841950625246,
+      "meets_500MHz": true,
+      "metrics": {
+        "area": {
+          "unit": "mm^2",
+          "value": 0.28461006640900005
+        },
+        "dynamic_energy": {
+          "read": {
+            "unit": "nJ",
+            "value": 0.0136673
+          },
+          "write": {
+            "unit": "nJ",
+            "value": 0.0131622
+          }
+        },
+        "frequency": {
+          "unit": "MHz",
+          "value": 500
+        },
+        "leakage_power": {
+          "unit": "mW",
+          "value": 70.3098
+        },
+        "technology": {
+          "unit": "nm",
+          "value": 7
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 65536,
+        "frequency": 500,
+        "technology": 7,
+        "width": 128
+      },
+      "source_config": "archx_config/memory/weight_1048576_w128/weight_1048576_w128.sram.width128.depth65536.bank1.tech7.47cd3c7cd615.cacti_fn.cfg",
+      "source_config_sha256": "7259abe71f236ed4cb3a3c7d88c110a8436f3ac04444f4b6d7f64c76cfa27ad3",
+      "source_report": "archx_config/memory/weight_1048576_w128/weight_1048576_w128.sram.width128.depth65536.bank1.tech7.47cd3c7cd615.cacti_fn.rpt",
+      "source_report_sha256": "74880653443c827158a8abb746b930d6be58a5818c3eeee48fc46c350e6f871e"
+    },
+    "weight_1048576_w64": {
+      "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+      "fmax_MHz": 4478.841950625246,
+      "meets_500MHz": true,
+      "metrics": {
+        "area": {
+          "unit": "mm^2",
+          "value": 0.25327690443999995
+        },
+        "dynamic_energy": {
+          "read": {
+            "unit": "nJ",
+            "value": 0.0084616
+          },
+          "write": {
+            "unit": "nJ",
+            "value": 0.00766138
+          }
+        },
+        "frequency": {
+          "unit": "MHz",
+          "value": 500
+        },
+        "leakage_power": {
+          "unit": "mW",
+          "value": 69.5298
+        },
+        "technology": {
+          "unit": "nm",
+          "value": 7
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 131072,
+        "frequency": 500,
+        "technology": 7,
+        "width": 64
+      },
+      "source_config": "archx_config/memory/weight_1048576_w64/weight_1048576_w64.sram.width64.depth131072.bank1.tech7.e051518f57b4.cacti_fn.cfg",
+      "source_config_sha256": "496895f49c7e20d7cb2cc3ee26acb53d237977d143693d5607cdb01ca44b5b94",
+      "source_report": "archx_config/memory/weight_1048576_w64/weight_1048576_w64.sram.width64.depth131072.bank1.tech7.e051518f57b4.cacti_fn.rpt",
+      "source_report_sha256": "ff60b58c1b4b686aaec9374dba2dfb7e2c4d975f2c0997eb5d2d2c78dc38bb41"
+    },
+    "weight_131072_w128": {
+      "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+      "fmax_MHz": 4638.778331338659,
+      "meets_500MHz": true,
+      "metrics": {
+        "area": {
+          "unit": "mm^2",
+          "value": 0.041965614809999996
+        },
+        "dynamic_energy": {
+          "read": {
+            "unit": "nJ",
+            "value": 0.00271302
+          },
+          "write": {
+            "unit": "nJ",
+            "value": 0.00244541
+          }
+        },
+        "frequency": {
+          "unit": "MHz",
+          "value": 500
+        },
+        "leakage_power": {
+          "unit": "mW",
+          "value": 8.80039
+        },
+        "technology": {
+          "unit": "nm",
+          "value": 7
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 8192,
+        "frequency": 500,
+        "technology": 7,
+        "width": 128
+      },
+      "source_config": "archx_config/memory/weight_131072_w128/weight_131072_w128.sram.width128.depth8192.bank1.tech7.25a441e1e078.cacti_fn.cfg",
+      "source_config_sha256": "6de4821304bc1cd332a54d58a9a32d5e6f0e236d7866a262139c4966ffe4224f",
+      "source_report": "archx_config/memory/weight_131072_w128/weight_131072_w128.sram.width128.depth8192.bank1.tech7.25a441e1e078.cacti_fn.rpt",
+      "source_report_sha256": "fe3475627388d8343351f0bba2efffebc99671a30ee9af9525bf970362af0ab4"
+    },
+    "weight_131072_w64": {
+      "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+      "fmax_MHz": 4638.778331338659,
+      "meets_500MHz": true,
+      "metrics": {
+        "area": {
+          "unit": "mm^2",
+          "value": 0.03598033373
+        },
+        "dynamic_energy": {
+          "read": {
+            "unit": "nJ",
+            "value": 0.00202795
+          },
+          "write": {
+            "unit": "nJ",
+            "value": 0.00161645
+          }
+        },
+        "frequency": {
+          "unit": "MHz",
+          "value": 500
+        },
+        "leakage_power": {
+          "unit": "mW",
+          "value": 8.77984
+        },
+        "technology": {
+          "unit": "nm",
+          "value": 7
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 16384,
+        "frequency": 500,
+        "technology": 7,
+        "width": 64
+      },
+      "source_config": "archx_config/memory/weight_131072_w64/weight_131072_w64.sram.width64.depth16384.bank1.tech7.7dabb4ebec97.cacti_fn.cfg",
+      "source_config_sha256": "1d5740cd5e031831448903266a9463bf82456d6ec3a97799c08a94d59c36cce6",
+      "source_report": "archx_config/memory/weight_131072_w64/weight_131072_w64.sram.width64.depth16384.bank1.tech7.7dabb4ebec97.cacti_fn.rpt",
+      "source_report_sha256": "e7bc2799f315377263378adebc62b3784fd72b42688572de05da29dcf1db0945"
+    },
+    "weight_262144_w128": {
+      "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+      "fmax_MHz": 4478.841950625246,
+      "meets_500MHz": true,
+      "metrics": {
+        "area": {
+          "unit": "mm^2",
+          "value": 0.071144781924
+        },
+        "dynamic_energy": {
+          "read": {
+            "unit": "nJ",
+            "value": 0.00502165
+          },
+          "write": {
+            "unit": "nJ",
+            "value": 0.00451658
+          }
+        },
+        "frequency": {
+          "unit": "MHz",
+          "value": 500
+        },
+        "leakage_power": {
+          "unit": "mW",
+          "value": 17.6023
+        },
+        "technology": {
+          "unit": "nm",
+          "value": 7
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 16384,
+        "frequency": 500,
+        "technology": 7,
+        "width": 128
+      },
+      "source_config": "archx_config/memory/weight_262144_w128/weight_262144_w128.sram.width128.depth16384.bank1.tech7.19d6de2845b5.cacti_fn.cfg",
+      "source_config_sha256": "3e43cd8a7a2958e44dee537ec7accb5de9435d223c401c624e27ab6abcb2a629",
+      "source_report": "archx_config/memory/weight_262144_w128/weight_262144_w128.sram.width128.depth16384.bank1.tech7.19d6de2845b5.cacti_fn.rpt",
+      "source_report_sha256": "9239408b7d9743c8d39b0e08a794afe60589190c771532eec266675046d83f05"
+    },
+    "weight_262144_w64": {
+      "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+      "fmax_MHz": 4638.778331338659,
+      "meets_500MHz": true,
+      "metrics": {
+        "area": {
+          "unit": "mm^2",
+          "value": 0.071966783052
+        },
+        "dynamic_energy": {
+          "read": {
+            "unit": "nJ",
+            "value": 0.00326787
+          },
+          "write": {
+            "unit": "nJ",
+            "value": 0.00284839
+          }
+        },
+        "frequency": {
+          "unit": "MHz",
+          "value": 500
+        },
+        "leakage_power": {
+          "unit": "mW",
+          "value": 17.6342
+        },
+        "technology": {
+          "unit": "nm",
+          "value": 7
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 32768,
+        "frequency": 500,
+        "technology": 7,
+        "width": 64
+      },
+      "source_config": "archx_config/memory/weight_262144_w64/weight_262144_w64.sram.width64.depth32768.bank1.tech7.e341c362887a.cacti_fn.cfg",
+      "source_config_sha256": "84f5244198d5dc0e5daf19b6f89085dbab44ea0636cfb9fbe3c274215936de4a",
+      "source_report": "archx_config/memory/weight_262144_w64/weight_262144_w64.sram.width64.depth32768.bank1.tech7.e341c362887a.cacti_fn.rpt",
+      "source_report_sha256": "e4852af2341701bfe3450f5be2bdd088a704476bd589a8598384e115e5c03599"
+    },
+    "weight_524288_w128": {
+      "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+      "fmax_MHz": 4478.841950625246,
+      "meets_500MHz": true,
+      "metrics": {
+        "area": {
+          "unit": "mm^2",
+          "value": 0.14527524260099997
+        },
+        "dynamic_energy": {
+          "read": {
+            "unit": "nJ",
+            "value": 0.00884161
+          },
+          "write": {
+            "unit": "nJ",
+            "value": 0.00833654
+          }
+        },
+        "frequency": {
+          "unit": "MHz",
+          "value": 500
+        },
+        "leakage_power": {
+          "unit": "mW",
+          "value": 35.4445
+        },
+        "technology": {
+          "unit": "nm",
+          "value": 7
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 32768,
+        "frequency": 500,
+        "technology": 7,
+        "width": 128
+      },
+      "source_config": "archx_config/memory/weight_524288_w128/weight_524288_w128.sram.width128.depth32768.bank1.tech7.055c2119524d.cacti_fn.cfg",
+      "source_config_sha256": "667f875bfc8d8d677534c2b2869a79fc3be5e2ffe5e19fec2b0668bd8d6f5e83",
+      "source_report": "archx_config/memory/weight_524288_w128/weight_524288_w128.sram.width128.depth32768.bank1.tech7.055c2119524d.cacti_fn.rpt",
+      "source_report_sha256": "adde709814aa5354ffdfe3f5d3ac2c9f4974d287b869915218de013da158f2ad"
+    },
+    "weight_524288_w64": {
+      "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+      "fmax_MHz": 4478.841950625246,
+      "meets_500MHz": true,
+      "metrics": {
+        "area": {
+          "unit": "mm^2",
+          "value": 0.12868413134
+        },
+        "dynamic_energy": {
+          "read": {
+            "unit": "nJ",
+            "value": 0.00561898
+          },
+          "write": {
+            "unit": "nJ",
+            "value": 0.00481876
+          }
+        },
+        "frequency": {
+          "unit": "MHz",
+          "value": 500
+        },
+        "leakage_power": {
+          "unit": "mW",
+          "value": 34.9198
+        },
+        "technology": {
+          "unit": "nm",
+          "value": 7
+        }
+      },
+      "query": {
+        "bank": 1,
+        "class": "sram",
+        "depth": 65536,
+        "frequency": 500,
+        "technology": 7,
+        "width": 64
+      },
+      "source_config": "archx_config/memory/weight_524288_w64/weight_524288_w64.sram.width64.depth65536.bank1.tech7.040af793b125.cacti_fn.cfg",
+      "source_config_sha256": "66837d7eb0bcd38c531562b62040fe85437cafca1a609bf9c36c4ea7de46aff1",
+      "source_report": "archx_config/memory/weight_524288_w64/weight_524288_w64.sram.width64.depth65536.bank1.tech7.040af793b125.cacti_fn.rpt",
+      "source_report_sha256": "a6ec08ce50cd672f06abfc9a4e0df8e04840cd4d4c6136982bbea40a1ea6405b"
+    }
+  }
+}

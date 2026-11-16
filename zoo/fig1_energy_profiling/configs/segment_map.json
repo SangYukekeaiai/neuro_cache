@@ -1,0 +1,88 @@
+{
+  "absent_single_node_interconnect": [
+    "shared.router.hop",
+    "shared.link.hop"
+  ],
+  "dram_operations": {
+    "shared.ddr4.read": {
+      "other": "off_chip_other",
+      "weight": "off_chip_weights"
+    },
+    "shared.ddr4_io.byte": {
+      "other": "off_chip_other",
+      "weight": "off_chip_weights"
+    }
+  },
+  "dram_partition_rule": "Classify annotated transfers by tensor before independent burst rounding; all DRAM reads/bytes must reconcile with the total. No guessed fraction.",
+  "fig1_hardware_sha256": "2473e35f533ce5d6b8138113889ad979cb343f2ef813c70d9f84ce9b4f5ae934",
+  "fixed_state_buffers": {
+    "accounting": "Area/leakage capacity provisions only, once per physical buffer; all added SRAM dynamic counts are zero. Native registers/LIF/RFs retain state activity. Leakage follows case duration.",
+    "capacity_bytes": {
+      "psum": 262144,
+      "vmem": 524288
+    },
+    "capacity_source": "configs/arch_manifest.json:state_buffers.fixed_capacity_bytes",
+    "scope": "one of each per single node; identical capacity and price basis in every SRAM bar",
+    "segment": "on_chip_sram"
+  },
+  "forbidden_inventory_prefixes": [
+    "shared.gb."
+  ],
+  "hardware_source": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/hardware.json",
+  "hardware_source_sha256": "b640ca5a71dc22f2c3a246f3db45ee6441b6e2b97d04109bd3d8cb90ccca2053",
+  "leakage_rule": "Each physical module charged once in its local segment; no GB leakage or area inventory.",
+  "local_operations": {
+    "gustavsnn.adder16.add": "compute",
+    "gustavsnn.l1_weight_spad.read": "on_chip_sram",
+    "gustavsnn.l1_weight_spad.write": "on_chip_sram",
+    "gustavsnn.leading_spike_detector.scan": "compute",
+    "gustavsnn.lif_core.step": "compute",
+    "gustavsnn.output_fifo.push": "compute",
+    "gustavsnn.potential_regfile.rmw": "compute",
+    "gustavsnn.psum_sram.read": "on_chip_sram",
+    "gustavsnn.psum_sram.write": "on_chip_sram",
+    "gustavsnn.reg16.rmw": "compute",
+    "gustavsnn.spike_fifo.pop": "compute",
+    "gustavsnn.vmem_sram.read": "on_chip_sram",
+    "gustavsnn.vmem_sram.write": "on_chip_sram",
+    "loas.adder16.add": "compute",
+    "loas.and_gate.and": "compute",
+    "loas.bsf32.scan": "compute",
+    "loas.l1_weight_spad.read": "on_chip_sram",
+    "loas.l1_weight_spad.write": "on_chip_sram",
+    "loas.lif_unit.step": "compute",
+    "loas.output_fifo.push": "compute",
+    "loas.psum_sram.read": "on_chip_sram",
+    "loas.psum_sram.write": "on_chip_sram",
+    "loas.reg16.read": "compute",
+    "loas.reg16.rmw": "compute",
+    "loas.spike_fifo.pop": "compute",
+    "loas.spike_fifo.push": "compute",
+    "loas.spike_prefix_scan32.scan": "compute",
+    "loas.vmem_sram.read": "on_chip_sram",
+    "loas.vmem_sram.write": "on_chip_sram",
+    "loas.weight_fifo.pop": "compute",
+    "loas.weight_fifo.push": "compute",
+    "ptb.adder16.add": "compute",
+    "ptb.l1_weight_spad.read": "on_chip_sram",
+    "ptb.l1_weight_spad.write": "on_chip_sram",
+    "ptb.lif_unit.step": "compute",
+    "ptb.output_spike_queue.read": "on_chip_sram",
+    "ptb.output_spike_queue.write": "on_chip_sram",
+    "ptb.psum_sram.read": "on_chip_sram",
+    "ptb.psum_sram.write": "on_chip_sram",
+    "ptb.reg16.read": "compute",
+    "ptb.reg16.rmw": "compute",
+    "ptb.spike_fifo.pop": "compute",
+    "ptb.spike_fifo.push": "compute",
+    "ptb.spike_mask_overlap.check": "compute",
+    "ptb.spike_vector_buffer.read": "on_chip_sram",
+    "ptb.spike_vector_buffer.write": "on_chip_sram",
+    "ptb.vmem_sram.read": "on_chip_sram",
+    "ptb.vmem_sram.write": "on_chip_sram",
+    "ptb.weight_fifo.pop": "compute",
+    "ptb.weight_fifo.push": "compute"
+  },
+  "physical_hierarchy": "DRAM <-> local SRAM/register/FIFO buffers <-> PEs; no GB",
+  "standing_dram_segment": "off_chip_other; no non-weight dynamic DRAM transfers emitted"
+}

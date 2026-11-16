@@ -1,0 +1,38 @@
+{
+  "claim": "project-default mixed library declarations; reports identify PVT_0P77V_0C",
+  "remote_evidence_sha256": "3f8c9c15e8d568c00bae250d563b2801498dba14a283537ce5e0b923337af22c",
+  "source_manifest_sha256": "7bca08d73efd3edfc6856c1721b411acff0ed8330ba1c6c5923f680df999baa2",
+  "uniform_corner": false,
+  "verified_libraries": {
+    "asap7sc7p5t_AO_RVT_FF_nldm_201020.lib": {
+      "nom_temperature": 0.0,
+      "nom_voltage": 0.77,
+      "path": "Enablements/ASAP7/lib/asap7sc7p5t_AO_RVT_FF_nldm_201020.lib",
+      "sha256": "5ab6bc43c29983f2b8b7f7b0ffbafa8db0c4bcbc755e2ef5fad7448ba2033235"
+    },
+    "asap7sc7p5t_INVBUF_RVT_FF_nldm_201020.lib": {
+      "nom_temperature": 0.0,
+      "nom_voltage": 0.77,
+      "path": "Enablements/ASAP7/lib/asap7sc7p5t_INVBUF_RVT_FF_nldm_201020.lib",
+      "sha256": "01da239387a47f7a1bb0d2e975e6b7fb54b7c7ffa88a33974e7d9052292c328c"
+    },
+    "asap7sc7p5t_OA_RVT_FF_nldm_201020.lib": {
+      "nom_temperature": 0.0,
+      "nom_voltage": 0.77,
+      "path": "Enablements/ASAP7/lib/asap7sc7p5t_OA_RVT_FF_nldm_201020.lib",
+      "sha256": "25fc912d32753055eb548a055924c6a38ca134a8d15940ae26fa749b2762def1"
+    },
+    "asap7sc7p5t_SEQ_RVT_FF_nldm_201020.lib": {
+      "nom_temperature": 0.0,
+      "nom_voltage": 0.77,
+      "path": "Enablements/ASAP7/lib/asap7sc7p5t_SEQ_RVT_FF_nldm_201020.lib",
+      "sha256": "b18d0548addbecb49f496ff420b1c160714bfc46543615b7879a6a6d0ad11794"
+    },
+    "asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020.lib": {
+      "nom_temperature": 25.0,
+      "nom_voltage": 0.7,
+      "path": "Enablements/ASAP7/lib/asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020.lib",
+      "sha256": "f357e2c73d55d380da20b8f32b6275827b98fd35ec672c64a86f8902e1319ed4"
+    }
+  }
+}

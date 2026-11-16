@@ -1,0 +1,40 @@
+{
+  "construction": "direct analytic; no optimizer or post-solve permutation",
+  "noclevel": "inert; no temporal loops or inter-node spatial factors",
+  "outer_order": {
+    "gustavsnn": [
+      "COUT",
+      "HO",
+      "WO",
+      "T"
+    ],
+    "loas": [
+      "HO",
+      "WO",
+      "COUT"
+    ],
+    "ptb": [
+      "HO",
+      "WO",
+      "COUT"
+    ]
+  },
+  "resident_T": {
+    "gustavsnn": 1,
+    "loas": "full",
+    "ptb": "full"
+  },
+  "resident_cout": "largest divisor of full COUT, divisible by spatial COUT, whose full-kernel/full-CIN weights fit",
+  "resident_pixels": {
+    "gustavsnn": "full HOxWO",
+    "loas": "1x1",
+    "ptb": "1x1"
+  },
+  "spatial_cout": {
+    "gustavsnn": 8,
+    "loas": 16,
+    "ptb": 8
+  },
+  "spatial_vs_residency": "The approved contract allows resident COUT above PE fanout. It does not use the stock optimizer constraint barring NodeLevel temporal COUT.",
+  "spec_source_sha256": "51fc9f65d98140f0c2ef244b5b6e7c0c8fc731983178d2d8cbbc6fb80c219751"
+}

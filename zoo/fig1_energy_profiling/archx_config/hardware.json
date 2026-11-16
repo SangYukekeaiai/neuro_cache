@@ -1,0 +1,3115 @@
+{
+  "gustavsnn_contract": "one HO stream, eight COUT lanes, one detector, no two-stream merger",
+  "source_hardware_sha256": "b640ca5a71dc22f2c3a246f3db45ee6441b6e2b97d04109bd3d8cb90ccca2053",
+  "state_contract": "zero added dynamic state-SRAM accesses; fixed provisions contribute area/leakage once",
+  "variants": {
+    "gustavsnn/128k": {
+      "gustavsnn.adder16.add": {
+        "expression": "A",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.l1_weight_spad.read": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 16384,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/64",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 16384,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.leading_spike_detector.scan": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "l1d",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.lif_core.step": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "state_register": false,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.output_fifo.push": {
+        "expression": "W_o/32",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.potential_regfile.rmw": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register_file",
+          "depth": 64,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.reg16.rmw": {
+        "expression": "A",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.spike_fifo.pop": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    },
+    "gustavsnn/1m": {
+      "gustavsnn.adder16.add": {
+        "expression": "A",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.l1_weight_spad.read": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/64",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.leading_spike_detector.scan": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "l1d",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.lif_core.step": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "state_register": false,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.output_fifo.push": {
+        "expression": "W_o/32",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.potential_regfile.rmw": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register_file",
+          "depth": 64,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.reg16.rmw": {
+        "expression": "A",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.spike_fifo.pop": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    },
+    "gustavsnn/256k": {
+      "gustavsnn.adder16.add": {
+        "expression": "A",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.l1_weight_spad.read": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 32768,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/64",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 32768,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.leading_spike_detector.scan": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "l1d",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.lif_core.step": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "state_register": false,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.output_fifo.push": {
+        "expression": "W_o/32",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.potential_regfile.rmw": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register_file",
+          "depth": 64,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.reg16.rmw": {
+        "expression": "A",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.spike_fifo.pop": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    },
+    "gustavsnn/512k": {
+      "gustavsnn.adder16.add": {
+        "expression": "A",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.l1_weight_spad.read": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 65536,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/64",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 65536,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.leading_spike_detector.scan": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "l1d",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.lif_core.step": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "state_register": false,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.output_fifo.push": {
+        "expression": "W_o/32",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.potential_regfile.rmw": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register_file",
+          "depth": 64,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.reg16.rmw": {
+        "expression": "A",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.spike_fifo.pop": {
+        "expression": "R_g",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    },
+    "loas/128k": {
+      "loas.adder16.add": {
+        "expression": "A",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.and_gate.and": {
+        "expression": "32*B",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 1
+        },
+        "segment": "compute"
+      },
+      "loas.bsf32.scan": {
+        "expression": "A/cout_n",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "bsf32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.l1_weight_spad.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 8192,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/128",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 8192,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.lif_unit.step": {
+        "expression": "L",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.output_fifo.push": {
+        "expression": "W_o",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.reg16.read": {
+        "expression": "L",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.reg16.rmw": {
+        "expression": "A",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_prefix_scan32.scan": {
+        "expression": "B",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "psum_scan32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.weight_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.weight_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    },
+    "loas/1m": {
+      "loas.adder16.add": {
+        "expression": "A",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.and_gate.and": {
+        "expression": "32*B",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 1
+        },
+        "segment": "compute"
+      },
+      "loas.bsf32.scan": {
+        "expression": "A/cout_n",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "bsf32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.l1_weight_spad.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 65536,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/128",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 65536,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.lif_unit.step": {
+        "expression": "L",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.output_fifo.push": {
+        "expression": "W_o",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.reg16.read": {
+        "expression": "L",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.reg16.rmw": {
+        "expression": "A",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_prefix_scan32.scan": {
+        "expression": "B",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "psum_scan32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.weight_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.weight_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    },
+    "loas/256k": {
+      "loas.adder16.add": {
+        "expression": "A",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.and_gate.and": {
+        "expression": "32*B",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 1
+        },
+        "segment": "compute"
+      },
+      "loas.bsf32.scan": {
+        "expression": "A/cout_n",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "bsf32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.l1_weight_spad.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 16384,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/128",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 16384,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.lif_unit.step": {
+        "expression": "L",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.output_fifo.push": {
+        "expression": "W_o",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.reg16.read": {
+        "expression": "L",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.reg16.rmw": {
+        "expression": "A",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_prefix_scan32.scan": {
+        "expression": "B",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "psum_scan32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.weight_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.weight_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    },
+    "loas/512k": {
+      "loas.adder16.add": {
+        "expression": "A",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.and_gate.and": {
+        "expression": "32*B",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 1
+        },
+        "segment": "compute"
+      },
+      "loas.bsf32.scan": {
+        "expression": "A/cout_n",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "bsf32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.l1_weight_spad.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 32768,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/128",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 32768,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.lif_unit.step": {
+        "expression": "L",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.output_fifo.push": {
+        "expression": "W_o",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.reg16.read": {
+        "expression": "L",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.reg16.rmw": {
+        "expression": "A",
+        "instances": 512,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_prefix_scan32.scan": {
+        "expression": "B",
+        "instances": 16,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "psum_scan32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.weight_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.weight_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    },
+    "ptb/128k": {
+      "ptb.adder16.add": {
+        "expression": "A",
+        "instances": 64,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.l1_weight_spad.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 16384,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/64",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 16384,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.lif_unit.step": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.output_spike_queue.read": {
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.output_spike_queue.write": {
+        "expression": "O",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.reg16.read": {
+        "expression": "L",
+        "instances": 256,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.reg16.rmw": {
+        "expression": "A",
+        "instances": 256,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_mask_overlap.check": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "reduction": true,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_vector_buffer.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.spike_vector_buffer.write": {
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.weight_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.weight_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    },
+    "ptb/1m": {
+      "ptb.adder16.add": {
+        "expression": "A",
+        "instances": 64,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.l1_weight_spad.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/64",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.lif_unit.step": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.output_spike_queue.read": {
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.output_spike_queue.write": {
+        "expression": "O",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.reg16.read": {
+        "expression": "L",
+        "instances": 256,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.reg16.rmw": {
+        "expression": "A",
+        "instances": 256,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_mask_overlap.check": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "reduction": true,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_vector_buffer.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.spike_vector_buffer.write": {
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.weight_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.weight_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    },
+    "ptb/256k": {
+      "ptb.adder16.add": {
+        "expression": "A",
+        "instances": 64,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.l1_weight_spad.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 32768,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/64",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 32768,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.lif_unit.step": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.output_spike_queue.read": {
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.output_spike_queue.write": {
+        "expression": "O",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.reg16.read": {
+        "expression": "L",
+        "instances": 256,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.reg16.rmw": {
+        "expression": "A",
+        "instances": 256,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_mask_overlap.check": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "reduction": true,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_vector_buffer.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.spike_vector_buffer.write": {
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.weight_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.weight_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    },
+    "ptb/512k": {
+      "ptb.adder16.add": {
+        "expression": "A",
+        "instances": 64,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.l1_weight_spad.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 65536,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.l1_weight_spad.write": {
+        "expression": "l1_delivery_bytes*8/64",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 65536,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.lif_unit.step": {
+        "expression": "L",
+        "instances": 8,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.output_spike_queue.read": {
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.output_spike_queue.write": {
+        "expression": "O",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.reg16.read": {
+        "expression": "L",
+        "instances": 256,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.reg16.rmw": {
+        "expression": "A",
+        "instances": 256,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_mask_overlap.check": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "reduction": true,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_vector_buffer.read": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.spike_vector_buffer.write": {
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram.read": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram.write": {
+        "contract": "capacity/feasibility provision only; state dynamic activity remains in native register/LIF/RF operations",
+        "expression": "0",
+        "instances": 1,
+        "inventory_segment": "on_chip_sram",
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.weight_fifo.pop": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.weight_fifo.push": {
+        "expression": "B",
+        "instances": 1,
+        "inventory_segment": "compute",
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4.read": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_accesses",
+        "instances": 1,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_weights"
+      },
+      "shared.ddr4_io.byte": {
+        "contract": "all emitted DRAM payload is weight; standing DRAM/IO inventory belongs to off-chip other",
+        "expression": "dram_bytes",
+        "instances": 0,
+        "inventory_segment": "off_chip_other",
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_weights"
+      }
+    }
+  }
+}

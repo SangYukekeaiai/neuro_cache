@@ -1,0 +1,151 @@
+{
+  "and_gate_5_semantics": "Five parallel two-input AND gates (5-bit bitwise AND); not a five-input reduction. No Figure1 composition consumes it.",
+  "backend_file": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/src/archx/__init__.py",
+  "builder_sha256": "0aed3d2202fa7c40cf99cb144d45cae565c795b6ca97f34f5ec7a1a7d24e2efa",
+  "caveat": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD.",
+  "csv_sha256": {
+    "adder.csv": "c42474859e2c4f8d638a0eb5eb109e809c567e0f96ef0f0c706cfcdd51cac975",
+    "and_gate.csv": "f0b5c82bca7d01c3ac5707bde4ecc36b9948644dd576eb181313e91cd3de03ac",
+    "and_gate_5.csv": "fb7437b8c829005a0dd476df0d75ebbfe1ba71555cd987eb085c23f74bb496f6",
+    "fifo.csv": "fc9d06356ef8c4250ade0ffab1e2864219bae29cc6b79886943d42a767db6946",
+    "mux2.csv": "5c5515ff46465f4e3aa59b444ae2776b89c5aa3ad4f0f80199fcc47e79764c29",
+    "not_gate.csv": "875c33c0ae81a0aa2bc48a8a1a30da8e5ae0647b73c54d1119ac7b86960adac6",
+    "or_gate.csv": "4797a0a4a8704678e4800bf84314c6b8e70c2099fb50225fb29b2aa4d9bc1d32",
+    "register.csv": "12f293a6566d244cc7772b07ba6d685d0635a733cfeef7f3f3e219bd815fdef8",
+    "xor_gate.csv": "89704e5a0eaa6744965fde0455b88b8168b7998c3ff8047c35a818ab9a30703e"
+  },
+  "frequency_MHz": 500,
+  "library_provenance_sha256": "07d73455c6a5b528dbd803b57c272f2ae6bce856c4a4de9901543132dcb3c609",
+  "logic_prices_sha256": "bd3d1b690bd01f893a4d3e0111dab3b22372b8fbec8b3a1bda008c068693d6a0",
+  "measured_designs": {
+    "adder": {
+      "cell_area_um2": 6.692,
+      "cells": 107,
+      "design": "snn_adder16",
+      "dimensions": {
+        "width": 16
+      },
+      "dynamic_mW": 0.000855238,
+      "estimated_net_area_um2": 6.201,
+      "leakage_mW": 3.49442e-06,
+      "source_sha256": {
+        "archx_config/asap7_genus/raw/snn_adder16/snn_adder16_area.rpt": "05690a4eeb868ddf4fd71c01c35ca8c00e4e2b1acc22c677052fd9930c4151e7",
+        "archx_config/asap7_genus/raw/snn_adder16/snn_adder16_power.rpt": "1438f4d0e3b62f36d2a3997518467e476e684ac32fb7d08aa4e0acbd40bd7fa2"
+      }
+    },
+    "and_gate": {
+      "cell_area_um2": 0.102,
+      "cells": 2,
+      "design": "snn_and_gate",
+      "dimensions": {},
+      "dynamic_mW": 8.23433e-06,
+      "estimated_net_area_um2": 0.125,
+      "leakage_mW": 5.3294e-08,
+      "source_sha256": {
+        "archx_config/asap7_genus/raw/snn_and_gate/snn_and_gate_area.rpt": "ccfeaaa8e7aba8c14ad228d081ff4d45f22444cf26a414ef1d7152785e4792b8",
+        "archx_config/asap7_genus/raw/snn_and_gate/snn_and_gate_power.rpt": "209fe6f9c9ae00e06241e7444972e131a35e32f1baef11cdbfb7e784d69ff630"
+      }
+    },
+    "and_gate_5": {
+      "cell_area_um2": 0.51,
+      "cells": 10,
+      "design": "snn_and_gate_5",
+      "dimensions": {},
+      "dynamic_mW": 4.117164e-05,
+      "estimated_net_area_um2": 0.623,
+      "leakage_mW": 2.6647000000000003e-07,
+      "source_sha256": {
+        "archx_config/asap7_genus/raw/snn_and_gate_5/snn_and_gate_5_area.rpt": "5613f80f346141d3de285fc77ef2f310c1f8b177bfd3025c762dc5dbc66cfe1e",
+        "archx_config/asap7_genus/raw/snn_and_gate_5/snn_and_gate_5_power.rpt": "3c286f9ee543b461bea187339f1dfdd254ca7bd26da26d467be0c3ed5178b0db"
+      }
+    },
+    "fifo": {
+      "cell_area_um2": 158.82,
+      "cells": 849,
+      "design": "snn_fifo32x8",
+      "dimensions": {
+        "depth": 8,
+        "width": 32
+      },
+      "dynamic_mW": 0.3885216,
+      "estimated_net_area_um2": 49.333,
+      "leakage_mW": 8.586100000000001e-05,
+      "source_sha256": {
+        "archx_config/asap7_genus/raw/snn_fifo32x8/snn_fifo32x8_area.rpt": "10dec620d038b6f3f87b61558a27a3059c893173fa04b35d796cdabf8e4ddafd",
+        "archx_config/asap7_genus/raw/snn_fifo32x8/snn_fifo32x8_power.rpt": "47ff9d695af647db2d88f9ff7941d25c2d6ae1389c71eec3b61e458dd0c41a4d"
+      }
+    },
+    "mux2": {
+      "cell_area_um2": 0.175,
+      "cells": 2,
+      "design": "snn_mux2",
+      "dimensions": {},
+      "dynamic_mW": 1.924801e-05,
+      "estimated_net_area_um2": 0.171,
+      "leakage_mW": 8.275399999999999e-08,
+      "source_sha256": {
+        "archx_config/asap7_genus/raw/snn_mux2/snn_mux2_area.rpt": "c1dfe178f111d0e61fee0adc9058b6efa0afbd1184c5802850225dbb730f8b6b",
+        "archx_config/asap7_genus/raw/snn_mux2/snn_mux2_power.rpt": "5143e9f7bb7f81919c963e546cdc7b7aef9879618636c306c80478aec46db0c6"
+      }
+    },
+    "not_gate": {
+      "cell_area_um2": 0.044,
+      "cells": 1,
+      "design": "snn_not_gate",
+      "dimensions": {},
+      "dynamic_mW": 3.874301e-06,
+      "estimated_net_area_um2": 0.062,
+      "leakage_mW": 1.0876000000000001e-08,
+      "source_sha256": {
+        "archx_config/asap7_genus/raw/snn_not_gate/snn_not_gate_area.rpt": "0b961623cd2af0a2a3040d8617d3a7dda4ba0df0c060b9555e50eca002d3a34d",
+        "archx_config/asap7_genus/raw/snn_not_gate/snn_not_gate_power.rpt": "0d26e60e6454693e374e13d3e61745ffef283c4fe9e4a606fcdfb640d3a9fd2f"
+      }
+    },
+    "or_gate": {
+      "cell_area_um2": 0.102,
+      "cells": 2,
+      "design": "snn_or_gate",
+      "dimensions": {},
+      "dynamic_mW": 8.25334e-06,
+      "estimated_net_area_um2": 0.125,
+      "leakage_mW": 5.1616000000000004e-08,
+      "source_sha256": {
+        "archx_config/asap7_genus/raw/snn_or_gate/snn_or_gate_area.rpt": "52af198bc7b6fd745a95d40c5f61ae9316da88501dc84a4e1f27cfad4df5c666",
+        "archx_config/asap7_genus/raw/snn_or_gate/snn_or_gate_power.rpt": "819a5c7fb45e97dc4c0efbfa47bb3d8f14698a5638f0e962806f5a21210cdafc"
+      }
+    },
+    "register": {
+      "cell_area_um2": 7.698,
+      "cells": 64,
+      "design": "snn_register16",
+      "dimensions": {
+        "width": 16
+      },
+      "dynamic_mW": 0.02055947,
+      "estimated_net_area_um2": 3.498,
+      "leakage_mW": 3.7326199999999998e-06,
+      "source_sha256": {
+        "archx_config/asap7_genus/raw/snn_register16/snn_register16_area.rpt": "2b7dd38d0bcb3ff7b3aada676e72ba6503b27811299eaf179fd42ff56c36be23",
+        "archx_config/asap7_genus/raw/snn_register16/snn_register16_power.rpt": "893969b620a900c3af06d11cee83a77c6e1730304e66faf396fd969899c37f3f"
+      }
+    },
+    "xor_gate": {
+      "cell_area_um2": 0.175,
+      "cells": 3,
+      "design": "snn_xor_gate",
+      "dimensions": {},
+      "dynamic_mW": 1.81932e-05,
+      "estimated_net_area_um2": 0.186,
+      "leakage_mW": 6.1787e-08,
+      "source_sha256": {
+        "archx_config/asap7_genus/raw/snn_xor_gate/snn_xor_gate_area.rpt": "18855ef00b8415d976ec9a266d92b23de394eaa114313858e4585851a545cf1d",
+        "archx_config/asap7_genus/raw/snn_xor_gate/snn_xor_gate_power.rpt": "01610c0530cb1383c67b8dc7234d8ef55c56b198b1de2a51e2bab2817fb80440"
+      }
+    }
+  },
+  "operations": 29,
+  "shared_sources_modified": false,
+  "status": "LOGIC_PRICE_BASIS_ONLY; not a complete geometry-specific energy table",
+  "structural_audit_sha256": "969c757408f576d2a68e21931994afde74573212d499c53fc5a90b27e9954269",
+  "units": "Genus W multiplied by1000 to mW. Legacy CSV *_uw headers carry mW as required by csv_cmos. nJ/event=mW/500. Cell um2 divided by1e6 to mm2; net-area estimate excluded."
+}

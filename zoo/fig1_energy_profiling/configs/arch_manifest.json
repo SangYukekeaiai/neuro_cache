@@ -1,0 +1,2074 @@
+{
+  "authority": "T101: one node, PEs 16/8/8; fixed state buffers sized to pinned-nest maximum plus margin; only weight capacity varies across bars",
+  "bases": {
+    "gustavsnn": {
+      "diff": [
+        {
+          "after": true,
+          "before": false,
+          "path": "/arch/single_node"
+        },
+        {
+          "after": 1,
+          "before": 16,
+          "path": "/arch/storage/0/instances"
+        },
+        {
+          "after": 262144,
+          "before": 1024,
+          "path": "/arch/storage/0/local_buffer/entries/psum"
+        },
+        {
+          "after": 524288,
+          "before": 1024,
+          "path": "/arch/storage/0/local_buffer/entries/vmem"
+        },
+        {
+          "after": 8,
+          "before": 4,
+          "path": "/arch/storage/0/pe/num_pes"
+        },
+        {
+          "action": "remove",
+          "after": null,
+          "before": {
+            "psum": 65536,
+            "vmem": 65536,
+            "weight": 2097152
+          },
+          "path": "/arch/storage/1/entries"
+        }
+      ],
+      "path": "arch/gustavsnn_base.yaml",
+      "sha256": "a2efb628d64db7c2a2fc99327706a8f46875d64658f1251241d68ffe5d17d0e5"
+    },
+    "loas": {
+      "diff": [
+        {
+          "after": true,
+          "before": false,
+          "path": "/arch/single_node"
+        },
+        {
+          "after": 1,
+          "before": 16,
+          "path": "/arch/storage/0/instances"
+        },
+        {
+          "after": 262144,
+          "before": 1024,
+          "path": "/arch/storage/0/local_buffer/entries/psum"
+        },
+        {
+          "after": 524288,
+          "before": 1024,
+          "path": "/arch/storage/0/local_buffer/entries/vmem"
+        },
+        {
+          "after": 16,
+          "before": 4,
+          "path": "/arch/storage/0/pe/num_pes"
+        },
+        {
+          "action": "remove",
+          "after": null,
+          "before": {
+            "psum": 65536,
+            "vmem": 65536,
+            "weight": 2097152
+          },
+          "path": "/arch/storage/1/entries"
+        }
+      ],
+      "path": "arch/loas_base.yaml",
+      "sha256": "97e88601502b36bbbbc7d6ad97355f4895bfd17f8a9b5d5e6fc5cecc7fab27b9"
+    },
+    "ptb": {
+      "diff": [
+        {
+          "after": true,
+          "before": false,
+          "path": "/arch/single_node"
+        },
+        {
+          "after": 1,
+          "before": 16,
+          "path": "/arch/storage/0/instances"
+        },
+        {
+          "after": 262144,
+          "before": 1024,
+          "path": "/arch/storage/0/local_buffer/entries/psum"
+        },
+        {
+          "after": 524288,
+          "before": 1024,
+          "path": "/arch/storage/0/local_buffer/entries/vmem"
+        },
+        {
+          "after": 8,
+          "before": 4,
+          "path": "/arch/storage/0/pe/num_pes"
+        },
+        {
+          "action": "remove",
+          "after": null,
+          "before": {
+            "psum": 65536,
+            "vmem": 65536,
+            "weight": 2097152
+          },
+          "path": "/arch/storage/1/entries"
+        }
+      ],
+      "path": "arch/ptb_base.yaml",
+      "sha256": "a2efb628d64db7c2a2fc99327706a8f46875d64658f1251241d68ffe5d17d0e5"
+    }
+  },
+  "energy_inventory": {
+    "gustavsnn/128k": {
+      "gustavsnn.adder16": {
+        "instances": 8,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 16384,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.leading_spike_detector": {
+        "instances": 1,
+        "query": {
+          "class": "l1d",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.lif_core": {
+        "instances": 8,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "state_register": false,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.output_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.potential_regfile": {
+        "instances": 8,
+        "query": {
+          "class": "register_file",
+          "depth": 64,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.reg16": {
+        "instances": 8,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    },
+    "gustavsnn/1m": {
+      "gustavsnn.adder16": {
+        "instances": 8,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.leading_spike_detector": {
+        "instances": 1,
+        "query": {
+          "class": "l1d",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.lif_core": {
+        "instances": 8,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "state_register": false,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.output_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.potential_regfile": {
+        "instances": 8,
+        "query": {
+          "class": "register_file",
+          "depth": 64,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.reg16": {
+        "instances": 8,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    },
+    "gustavsnn/256k": {
+      "gustavsnn.adder16": {
+        "instances": 8,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 32768,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.leading_spike_detector": {
+        "instances": 1,
+        "query": {
+          "class": "l1d",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.lif_core": {
+        "instances": 8,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "state_register": false,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.output_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.potential_regfile": {
+        "instances": 8,
+        "query": {
+          "class": "register_file",
+          "depth": 64,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.reg16": {
+        "instances": 8,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    },
+    "gustavsnn/512k": {
+      "gustavsnn.adder16": {
+        "instances": 8,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 65536,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.leading_spike_detector": {
+        "instances": 1,
+        "query": {
+          "class": "l1d",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.lif_core": {
+        "instances": 8,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "state_register": false,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.output_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.potential_regfile": {
+        "instances": 8,
+        "query": {
+          "class": "register_file",
+          "depth": 64,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "gustavsnn.reg16": {
+        "instances": 8,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "gustavsnn.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    },
+    "loas/128k": {
+      "loas.adder16": {
+        "instances": 512,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.and_gate": {
+        "instances": 512,
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 1
+        },
+        "segment": "compute"
+      },
+      "loas.bsf32": {
+        "instances": 16,
+        "query": {
+          "class": "bsf32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 8192,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.lif_unit": {
+        "instances": 16,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.output_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.reg16": {
+        "instances": 512,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_prefix_scan32": {
+        "instances": 16,
+        "query": {
+          "class": "psum_scan32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.weight_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    },
+    "loas/1m": {
+      "loas.adder16": {
+        "instances": 512,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.and_gate": {
+        "instances": 512,
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 1
+        },
+        "segment": "compute"
+      },
+      "loas.bsf32": {
+        "instances": 16,
+        "query": {
+          "class": "bsf32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 65536,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.lif_unit": {
+        "instances": 16,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.output_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.reg16": {
+        "instances": 512,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_prefix_scan32": {
+        "instances": 16,
+        "query": {
+          "class": "psum_scan32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.weight_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    },
+    "loas/256k": {
+      "loas.adder16": {
+        "instances": 512,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.and_gate": {
+        "instances": 512,
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 1
+        },
+        "segment": "compute"
+      },
+      "loas.bsf32": {
+        "instances": 16,
+        "query": {
+          "class": "bsf32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 16384,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.lif_unit": {
+        "instances": 16,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.output_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.reg16": {
+        "instances": 512,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_prefix_scan32": {
+        "instances": 16,
+        "query": {
+          "class": "psum_scan32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.weight_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    },
+    "loas/512k": {
+      "loas.adder16": {
+        "instances": 512,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.and_gate": {
+        "instances": 512,
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 1
+        },
+        "segment": "compute"
+      },
+      "loas.bsf32": {
+        "instances": 16,
+        "query": {
+          "class": "bsf32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 32768,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 128
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.lif_unit": {
+        "instances": 16,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.output_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.reg16": {
+        "instances": 512,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "loas.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.spike_prefix_scan32": {
+        "instances": 16,
+        "query": {
+          "class": "psum_scan32",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "loas.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "loas.weight_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    },
+    "ptb/128k": {
+      "ptb.adder16": {
+        "instances": 64,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 16384,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.lif_unit": {
+        "instances": 8,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.output_spike_queue": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.reg16": {
+        "instances": 256,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_mask_overlap": {
+        "instances": 1,
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "reduction": true,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_vector_buffer": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.weight_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    },
+    "ptb/1m": {
+      "ptb.adder16": {
+        "instances": 64,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.lif_unit": {
+        "instances": 8,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.output_spike_queue": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.reg16": {
+        "instances": 256,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_mask_overlap": {
+        "instances": 1,
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "reduction": true,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_vector_buffer": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.weight_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    },
+    "ptb/256k": {
+      "ptb.adder16": {
+        "instances": 64,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 32768,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.lif_unit": {
+        "instances": 8,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.output_spike_queue": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.reg16": {
+        "instances": 256,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_mask_overlap": {
+        "instances": 1,
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "reduction": true,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_vector_buffer": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.weight_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    },
+    "ptb/512k": {
+      "ptb.adder16": {
+        "instances": 64,
+        "query": {
+          "class": "adder",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.l1_weight_spad": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 65536,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 64
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.lif_unit": {
+        "instances": 8,
+        "query": {
+          "class": "lif_unit",
+          "frequency": 500,
+          "input_width": 16,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.output_spike_queue": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.psum_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.reg16": {
+        "instances": 256,
+        "query": {
+          "class": "register",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_mask_overlap": {
+        "instances": 1,
+        "query": {
+          "class": "and_gate",
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "reduction": true,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "compute"
+      },
+      "ptb.spike_vector_buffer": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 256,
+          "frequency": 500,
+          "interface": "cacti_fn",
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.vmem_sram": {
+        "instances": 1,
+        "query": {
+          "bank": 1,
+          "class": "sram",
+          "depth": 131072,
+          "frequency": 500,
+          "technology": 7,
+          "width": 32
+        },
+        "segment": "on_chip_sram"
+      },
+      "ptb.weight_fifo": {
+        "instances": 1,
+        "query": {
+          "class": "fifo",
+          "depth": 8,
+          "frequency": 500,
+          "interface": "csv_cmos",
+          "technology": 7,
+          "width": 16
+        },
+        "segment": "compute"
+      },
+      "shared.ddr4": {
+        "instances": 1,
+        "query": {
+          "class": "ddr4"
+        },
+        "segment": "off_chip_other"
+      },
+      "shared.ddr4_io": {
+        "instances": 0,
+        "query": {
+          "class": "ddr4_io"
+        },
+        "segment": "off_chip_other"
+      }
+    }
+  },
+  "noclevel_schema_slot": "Required by the shared parser, but entries omitted: has_noc_buffer=False. single_node=True disables NoC-level assignments and GB transactions.",
+  "physical_hierarchy": "DRAM <-> node-local buffers <-> PEs; no global buffer",
+  "plan_wording_amendment": "Capacity-only applies relative to each approved single-node base, not the 16-node/4-PE campaign YAML.",
+  "schedule_generation": "Direct analytic construction authorized; local-buffer feasibility must pass before production manifests",
+  "source": "/u/yyu9/projects/neuro_cache_wcache/zoo/wt500_fig3cfg/arch.yaml",
+  "source_sha256": "f92339bfd9aeb2a2c1d0bb83d10a0842f242ee5c8195b5cb0cddfefaf2d76504",
+  "state_buffers": {
+    "dynamic_access_contract": "No added SRAM boundary; register/LIF/RF activity retained. Fixed SRAM provisions charge area/leakage once.",
+    "fixed_capacity_bytes": {
+      "psum": 262144,
+      "vmem": 524288
+    },
+    "margin_factor_before_power_of_two_rounding": 1.25,
+    "maximum_at": {
+      "psum": {
+        "arch": "gustavsnn",
+        "layer": "layer_01_core_features_3",
+        "size": "128k",
+        "tile": {
+          "CIN": 64,
+          "COUT": 64,
+          "HO": 32,
+          "KH": 3,
+          "KW": 3,
+          "T": 1,
+          "WO": 32
+        }
+      },
+      "vmem": {
+        "arch": "gustavsnn",
+        "layer": "layer_01_core_features_3",
+        "size": "128k",
+        "tile": {
+          "CIN": 64,
+          "COUT": 64,
+          "HO": 32,
+          "KH": 3,
+          "KW": 3,
+          "T": 1,
+          "WO": 32
+        }
+      }
+    },
+    "maximum_required_bytes": {
+      "psum": 131072,
+      "vmem": 262144
+    },
+    "meta_sha256": "194bebd658ca194675d63f32fa723fe0deea259b7619ae93754d95e091523707",
+    "same_for_all_architectures_and_sizes": true
+  },
+  "variants": {
+    "gustavsnn/128k": {
+      "diff": [
+        {
+          "after": 131072,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/gustavsnn_128k.yaml",
+      "sha256": "73062228c529ace292761b41aad622f4dc9e2ef607239bd393d98f21ebaa6ece"
+    },
+    "gustavsnn/1m": {
+      "diff": [
+        {
+          "after": 1048576,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/gustavsnn_1m.yaml",
+      "sha256": "9cdb3777cab444ea5f8795296fea20112452c990f151cfefb8230394cc27ce87"
+    },
+    "gustavsnn/256k": {
+      "diff": [
+        {
+          "after": 262144,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/gustavsnn_256k.yaml",
+      "sha256": "1bdefa879f149623153c9208f811b1780a58dcacae84f3e5b5d19d118175202c"
+    },
+    "gustavsnn/512k": {
+      "diff": [
+        {
+          "after": 524288,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/gustavsnn_512k.yaml",
+      "sha256": "09b86c54b4321768625395fae7f0cd6907cfe6c4945b5f5919b82aa36b6ec863"
+    },
+    "loas/128k": {
+      "diff": [
+        {
+          "after": 131072,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/loas_128k.yaml",
+      "sha256": "bf7deba9a3137d0710d52b4ec3197dba50c2ecd3041ab153a8a70bc12d66ad83"
+    },
+    "loas/1m": {
+      "diff": [
+        {
+          "after": 1048576,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/loas_1m.yaml",
+      "sha256": "113993269ece131279022c160389ea7d0d591041ceed7e66376f6c74bf832171"
+    },
+    "loas/256k": {
+      "diff": [
+        {
+          "after": 262144,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/loas_256k.yaml",
+      "sha256": "69f35cd2f4136b0359d4fa64ac95b0ab9de3bfbbeedec46e803d91f1b5c6b1ef"
+    },
+    "loas/512k": {
+      "diff": [
+        {
+          "after": 524288,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/loas_512k.yaml",
+      "sha256": "0b42bfadcd6e15fd5e635505a8d11683f6b041450a8987c7bde75dc09e8be87e"
+    },
+    "ptb/128k": {
+      "diff": [
+        {
+          "after": 131072,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/ptb_128k.yaml",
+      "sha256": "73062228c529ace292761b41aad622f4dc9e2ef607239bd393d98f21ebaa6ece"
+    },
+    "ptb/1m": {
+      "diff": [
+        {
+          "after": 1048576,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/ptb_1m.yaml",
+      "sha256": "9cdb3777cab444ea5f8795296fea20112452c990f151cfefb8230394cc27ce87"
+    },
+    "ptb/256k": {
+      "diff": [
+        {
+          "after": 262144,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/ptb_256k.yaml",
+      "sha256": "1bdefa879f149623153c9208f811b1780a58dcacae84f3e5b5d19d118175202c"
+    },
+    "ptb/512k": {
+      "diff": [
+        {
+          "after": 524288,
+          "before": 32768,
+          "path": "/arch/storage/0/local_buffer/entries/weight"
+        }
+      ],
+      "path": "arch/ptb_512k.yaml",
+      "sha256": "09b86c54b4321768625395fae7f0cd6907cfe6c4945b5f5919b82aa36b6ec863"
+    }
+  }
+}

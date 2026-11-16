@@ -1,0 +1,44 @@
+{
+  "arrays": [
+    {
+      "case_index_end": 719,
+      "case_index_start": 0,
+      "command": [
+        "sbatch",
+        "--parsable",
+        "--array=0-719%24",
+        "--output=/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig1_energy_profiling/outputs/logs/%A_%a.out",
+        "--error=/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig1_energy_profiling/outputs/logs/%A_%a.err",
+        "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig1_energy_profiling/stokes/fig1_counts.sbatch",
+        "0"
+      ],
+      "job_id": "1147750"
+    },
+    {
+      "case_index_end": 1439,
+      "case_index_start": 720,
+      "command": [
+        "sbatch",
+        "--parsable",
+        "--array=0-719%24",
+        "--output=/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig1_energy_profiling/outputs/logs/%A_%a.out",
+        "--error=/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig1_energy_profiling/outputs/logs/%A_%a.err",
+        "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig1_energy_profiling/stokes/fig1_counts.sbatch",
+        "720"
+      ],
+      "job_id": "1147751"
+    }
+  ],
+  "cases": 1440,
+  "cases_sha256": "11c4350a75637f64445b233daceb7313242d4581817ce422df22e3c058df6992",
+  "cpus_per_task": 1,
+  "max_concurrent_tasks": 48,
+  "mem_per_task": "8G",
+  "preflight_sha256": "eebbd3b095c7a739149f95af1b5e863fd8a186444ae08b3da5fb45ec84bb790b",
+  "stage": "native generation -> nocsim -> analytic/raw count checkpoint; no pricing",
+  "submitted_at": "2026-11-16T00:40:14.815186+00:00",
+  "t99_state_touched": false,
+  "tasks_per_array": 720,
+  "throttle_per_array": 24,
+  "time_per_task": "00:30:00"
+}

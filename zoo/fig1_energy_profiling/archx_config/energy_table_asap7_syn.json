@@ -1,0 +1,3532 @@
+{
+  "characterization_source": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD.",
+  "frequency_MHz": 500,
+  "memory_assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+  "schema": "fig1_price_bank_v1",
+  "variants": {
+    "gustavsnn/128k": {
+      "arch_config_sha256": "73062228c529ace292761b41aad622f4dc9e2ef607239bd393d98f21ebaa6ece",
+      "operations": {
+        "gustavsnn.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.l1_weight_spad.read": {
+          "area_mm2": 0.03598033373,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202795,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.77984,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 16384,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_131072_w64/weight_131072_w64.sram.width64.depth16384.bank1.tech7.7dabb4ebec97.cacti_fn.rpt",
+          "source_report_sha256": "e7bc2799f315377263378adebc62b3784fd72b42688572de05da29dcf1db0945"
+        },
+        "gustavsnn.l1_weight_spad.write": {
+          "area_mm2": 0.03598033373,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00161645,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.77984,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 16384,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_131072_w64/weight_131072_w64.sram.width64.depth16384.bank1.tech7.7dabb4ebec97.cacti_fn.rpt",
+          "source_report_sha256": "e7bc2799f315377263378adebc62b3784fd72b42688572de05da29dcf1db0945"
+        },
+        "gustavsnn.leading_spike_detector.scan": {
+          "area_mm2": 1.5484e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 2.524660464e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 7.524736e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 106
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.lif_core.step": {
+          "area_mm2": 4.8998999999999996e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.139931403e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 2.3562402999999998e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.output_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.potential_regfile.rmw": {
+          "area_mm2": 0.001377576,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.005347202753372,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.000665137576,
+          "primitive_counts": {
+            "and_gate": 384,
+            "mux2": 2016,
+            "not_gate": 6,
+            "register32": 64
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "gustavsnn.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "gustavsnn.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.spike_fifo.pop": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "gustavsnn.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    },
+    "gustavsnn/1m": {
+      "arch_config_sha256": "9cdb3777cab444ea5f8795296fea20112452c990f151cfefb8230394cc27ce87",
+      "operations": {
+        "gustavsnn.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.l1_weight_spad.read": {
+          "area_mm2": 0.25327690443999995,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0084616,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 69.5298,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_1048576_w64/weight_1048576_w64.sram.width64.depth131072.bank1.tech7.e051518f57b4.cacti_fn.rpt",
+          "source_report_sha256": "ff60b58c1b4b686aaec9374dba2dfb7e2c4d975f2c0997eb5d2d2c78dc38bb41"
+        },
+        "gustavsnn.l1_weight_spad.write": {
+          "area_mm2": 0.25327690443999995,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00766138,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 69.5298,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_1048576_w64/weight_1048576_w64.sram.width64.depth131072.bank1.tech7.e051518f57b4.cacti_fn.rpt",
+          "source_report_sha256": "ff60b58c1b4b686aaec9374dba2dfb7e2c4d975f2c0997eb5d2d2c78dc38bb41"
+        },
+        "gustavsnn.leading_spike_detector.scan": {
+          "area_mm2": 1.5484e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 2.524660464e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 7.524736e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 106
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.lif_core.step": {
+          "area_mm2": 4.8998999999999996e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.139931403e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 2.3562402999999998e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.output_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.potential_regfile.rmw": {
+          "area_mm2": 0.001377576,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.005347202753372,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.000665137576,
+          "primitive_counts": {
+            "and_gate": 384,
+            "mux2": 2016,
+            "not_gate": 6,
+            "register32": 64
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "gustavsnn.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "gustavsnn.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.spike_fifo.pop": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "gustavsnn.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    },
+    "gustavsnn/256k": {
+      "arch_config_sha256": "1bdefa879f149623153c9208f811b1780a58dcacae84f3e5b5d19d118175202c",
+      "operations": {
+        "gustavsnn.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.l1_weight_spad.read": {
+          "area_mm2": 0.071966783052,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00326787,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 17.6342,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 32768,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_262144_w64/weight_262144_w64.sram.width64.depth32768.bank1.tech7.e341c362887a.cacti_fn.rpt",
+          "source_report_sha256": "e4852af2341701bfe3450f5be2bdd088a704476bd589a8598384e115e5c03599"
+        },
+        "gustavsnn.l1_weight_spad.write": {
+          "area_mm2": 0.071966783052,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00284839,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 17.6342,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 32768,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_262144_w64/weight_262144_w64.sram.width64.depth32768.bank1.tech7.e341c362887a.cacti_fn.rpt",
+          "source_report_sha256": "e4852af2341701bfe3450f5be2bdd088a704476bd589a8598384e115e5c03599"
+        },
+        "gustavsnn.leading_spike_detector.scan": {
+          "area_mm2": 1.5484e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 2.524660464e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 7.524736e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 106
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.lif_core.step": {
+          "area_mm2": 4.8998999999999996e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.139931403e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 2.3562402999999998e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.output_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.potential_regfile.rmw": {
+          "area_mm2": 0.001377576,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.005347202753372,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.000665137576,
+          "primitive_counts": {
+            "and_gate": 384,
+            "mux2": 2016,
+            "not_gate": 6,
+            "register32": 64
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "gustavsnn.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "gustavsnn.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.spike_fifo.pop": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "gustavsnn.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    },
+    "gustavsnn/512k": {
+      "arch_config_sha256": "09b86c54b4321768625395fae7f0cd6907cfe6c4945b5f5919b82aa36b6ec863",
+      "operations": {
+        "gustavsnn.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.l1_weight_spad.read": {
+          "area_mm2": 0.12868413134,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00561898,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9198,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 65536,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_524288_w64/weight_524288_w64.sram.width64.depth65536.bank1.tech7.040af793b125.cacti_fn.rpt",
+          "source_report_sha256": "a6ec08ce50cd672f06abfc9a4e0df8e04840cd4d4c6136982bbea40a1ea6405b"
+        },
+        "gustavsnn.l1_weight_spad.write": {
+          "area_mm2": 0.12868413134,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00481876,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9198,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 65536,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_524288_w64/weight_524288_w64.sram.width64.depth65536.bank1.tech7.040af793b125.cacti_fn.rpt",
+          "source_report_sha256": "a6ec08ce50cd672f06abfc9a4e0df8e04840cd4d4c6136982bbea40a1ea6405b"
+        },
+        "gustavsnn.leading_spike_detector.scan": {
+          "area_mm2": 1.5484e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 2.524660464e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 7.524736e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 106
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.lif_core.step": {
+          "area_mm2": 4.8998999999999996e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.139931403e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 2.3562402999999998e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.output_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.potential_regfile.rmw": {
+          "area_mm2": 0.001377576,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.005347202753372,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.000665137576,
+          "primitive_counts": {
+            "and_gate": 384,
+            "mux2": 2016,
+            "not_gate": 6,
+            "register32": 64
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "gustavsnn.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "gustavsnn.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.spike_fifo.pop": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "gustavsnn.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "gustavsnn.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    },
+    "loas/128k": {
+      "arch_config_sha256": "bf7deba9a3137d0710d52b4ec3197dba50c2ecd3041ab153a8a70bc12d66ad83",
+      "operations": {
+        "loas.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.and_gate.and": {
+          "area_mm2": 1.0199999999999999e-07,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.646866e-08,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 5.3294e-08,
+          "primitive_counts": {
+            "and_gate": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.bsf32.scan": {
+          "area_mm2": 2.1083999999999997e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 3.689025264e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 9.501920000000001e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 106,
+            "xor_gate": 32
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.l1_weight_spad.read": {
+          "area_mm2": 0.041965614809999996,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00271302,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.80039,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 8192,
+            "frequency": 500,
+            "technology": 7,
+            "width": 128
+          },
+          "source_report": "archx_config/memory/weight_131072_w128/weight_131072_w128.sram.width128.depth8192.bank1.tech7.25a441e1e078.cacti_fn.rpt",
+          "source_report_sha256": "fe3475627388d8343351f0bba2efffebc99671a30ee9af9525bf970362af0ab4"
+        },
+        "loas.l1_weight_spad.write": {
+          "area_mm2": 0.041965614809999996,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00244541,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.80039,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 8192,
+            "frequency": 500,
+            "technology": 7,
+            "width": 128
+          },
+          "source_report": "archx_config/memory/weight_131072_w128/weight_131072_w128.sram.width128.depth8192.bank1.tech7.25a441e1e078.cacti_fn.rpt",
+          "source_report_sha256": "fe3475627388d8343351f0bba2efffebc99671a30ee9af9525bf970362af0ab4"
+        },
+        "loas.lif_unit.step": {
+          "area_mm2": 6.4876125e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 9.620712778e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.126093175e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "register1": 1,
+            "register32": 1,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.output_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "loas.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "loas.reg16.read": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_fifo.pop": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_prefix_scan32.scan": {
+          "area_mm2": 0.00014680575,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 3.752356725e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 7.665883875e-05,
+          "primitive_counts": {
+            "adder1": 31,
+            "adder2": 30,
+            "adder3": 28,
+            "adder4": 24,
+            "adder5": 16
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "loas.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "loas.weight_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.weight_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    },
+    "loas/1m": {
+      "arch_config_sha256": "113993269ece131279022c160389ea7d0d591041ceed7e66376f6c74bf832171",
+      "operations": {
+        "loas.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.and_gate.and": {
+          "area_mm2": 1.0199999999999999e-07,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.646866e-08,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 5.3294e-08,
+          "primitive_counts": {
+            "and_gate": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.bsf32.scan": {
+          "area_mm2": 2.1083999999999997e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 3.689025264e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 9.501920000000001e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 106,
+            "xor_gate": 32
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.l1_weight_spad.read": {
+          "area_mm2": 0.28461006640900005,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0136673,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 70.3098,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 65536,
+            "frequency": 500,
+            "technology": 7,
+            "width": 128
+          },
+          "source_report": "archx_config/memory/weight_1048576_w128/weight_1048576_w128.sram.width128.depth65536.bank1.tech7.47cd3c7cd615.cacti_fn.rpt",
+          "source_report_sha256": "74880653443c827158a8abb746b930d6be58a5818c3eeee48fc46c350e6f871e"
+        },
+        "loas.l1_weight_spad.write": {
+          "area_mm2": 0.28461006640900005,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0131622,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 70.3098,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 65536,
+            "frequency": 500,
+            "technology": 7,
+            "width": 128
+          },
+          "source_report": "archx_config/memory/weight_1048576_w128/weight_1048576_w128.sram.width128.depth65536.bank1.tech7.47cd3c7cd615.cacti_fn.rpt",
+          "source_report_sha256": "74880653443c827158a8abb746b930d6be58a5818c3eeee48fc46c350e6f871e"
+        },
+        "loas.lif_unit.step": {
+          "area_mm2": 6.4876125e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 9.620712778e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.126093175e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "register1": 1,
+            "register32": 1,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.output_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "loas.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "loas.reg16.read": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_fifo.pop": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_prefix_scan32.scan": {
+          "area_mm2": 0.00014680575,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 3.752356725e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 7.665883875e-05,
+          "primitive_counts": {
+            "adder1": 31,
+            "adder2": 30,
+            "adder3": 28,
+            "adder4": 24,
+            "adder5": 16
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "loas.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "loas.weight_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.weight_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    },
+    "loas/256k": {
+      "arch_config_sha256": "69f35cd2f4136b0359d4fa64ac95b0ab9de3bfbbeedec46e803d91f1b5c6b1ef",
+      "operations": {
+        "loas.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.and_gate.and": {
+          "area_mm2": 1.0199999999999999e-07,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.646866e-08,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 5.3294e-08,
+          "primitive_counts": {
+            "and_gate": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.bsf32.scan": {
+          "area_mm2": 2.1083999999999997e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 3.689025264e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 9.501920000000001e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 106,
+            "xor_gate": 32
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.l1_weight_spad.read": {
+          "area_mm2": 0.071144781924,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00502165,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 17.6023,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 16384,
+            "frequency": 500,
+            "technology": 7,
+            "width": 128
+          },
+          "source_report": "archx_config/memory/weight_262144_w128/weight_262144_w128.sram.width128.depth16384.bank1.tech7.19d6de2845b5.cacti_fn.rpt",
+          "source_report_sha256": "9239408b7d9743c8d39b0e08a794afe60589190c771532eec266675046d83f05"
+        },
+        "loas.l1_weight_spad.write": {
+          "area_mm2": 0.071144781924,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00451658,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 17.6023,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 16384,
+            "frequency": 500,
+            "technology": 7,
+            "width": 128
+          },
+          "source_report": "archx_config/memory/weight_262144_w128/weight_262144_w128.sram.width128.depth16384.bank1.tech7.19d6de2845b5.cacti_fn.rpt",
+          "source_report_sha256": "9239408b7d9743c8d39b0e08a794afe60589190c771532eec266675046d83f05"
+        },
+        "loas.lif_unit.step": {
+          "area_mm2": 6.4876125e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 9.620712778e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.126093175e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "register1": 1,
+            "register32": 1,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.output_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "loas.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "loas.reg16.read": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_fifo.pop": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_prefix_scan32.scan": {
+          "area_mm2": 0.00014680575,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 3.752356725e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 7.665883875e-05,
+          "primitive_counts": {
+            "adder1": 31,
+            "adder2": 30,
+            "adder3": 28,
+            "adder4": 24,
+            "adder5": 16
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "loas.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "loas.weight_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.weight_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    },
+    "loas/512k": {
+      "arch_config_sha256": "0b42bfadcd6e15fd5e635505a8d11683f6b041450a8987c7bde75dc09e8be87e",
+      "operations": {
+        "loas.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.and_gate.and": {
+          "area_mm2": 1.0199999999999999e-07,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.646866e-08,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 5.3294e-08,
+          "primitive_counts": {
+            "and_gate": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.bsf32.scan": {
+          "area_mm2": 2.1083999999999997e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 3.689025264e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 9.501920000000001e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 106,
+            "xor_gate": 32
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.l1_weight_spad.read": {
+          "area_mm2": 0.14527524260099997,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00884161,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 35.4445,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 32768,
+            "frequency": 500,
+            "technology": 7,
+            "width": 128
+          },
+          "source_report": "archx_config/memory/weight_524288_w128/weight_524288_w128.sram.width128.depth32768.bank1.tech7.055c2119524d.cacti_fn.rpt",
+          "source_report_sha256": "adde709814aa5354ffdfe3f5d3ac2c9f4974d287b869915218de013da158f2ad"
+        },
+        "loas.l1_weight_spad.write": {
+          "area_mm2": 0.14527524260099997,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00833654,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 35.4445,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 32768,
+            "frequency": 500,
+            "technology": 7,
+            "width": 128
+          },
+          "source_report": "archx_config/memory/weight_524288_w128/weight_524288_w128.sram.width128.depth32768.bank1.tech7.055c2119524d.cacti_fn.rpt",
+          "source_report_sha256": "adde709814aa5354ffdfe3f5d3ac2c9f4974d287b869915218de013da158f2ad"
+        },
+        "loas.lif_unit.step": {
+          "area_mm2": 6.4876125e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 9.620712778e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.126093175e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "register1": 1,
+            "register32": 1,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.output_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "loas.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "loas.reg16.read": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_fifo.pop": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_fifo.push": {
+          "area_mm2": 0.00015881999999999997,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0007770432,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.586100000000001e-05,
+          "primitive_counts": {
+            "fifo32x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.spike_prefix_scan32.scan": {
+          "area_mm2": 0.00014680575,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 3.752356725e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 7.665883875e-05,
+          "primitive_counts": {
+            "adder1": 31,
+            "adder2": 30,
+            "adder3": 28,
+            "adder4": 24,
+            "adder5": 16
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "loas.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "loas.weight_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "loas.weight_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    },
+    "ptb/128k": {
+      "arch_config_sha256": "73062228c529ace292761b41aad622f4dc9e2ef607239bd393d98f21ebaa6ece",
+      "operations": {
+        "ptb.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.l1_weight_spad.read": {
+          "area_mm2": 0.03598033373,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202795,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.77984,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 16384,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_131072_w64/weight_131072_w64.sram.width64.depth16384.bank1.tech7.7dabb4ebec97.cacti_fn.rpt",
+          "source_report_sha256": "e7bc2799f315377263378adebc62b3784fd72b42688572de05da29dcf1db0945"
+        },
+        "ptb.l1_weight_spad.write": {
+          "area_mm2": 0.03598033373,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00161645,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 8.77984,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 16384,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_131072_w64/weight_131072_w64.sram.width64.depth16384.bank1.tech7.7dabb4ebec97.cacti_fn.rpt",
+          "source_report_sha256": "e7bc2799f315377263378adebc62b3784fd72b42688572de05da29dcf1db0945"
+        },
+        "ptb.lif_unit.step": {
+          "area_mm2": 6.4876125e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 9.620712778e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.126093175e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "register1": 1,
+            "register32": 1,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.output_spike_queue.read": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00010333,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.output_spike_queue.write": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.000101244,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "ptb.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "ptb.reg16.read": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_mask_overlap.check": {
+          "area_mm2": 6.469999999999999e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.0464528020000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.31638e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 1,
+            "or_gate": 31
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_vector_buffer.read": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00010333,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.spike_vector_buffer.write": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.000101244,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "ptb.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "ptb.weight_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.weight_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    },
+    "ptb/1m": {
+      "arch_config_sha256": "9cdb3777cab444ea5f8795296fea20112452c990f151cfefb8230394cc27ce87",
+      "operations": {
+        "ptb.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.l1_weight_spad.read": {
+          "area_mm2": 0.25327690443999995,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0084616,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 69.5298,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_1048576_w64/weight_1048576_w64.sram.width64.depth131072.bank1.tech7.e051518f57b4.cacti_fn.rpt",
+          "source_report_sha256": "ff60b58c1b4b686aaec9374dba2dfb7e2c4d975f2c0997eb5d2d2c78dc38bb41"
+        },
+        "ptb.l1_weight_spad.write": {
+          "area_mm2": 0.25327690443999995,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00766138,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 69.5298,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_1048576_w64/weight_1048576_w64.sram.width64.depth131072.bank1.tech7.e051518f57b4.cacti_fn.rpt",
+          "source_report_sha256": "ff60b58c1b4b686aaec9374dba2dfb7e2c4d975f2c0997eb5d2d2c78dc38bb41"
+        },
+        "ptb.lif_unit.step": {
+          "area_mm2": 6.4876125e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 9.620712778e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.126093175e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "register1": 1,
+            "register32": 1,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.output_spike_queue.read": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00010333,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.output_spike_queue.write": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.000101244,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "ptb.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "ptb.reg16.read": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_mask_overlap.check": {
+          "area_mm2": 6.469999999999999e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.0464528020000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.31638e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 1,
+            "or_gate": 31
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_vector_buffer.read": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00010333,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.spike_vector_buffer.write": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.000101244,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "ptb.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "ptb.weight_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.weight_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    },
+    "ptb/256k": {
+      "arch_config_sha256": "1bdefa879f149623153c9208f811b1780a58dcacae84f3e5b5d19d118175202c",
+      "operations": {
+        "ptb.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.l1_weight_spad.read": {
+          "area_mm2": 0.071966783052,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00326787,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 17.6342,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 32768,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_262144_w64/weight_262144_w64.sram.width64.depth32768.bank1.tech7.e341c362887a.cacti_fn.rpt",
+          "source_report_sha256": "e4852af2341701bfe3450f5be2bdd088a704476bd589a8598384e115e5c03599"
+        },
+        "ptb.l1_weight_spad.write": {
+          "area_mm2": 0.071966783052,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00284839,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 17.6342,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 32768,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_262144_w64/weight_262144_w64.sram.width64.depth32768.bank1.tech7.e341c362887a.cacti_fn.rpt",
+          "source_report_sha256": "e4852af2341701bfe3450f5be2bdd088a704476bd589a8598384e115e5c03599"
+        },
+        "ptb.lif_unit.step": {
+          "area_mm2": 6.4876125e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 9.620712778e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.126093175e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "register1": 1,
+            "register32": 1,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.output_spike_queue.read": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00010333,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.output_spike_queue.write": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.000101244,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "ptb.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "ptb.reg16.read": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_mask_overlap.check": {
+          "area_mm2": 6.469999999999999e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.0464528020000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.31638e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 1,
+            "or_gate": 31
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_vector_buffer.read": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00010333,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.spike_vector_buffer.write": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.000101244,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "ptb.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "ptb.weight_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.weight_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    },
+    "ptb/512k": {
+      "arch_config_sha256": "09b86c54b4321768625395fae7f0cd6907cfe6c4945b5f5919b82aa36b6ec863",
+      "operations": {
+        "ptb.adder16.add": {
+          "area_mm2": 6.692e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.7104760000000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.49442e-06,
+          "primitive_counts": {
+            "adder16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.l1_weight_spad.read": {
+          "area_mm2": 0.12868413134,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00561898,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9198,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 65536,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_524288_w64/weight_524288_w64.sram.width64.depth65536.bank1.tech7.040af793b125.cacti_fn.rpt",
+          "source_report_sha256": "a6ec08ce50cd672f06abfc9a4e0df8e04840cd4d4c6136982bbea40a1ea6405b"
+        },
+        "ptb.l1_weight_spad.write": {
+          "area_mm2": 0.12868413134,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00481876,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9198,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 65536,
+            "frequency": 500,
+            "technology": 7,
+            "width": 64
+          },
+          "source_report": "archx_config/memory/weight_524288_w64/weight_524288_w64.sram.width64.depth65536.bank1.tech7.040af793b125.cacti_fn.rpt",
+          "source_report_sha256": "a6ec08ce50cd672f06abfc9a4e0df8e04840cd4d4c6136982bbea40a1ea6405b"
+        },
+        "ptb.lif_unit.step": {
+          "area_mm2": 6.4876125e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 9.620712778e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.126093175e-05,
+          "primitive_counts": {
+            "adder32": 2,
+            "mux2": 66,
+            "not_gate": 35,
+            "or_gate": 33,
+            "register1": 1,
+            "register32": 1,
+            "xor_gate": 33
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.output_spike_queue.read": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00010333,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.output_spike_queue.write": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.000101244,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.psum_sram.read": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00227039,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "ptb.psum_sram.write": {
+          "area_mm2": 0.064064369136,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00202269,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 18.0137,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 16
+          },
+          "source_report": "archx_config/memory/psum_fixed/psum_fixed.sram.width16.depth131072.bank1.tech7.8e5d09246e16.cacti_fn.rpt",
+          "source_report_sha256": "abc1681d61bf5a70d5eed2c67eb2174e026ee2c1d9df7b488a768139b530b71e"
+        },
+        "ptb.reg16.read": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.reg16.rmw": {
+          "area_mm2": 7.698e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 4.111894e-05,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.7326199999999998e-06,
+          "primitive_counts": {
+            "register16": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_mask_overlap.check": {
+          "area_mm2": 6.469999999999999e-06,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 1.0464528020000002e-06,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 3.31638e-06,
+          "primitive_counts": {
+            "and_gate": 32,
+            "not_gate": 1,
+            "or_gate": 31
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.spike_vector_buffer.read": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00010333,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.spike_vector_buffer.write": {
+          "area_mm2": 0.00035989600196,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.000101244,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0.0856998,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 256,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/ptb_spike_buffer/ptb_spike_buffer.sram.width32.depth256.bank1.tech7.6371009a42a9.cacti_fn.rpt",
+          "source_report_sha256": "fcdfd9828dc7ebe7cb4e9b2f5a691e550bc80f592a526463b122eadd6c904168"
+        },
+        "ptb.vmem_sram.read": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.0039803,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "ptb.vmem_sram.write": {
+          "area_mm2": 0.13233882595000002,
+          "assumption": "FN-CACTI physical memory model, 7nm FinFET at0.7V; the bundled finfet_7nm_0p7.xml is a first-order extrapolation of the0.45V device. This is not an SRAM synthesis result. One read and one write port, one bank.",
+          "dynamic_energy_nJ": 0.00348489,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 34.9777,
+          "query": {
+            "bank": 1,
+            "class": "sram",
+            "depth": 131072,
+            "frequency": 500,
+            "technology": 7,
+            "width": 32
+          },
+          "source_report": "archx_config/memory/vmem_fixed/vmem_fixed.sram.width32.depth131072.bank1.tech7.f2a2328bdd5b.cacti_fn.rpt",
+          "source_report_sha256": "95db065e8eb9b1edc4c620733406ed29cafc6282815f0c8871b99eab4fa08b40"
+        },
+        "ptb.weight_fifo.pop": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "ptb.weight_fifo.push": {
+          "area_mm2": 7.940999999999999e-05,
+          "assumption": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD. Additive primitive composition; width/depth interpolation is an estimate, not whole-module characterization.",
+          "dynamic_energy_nJ": 0.0003885216,
+          "dynamic_event_cycles": 1,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 4.2930500000000005e-05,
+          "primitive_counts": {
+            "fifo16x8": 1
+          },
+          "source": "local_genus_primitive_composition"
+        },
+        "shared.ddr4.read": {
+          "activate_nJ": 0.0490897,
+          "area_mm2": 57.05766697,
+          "array_read_bytes": 8,
+          "array_read_nJ": 1.1451,
+          "assumption": "Closed-page64-byte read: one activate/precharge plus eight8-byte array transfers;8-bank leakage/refresh plus external idle IO/PHY.",
+          "burst_bytes": 64,
+          "count_expression": "dram_accesses",
+          "dynamic_energy_nJ": 9.3464877,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 463.12327200000004,
+          "module": "ddr4",
+          "operation": "read",
+          "physical_instances": 1,
+          "placeholder": false,
+          "precharge_nJ": 0.136598,
+          "query": {
+            "class": "ddr4",
+            "frequency": 500,
+            "interface": "cacti7",
+            "size": 8589934592,
+            "technology": 22
+          },
+          "scope": "system",
+          "source": "cacti7_ddr4_report",
+          "technology_nm": 22
+        },
+        "shared.ddr4_io.byte": {
+          "area_mm2": 0,
+          "assumption": "Incremental READ minus IDLE IO dynamic power over DDR data rate; standing IO already charged in ddr4.read; zero leakage/area here is a modeling convention, not missing characterization.",
+          "count_expression": "dram_bytes",
+          "dynamic_energy_nJ": 0.055592656250000004,
+          "frequency_MHz": 500,
+          "leakage_power_mW": 0,
+          "module": "ddr4_io",
+          "operation": "byte",
+          "physical_instances": 0,
+          "placeholder": false,
+          "scope": "system",
+          "source": "cacti7_ddr4_external_io",
+          "technology_nm": 22
+        }
+      }
+    }
+  }
+}

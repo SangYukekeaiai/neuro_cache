@@ -1,0 +1,27 @@
+{
+  "capture_files_sha_verified": 14,
+  "command": [
+    "/home/ya867177/snn_edp_stokes_20261114/env/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "--basetemp",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig1_energy_profiling/outputs/self_checks/stokes_native_tmp",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig1_energy_profiling/src/test_contracts.py",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig1_energy_profiling/src/test_ideal_counts.py",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig1_energy_profiling/src/test_native_contract.py"
+  ],
+  "native_binaries": {
+    "src/lays/nocsim/eventsim/eventsim": "6c14a1ad5a7c076ea64574f602baf884594bfea6a1ce4604a104bbe60d5b20e5",
+    "src/lays/weight_trace_gen/gustavsnn/gustavgen": "722d9b1e41a43e4601757c8c3340dad497ec3a4e19224a7b46f8e6e967639aa4",
+    "src/lays/weight_trace_gen/loas/loasgen": "e85fab193ae8c56a0e2ea4133b298adf6fa5cb8e10b96ded8bb2df81fa448133",
+    "src/lays/weight_trace_gen/ptb/ptbgen": "a56740839f1619d1aebec3db6df78111b5a1365178edbf49446ed59f88747246"
+  },
+  "result": "PASS",
+  "source_sha_verified": 407,
+  "tests_log": "stokes/native_preflight.log",
+  "tests_log_sha256": "4c8cdb439bb19dae8aed15e2421f33c3184acb20bcf506a04b20885882f0b7b7"
+}

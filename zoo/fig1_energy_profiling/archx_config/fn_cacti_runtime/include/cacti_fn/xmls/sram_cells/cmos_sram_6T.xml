@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--************************************************************************-->
+<!--                Planar CMOS-based Standard 6T-1 SRAM Cell               -->
+<!--************************************************************************-->
+<!--                               06/22/2014                               -->
+<!--************************************************************************-->
+
+<sram_cell>
+	<type>6T</type>
+	<device_type>xmls/devices/cmos_14nm_std.xml</device_type>
+	<transistor_parameters>
+		<acc> <!-- access transistors -->
+			<device_type>xmls/devices/cmos_14nm_std.xml</device_type>
+		</acc>
+		<pup> <!-- pull up transistors -->
+			<device_type>xmls/devices/cmos_14nm_std.xml</device_type>
+		</pup>
+		<pdn> <!-- pull down transistors -->
+			<device_type>xmls/devices/cmos_14nm_std.xml</device_type>
+		</pdn>
+	</transistor_parameters>
+</sram_cell>

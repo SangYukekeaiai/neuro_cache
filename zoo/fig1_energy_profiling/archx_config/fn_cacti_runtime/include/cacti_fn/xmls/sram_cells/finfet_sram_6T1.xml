@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--************************************************************************-->
+<!--                   FinFET-based Standard 6T-1 SRAM Cell                 -->
+<!--************************************************************************-->
+<!--                               06/22/2014                               -->
+<!--************************************************************************-->
+
+<sram_cell>
+	<type>6T</type>
+	<dual_gate_control>false</dual_gate_control>
+	<device_type>xmls/devices/finfet_7nm_std.xml</device_type>
+	<leakage_power>
+		<bitline></bitline>
+		<cc_inverters></cc_inverters>
+	</leakage_power>
+	<transistor_parameters>
+		<acc> <!-- access transistors -->
+			<num_of_fins>1</num_of_fins>
+			<device_type>xmls/devices/finfet_7nm_std.xml</device_type>
+		</acc>
+		<pup> <!-- pull up transistors -->
+			<num_of_fins>1</num_of_fins>
+			<device_type>xmls/devices/finfet_7nm_std.xml</device_type>
+		</pup>
+		<pdn> <!-- pull down transistors -->
+			<num_of_fins>1</num_of_fins>
+			<device_type>xmls/devices/finfet_7nm_std.xml</device_type>
+		</pdn>
+	</transistor_parameters>
+</sram_cell>

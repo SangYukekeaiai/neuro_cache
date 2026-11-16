@@ -1,0 +1,16 @@
+{
+  "layer_01_core_features_3.npy": "07a4fd23f950816d4392ef3b403de2d3be8c5974feac599a40a9b8d2494a0a6b",
+  "layer_02_core_features_7.npy": "b65e41db5d45ddd25c42042c1db34639434fbc496d7ce67c1eb9c006c84325eb",
+  "layer_03_core_features_10.npy": "81a9733c28b55f2c2e2c8d532fbcc9a7c0b230ec6d5263b329c0c96ab1389853",
+  "layer_04_core_features_14.npy": "a93c0a3813f26b1286f1229fece6b0a2674e3ab712a901721ea2a88cc2142053",
+  "layer_05_core_features_17.npy": "bb3c1da82d228be27f9e2a2a69498c6ed32a99622396596affce21b63dfa19a2",
+  "layer_06_core_features_20.npy": "8cb54ac8f442370d6810dad4bac3c4341f185e472aaabd4c1fb52061e11bc4c2",
+  "layer_07_core_features_24.npy": "4569ee0fd6292a0530a6691a053a19510120841c4adea4d6e7e20ac7e7c5d2a7",
+  "layer_08_core_features_27.npy": "591c5c8c1ef1d578724096dcf934be347d689d2af20e39be2c27499f6f3fbbab",
+  "layer_09_core_features_30.npy": "237980519112a35dddd4227ce53e03cc20b1c3e72a9ecf864013e2b9bc2b69bd",
+  "layer_10_core_features_34.npy": "b5b0cfe4fe4b31db1c254e52d676bf7bb7e5a690f4043ff70a0f726e7f00ca4d",
+  "layer_11_core_features_37.npy": "968c6a5ea826bfe69f57f7f2004ed6a9f8a3b21bda261c2aa0dfef44bef1af24",
+  "layer_12_core_features_40.npy": "7786f627551b2fc07386f8fbcddf20d05c91e1d0ec51281d845067081ac76103",
+  "layer_13_core_classifier.npy": "06d7ef4011aa5450c68bb4147a3a274b6ba707f6cac908ba229859ed3b4ff798",
+  "meta.json": "194bebd658ca194675d63f32fa723fe0deea259b7619ae93754d95e091523707"
+}

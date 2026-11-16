@@ -1,0 +1,28 @@
+{
+  "arch_manifest_sha256": "59f2a46f1ba4bfa50e12f4dcf1658d12ddded553ac453ffec4c7abb3640dc72f",
+  "below_500MHz": [],
+  "builder_sha256": "bbf173477ff7b1788f42e5b875078af59627bf36424192e28958f45d2a626a86",
+  "memory_prices_sha256": "30ac465f6b20897db753ea3cbeb2aacd43a091873bffc52bcf699e8658ed01d0",
+  "queries": 11,
+  "runtime_code_byte_identical": true,
+  "runtime_copy": "archx_config/fn_cacti_runtime",
+  "side_effects": "FN-CACTI pcacti_report.txt is confined to this runtime copy; no shared source or package file written",
+  "source": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/src/archx/interface/cacti_fn",
+  "source_sha256": {
+    "cacti_fn.py": "dd5da6a996a59891e8de8496741f8e846cab0017036d77f6133c3c8f1fc412bf",
+    "include/cacti_fn/cacti-Linux-x86_64": "a12e3f9015890675d695409329a72672af8038dfa579ee300c60088cfbef6389",
+    "include/cacti_fn/xmls/devices/cmos_14nm_std.xml": "ac301cd4a8a2c6a455a53a31bbb02a317b20d88c6c279f273ca432f8994d1d60",
+    "include/cacti_fn/xmls/devices/cmos_22nm_hp.xml": "6b2e6ade7f5ae68de0d23871582b5e1183f0393dd3aba63b9837e94c073932d4",
+    "include/cacti_fn/xmls/devices/finfet_7nm_0p7.xml": "fae81a2e2c8bf29ba79d38321c518c42591b99247c6e513dac1dace03074fd00",
+    "include/cacti_fn/xmls/devices/finfet_7nm_std.xml": "cc317ebcfecfacca8b705597316951ba629342d65612702512257ec13f8ae4ff",
+    "include/cacti_fn/xmls/sram_cells/cmos_sram_6T.xml": "0bc25072450c9742535a3f5e289efae1362d4aec07bf8d0a6a400b1152c41724",
+    "include/cacti_fn/xmls/sram_cells/cmos_sram_8T.xml": "df2306685b865a64ab52dd4a99d68b12775bbc7bfc37374b5e31adb4e613bc5e",
+    "include/cacti_fn/xmls/sram_cells/finfet_sram_6T1.xml": "b7608692bc8ec92e61e184d2e38aa308e93d3cfb4a0bde216273fb6d770b7e39",
+    "include/cacti_fn/xmls/sram_cells/finfet_sram_6T2.xml": "5382db2de048a9196b7aea2c796bc5f45a2b07a8bbec4487611be3a2c1868d6d",
+    "include/cacti_fn/xmls/sram_cells/finfet_sram_6T3.xml": "866a454eb630f95655feca58b9efd111e67d2b039cf710972b8291ce6b100c8d",
+    "include/cacti_fn/xmls/sram_cells/finfet_sram_6T4.xml": "b878e9e8c45ee1e238d38cf4de38792b1247b6a8e7d54034eae9c2537351f82b",
+    "include/cacti_fn/xmls/sram_cells/finfet_sram_8T.xml": "0ce40a8faf84b69d9353a5aaa8de78f317b4db1e8d4ed4da66ef7431accd05df",
+    "sram.cfg": "9c723ae2a43956cdc95129e4dc75cbb20d6b9275aa7aa53b2e87490a9fa88b28"
+  },
+  "source_unchanged": true
+}
