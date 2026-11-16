@@ -1,0 +1,112 @@
+{
+  "project_commit": "d60655d3be4f2efee81402ff8becf2b4b6f34580",
+  "catalog": [
+    "snn_adder16",
+    "snn_register16",
+    "snn_fifo32x8",
+    "snn_and_gate",
+    "snn_and_gate_5",
+    "snn_or_gate",
+    "snn_xor_gate",
+    "snn_not_gate",
+    "snn_mux2"
+  ],
+  "mode": "Genus synthesis only; no post-route prices",
+  "command": "export CLK_PERIOD_NS=2; bash auto_syn.sh ASAP7 <module>",
+  "flow_delta": "lp_insert_clock_gating true -> false only",
+  "libraries": "project defaults; AO/INVBUF/OA/SEQ nominal 0.77V/0C, SIMPLE 0.70V/25C",
+  "reports_archive": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/midbit_genus/midbit_genus_results.tar.gz",
+  "reports_archive_sha256": "bad1bb4bf86136178bf8f8ecb04935de6b25e2f36c00e1d559d3e6e1ef970914",
+  "results": [
+    {
+      "module": "snn_adder16",
+      "cells": 107,
+      "cell_area_reported": 6.692,
+      "worst_constrained_slack_ps": null,
+      "io_timing": "unconstrained project-default I/O",
+      "qor": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/midbit_genus/extracted/auto_syn_pnr/Flows/ASAP7/snn_adder16/scripts/cadence/syn_rpt/snn_adder16_qor.rpt",
+      "netlist_sha256": "9d3236872c3835926fb6724fc08dc13356bdffa96727fe8a35dc59c161f1a395",
+      "reused": true
+    },
+    {
+      "module": "snn_register16",
+      "cells": 64,
+      "cell_area_reported": 7.698,
+      "worst_constrained_slack_ps": 1909.7,
+      "io_timing": "unconstrained project-default I/O",
+      "qor": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/midbit_genus/extracted/auto_syn_pnr/Flows/ASAP7/snn_register16/scripts/cadence/syn_rpt/snn_register16_qor.rpt",
+      "netlist_sha256": "284032042a0704361506a1a343dca9f9e50ce96be870a6c9ff1c1f27bc2c0b13",
+      "reused": false
+    },
+    {
+      "module": "snn_fifo32x8",
+      "cells": 849,
+      "cell_area_reported": 158.82,
+      "worst_constrained_slack_ps": 1300.3,
+      "io_timing": "unconstrained project-default I/O",
+      "qor": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/midbit_genus/extracted/auto_syn_pnr/Flows/ASAP7/snn_fifo32x8/scripts/cadence/syn_rpt/snn_fifo32x8_qor.rpt",
+      "netlist_sha256": "1b72999009d2756c55137b45d100feda01c5a807a79bda188b75199d7253fed6",
+      "reused": false
+    },
+    {
+      "module": "snn_and_gate",
+      "cells": 2,
+      "cell_area_reported": 0.102,
+      "worst_constrained_slack_ps": null,
+      "io_timing": "unconstrained project-default I/O",
+      "qor": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/midbit_genus/extracted/auto_syn_pnr/Flows/ASAP7/snn_and_gate/scripts/cadence/syn_rpt/snn_and_gate_qor.rpt",
+      "netlist_sha256": "ba700bff3e4fd8760ceb27128f0e083be9e323ba12ad133aa99dc376c3973c1b",
+      "reused": false
+    },
+    {
+      "module": "snn_and_gate_5",
+      "cells": 10,
+      "cell_area_reported": 0.51,
+      "worst_constrained_slack_ps": null,
+      "io_timing": "unconstrained project-default I/O",
+      "qor": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/midbit_genus/extracted/auto_syn_pnr/Flows/ASAP7/snn_and_gate_5/scripts/cadence/syn_rpt/snn_and_gate_5_qor.rpt",
+      "netlist_sha256": "c8467bfffd1c465648876d2e451de94f1f4d762ce57947d5a527a715283e2876",
+      "reused": false
+    },
+    {
+      "module": "snn_or_gate",
+      "cells": 2,
+      "cell_area_reported": 0.102,
+      "worst_constrained_slack_ps": null,
+      "io_timing": "unconstrained project-default I/O",
+      "qor": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/midbit_genus/extracted/auto_syn_pnr/Flows/ASAP7/snn_or_gate/scripts/cadence/syn_rpt/snn_or_gate_qor.rpt",
+      "netlist_sha256": "977eff7943d289fa0a3ebc2786d5d5df318a1347241e5b0392f8bd28fac80b0a",
+      "reused": false
+    },
+    {
+      "module": "snn_xor_gate",
+      "cells": 3,
+      "cell_area_reported": 0.175,
+      "worst_constrained_slack_ps": null,
+      "io_timing": "unconstrained project-default I/O",
+      "qor": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/midbit_genus/extracted/auto_syn_pnr/Flows/ASAP7/snn_xor_gate/scripts/cadence/syn_rpt/snn_xor_gate_qor.rpt",
+      "netlist_sha256": "3816196c50b9f38fc3966bc06ecd160d9cd418af45f06ee134e7de8e6375a275",
+      "reused": false
+    },
+    {
+      "module": "snn_not_gate",
+      "cells": 1,
+      "cell_area_reported": 0.044,
+      "worst_constrained_slack_ps": null,
+      "io_timing": "unconstrained project-default I/O",
+      "qor": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/midbit_genus/extracted/auto_syn_pnr/Flows/ASAP7/snn_not_gate/scripts/cadence/syn_rpt/snn_not_gate_qor.rpt",
+      "netlist_sha256": "6a22445b13cbb59fc4bbc393d09ba80f513c0405c62673cb515681347a2985e8",
+      "reused": false
+    },
+    {
+      "module": "snn_mux2",
+      "cells": 2,
+      "cell_area_reported": 0.175,
+      "worst_constrained_slack_ps": null,
+      "io_timing": "unconstrained project-default I/O",
+      "qor": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/midbit_genus/extracted/auto_syn_pnr/Flows/ASAP7/snn_mux2/scripts/cadence/syn_rpt/snn_mux2_qor.rpt",
+      "netlist_sha256": "26dbf13f6a12635e93710ca215d3b40363d0b30e739a18e571bdbfb70da9bf58",
+      "reused": false
+    }
+  ]
+}

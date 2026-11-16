@@ -1,0 +1,107 @@
+Technode: ASAP7
+
+Module: snn_adder16
+Dir: /home/net/ya867177/auto_syn_pnr/Flows/ASAP7/snn_adder16
+
+
+Cadence Innovus(TM) Implementation System.
+Copyright 2021 Cadence Design Systems, Inc. All rights reserved worldwide.
+
+Version:	v21.19-s058_1, built Thu Apr 4 09:59:17 PDT 2024
+Options:	-overwrite -log log/innovus.log -files run_invs.tcl 
+Date:		Sun Nov 15 00:35:44 2026
+Host:		net1580 (x86_64 w/Linux 4.18.0-553.104.1.el8_10.x86_64) (10cores*40cpus*Intel(R) Xeon(R) CPU E5-2640 v4 @ 2.40GHz 25600KB)
+OS:		Rocky Linux 8.10 (Green Obsidian)
+
+License:
+		[00:35:44.053121] Configured Lic search path (21.01-s002): 5280@license.cs.ucf.edu
+
+		invs	Innovus Implementation System	21.1	checkout succeeded
+		8 CPU jobs allowed with the current license(s). Use setMultiCpuUsage to set your required CPU count.
+**WARN: (IMPSYT-1507):	The display is invalid and will start in no window mode
+Create and set the environment variable TMPDIR to /tmp/innovus_temp_1432065_net1580_ya867177_LU4FJz.
+
+Change the soft stacksize limit to 0.2%RAM (95 mbytes). Set global soft_stack_size_limit to change the value.
+
+**INFO:  MMMC transition support version v31-84 
+
+[INFO] Loading Pegasus 23.13 fill procedures
+**WARN: Tk package not loaded. The Pegasus fill DRC monitor is disabled.
+Sourcing file "run_invs.tcl" ...
+INFO: Using design name from environment: snn_adder16
+INFO: Found design-specific SDC: snn_adder16.sdc - overriding template
+INFO: Using SDC file: ../../constraints/snn_adder16.sdc
+##  Process: 7             (User Set)               
+##     Node: (not set)                           
+
+##  Check design process and node:  
+##  Design tech node is not set.
+
+Applying the recommended capacitance filtering threshold values for 7nm process node: total_c_th=0, relative_c_th=1 and coupling_c_th=0.1.
+	These values will be used by all post-route extraction engines, including TQuantus, IQuantus and Quantus QRC extraction.
+	Capacitance filtering mode(-capFilterMode option of the setExtractRCMode) is 'relAndCoup' for all engines.
+	The accuracy mode for postRoute effortLevel low extraction will be set to 'high'.
+	Default value for EffortLevel(-effortLevel option of the setExtractRCMode) in postRoute extraction mode will be 'medium' if Quantus QRC technology file is specified else 'low'.
+INFO: Using handoff SDC: ./syn_handoff/snn_adder16.sdc
+
+Loading LEF file ../../../../../Enablements/ASAP7/lef/asap7_tech_1x_201209.lef ...
+
+Loading LEF file ../../../../../Enablements/ASAP7/lef/asap7sc7p5t_27_R_1x_201211.lef ...
+**WARN: (IMPLF-108):	There is no overlap layer defined in any LEF file
+so you are unable to create rectilinear partition in a hierarchical flow.
+Set DBUPerIGU to M1 pitch 36.
+[00:36:24.006712] Periodic Lic check successful
+[00:36:24.006746] Feature usage summary:
+[00:36:24.006746] Innovus_Impl_System
+[00:36:24.006747] Innovus_7nm_Opt
+
+This command "init_design -setup WC_VIEW -hold BC_VIEW" required an extra checkout of license invs_7nm.
+Additional license(s) checked out: 1 'Innovus_7nm_Opt' license(s)
+
+##  Check design process and node:  
+##  Design tech node is not set.
+
+Reading WC_LIB timing library '/home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_AO_RVT_FF_nldm_201020.lib' ...
+Read 42 cells in library 'asap7sc7p5t_AO_RVT_FF_nldm_201020' 
+Reading WC_LIB timing library '/home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_INVBUF_RVT_FF_nldm_201020.lib' ...
+Read 37 cells in library 'asap7sc7p5t_INVBUF_RVT_FF_nldm_201020' 
+Reading WC_LIB timing library '/home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_OA_RVT_FF_nldm_201020.lib' ...
+Read 34 cells in library 'asap7sc7p5t_OA_RVT_FF_nldm_201020' 
+Reading WC_LIB timing library '/home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_SEQ_RVT_FF_nldm_201020.lib' ...
+Read 23 cells in library 'asap7sc7p5t_SEQ_RVT_FF_nldm_201020' 
+Reading WC_LIB timing library '/home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020.lib' ...
+**WARN: (TECHLIB-1277):	The attribute 'input_signal_level' has been defined for output pin 'CON'. 'input_signal_level' cannot be defined at this level and is being ignored. (File /home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020.lib, Line 11386)
+**WARN: (TECHLIB-1277):	The attribute 'input_signal_level' has been defined for output pin 'CON'. 'input_signal_level' cannot be defined at this level and is being ignored. (File /home/net/ya867177/auto_syn_pnr/Enablements/ASAP7/lib/asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020.lib, Line 14286)
+Read 56 cells in library 'asap7sc7p5t_SIMPLE_RVT_FF_nldm_201020' 
+*** End library_loading (cpu=0.05min, real=0.05min, mem=43.0M, fe_cpu=0.41min, fe_real=0.73min, fe_mem=1007.4M) ***
+#% Begin Load netlist data ... (date=11/15 00:36:27, mem=896.6M)
+*** Begin netlist parsing (mem=1007.4M) ***
+Created 192 new cells from 5 timing libraries.
+Reading netlist ...
+Backslashed names will retain backslash and a trailing blank character.
+Reading verilog netlist './syn_handoff/snn_adder16.v'
+
+*** Memory Usage v#1 (Current mem = 1007.426M, initial mem = 487.004M) ***
+*** End netlist parsing (cpu=0:00:00.0, real=0:00:00.0, mem=1007.4M) ***
+#% End Load netlist data ... (date=11/15 00:36:27, total cpu=0:00:00.0, real=0:00:00.0, peak res=914.2M, current mem=914.2M)
+Set top cell to snn_adder16.
+Hooked 192 DB cells to tlib cells.
+Starting recursive module instantiation check.
+No recursion found.
+Building hierarchical netlist for Cell snn_adder16 ...
+*** Netlist is unique.
+Set DBUPerIGU to techSite asap7sc7p5t width 54.
+** info: there are 213 modules.
+** info: there are 107 stdCell insts.
+
+*** Memory Usage v#1 (Current mem = 1061.840M, initial mem = 487.004M) ***
+
+Honor LEF defined pitches for advanced node
+Start create_tracks
+Extraction setup Started 
+Initializing multi-corner RC extraction with 2 active RC Corners ...
+Process node set using 'setDesignMode' is less than or equal to 32nm, for which captable file(s) would be ignored as preRoute extraction would instead use technology file. For postRoute extraction, default value for effort level would be 'medium' and effort level 'low' would not be allowed.
+Generating auto layer map file.
+Importing multi-corner technology file(s) for preRoute extraction...
+../../../../../Enablements/ASAP7/qrc/ASAP7.tch
+Generating auto layer map file.

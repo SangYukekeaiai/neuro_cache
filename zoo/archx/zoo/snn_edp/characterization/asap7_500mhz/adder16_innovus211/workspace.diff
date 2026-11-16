@@ -1,0 +1,13 @@
+diff --git a/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl b/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl
+index 62a72d5..5b5fcd5 100644
+--- a/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl
++++ b/Flows/template_design/scripts/cadence/run_genus_hybrid.tcl
+@@ -55,7 +55,7 @@ set_db / .optimize_constant_0_flops                                 true
+ set_db / .optimize_constant_1_flops                                 true
+ 
+ # Clock gating
+-set_db / .lp_insert_clock_gating                                    true
++set_db / .lp_insert_clock_gating                                    false
+ 
+ # Ungroup policy
+ set_db / .auto_ungroup                                              both

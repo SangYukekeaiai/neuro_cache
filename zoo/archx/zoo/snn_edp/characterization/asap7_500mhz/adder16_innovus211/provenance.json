@@ -1,0 +1,17 @@
+{
+  "exit_code": -15,
+  "bound": "rss_9.5_GiB",
+  "peak_RSS_KiB": 9988520,
+  "wall_seconds": 230.06323194503784,
+  "finished_unix": 1794721173.4708712,
+  "version": "v21.19-s058_1",
+  "innovus_path": "/home/net/cadence/installs/INNOVUS211/bin/innovus",
+  "group_gone": true,
+  "archive": "/u/yyu9/peon-snapshots/energy-performance-estimation/T91-20261114-asap7-500mhz/adder16_innovus211/adder16_innovus211.tar.gz",
+  "archive_sha256": "e79143984972d58489a358fef03ad5f29a39a2154621395b10f00a6b0fb6fe2c",
+  "stop_phase": "init_design: importing ASAP7.tch for preRoute extraction",
+  "postroute_reports": false,
+  "flow_delta": "clock-gating-off only; alternative tool selected by launcher PATH",
+  "peak_RSS_GiB": 9.525794982910156,
+  "peak_sampled_swap_KiB": 16104
+}

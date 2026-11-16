@@ -1,45 +1,34 @@
 # Basic modules for ASAP7 500 MHz characterization
 
-Source: [UnaryLab/verilog_modules](https://github.com/UnaryLab/verilog_modules) pinned `3e6135c9cb8c735439e2968cd3446dbd10fe55b3` at `/u/yyu9/projects/verilog_modules`. Target: ASAP7 RVT TT 0.70 V/25 °C (PVT_0P7V_25C), 500 MHz (2000 ps), Genus + Innovus on `vlsi.eecs.ucf.edu`. **24 basic characterization variants; zero whole-top jobs.** All48 logic-operation vectors are priced from measured basics, including one-term direct operations. Four glue leaves are present; the13 authored whole tops and their staged tests are unsynthesized [references only](rtl_tops/README.md).
+**Nine middle-design jobs; all other widths use archx csv_cmos linear interpolation through the origin.** Source: UnaryLab/verilog_modules at `3e6135c9cb8c735439e2968cd3446dbd10fe55b3`. The 24 flat sources remain staged references; only the nine tops below are scheduled. The 13 whole tops are unsynthesized references. Every active flat source exposes `i_clk`/`i_rst_n`, unused on combinational logic.
 
-## Exact repo paths and ports
+The project is `~/auto_syn_pnr` at `d60655d3be4f2efee81402ff8becf2b4b6f34580`, with `CLK_PERIOD_NS=2` and the sole authorized clock-gating-off line. Libraries are the shipped mixed set: AO/INVBUF/OA/SEQ nominal 0.77 V/0 C, SIMPLE 0.70 V/25 C. No uniform TT corner is claimed. CPU, I/O, utilization and activity remain project defaults, without VCD. [Genus results](asap7_500mhz/midbit_genus/README.md) are banked; P&R on vlsi is held; both 21.x probes stopped at technology import. [INNOVUS211 bound evidence](asap7_500mhz/adder16_innovus211/README.md). [Synthesis failure context](SYNTHESIS_FAILURES.md).
 
-All five paths below identify original-source provenance at the pinned commit. Active sources are the24 flat-derived, fixed-parameter single-module files in `rtl_tops/basic/`, recorded with per-file derivation and hashes in [basic_variants.json](rtl_tops/basic_variants.json). Each remote `src/<top>/` job has one `.v`, one module, no hierarchy and a one-file `rtl_list.tcl`. Existing clock/reset ports are renamed `i_clk`/`i_rst_n`; combinational gates gain no clock ports. Original repo/glue sources are unchanged; standing inventory is separate.
+## Nine-job catalog and interpolation
 
-| Basic class | Exact repo RTL path | Parameters and actual ports |
+| Measured top | Serves | Linear price factor |
 |---|---|---|
-| adderW | `/u/yyu9/projects/verilog_modules/adder/adder.v` | `BITWIDTH=W`; `iDataA[W-1:0],iDataB[W-1:0] -> oData[W:0]`; no cin. |
-| registerW | `/u/yyu9/projects/verilog_modules/register/register.v` | `WL=W`; `aclk,rst,d[W-1:0],wen -> q[W-1:0]`; synchronous active-low zero reset. |
-| fifoWxD | `/u/yyu9/projects/verilog_modules/fifo/fifo.v` | `BITWIDTH=W,DEPTH=D,PTRWIDTH=$clog2(D)`; `iClk,iRstN,iEnW,iEnR,iClr,iData[W-1:0] -> oData[W-1:0]`; async active-low reset, sync clear, registered output. Full/empty are internal, not ports; full rejects simultaneous write, empty rejects simultaneous read. |
-| and_gate | `/u/yyu9/projects/verilog_modules/and_gate/and_gate.v` | Scalar `iDataA,iDataB -> oData`; one two-input AND. |
-| and_gate_5 | `/u/yyu9/projects/verilog_modules/and_gate_5/and_gate_5.v` | `iDataA[4:0],iDataB[4:0] -> oData[4:0]`; five parallel two-input ANDs, not a five-input reduction. |
+| `snn_adder16` | adder widths 1,2,3,4,5,13,16,32 | W/16 |
+| `snn_register16` | register widths 1,2,3,5,16,32,64 | W/16 |
+| `snn_fifo32x8` | FIFO 16x8,32x8,64x2 | (W/32)*(D/8) |
+| `snn_and_gate` | scalar AND | 1 |
+| `snn_and_gate_5` | five parallel ANDs | 1 |
+| `snn_or_gate` | scalar OR | 1 |
+| `snn_xor_gate` | scalar XOR | 1 |
+| `snn_not_gate` | scalar inverter | 1 |
+| `snn_mux2` | one-bit 2:1 mux | 1 |
 
-## adder: `adder/adder.v` (param BITWIDTH; two W-bit operands, W+1-bit result, no cin)
+The same dimension factor scales dynamic power, leakage and area. csv_cmos scales each queried dimension successively; FIFO uses explicit width and depth axes. Width/depth extrapolation is an approximation, especially for FIFO control overhead. Per-event energy uses the characterization frequency; the pipeline time base remains 500 MHz. No Genus-only result is harvested as a post-route price.
 
-Standalone characterization widths: **1, 2, 3, 4, 5, 13, 16, 32** (8 variants).
+## Pinned primitive sources
 
-| Width | Composition consumers |
-|---|---|
-| 1, 2, 3, 4 | Popcount16 and prefix32 networks; router also uses2/3 |
-| 5 | Prefix32 final level |
-| 13 | Bitonic comparator and pruner key tournament |
-| 16 | Direct arithmetic rows |
-| 32 | SpinalFlow arithmetic/comparison, min tree, merger and LIF |
-
-adder64 is **out**: its only consumers, next_line/next_access/distance, are excluded prefetch rows. It returns if the breakdown table surfaces another 64-bit user.
-
-## register: `register/register.v` (param WL; sync active-low reset, wen)
-
-Standalone characterization widths: **1, 2, 3, 5, 16, 32, 64** (7 variants).
-Consumers: direct register words, potential RF, TCAM, MSHR tag/valid/target arrays, router state and stateful LIF (register32 +register1). register4/6/8/9/13/33 have no vector consumers and are not scheduled. Native FIFO internals are included in the FIFO primitive, not additional register jobs.
-
-## fifo: `fifo/fifo.v` (params BITWIDTH, DEPTH; power-of-two depth, registered output)
-
-| Config | Consumers |
-|---|---|
-| 16×8 | ptb/loas weight_fifo, ptb spike_fifo |
-| 32×8 | loas spike/output fifo, gustavsnn spike/output fifo |
-| 64×2 | router_5p_64b inputs ×5 (**depth 2 decided**; 64×4 dropped) |
+| Primitive | Repo source | Contract |
+|---|---|---|
+| adder | `/u/yyu9/projects/verilog_modules/adder/adder.v` | BITWIDTH=W; two W-bit inputs, W+1-bit sum |
+| register | `/u/yyu9/projects/verilog_modules/register/register.v` | WL=W; synchronous active-low reset, write enable |
+| fifo | `/u/yyu9/projects/verilog_modules/fifo/fifo.v` | BITWIDTH, DEPTH, PTRWIDTH; registered output, async reset, synchronous clear |
+| and_gate | `/u/yyu9/projects/verilog_modules/and_gate/and_gate.v` | scalar two-input AND |
+| and_gate_5 | `/u/yyu9/projects/verilog_modules/and_gate_5/and_gate_5.v` | five parallel two-input ANDs |
 
 ## and_gate: `and_gate/and_gate.v` (1 variant)
 
@@ -66,19 +55,6 @@ Derived structural definitions (all composition prices use measured gates):
 - **decoder N outputs**, A=ceil(log2(N)): N×(A−1) × and_gate + A shared not_gate; write-enable gating adds N × and_gate separately (including N=320/384 with A=9)
 - **priority chain N bits** = N × and_gate + N × not_gate + (N-1) × or_gate
 - **OR/AND reduction W bits** = (W-1) × or_gate / and_gate
-
-## Final characterization catalog: 24 basics
-
-The exact union of all48 operation vectors is8 adders +7 registers +3 FIFOs +6 gates. Whole-top references add no jobs.
-
-| Group | Exact variant names | Count |
-|---|---|---|
-| Adders | `adder1`, `adder2`, `adder3`, `adder4`, `adder5`, `adder13`, `adder16`, `adder32` | 8 |
-| Registers | `register1`, `register2`, `register3`, `register5`, `register16`, `register32`, `register64` | 7 |
-| FIFOs | `fifo16x8`, `fifo32x8`, `fifo64x2` | 3 |
-| Gates | `and_gate`, `and_gate_5`, `or_gate`, `xor_gate`, `not_gate`, `mux2` | 6 |
-
-Use only the project's own `auto_syn_pnr.sh`, `CLK_PERIOD_NS=2`, native70% square floorplan and native I/O/activity defaults without VCD. The source config diff is limited to verified TT library paths and authorized clock-gating-off; CPU edits are reverted, with no CPU environment override or replacement TCL. Harvest through archx's own `csv_cmos_extract`, not a custom parser. Native attempt1 failed Genus POPT-78/no ICG; authorized clock-gating-off attempt2 exited137 at QRC; strict flat-source pilot3 is awaiting QRC import under the account RAM cap. No successful or accepted result is claimed.
 
 ## Not used from the repo
 
