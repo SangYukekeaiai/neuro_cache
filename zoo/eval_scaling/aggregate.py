@@ -140,12 +140,14 @@ def main() -> None:
         w.writerows(sorted(agg, key=lambda r: (r["side"], r["multiplier"])))
     repo_commit = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=HERE.parents[1], text=True).strip()
-    if subprocess.check_output(
-            ["git", "status", "--porcelain"], cwd=HERE.parents[1], text=True).strip():
+    dirty_paths = subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=HERE.parents[1], text=True).splitlines()
+    if dirty_paths:
         repo_commit += "-dirty"
     provenance = {
         "campaign": "eval_scaling",
         "repo_commit": repo_commit,
+        "dirty_paths": dirty_paths,
         "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
         "inputs": inputs,
         "traffic_metric": "Total DRAM payload bytes (weight + psum + vmem), before packet rounding",

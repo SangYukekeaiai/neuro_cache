@@ -111,7 +111,10 @@ def case_inputs(tmp_path, aggregate):
     return out, paths
 
 
-@pytest.mark.parametrize("git_status", ["", " M unrelated.py\n", "?? scratch/\n"])
+@pytest.mark.parametrize("git_status", [
+    "", " M unrelated.py\n", "?? scratch/\n",
+    " M src/lays/nocsim/core/generator.py\n M zoo/eval_scaling/aggregate.py\n?? unrelated/\n",
+])
 def test_bytes_and_provenance_use_consumed_inputs(tmp_path, monkeypatch, git_status):
     aggregate = load("aggregate")
     out, paths = case_inputs(tmp_path, aggregate)
@@ -142,6 +145,7 @@ def test_bytes_and_provenance_use_consumed_inputs(tmp_path, monkeypatch, git_sta
         assert float(row["analytic_traffic_bytes"]) == 9
     provenance = json.loads((out / "provenance.json").read_text())
     assert provenance["repo_commit"] == "test-commit" + ("-dirty" if git_status else "")
+    assert provenance["dirty_paths"] == git_status.splitlines()
     assert datetime.fromisoformat(provenance["recorded_at_utc"]).utcoffset().total_seconds() == 0
     assert {p["path"]: (p["bytes"], p["sha256"]) for p in provenance["inputs"]} == original
     assert "Weights-only" in provenance["floor"]
