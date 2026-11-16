@@ -94,6 +94,7 @@ def main() -> int:
             if not m:
                 raise ValueError(f"missing {key} for sample {s}")
             row[key] = int(m[1])
+        # dram_cost_* columns are diagnostic-only and unused by aggregate.py.
         for var in ("weight", "psum", "vmem"):
             m = re.search(rf"^\s*{var}\s+.*dram_cost=(\d+(?:\.\d+)?)", stdout, re.MULTILINE)
             if not m:

@@ -111,13 +111,18 @@ def case_inputs(tmp_path, aggregate):
     return out, paths
 
 
-def test_bytes_and_provenance_use_consumed_inputs(tmp_path, monkeypatch):
+@pytest.mark.parametrize("git_status", ["", " M unrelated.py\n", "?? scratch/\n"])
+def test_bytes_and_provenance_use_consumed_inputs(tmp_path, monkeypatch, git_status):
     aggregate = load("aggregate")
     out, paths = case_inputs(tmp_path, aggregate)
     monkeypatch.setattr(aggregate, "OUT", out)
     original = {str(p): (p.stat().st_size, hashlib.sha256(p.read_bytes()).hexdigest()) for p in paths}
 
-    def git_commit(*args, **kwargs):
+    def git_commit(command, **kwargs):
+        assert kwargs["cwd"] == aggregate.HERE.parents[1]
+        if command == ["git", "status", "--porcelain"]:
+            return git_status
+        assert command == ["git", "rev-parse", "HEAD"]
         # A re-glob or re-hash here would falsely pin data not used in the result.
         for p in paths:
             p.write_text("changed after consumption")
@@ -136,7 +141,7 @@ def test_bytes_and_provenance_use_consumed_inputs(tmp_path, monkeypatch):
         assert float(row["counted_traffic_norm"]) == 1
         assert float(row["analytic_traffic_bytes"]) == 9
     provenance = json.loads((out / "provenance.json").read_text())
-    assert provenance["repo_commit"] == "test-commit"
+    assert provenance["repo_commit"] == "test-commit" + ("-dirty" if git_status else "")
     assert datetime.fromisoformat(provenance["recorded_at_utc"]).utcoffset().total_seconds() == 0
     assert {p["path"]: (p["bytes"], p["sha256"]) for p in provenance["inputs"]} == original
     assert "Weights-only" in provenance["floor"]

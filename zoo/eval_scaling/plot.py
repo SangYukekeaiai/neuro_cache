@@ -6,7 +6,7 @@ Left: compute utilization (mean +/- 95% CI over samples).
 Right: off-chip traffic = nocsim-counted DRAM payload bytes normalized to single_x1
 (Archie review SEV-1: the analytic CoSA product is diagnostic-only and is
 not plotted). Compulsory floor = sum of KH*KW*CIN*COUT over the layer
-yamls (every weight fetched once; BW_WEIGHT=8 so words==bytes) over the
+yamls (every weight fetched once; BW_WEIGHT=8 so entries==bytes) over the
 single_x1 counted baseline.
 """
 
