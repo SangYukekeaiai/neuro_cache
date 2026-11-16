@@ -3,15 +3,18 @@
 
 Two series (boss 2026-11-16: cache series dropped from this figure).
 Left: compute utilization (mean +/- 95% CI over samples).
-Right: off-chip traffic normalized to single_x1 - solid markers = analytic
-CoSA traffic (no CI, schedule-determined); open markers = nocsim-counted
-DRAM words (with CI). Compulsory floor = analytic traffic with every
-tensor fetched once (weight repeat count forced to 1).
+Right: off-chip traffic = nocsim-counted DRAM words normalized to single_x1
+(Archie review SEV-1: the analytic CoSA product is diagnostic-only and is
+not plotted). Compulsory floor = sum of KH*KW*CIN*COUT over the layer
+yamls (every weight fetched once; BW_WEIGHT=8 so words==bytes) over the
+single_x1 counted baseline.
 """
 
 import csv
 import json
 import pathlib
+
+import yaml
 
 import matplotlib
 matplotlib.use("Agg")
@@ -27,12 +30,12 @@ STYLE = {"single": ("single node, grown spad", C_SPAD, "o", "-"),
 
 def main() -> None:
     rows = list(csv.DictReader((OUT / "aggregate.csv").open()))
-    base_w = float(next(r for r in rows if r["point"] == "single_x1")["analytic_traffic_bytes"])
-    # compulsory floor: weight footprint fetched once, per layer, summed
+    base_w = float(next(r for r in rows if r["point"] == "single_x1")["counted_dram_words_mean"])
+    # compulsory floor: every weight fetched exactly once, from the layer dims
     floor_bytes = 0.0
-    for path in sorted((OUT / "s1" / "single_x1" / "schedules" / "loas" / CAPTURE).glob("*.json")):
-        m = json.loads(path.read_text())["result"]["metrics"]
-        floor_bytes += m["util"]["weight"]
+    for path in sorted((OUT / "s1" / "single_x1" / "workloads" / CAPTURE).glob("*.yaml")):
+        p = yaml.safe_load(path.read_text())["problem"]
+        floor_bytes += p["KH"] * p["KW"] * p["CIN"] * p["COUT"]
     floor = floor_bytes / base_w
 
     fig, (ax_u, ax_t) = plt.subplots(1, 2, figsize=(8.0, 3.1))
@@ -44,12 +47,9 @@ def main() -> None:
         ax_u.errorbar(x, [float(r["util_mean"]) for r in sub],
                       yerr=[float(r["util_ci95"]) for r in sub],
                       fmt=mk, ls=ls, color=c, capsize=2, label=lbl)
-        ax_t.plot(x, [float(r["analytic_traffic_norm"]) for r in sub],
-                  marker=mk, ls=ls, color=c, label=lbl)
         ax_t.errorbar(x, [float(r["counted_traffic_norm"]) for r in sub],
                       yerr=[float(r["counted_traffic_norm_ci95"]) for r in sub],
-                      fmt=mk, ls="", color=c, capsize=2,
-                      markerfacecolor="none", alpha=0.8)
+                      fmt=mk, ls=ls, color=c, capsize=2, label=lbl)
 
     ax_u.set(ylim=(0, 1.05), ylabel="Compute utilization U",
              xlabel="Total on-chip capacity (x base)", xscale="log")
