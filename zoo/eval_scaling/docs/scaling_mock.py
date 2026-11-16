@@ -1,63 +1,58 @@
-"""eval-scaling layout mock v2: ONE architecture (LoAS), three capacity-spending
-strategies. All plotted values are synthetic placeholders; the single-node spad
-utilization fall anchors loosely on fig1's measured 92.8% -> ~49%."""
+"""eval-scaling layout mock v3: memory scaling, 2 rows x 5 architectures.
+Rows: performance (top), DRAM traffic (bottom). X: memory capacity 1x/2x/4x,
+node count held constant. Three series: single-node spad, multi-node spad,
+multi-node cache. All values are synthetic placeholders."""
 from pathlib import Path
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-rng = np.random.default_rng(3)
-x = np.array([1, 2, 4, 8, 16])          # total on-chip capacity / published
+rng = np.random.default_rng(7)
+x = np.array([1, 2, 4])                 # on-chip memory capacity / published
+ARCHS = ['SpinalFlow', 'PTB', 'LoAS', 'Prosperity', 'GustavSNN']
 C_SPAD, C_MULTI, C_CACHE = '#4477aa', '#ee6677', '#228833'
-FLOOR = 0.12                            # compulsory-traffic placeholder
-
-fig, (ax_u, ax_t) = plt.subplots(1, 2, figsize=(8.0, 3.1))
-
-# --- series (synthetic) ---------------------------------------------------
-u0 = 0.92
-u_spad = u0 * x.astype(float) ** -0.33 * (1 + rng.normal(0, .01, 5))   # falls
-u_multi = np.full(5, u0) * (1 + rng.normal(0, .015, 5))                # flat
-u_cache = (u0 + (0.97 - u0) * (1 - x.astype(float) ** -0.8)) \
-          * (1 + rng.normal(0, .008, 5))                               # rises
-u_multi[0] = u_spad[0]                   # shared x1 baseline (N=1, spad)
-
-t_spad = x.astype(float) ** -0.25 * (1 + rng.normal(0, .015, 5))       # flattens
-t_multi = np.maximum(x.astype(float) ** -0.75, FLOOR) * (1 + rng.normal(0, .02, 5))
-t_cache = np.maximum(x.astype(float) ** -0.85, FLOOR) * (1 + rng.normal(0, .02, 5))
-for t in (t_spad, t_multi, t_cache):
-    t[0] = 1.0
-
 series = [
-    ('single node, grown spad', C_SPAD, 'o', '-'),
-    ('multi-node, equal total', C_MULTI, 's', '--'),
-    ('multi-node, cache (ours)', C_CACHE, '^', '-.'),
+    ('single-node spad', C_SPAD, 'o', '-'),
+    ('multi-node spad', C_MULTI, 's', '--'),
+    ('multi-node cache (ours)', C_CACHE, '^', '-.'),
 ]
 
-# --- left panel: utilization ---------------------------------------------
-for (lbl, c, m, ls), y in zip(series, (u_spad, u_multi, u_cache)):
-    ax_u.errorbar(x, y, yerr=.02, fmt=m, ls=ls, color=c, capsize=2, label=lbl)
-ax_u.set(ylim=(0, 1.05), ylabel='Compute utilization U',
-         xlabel='Total on-chip capacity (x published)', xscale='log')
-ax_u.annotate(f'{u_cache[-1]/u_spad[-1]:.1f}x', xy=(16, (u_spad[-1]+u_cache[-1])/2),
-              xytext=(-30, 0), textcoords='offset points', fontsize=8)
+fig, axes = plt.subplots(2, 5, figsize=(13.0, 4.6), sharex=True, sharey='row')
 
-# --- right panel: off-chip traffic ---------------------------------------
-for (lbl, c, m, ls), y in zip(series, (t_spad, t_multi, t_cache)):
-    ax_t.errorbar(x, y, yerr=.02, fmt=m, ls=ls, color=c, capsize=2)
-ax_t.axhline(FLOOR, color='0.4', lw=.8, ls=':')
-ax_t.text(1.05, FLOOR + .02, 'compulsory floor', fontsize=7, color='0.35')
-ax_t.set(ylim=(0, 1.1), ylabel='Off-chip words / x1',
-         xlabel='Total on-chip capacity (x published)', xscale='log')
+for j, arch in enumerate(ARCHS):
+    jit = lambda s: 1 + rng.normal(0, s, 3)
+    # performance: speedup over single-node 1x (synthetic, saturating single)
+    p_single = x.astype(float) ** 0.25 * jit(.02)            # saturates fast
+    p_multi = 8.0 * x.astype(float) ** 0.45 * jit(.03)       # scales better
+    p_cache = 11.0 * x.astype(float) ** 0.55 * jit(.03)      # best
+    p_single[0] = 1.0
+    # DRAM traffic normalized to single-node 1x
+    t_single = x.astype(float) ** -0.25 * jit(.02)           # flattens
+    t_multi = 0.8 * x.astype(float) ** -0.6 * jit(.03)
+    t_cache = 0.35 * x.astype(float) ** -0.7 * jit(.03)      # lowest
+    t_single[0] = 1.0
 
-for ax in (ax_u, ax_t):
+    for (lbl, c, m, ls), p, t in zip(series, (p_single, p_multi, p_cache),
+                                     (t_single, t_multi, t_cache)):
+        axes[0, j].plot(x, p, marker=m, ls=ls, color=c, ms=4,
+                        label=lbl if j == 0 else None)
+        axes[1, j].plot(x, t, marker=m, ls=ls, color=c, ms=4)
+    axes[0, j].set_title(arch, fontsize=9)
+
+for ax in axes.flat:
+    ax.set_xscale('log')
     ax.set_xticks(x), ax.set_xticklabels([f'{v}x' for v in x])
     ax.minorticks_off()
     ax.grid(alpha=.25, lw=.5)
     ax.tick_params(labelsize=8)
-ax_u.legend(fontsize=7, loc='lower left', framealpha=.9)
-fig.suptitle('LoAS - layout mock, no measured results', fontsize=10)
-fig.tight_layout()
+axes[0, 0].set_ylabel('Speedup / single 1x', fontsize=9)
+axes[1, 0].set_ylabel('DRAM traffic / single 1x', fontsize=9)
+for ax in axes[1]:
+    ax.set_xlabel('Memory capacity', fontsize=8)
+axes[0, 0].legend(fontsize=7, loc='upper left', framealpha=.9)
+fig.suptitle('MOCK - fake numbers. Memory scaling at fixed node count', fontsize=10)
+fig.tight_layout(rect=(0, 0, 1, 0.96))
 for ext in ('pdf', 'png'):
     fig.savefig(Path(__file__).with_suffix('.' + ext), dpi=200)
-print('Rendered one-arch three-strategy layout mock; zero experiment results.')
+print('Rendered 2x5 memory-scaling layout mock; zero experiment results.')

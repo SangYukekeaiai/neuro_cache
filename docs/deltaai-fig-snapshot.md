@@ -22,4 +22,6 @@ convention `zoo/fig12_edp/deltaai/README.md` already uses):
   `/work/nvme/bebv/yyu9/input_trace_delta/`.
 - eval_scaling and roofline campaign folders are small and fully in git;
   clone the repo on DeltaAI to get them (eval_scaling outputs/ live on
-  Stokes: `~/neuro_cache_wcache/zoo/eval_scaling/outputs/`).
+  Stokes: `~/neuro_cache_wcache/zoo/eval_scaling/outputs/`). As of
+  2026-11-16 they are also copied into this snapshot (`eval_scaling/`,
+  `roofline/`), including the mock figures and the RQ2 rewrite draft.
