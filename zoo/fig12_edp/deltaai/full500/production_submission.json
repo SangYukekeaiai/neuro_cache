@@ -1,0 +1,42 @@
+{
+  "array_job_id": "3608019",
+  "samples": [
+    489,
+    488,
+    487,
+    486,
+    485,
+    484,
+    483,
+    482,
+    481,
+    480
+  ],
+  "concurrency": 3,
+  "cpus_per_task": 288,
+  "gpus_per_task": 4,
+  "memory_gib": 440,
+  "worker_budget_gib": 420,
+  "wall_hours": 6,
+  "inline_fixture_gate": {
+    "rows": 15,
+    "terms": 386,
+    "relative_tolerance": 1e-09,
+    "expected_zeros": "exact",
+    "status": "pending job start"
+  },
+  "pilot_hold": false,
+  "created_unix": 1794753681.7290087,
+  "source_sha256": {
+    "zoo/fig12_edp/delta/native_build.py": "f74eb344cf21331d2993a7b440059258468ccce5198cd43960ee22120170bcf6",
+    "zoo/fig12_edp/delta/run_node.py": "e09e45eab24cc962602142555cdcea4e34e984f35f3d00b7c8961dca810abfcb",
+    "zoo/fig12_edp/delta/test_run_node.py": "8c9b4ac9b5bce51ad61d2124b272e6909149874d03aa36c7f537a34fc6b7a7a0",
+    "zoo/fig12_edp/delta/node.sh": "6f544cccb71089b1a10d2ba2b337c1c229180c007f0a180fc5c059a2d6de57bd",
+    "zoo/fig12_edp/deltaai/production.sbatch": "18328eb6f3505dcbc625b8b3fd97eb804326171b5515ecabb91200a1fcf6073d",
+    "zoo/fig12_edp/deltaai/job.sh": "98fdfe7421fdd4ba2a8736b8b7c555a83cd22381acd25cd48745cf48a1db1beb",
+    "zoo/fig12_edp/deltaai/setup_env.sh": "8566ad6479005d324f7c490ae773f84ad1bde2522763b97716336b8595140bf4",
+    "zoo/fig12_edp/deltaai/requirements.txt": "d4a684e39e1ab8f6a24838df71d30702516fc82b657d818d3047fb339d9a5800"
+  },
+  "rejected_request": "460GiB exceeds node memory after33760MiB system reservation; no job created",
+  "maximum_requested_gh200_hours": 240
+}

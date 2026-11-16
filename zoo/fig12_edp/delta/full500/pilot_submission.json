@@ -1,0 +1,28 @@
+{
+  "claimed_block": "490-499",
+  "gate_before_compute": true,
+  "input_access": "read-only",
+  "input_root": "/work/nvme/bebv/yyu9/input_trace_delta",
+  "job_id": "24013015",
+  "resources": {
+    "account": "bebv-delta-gpu",
+    "cores": 64,
+    "gpus": 4,
+    "memory_gib": 240,
+    "nodes": 1,
+    "partition": "gpuA40x4",
+    "time_limit_hours": 12
+  },
+  "rows_root": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/delta/full500/rows",
+  "sample": 499,
+  "script_sha256": {
+    "zoo/fig12_edp/delta/node.sh": "73fbeac60ac3c55c5348e3e28ab63a8b7ad602386b07cd21d3d2c5804a3e0598",
+    "zoo/fig12_edp/delta/pilot.sbatch": "9dcc20f3193832098988ed4b35e02b58023d5e220988327402581b3bc0f74d6c",
+    "zoo/fig12_edp/delta/run_node.py": "e09e45eab24cc962602142555cdcea4e34e984f35f3d00b7c8961dca810abfcb",
+    "zoo/fig12_edp/delta/test_run_node.py": "8c9b4ac9b5bce51ad61d2124b272e6909149874d03aa36c7f537a34fc6b7a7a0"
+  },
+  "status": "submitted",
+  "submitted_unix": 1794748249.436294,
+  "tests": "40 passed (delta packing + stage1 worker + full500 lifecycle)",
+  "workspace": "/work/hdd/bebv/yyu9/fig12_full500_delta"
+}

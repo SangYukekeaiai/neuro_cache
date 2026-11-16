@@ -1,0 +1,36 @@
+{
+  "cpus_per_task": 32,
+  "gpus_per_task": 2,
+  "memory_gib": 140,
+  "worker_budget_gib": 128,
+  "wall_hours": 6,
+  "inline_fixture_gate": {
+    "rows": 15,
+    "terms": 386,
+    "relative_tolerance": 1e-09,
+    "expected_zeros": "exact",
+    "status": "pending job start"
+  },
+  "array_job_id": "24015849",
+  "parent_array": "24015353",
+  "dependency": "afterany:24015353",
+  "samples": [
+    479,
+    478,
+    477,
+    476,
+    475,
+    474,
+    473,
+    472,
+    471,
+    470
+  ],
+  "concurrency": 4,
+  "submitted_unix": 1794754161.258904,
+  "script_sha256": "dd693529a944c382a8e10fdd43cc93465ae536dc6ed561e8fc5593d09c26e8ef",
+  "task_argument": 479,
+  "ownership_boundary": 459,
+  "age_priority": "Dependency blocks eligibility; no age-accrual claim before release",
+  "scientific_changes": false
+}

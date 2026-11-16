@@ -1,0 +1,42 @@
+{
+  "array_job_id": "24015353",
+  "samples": [
+    499,
+    498,
+    497,
+    496,
+    495,
+    494,
+    493,
+    492,
+    491,
+    490
+  ],
+  "concurrency": 4,
+  "cpus_per_task": 32,
+  "gpus_per_task": 2,
+  "memory_gib": 140,
+  "worker_budget_gib": 128,
+  "wall_hours": 6,
+  "inline_fixture_gate": {
+    "rows": 15,
+    "terms": 386,
+    "relative_tolerance": 1e-09,
+    "expected_zeros": "exact",
+    "status": "pending job start"
+  },
+  "pilot_hold": false,
+  "created_unix": 1794753681.7209575,
+  "source_sha256": {
+    "zoo/fig12_edp/delta/native_build.py": "f74eb344cf21331d2993a7b440059258468ccce5198cd43960ee22120170bcf6",
+    "zoo/fig12_edp/delta/run_node.py": "e09e45eab24cc962602142555cdcea4e34e984f35f3d00b7c8961dca810abfcb",
+    "zoo/fig12_edp/delta/test_run_node.py": "8c9b4ac9b5bce51ad61d2124b272e6909149874d03aa36c7f537a34fc6b7a7a0",
+    "zoo/fig12_edp/delta/node.sh": "6f544cccb71089b1a10d2ba2b337c1c229180c007f0a180fc5c059a2d6de57bd",
+    "zoo/fig12_edp/delta/production.sbatch": "2000b2a8d043906577c81f4d1f7d301703550b878d015bcd1c6b5f5667f75bb6"
+  },
+  "cancelled_pilot": {
+    "job": "24013015",
+    "elapsed": "00:00:00",
+    "state": "CANCELLED"
+  }
+}

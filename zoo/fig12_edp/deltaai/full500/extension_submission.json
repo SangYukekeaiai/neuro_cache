@@ -1,0 +1,39 @@
+{
+  "cpus_per_task": 288,
+  "gpus_per_task": 4,
+  "memory_gib": 440,
+  "worker_budget_gib": 420,
+  "wall_hours": 6,
+  "inline_fixture_gate": {
+    "rows": 15,
+    "terms": 386,
+    "relative_tolerance": 1e-09,
+    "expected_zeros": "exact",
+    "status": "pending job start"
+  },
+  "array_job_id": "3608031",
+  "parent_array": "3608019",
+  "dependency": "afterany:3608019",
+  "samples": [
+    469,
+    468,
+    467,
+    466,
+    465,
+    464,
+    463,
+    462,
+    461,
+    460
+  ],
+  "concurrency": 3,
+  "submitted_unix": 1794754161.2978895,
+  "script_sha256": "72257379e52e6442f9b850e8e0832bcbf3179fb8524b5a65754cd571674d680d",
+  "task_argument": 469,
+  "ownership_boundary": 459,
+  "age_priority": "Dependency blocks eligibility; no age-accrual claim before release",
+  "scientific_changes": false,
+  "maximum_requested_gh200_hours": 240,
+  "both_waves_maximum_requested_gh200_hours": 480,
+  "measured_burn_required_before_concurrency_increase": true
+}

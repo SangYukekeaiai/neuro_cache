@@ -1,0 +1,58 @@
+{
+  "root": "/work/hdd/bebv/yyu9/fig12_full500_milestone",
+  "poll_seconds": 600,
+  "fronts": [
+    {
+      "name": "stokes",
+      "host": "ya867177@localhost",
+      "port": 2223,
+      "socket": "/u/yyu9/.ssh/cm-stokes.sock",
+      "root": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/full500",
+      "python_command": [
+        "/apps/anaconda/anaconda-2024.10/bin/conda",
+        "run",
+        "--no-capture-output",
+        "-p",
+        "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/env",
+        "python",
+        "-B"
+      ]
+    },
+    {
+      "name": "delta",
+      "root": "/work/hdd/bebv/yyu9/fig12_full500_delta"
+    },
+    {
+      "name": "deltaai",
+      "host": "yyu9@gh-login.delta.ncsa.illinois.edu",
+      "socket": "/u/yyu9/.ssh/cm-deltaai.sock",
+      "root": "/work/hdd/bebv/yyu9/fig12_full500_deltaai",
+      "python_command": [
+        "/sw/user/python/miniforge3-pytorch-2.10.0/bin/conda",
+        "run",
+        "--no-capture-output",
+        "-p",
+        "/work/hdd/bebv/yyu9/fig12_full500_deltaai/env",
+        "python",
+        "-B"
+      ]
+    }
+  ],
+  "plot_command": [
+    "/u/yyu9/miniconda3/bin/conda",
+    "run",
+    "--no-capture-output",
+    "-n",
+    "gurobi",
+    "python",
+    "-B",
+    "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/milestones/plot.py"
+  ],
+  "report_seconds": 7200,
+  "report_command": [
+    "/u/yyu9/.local/bin/peon-code",
+    "send",
+    "%0",
+    "-"
+  ]
+}
