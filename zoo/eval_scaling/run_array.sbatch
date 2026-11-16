@@ -4,8 +4,8 @@
 #SBATCH --time=12:00:00
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=8G
-#SBATCH --output=es-%A_%a.out
-#SBATCH --error=es-%A_%a.err
+#SBATCH --output=outputs/slurm/es-%A_%a.out
+#SBATCH --error=outputs/slurm/es-%A_%a.err
 # Submit with: sbatch --array=0-$((N-1))%64 run_array.sbatch
 # Case list: one "point layer" pair per line in outputs/cases.txt.
 set -euo pipefail

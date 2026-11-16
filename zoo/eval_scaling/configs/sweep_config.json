@@ -1,0 +1,88 @@
+{
+  "capture": "B09/loas_vgg16_T4_n500",
+  "samples": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "arch": "loas",
+  "points": [
+    {
+      "side": "single",
+      "multiplier": 1,
+      "arch_yaml": "configs/arch_single_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_single",
+      "total_weight_bytes": 1048576
+    },
+    {
+      "side": "single",
+      "multiplier": 2,
+      "arch_yaml": "configs/arch_single_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_single",
+      "total_weight_bytes": 2097152
+    },
+    {
+      "side": "single",
+      "multiplier": 4,
+      "arch_yaml": "configs/arch_single_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_single",
+      "total_weight_bytes": 4194304
+    },
+    {
+      "side": "single",
+      "multiplier": 8,
+      "arch_yaml": "configs/arch_single_x8.yaml",
+      "mapspace_dir": "configs/mapspaces_single",
+      "total_weight_bytes": 8388608
+    },
+    {
+      "side": "single",
+      "multiplier": 16,
+      "arch_yaml": "configs/arch_single_x16.yaml",
+      "mapspace_dir": "configs/mapspaces_single",
+      "total_weight_bytes": 16777216
+    },
+    {
+      "side": "multi",
+      "multiplier": 1,
+      "arch_yaml": "configs/arch_multi_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_multi",
+      "total_weight_bytes": 1048576
+    },
+    {
+      "side": "multi",
+      "multiplier": 2,
+      "arch_yaml": "configs/arch_multi_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_multi",
+      "total_weight_bytes": 2097152
+    },
+    {
+      "side": "multi",
+      "multiplier": 4,
+      "arch_yaml": "configs/arch_multi_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_multi",
+      "total_weight_bytes": 4194304
+    },
+    {
+      "side": "multi",
+      "multiplier": 8,
+      "arch_yaml": "configs/arch_multi_x8.yaml",
+      "mapspace_dir": "configs/mapspaces_multi",
+      "total_weight_bytes": 8388608
+    },
+    {
+      "side": "multi",
+      "multiplier": 16,
+      "arch_yaml": "configs/arch_multi_x16.yaml",
+      "mapspace_dir": "configs/mapspaces_multi",
+      "total_weight_bytes": 16777216
+    }
+  ]
+}
