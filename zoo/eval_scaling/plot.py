@@ -3,7 +3,7 @@
 
 Two series (boss 2026-11-16: cache series dropped from this figure).
 Left: compute utilization (mean +/- 95% CI over samples).
-Right: off-chip traffic = nocsim-counted DRAM words normalized to single_x1
+Right: off-chip traffic = nocsim-counted DRAM payload bytes normalized to single_x1
 (Archie review SEV-1: the analytic CoSA product is diagnostic-only and is
 not plotted). Compulsory floor = sum of KH*KW*CIN*COUT over the layer
 yamls (every weight fetched once; BW_WEIGHT=8 so words==bytes) over the
@@ -11,7 +11,6 @@ single_x1 counted baseline.
 """
 
 import csv
-import json
 import pathlib
 
 import yaml
@@ -30,7 +29,7 @@ STYLE = {"single": ("single node, grown spad", C_SPAD, "o", "-"),
 
 def main() -> None:
     rows = list(csv.DictReader((OUT / "aggregate.csv").open()))
-    base_w = float(next(r for r in rows if r["point"] == "single_x1")["counted_dram_words_mean"])
+    base_w = float(next(r for r in rows if r["point"] == "single_x1")["counted_dram_bytes_mean"])
     # compulsory floor: every weight fetched exactly once, from the layer dims
     floor_bytes = 0.0
     for path in sorted((OUT / "s1" / "single_x1" / "workloads" / CAPTURE).glob("*.yaml")):
@@ -54,8 +53,8 @@ def main() -> None:
     ax_u.set(ylim=(0, 1.05), ylabel="Compute utilization U",
              xlabel="Total on-chip capacity (x base)", xscale="log")
     ax_t.axhline(floor, color="0.4", lw=.8, ls=":")
-    ax_t.text(1.05, floor * 1.05, "compulsory floor", fontsize=7, color="0.35")
-    ax_t.set(ylabel="Off-chip traffic / single x1",
+    ax_t.text(1.05, floor * 1.05, "weights-only compulsory floor", fontsize=7, color="0.35")
+    ax_t.set(ylabel="Total DRAM bytes / single x1",
              xlabel="Total on-chip capacity (x base)", xscale="log", yscale="log")
     for ax in (ax_u, ax_t):
         ax.set_xticks([1, 2, 4, 8, 16])
@@ -64,7 +63,9 @@ def main() -> None:
         ax.grid(alpha=.25, lw=.5)
         ax.tick_params(labelsize=8)
     ax_u.legend(fontsize=7, loc="lower left", framealpha=.9)
-    fig.tight_layout()
+    fig.text(0.5, 0.01, "Traffic includes weight, psum and vmem; the compulsory floor is weights-only.",
+             ha="center", fontsize=7)
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
     for ext in ("pdf", "png"):
         fig.savefig(OUT / f"eval_scaling.{ext}", dpi=200)
     print("->", OUT / "eval_scaling.pdf")

@@ -86,6 +86,7 @@ def run(
     compute_model: Optional[ArchComputeModel] = None,
     trace:     Optional[np.ndarray] = None,
     cycles_by_step: Optional[Dict[Tuple[int, int], ComputeCycles]] = None,
+    dram_bytes: Optional[Dict[str, int]] = None,
 ) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int]]:
     """Generate the TC list for one solved MIP result and write it to CSV.
 
@@ -117,6 +118,9 @@ def run(
                    ignored (ruling U31). None (default) behaves exactly as
                    before this parameter existed.
 
+        dram_bytes: Optional output dictionary filled with per-variable DRAM
+                    payload bytes, before packet rounding.
+
     Returns:
         ``(unicast_hops, multicast_hops, dram_cost)`` — each a dict keyed by
         ``"weight"``/``"psum"``/``"vmem"``, always containing all three keys.
@@ -131,6 +135,8 @@ def run(
                        compute_model=compute_model, trace=trace,
                        cycles_by_step=cycles_by_step)
     gen.to_file(out_file)
+    if dram_bytes is not None:
+        dram_bytes.update(gen.dram_bytes)
     return (gen.unicast_hops, gen.multicast_hops, gen.dram_cost)
 
 
@@ -143,6 +149,7 @@ def run_from_json(
     compute_model: Optional[ArchComputeModel] = None,
     trace:         Optional[np.ndarray] = None,
     cycles_by_step: Optional[Dict[Tuple[int, int], ComputeCycles]] = None,
+    dram_bytes: Optional[Dict[str, int]] = None,
 ) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int]]:
     """Generate the TC list from a solver JSON output file and write it to CSV.
 
@@ -165,6 +172,9 @@ def run_from_json(
         trace:         Optional real spike trace -- see ``run()``.
         cycles_by_step: Optional per-step cycle table -- see ``run()``.
 
+        dram_bytes: Optional output dictionary filled with per-variable DRAM
+                    payload bytes, before packet rounding.
+
     Returns:
         ``(unicast_hops, multicast_hops, dram_cost)`` — see ``run()``.
 
@@ -185,6 +195,8 @@ def run_from_json(
                        compute_model=compute_model, trace=trace,
                        cycles_by_step=cycles_by_step)
     gen.to_file(out_file)
+    if dram_bytes is not None:
+        dram_bytes.update(gen.dram_bytes)
     return (gen.unicast_hops, gen.multicast_hops, gen.dram_cost)
 
 
@@ -341,9 +353,10 @@ def main(argv=None) -> int:
 
     try:
         out_path.parent.mkdir(parents=True, exist_ok=True)
+        dram_bytes = {}
         unicast_hops, multicast_hops, dram_cost = run_from_json(
             schedule_path, prob, bitwidths, out_path, arch=arch,
-            cycles_by_step=cycles_by_step,
+            cycles_by_step=cycles_by_step, dram_bytes=dram_bytes,
         )
     except (FileNotFoundError, ValueError, KeyError) as exc:
         print(f"simulation failed: {exc}", file=sys.stderr)
@@ -358,7 +371,8 @@ def main(argv=None) -> int:
         print(
             f"{var:>6}  unicast_hops={unicast_hops[var]:<8} "
             f"multicast_hops={multicast_hops[var]:<8} "
-            f"dram_cost={dram_cost[var]:<8}"
+            f"dram_cost={dram_cost[var]:<8} "
+            f"dram_bytes={dram_bytes[var]}"
         )
     print(f"output        : {out_path}")
     if cycles_by_step is not None:

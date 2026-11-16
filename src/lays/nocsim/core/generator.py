@@ -3,13 +3,14 @@
 Owns:
   - the running tc_id counter
   - the ordered list of all TCs produced so far
-  - unicast_hops / multicast_hops / dram_cost counters, each a per-variable
+  - unicast_hops / multicast_hops / dram_cost / dram_bytes counters, each a per-variable
     dict keyed by "weight" / "psum" / "vmem"
 
 unicast_hops / multicast_hops track on-chip GB-sourced NoC traffic (hop
 distance + flit count); dram_cost tracks DRAM-touching traffic (either
 direction) weighted by dram_latency, since DRAM access is not modeled by
-mesh hop distance. The two are independent — see NOC_SIM_DESIGN.md.
+mesh hop distance. dram_bytes counts payload bytes before packet rounding.
+The hop and DRAM counters are independent — see NOC_SIM_DESIGN.md.
 
 Label convention
 ----------------
@@ -67,6 +68,7 @@ class TC_Generator:
         self.unicast_hops:   Dict[str, int] = {v: 0 for v in _TRAFFIC_VARS}
         self.multicast_hops: Dict[str, int] = {v: 0 for v in _TRAFFIC_VARS}
         self.dram_cost:      Dict[str, int] = {v: 0 for v in _TRAFFIC_VARS}
+        self.dram_bytes:     Dict[str, int] = {v: 0 for v in _TRAFFIC_VARS}
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -117,6 +119,7 @@ class TC_Generator:
 
         if src == self.noc.dram_port or dest == self.noc.dram_port:
             self.dram_cost[var_name] += math.ceil(num_packets * self.dram_latency)
+            self.dram_bytes[var_name] += size_bits // 8
 
         return self._append(tc)
 

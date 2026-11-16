@@ -68,6 +68,13 @@ def main() -> int:
         "--out-dir", str(scratch), "--force",
     ], logs / f"{args.point}_{args.layer}_gen.log")
 
+    expected = [scratch / "loas" / CAPTURE / args.layer / f"sample_{s:05d}.json.gz"
+                for s in range(args.samples, args.samples + args.sample_count)]
+    missing = [str(path) for path in expected if not path.is_file()]
+    if missing:
+        raise RuntimeError("Batch weight-trace generator omitted requested samples: "
+                           + ", ".join(missing))
+
     # S4: nocsim per sample
     rows = []
     for s in range(args.samples, args.samples + args.sample_count):
@@ -92,6 +99,11 @@ def main() -> int:
             if not m:
                 raise ValueError(f"missing dram_cost[{var}] for sample {s}")
             row[f"dram_cost_{var}"] = float(m[1])
+        for var in ("weight", "psum", "vmem"):
+            m = re.search(rf"^\s*{var}\s+.*dram_bytes=(\d+)\s*$", stdout, re.MULTILINE)
+            if not m:
+                raise ValueError(f"missing dram_bytes[{var}] for sample {s}")
+            row[f"dram_bytes_{var}"] = int(m[1])
         assert row["total_cycles"] >= row["count_cycles"] / row["nodes"]
         rows.append(row)
 
