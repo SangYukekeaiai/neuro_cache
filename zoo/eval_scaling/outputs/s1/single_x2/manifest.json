@@ -1,0 +1,2241 @@
+{
+  "bridge_gate": {
+    "checked_schedule_count": 13,
+    "contracts": {
+      "gustavsnn": "full CIN, one T per tile, full KH/KW, no KH/KW offset",
+      "loas_ptb_spinalflow": "one HO/WO pixel, full CIN and T, full KH/KW, no KH/KW offset",
+      "prosperity": "resident CIN range, full T, full KH/KW, no KH/KW offset"
+    },
+    "passed": true,
+    "passed_schedule_count": 13,
+    "violation_count": 0,
+    "violation_pair_count": 0
+  },
+  "bridge_incompatible_pairs": [],
+  "capture_order": [
+    "B09/loas_vgg16_T4_n500"
+  ],
+  "captures": [
+    {
+      "captured_arch": "loas_vgg16",
+      "excluded_layers": {},
+      "meta_path": "/work/nvme/bebv/yyu9/input_trace_delta/B09/loas_vgg16_T4_n500/meta.json",
+      "n_samples": 500,
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_path": "/work/nvme/bebv/yyu9/input_trace_delta/B09/loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "valid_layers": [
+        "layer_01_core_features_3",
+        "layer_02_core_features_7",
+        "layer_03_core_features_10",
+        "layer_04_core_features_14",
+        "layer_05_core_features_17",
+        "layer_06_core_features_20",
+        "layer_07_core_features_24",
+        "layer_08_core_features_27",
+        "layer_09_core_features_30",
+        "layer_10_core_features_34",
+        "layer_11_core_features_37",
+        "layer_12_core_features_40",
+        "layer_13_core_classifier"
+      ],
+      "workloads": {
+        "layer_01_core_features_3": {
+          "problem": {
+            "CIN": 64,
+            "COUT": 64,
+            "HO": 32,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 32,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_02_core_features_7": {
+          "problem": {
+            "CIN": 64,
+            "COUT": 128,
+            "HO": 16,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 16,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_03_core_features_10": {
+          "problem": {
+            "CIN": 128,
+            "COUT": 128,
+            "HO": 16,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 16,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_04_core_features_14": {
+          "problem": {
+            "CIN": 128,
+            "COUT": 256,
+            "HO": 8,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 8,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_05_core_features_17": {
+          "problem": {
+            "CIN": 256,
+            "COUT": 256,
+            "HO": 8,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 8,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_06_core_features_20": {
+          "problem": {
+            "CIN": 256,
+            "COUT": 256,
+            "HO": 8,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 8,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_07_core_features_24": {
+          "problem": {
+            "CIN": 256,
+            "COUT": 512,
+            "HO": 4,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 4,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_08_core_features_27": {
+          "problem": {
+            "CIN": 512,
+            "COUT": 512,
+            "HO": 4,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 4,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_09_core_features_30": {
+          "problem": {
+            "CIN": 512,
+            "COUT": 512,
+            "HO": 4,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 4,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_10_core_features_34": {
+          "problem": {
+            "CIN": 512,
+            "COUT": 512,
+            "HO": 2,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 2,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_11_core_features_37": {
+          "problem": {
+            "CIN": 512,
+            "COUT": 512,
+            "HO": 2,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 2,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_12_core_features_40": {
+          "problem": {
+            "CIN": 512,
+            "COUT": 512,
+            "HO": 2,
+            "KH": 3,
+            "KW": 3,
+            "T": 4,
+            "WO": 2,
+            "shape": "snn-layer"
+          }
+        },
+        "layer_13_core_classifier": {
+          "problem": {
+            "CIN": 512,
+            "COUT": 10,
+            "HO": 1,
+            "KH": 1,
+            "KW": 1,
+            "T": 4,
+            "WO": 1,
+            "shape": "snn-layer"
+          }
+        }
+      }
+    }
+  ],
+  "configs": {
+    "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+    "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+    "mapspace_dir": "zoo/eval_scaling/configs/mapspaces_single",
+    "mapspace_yaml_sha256": {
+      "loas": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e"
+    },
+    "mapspaces": {
+      "loas": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml"
+    },
+    "solver": [
+      "conda",
+      "run",
+      "-n",
+      "gurobi",
+      "python",
+      "-m",
+      "lays.scheduler",
+      "enumerate",
+      "--time-limit",
+      "30"
+    ]
+  },
+  "excluded_pairs": [],
+  "infeasible_pairs": [],
+  "manifest_path": "single_x2/manifest.json",
+  "mode_digest": {
+    "candidate_count": 169,
+    "no_time_limit": true,
+    "per_mode": {
+      "base": {
+        "INFEASIBLE": 0,
+        "OPTIMAL": 13
+      },
+      "both_dram_ootk": {
+        "INFEASIBLE": 13,
+        "OPTIMAL": 0
+      },
+      "dram_oook": {
+        "INFEASIBLE": 13,
+        "OPTIMAL": 0
+      },
+      "dram_oooo": {
+        "INFEASIBLE": 13,
+        "OPTIMAL": 0
+      },
+      "dram_ooot": {
+        "INFEASIBLE": 13,
+        "OPTIMAL": 0
+      },
+      "gb_oook": {
+        "INFEASIBLE": 13,
+        "OPTIMAL": 0
+      },
+      "gb_oooo": {
+        "INFEASIBLE": 0,
+        "OPTIMAL": 13
+      },
+      "gb_ooot": {
+        "INFEASIBLE": 13,
+        "OPTIMAL": 0
+      },
+      "gb_ootk": {
+        "INFEASIBLE": 13,
+        "OPTIMAL": 0
+      },
+      "psum_dram_otok": {
+        "INFEASIBLE": 13,
+        "OPTIMAL": 0
+      },
+      "psum_gb_otok": {
+        "INFEASIBLE": 13,
+        "OPTIMAL": 0
+      },
+      "vmem_dram_xxxt": {
+        "INFEASIBLE": 13,
+        "OPTIMAL": 0
+      },
+      "vmem_gb_xxxt": {
+        "INFEASIBLE": 13,
+        "OPTIMAL": 0
+      }
+    },
+    "status_counts": {
+      "INFEASIBLE": 143,
+      "OPTIMAL": 26
+    },
+    "time_limit_count": 0,
+    "winner_mode_counts": {
+      "gb_oooo": 13
+    }
+  },
+  "run": {
+    "dry_run": false,
+    "mode": "full",
+    "planned_valid_pair_count": 13,
+    "selected_pair_count": 13,
+    "unselected_valid_pairs": []
+  },
+  "samples": {
+    "count": 500,
+    "indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      90,
+      91,
+      92,
+      93,
+      94,
+      95,
+      96,
+      97,
+      98,
+      99,
+      100,
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120,
+      121,
+      122,
+      123,
+      124,
+      125,
+      126,
+      127,
+      128,
+      129,
+      130,
+      131,
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149,
+      150,
+      151,
+      152,
+      153,
+      154,
+      155,
+      156,
+      157,
+      158,
+      159,
+      160,
+      161,
+      162,
+      163,
+      164,
+      165,
+      166,
+      167,
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178,
+      179,
+      180,
+      181,
+      182,
+      183,
+      184,
+      185,
+      186,
+      187,
+      188,
+      189,
+      190,
+      191,
+      192,
+      193,
+      194,
+      195,
+      196,
+      197,
+      198,
+      199,
+      200,
+      201,
+      202,
+      203,
+      204,
+      205,
+      206,
+      207,
+      208,
+      209,
+      210,
+      211,
+      212,
+      213,
+      214,
+      215,
+      216,
+      217,
+      218,
+      219,
+      220,
+      221,
+      222,
+      223,
+      224,
+      225,
+      226,
+      227,
+      228,
+      229,
+      230,
+      231,
+      232,
+      233,
+      234,
+      235,
+      236,
+      237,
+      238,
+      239,
+      240,
+      241,
+      242,
+      243,
+      244,
+      245,
+      246,
+      247,
+      248,
+      249,
+      250,
+      251,
+      252,
+      253,
+      254,
+      255,
+      256,
+      257,
+      258,
+      259,
+      260,
+      261,
+      262,
+      263,
+      264,
+      265,
+      266,
+      267,
+      268,
+      269,
+      270,
+      271,
+      272,
+      273,
+      274,
+      275,
+      276,
+      277,
+      278,
+      279,
+      280,
+      281,
+      282,
+      283,
+      284,
+      285,
+      286,
+      287,
+      288,
+      289,
+      290,
+      291,
+      292,
+      293,
+      294,
+      295,
+      296,
+      297,
+      298,
+      299,
+      300,
+      301,
+      302,
+      303,
+      304,
+      305,
+      306,
+      307,
+      308,
+      309,
+      310,
+      311,
+      312,
+      313,
+      314,
+      315,
+      316,
+      317,
+      318,
+      319,
+      320,
+      321,
+      322,
+      323,
+      324,
+      325,
+      326,
+      327,
+      328,
+      329,
+      330,
+      331,
+      332,
+      333,
+      334,
+      335,
+      336,
+      337,
+      338,
+      339,
+      340,
+      341,
+      342,
+      343,
+      344,
+      345,
+      346,
+      347,
+      348,
+      349,
+      350,
+      351,
+      352,
+      353,
+      354,
+      355,
+      356,
+      357,
+      358,
+      359,
+      360,
+      361,
+      362,
+      363,
+      364,
+      365,
+      366,
+      367,
+      368,
+      369,
+      370,
+      371,
+      372,
+      373,
+      374,
+      375,
+      376,
+      377,
+      378,
+      379,
+      380,
+      381,
+      382,
+      383,
+      384,
+      385,
+      386,
+      387,
+      388,
+      389,
+      390,
+      391,
+      392,
+      393,
+      394,
+      395,
+      396,
+      397,
+      398,
+      399,
+      400,
+      401,
+      402,
+      403,
+      404,
+      405,
+      406,
+      407,
+      408,
+      409,
+      410,
+      411,
+      412,
+      413,
+      414,
+      415,
+      416,
+      417,
+      418,
+      419,
+      420,
+      421,
+      422,
+      423,
+      424,
+      425,
+      426,
+      427,
+      428,
+      429,
+      430,
+      431,
+      432,
+      433,
+      434,
+      435,
+      436,
+      437,
+      438,
+      439,
+      440,
+      441,
+      442,
+      443,
+      444,
+      445,
+      446,
+      447,
+      448,
+      449,
+      450,
+      451,
+      452,
+      453,
+      454,
+      455,
+      456,
+      457,
+      458,
+      459,
+      460,
+      461,
+      462,
+      463,
+      464,
+      465,
+      466,
+      467,
+      468,
+      469,
+      470,
+      471,
+      472,
+      473,
+      474,
+      475,
+      476,
+      477,
+      478,
+      479,
+      480,
+      481,
+      482,
+      483,
+      484,
+      485,
+      486,
+      487,
+      488,
+      489,
+      490,
+      491,
+      492,
+      493,
+      494,
+      495,
+      496,
+      497,
+      498,
+      499
+    ],
+    "start": 0
+  },
+  "schedules": [
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 1024,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_01_core_features_3.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-bv5930mc/result.json"
+      ],
+      "dram_num_steps": 1024,
+      "layer": "layer_01_core_features_3",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_01_core_features_3.json",
+      "schedule_sha256": "3b237a06ae6f143ca0ec832a066f9a6b0b2f8458b02add23da622ab80b2a868b",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 64,
+          "COUT": 64,
+          "HO": 32,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 32,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 512,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_02_core_features_7.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-9t96jmno/result.json"
+      ],
+      "dram_num_steps": 512,
+      "layer": "layer_02_core_features_7",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_02_core_features_7.json",
+      "schedule_sha256": "15eaec69ed3137f12518cd2e5c2db2950ca48f9dbf9e224cf7f33875c6b6471d",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 64,
+          "COUT": 128,
+          "HO": 16,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 16,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 512,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_03_core_features_10.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-4c0_psj8/result.json"
+      ],
+      "dram_num_steps": 512,
+      "layer": "layer_03_core_features_10",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_03_core_features_10.json",
+      "schedule_sha256": "89b57e007dc8195d66c7d97c05284b2010674d5df25b6861192d74acaba935f9",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 128,
+          "COUT": 128,
+          "HO": 16,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 16,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 256,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_04_core_features_14.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-xriahq8q/result.json"
+      ],
+      "dram_num_steps": 256,
+      "layer": "layer_04_core_features_14",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_04_core_features_14.json",
+      "schedule_sha256": "69d53cc9d72d28133db4ce1aa218e0064a6ad97ab53e284cf61ff777ea2ef93f",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 128,
+          "COUT": 256,
+          "HO": 8,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 8,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 256,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_05_core_features_17.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-hapjw1zn/result.json"
+      ],
+      "dram_num_steps": 256,
+      "layer": "layer_05_core_features_17",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_05_core_features_17.json",
+      "schedule_sha256": "d17f8fde17fd2e69d7a5c7e9e586d4ac4f4fd8b215cf6a8acc5d7a3d15e3cda1",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 256,
+          "COUT": 256,
+          "HO": 8,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 8,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 256,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_06_core_features_20.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-4cz3q23c/result.json"
+      ],
+      "dram_num_steps": 256,
+      "layer": "layer_06_core_features_20",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_06_core_features_20.json",
+      "schedule_sha256": "fc3d14ce5f239e08cb39b9122c34d401e0808030d4baac0c8648124a608fcaa6",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 256,
+          "COUT": 256,
+          "HO": 8,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 8,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 128,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_07_core_features_24.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-gb0a05lf/result.json"
+      ],
+      "dram_num_steps": 128,
+      "layer": "layer_07_core_features_24",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_07_core_features_24.json",
+      "schedule_sha256": "993eb855eae91542c6997425ef3c5b7cb07f07a52f7d307d9de49c2e40ebfb3f",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 256,
+          "COUT": 512,
+          "HO": 4,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 4,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 128,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_08_core_features_27.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-r3jyz1i0/result.json"
+      ],
+      "dram_num_steps": 128,
+      "layer": "layer_08_core_features_27",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_08_core_features_27.json",
+      "schedule_sha256": "68b556335d60e5787c6f9df973f5675adefcd4da2ec3200239ee74239cff4386",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 512,
+          "COUT": 512,
+          "HO": 4,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 4,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 128,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_09_core_features_30.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-2m8szrfo/result.json"
+      ],
+      "dram_num_steps": 128,
+      "layer": "layer_09_core_features_30",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_09_core_features_30.json",
+      "schedule_sha256": "a66af17ab62691025f34ff34c8c9c4344ecede052fed954a65ba9b0a5202de51",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 512,
+          "COUT": 512,
+          "HO": 4,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 4,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 32,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_10_core_features_34.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-_imhcc7d/result.json"
+      ],
+      "dram_num_steps": 32,
+      "layer": "layer_10_core_features_34",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_10_core_features_34.json",
+      "schedule_sha256": "5771515b4ff572e12cbb190abd87bb699f61a0690b0866e8ae3de09af050eefa",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 512,
+          "COUT": 512,
+          "HO": 2,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 2,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 32,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_11_core_features_37.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-k_g7b0xd/result.json"
+      ],
+      "dram_num_steps": 32,
+      "layer": "layer_11_core_features_37",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_11_core_features_37.json",
+      "schedule_sha256": "0e544d3589cbe87f65ee9e1ccb23aa1a348f0fc7330280674a12407a7d9e04f3",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 512,
+          "COUT": 512,
+          "HO": 2,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 2,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 32,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_12_core_features_40.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-5wux09rk/result.json"
+      ],
+      "dram_num_steps": 32,
+      "layer": "layer_12_core_features_40",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_12_core_features_40.json",
+      "schedule_sha256": "6726a8642283011dac7ed2ab87399fe8d9a453de3948508b6d49c3192cc19a5b",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 512,
+          "COUT": 512,
+          "HO": 2,
+          "KH": 3,
+          "KW": 3,
+          "T": 4,
+          "WO": 2,
+          "shape": "snn-layer"
+        }
+      }
+    },
+    {
+      "arch": "loas",
+      "arch_yaml": "zoo/eval_scaling/configs/arch_single_x2.yaml",
+      "arch_yaml_sha256": "e31d879b2fcaea84231c995c745acdabd3ac65ffae6782af30e776fea7bd39c8",
+      "bridge_gate": {
+        "passed": true,
+        "tiles_checked": 1,
+        "violation_codes": {},
+        "violation_count": 0,
+        "violations": []
+      },
+      "command": [
+        "conda",
+        "run",
+        "-n",
+        "gurobi",
+        "python",
+        "-m",
+        "lays.scheduler",
+        "enumerate",
+        "--arch",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/arch_single_x2.yaml",
+        "--layer",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/workloads/loas_vgg16_T4_n500/layer_13_core_classifier.yaml",
+        "--dataflow",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+        "--time-limit",
+        "30",
+        "--out",
+        "/u/yyu9/projects/neuro_cache_wcache/zoo/eval_scaling/outputs/s1/single_x2/solver-fpujmunk/result.json"
+      ],
+      "dram_num_steps": 1,
+      "layer": "layer_13_core_classifier",
+      "mapspace": "zoo/eval_scaling/configs/mapspaces_single/loas.yaml",
+      "mapspace_yaml_sha256": "19f34e36d29cc4d1b8dedf6ed23cd6936059b293a94a0000592d68f8a4aa825e",
+      "mode": "gb_oooo",
+      "mode_statuses": [
+        {
+          "mode": "base",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "psum_dram_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "psum_gb_otok",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_dram_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "vmem_gb_xxxt",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oooo",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "dram_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "both_dram_ootk",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oooo",
+          "status": "OPTIMAL"
+        },
+        {
+          "mode": "gb_ooot",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_oook",
+          "status": "INFEASIBLE"
+        },
+        {
+          "mode": "gb_ootk",
+          "status": "INFEASIBLE"
+        }
+      ],
+      "returncode": 0,
+      "schedule_path": "schedules/loas/loas_vgg16_T4_n500/layer_13_core_classifier.json",
+      "schedule_sha256": "ffa65d3910feadfbd2223441348cb8768e3258b329948a9e83a7d41c9ddc7ead",
+      "solver_status": "OPTIMAL",
+      "status": "SOLVED",
+      "trace_dir": "loas_vgg16_T4_n500",
+      "trace_relative_dir": "B09/loas_vgg16_T4_n500",
+      "workload": {
+        "problem": {
+          "CIN": 512,
+          "COUT": 10,
+          "HO": 1,
+          "KH": 1,
+          "KW": 1,
+          "T": 4,
+          "WO": 1,
+          "shape": "snn-layer"
+        }
+      }
+    }
+  ],
+  "schema": "wt500_fig3cfg-manifest-v1",
+  "trace_root": "/work/nvme/bebv/yyu9/input_trace_delta"
+}
