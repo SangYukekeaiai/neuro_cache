@@ -1,0 +1,29 @@
+{
+  "boundary": 8,
+  "new_jobs": [
+    {
+      "attempt": 1,
+      "id": "1143464",
+      "indices": [
+        0,
+        5
+      ],
+      "sample": "8",
+      "tier": 2
+    }
+  ],
+  "quota": {
+    "available_bytes": 620448092160,
+    "available_inodes": 350558,
+    "capacity": 4,
+    "reserve_bytes": 32212254720,
+    "reserve_inodes": 20000,
+    "sample_bytes": 75161927680,
+    "sample_inodes": 70000,
+    "used_bytes": 453293731840,
+    "used_inodes": 649442
+  },
+  "resident_controller_blocker": "RuntimeError('sample 1: terminal failures; checkpoints retained')",
+  "sample007_price_job": "1143463",
+  "time": 1794745725.3392794
+}

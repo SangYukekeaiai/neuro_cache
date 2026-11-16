@@ -1,0 +1,20 @@
+{
+  "campaign": "fig12 full 500-sample run",
+  "plan": "docs/distributed_run_plan.md",
+  "repo_commit_min": "a352ced",
+  "boundary_descending_start": 499,
+  "blocks": [
+    {"block": "000-009", "side": "stokes", "claimed_at": "2026-11-15T00:55-06:00", "done_at": null, "rows_sha": null},
+    {"block": "010-019", "side": "stokes", "claimed_at": "2026-11-15T12:40-06:00", "done_at": null, "rows_sha": null},
+    {"block": "490-499", "side": "delta", "claimed_at": "2026-11-15T10:10-06:00", "done_at": null, "rows_sha": null},
+    {"block": "480-489", "side": "deltaai", "claimed_at": "2026-11-15T12:05-06:00", "done_at": null, "rows_sha": null},
+    {"block": "470-479", "side": "delta", "claimed_at": "2026-11-15T13:35-06:00", "done_at": null, "rows_sha": null},
+    {"block": "460-469", "side": "deltaai", "claimed_at": "2026-11-15T13:35-06:00", "done_at": null, "rows_sha": null},
+    {"block": "450-459", "side": "delta", "claimed_at": "2026-11-15T14:05-06:00", "done_at": null, "rows_sha": null},
+    {"block": "440-449", "side": "deltaai", "claimed_at": "2026-11-15T14:05-06:00", "done_at": null, "rows_sha": null},
+    {"block": "430-439", "side": "delta", "claimed_at": "2026-11-15T14:05-06:00", "done_at": null, "rows_sha": null},
+    {"block": "420-429", "side": "deltaai", "claimed_at": "2026-11-15T14:05-06:00", "done_at": null, "rows_sha": null},
+    {"block": "340-419", "side": "deltaai", "claimed_at": "2026-11-15T14:30-06:00", "done_at": null, "rows_sha": null, "note": "full-assignment order; rebalance to delta allowed if GH200 budget binds"},
+    {"block": "060-339", "side": "delta", "claimed_at": "2026-11-15T14:30-06:00", "done_at": null, "rows_sha": null, "note": "full-assignment order; rebalance allowed"}
+  ]
+}

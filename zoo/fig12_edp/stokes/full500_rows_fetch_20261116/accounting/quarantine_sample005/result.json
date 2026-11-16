@@ -1,0 +1,11 @@
+{
+  "controller_blocker": "RuntimeError('sample 1: terminal failures; checkpoints retained')",
+  "no_extra_retry": true,
+  "preserved_files_verified": 1124,
+  "sample005_phase": "quarantined",
+  "samples_committed_retired": [
+    3,
+    6
+  ],
+  "time": 1794745695.4643078
+}

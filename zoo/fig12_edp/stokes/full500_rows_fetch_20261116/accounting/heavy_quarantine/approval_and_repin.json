@@ -1,0 +1,51 @@
+{
+  "authority": "manager standing EDP authority; exact C01 gesture layer03 terminal120GiB OOM/60min timeout quarantine; no extra retry",
+  "boundary_before": {
+    "created_unix": 1794741236.517022,
+    "max_sample": 8,
+    "previous_max_sample": 499,
+    "reason": "temporary manual inode throttle; sample008 released after sample004 retirement; claims001-019 unchanged",
+    "record": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/full500/manual_quota_throttle/20261115_061356",
+    "updated_unix": 1794743287.895687
+  },
+  "new_scientific_hashes": {
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/energy_table_nangate45.json": "2d8e4ea0b0f836a547ee6ec9301bff004928a8b19814aeb007f102afdc8295a3",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py": "a929c1a4da7ada028c127e7bfe4f7c0eafd336f2b27457ad67a819eb89d99d43",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500_batch.py": "9f3911c428e4ac4ffd60175d1e38f65c1ba87d23c3b303306ca836abd0428f13",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage1_worker.py": "69bda4c0ddd2a50e9cc5a18579bbaef6982808821583531ff3c6f6b4992b8d83",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage2.py": "f63299c6529476c72aa8d4a77289c708c3e22dd152eeb65703e0a7c5a184aa8a"
+  },
+  "old_scientific_hashes": {
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/energy_table_nangate45.json": "2d8e4ea0b0f836a547ee6ec9301bff004928a8b19814aeb007f102afdc8295a3",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py": "7fe4bfa98d5c5c0ceb5939a8bd4380c60a98e6a5cc97e3ef5e616ea8a2609655",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500_batch.py": "9f3911c428e4ac4ffd60175d1e38f65c1ba87d23c3b303306ca836abd0428f13",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage1_worker.py": "69bda4c0ddd2a50e9cc5a18579bbaef6982808821583531ff3c6f6b4992b8d83",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage2.py": "f63299c6529476c72aa8d4a77289c708c3e22dd152eeb65703e0a7c5a184aa8a"
+  },
+  "quota_before": {
+    "available_bytes": 619404562432,
+    "available_inodes": 344668,
+    "capacity": 4,
+    "reserve_bytes": 32212254720,
+    "reserve_inodes": 20000,
+    "sample_bytes": 75161927680,
+    "sample_inodes": 70000,
+    "used_bytes": 454337261568,
+    "used_inodes": 655332
+  },
+  "release_sample009_parents": [
+    "1143220",
+    "1143235",
+    "1143236",
+    "1143239",
+    "1143241",
+    "1143242",
+    "1143245",
+    "1143249",
+    "1143255",
+    "1143262",
+    "1143267"
+  ],
+  "tests": "41 passed locally and on Stokes",
+  "time": 1794747765.7750552
+}

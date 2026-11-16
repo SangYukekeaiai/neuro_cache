@@ -1,0 +1,23 @@
+{
+  "authority": "manager immediate quota-checked refill before automated release deployment",
+  "boundary_before": {
+    "created_unix": 1794741236.517022,
+    "max_sample": 11,
+    "previous_max_sample": 499,
+    "reason": "sample011 bounded dispatch after008 verified retirement",
+    "record": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/full500/manual_quota_throttle/20261115_061356",
+    "updated_unix": 1794749267.1840758
+  },
+  "quota_before": {
+    "available_bytes": 594072698880,
+    "available_inodes": 285787,
+    "capacity": 3,
+    "reserve_bytes": 32212254720,
+    "reserve_inodes": 20000,
+    "sample_bytes": 75161927680,
+    "sample_inodes": 70000,
+    "used_bytes": 479669125120,
+    "used_inodes": 714213
+  },
+  "time": 1794750108.071439
+}

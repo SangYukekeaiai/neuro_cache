@@ -77,7 +77,7 @@ def test_no_pricing_entrypoint_or_table_in_worker():
 
 
 @pytest.fixture
-def pipeline_fixture(tmp_path, monkeypatch):
+def pipeline_fixture(tmp_path, monkeypatch, request):
     from snn_edp import model
     from nocsim import driver
     source = model.HERE/'fixtures/spinalflow'
@@ -86,10 +86,10 @@ def pipeline_fixture(tmp_path, monkeypatch):
            'output_root': tmp_path/'durable', 'scratch_root': tmp_path/'scratch',
            'cachesim': tmp_path/'fake-cachesim', 'eventsim': tmp_path/'fake-eventsim',
            'cache_a': tmp_path/'a.json', 'cache_b': tmp_path/'b.json',
-           'arch_yaml': {'spinalflow': tmp_path/'arch.yaml'}}
+           'arch_yaml': {'spinalflow': tmp_path/'arch.yaml'}, 'sample': getattr(request, 'param', 0)}
     for name in ('cache_a', 'cache_b'): cfg[name].write_text('{}')
     before = {str(p): w.digest(p) for p in source.rglob('*') if p.is_file()}
-    monkeypatch.setattr(w, 'inputs', lambda cfg, case: {'sample':0, 'case':case,
+    monkeypatch.setattr(w, 'inputs', lambda cfg, case: {'sample':cfg['sample'], 'case':case,
         'configs':[w.digest(cfg['cache_a']), w.digest(cfg['cache_b'])]})
     monkeypatch.setattr(w, 'input_files', lambda cfg, case: ({'schedule':tmp_path/'schedule.json'}, 'unused'))
     monkeypatch.setattr(w, 'count_sample', lambda cfg, case, records: w.load(source/'counts.json'))
@@ -97,16 +97,20 @@ def pipeline_fixture(tmp_path, monkeypatch):
     def command(argv, log, stdout=None):
         commands.append(argv)
         if stdout is not None:
-            assert argv[argv.index('--sample-start')+1] == '0'
+            assert argv[argv.index('--sample-start')+1] == str(cfg['sample'])
             assert argv[argv.index('--sample-count')+1] == '1'
             stdout.write(b'WCTRACE1'+struct.pack('<iQ', -1, 7))
         else:
             arm = 'a' if str(cfg['cache_a']) in argv else 'b'
-            shutil.copyfile(source/f'cache_{arm}.csv', argv[argv.index('--out')+1])
+            import csv
+            with (source/f'cache_{arm}.csv').open() as stream: row, = list(csv.DictReader(stream))
+            row['sample_idx'] = cfg['sample']
+            with Path(argv[argv.index('--out')+1]).open('w') as stream:
+                writer=csv.DictWriter(stream, fieldnames=list(row)); writer.writeheader(); writer.writerow(row)
     monkeypatch.setattr(w, 'command', command)
     def noc(schedule, arch, trace, output, **kwargs):
         output.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source/'noc/result.json', output/'result.json')
+        saved=w.load(source/'noc/result.json'); saved['sample_idx']=cfg['sample']; w.save(output/'result.json', saved)
         (output/'tc.csv').write_text('saved measurement fixture\n')
     monkeypatch.setattr(driver, 'run_case', noc)
     monkeypatch.setenv('PYTHONDONTWRITEBYTECODE', '1')
@@ -117,6 +121,7 @@ def pipeline_fixture(tmp_path, monkeypatch):
     assert before == {str(p): w.digest(p) for p in source.rglob('*') if p.is_file()}
 
 
+@pytest.mark.parametrize('pipeline_fixture', [0, 7], indirect=True)
 def test_real_count_checkpoint_resume_immutable_and_stale_rejection(pipeline_fixture, monkeypatch):
     cfg, case, commands = pipeline_fixture
     from snn_edp import run
@@ -134,7 +139,7 @@ def test_real_count_checkpoint_resume_immutable_and_stale_rejection(pipeline_fix
     monkeypatch.setattr(builtins, '__import__', guarded_import)
     assert w.pipeline(cfg, case) == 'complete'
     base, scratch = w.paths(cfg, case)
-    assert not (scratch/'sample_00000.wcts').exists()
+    assert not (scratch/(scratch.name+'.wcts')).exists()
     assert len(commands) == 3
     manifest = w.load(base/'counts/manifest.json')
     assert set(manifest['graphs']) == {'spad', 'cacheA', 'cacheB'}
@@ -144,9 +149,9 @@ def test_real_count_checkpoint_resume_immutable_and_stale_rejection(pipeline_fix
     monkeypatch.setattr(w, 'command', forbidden)
     monkeypatch.setattr(run, 'count', forbidden)
     # Simulates a crash after durable complete commit but before trace cleanup.
-    (scratch/'sample_00000.wcts').write_bytes(b'leftover')
+    (scratch/(scratch.name+'.wcts')).write_bytes(b'leftover')
     assert w.pipeline(cfg, case) == 'resumed'
-    assert not (scratch/'sample_00000.wcts').exists()
+    assert not (scratch/(scratch.name+'.wcts')).exists()
     assert before == {str(p): (w.digest(p), p.stat().st_mtime_ns) for p in base.rglob('*') if p.is_file()}
     cfg['cache_b'].write_text('{"different":true}')
     with pytest.raises(ValueError, match='inputs changed'): w.pipeline(cfg, case)
@@ -159,7 +164,7 @@ def test_failure_preserves_trace_and_durable_stages(pipeline_fixture, monkeypatc
     monkeypatch.setattr(run, 'count', fail)
     with pytest.raises(MemoryError): w.pipeline(cfg, case)
     base, scratch = w.paths(cfg, case)
-    assert (scratch/'sample_00000.wcts').exists()
+    assert (scratch/(scratch.name+'.wcts')).exists()
     assert not (base/'complete.json').exists()
     assert w.valid_step(base, 'noc')
     before = len(commands)

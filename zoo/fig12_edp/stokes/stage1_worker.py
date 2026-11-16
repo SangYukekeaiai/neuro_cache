@@ -1,4 +1,4 @@
-"""One sample-0 case: native replay, simulator measurements, durable event counts."""
+"""One selected-sample case: native replay, simulator measurements, durable event counts."""
 import argparse
 import csv
 import fcntl
@@ -68,6 +68,9 @@ def configure(path):
     for key in paths:
         value = Path(cfg[key])
         cfg[key] = value.resolve() if value.is_absolute() else (repo/value).resolve()
+    cfg['sample'] = int(cfg.get('sample', 0))
+    if not 0 <= cfg['sample'] < 500:
+        raise ValueError('sample must be in 0..499')
     cfg['repo'] = repo
     cfg['arch_yaml'] = {arch: (repo/Path(p)).resolve() for arch, p in cfg['arch_yaml'].items()}
     for output in (cfg['output_root'], cfg['scratch_root']):
@@ -124,7 +127,7 @@ def resources(entry, attempt):
 
 
 def paths(cfg, case):
-    suffix = Path(identity(case))/'sample_00000'
+    suffix = Path(identity(case))/f"sample_{cfg.get('sample', 0):05d}"
     return cfg['output_root']/suffix, cfg['scratch_root']/suffix
 
 
@@ -163,7 +166,7 @@ def inputs(cfg, case):
     from snn_edp.model import HERE as model_root, backend_fingerprint
     source_paths.extend(model_root/p for p in ('__init__.py', 'model.py', 'run.py', 'hardware.json',
         'performance.py', 'designs/snn/description.py', 'interfaces/counts.py', 'runtime/sitecustomize.py'))
-    return {'case': case, 'sample': 0, 'files': {name: digest(p) for name, p in files.items()},
+    return {'case': case, 'sample': cfg.get('sample', 0), 'files': {name: digest(p) for name, p in files.items()},
             'source': {str(p.relative_to(repo)): digest(p) for p in sorted(set(source_paths))},
             'archx': backend_fingerprint()}
 
@@ -202,7 +205,7 @@ def count_sample(cfg, case, records):
     meta = load(directory/'meta.json')
     trace = np.load(files['capture'], mmap_mode='r')
     following = np.load(files['density_capture'], mmap_mode='r')
-    density = float(np.count_nonzero(following[:, 0])/following[:, 0].size)
+    density = float(np.count_nonzero(following[:, cfg.get('sample', 0)])/following[:, cfg.get('sample', 0)].size)
     params = meta['layer_params'][case['layer']]
     options = dict(cout=params['cout'], kernel=params['kernel'], stride=params['stride'])
     module = importlib.import_module(case['arch']+'_counts')
@@ -211,7 +214,7 @@ def count_sample(cfg, case, records):
                        records_source='exact_pipeline_csv', d_out=density)
     elif case['arch'] != 'spinalflow':
         options['d_out'] = density
-    counts = module.count_sample(trace, 0, **options)
+    counts = module.count_sample(trace, cfg.get('sample', 0), **options)
     if case['arch'] == 'spinalflow':
         counts.update(L=counts['O'], O=counts['O']*density, d_out=density)
     return {**counts, 'COUT': params['cout'], 'kernel': params['kernel'],
@@ -243,7 +246,7 @@ def completed(base, fingerprint):
 
 
 def cleanup_trace(scratch):
-    (scratch/'sample_00000.wcts').unlink(missing_ok=True)
+    (scratch/(scratch.name+'.wcts')).unlink(missing_ok=True)
     if scratch.exists():
         sync_dir(scratch)
 
@@ -267,14 +270,14 @@ def pipeline(cfg, case):
     import tempfile
     tempfile.tempdir = None
     save(folder/'case.json', case)
-    trace = scratch/'sample_00000.wcts'
+    trace = scratch/(scratch.name+'.wcts')
     generation = folder/'generation.json'
     if not valid_step(base, 'generation'):
         directory = cfg['capture_root']/case['trace_relative_dir']
         args = [sys.executable, '-m', 'lays.weight_trace_gen', 'gen', '--arch', case['arch'],
                 '--trace-root', str(directory.parent), '--trace-dir', directory.name,
                 '--layer', case['layer'], '--schedule-cache', str(cfg['schedule_cache']),
-                '--stream', '--sample-start', '0', '--sample-count', '1', '--workers', '1']
+                '--stream', '--sample-start', str(cfg.get('sample', 0)), '--sample-count', '1', '--workers', '1']
         partial = trace.with_suffix('.part')
         with partial.open('wb') as stream:
             command(args, base/'generation.log', stream)
@@ -284,7 +287,7 @@ def pipeline(cfg, case):
         if marker != -1:
             raise ValueError('incomplete WCTS trailer')
         partial.replace(trace); sync_dir(scratch)
-        save(generation, {'sha256': digest(trace), 'records': records, 'sample': 0,
+        save(generation, {'sha256': digest(trace), 'records': records, 'sample': cfg.get('sample', 0),
                           'trace_path': str(trace), 'generator_command': args})
         commit_step(base, 'generation', [generation])
     info = load(generation)
@@ -295,7 +298,7 @@ def pipeline(cfg, case):
         record_path = folder/'record_count.csv'
         with record_path.open('w', newline='') as stream:
             writer = csv.writer(stream); writer.writerow(['capture', 'layer', 'sample', 'R_p'])
-            writer.writerow([case['trace_relative_dir'], case['layer'], 0, info['records']])
+            writer.writerow([case['trace_relative_dir'], case['layer'], cfg.get('sample', 0), info['records']])
         commit_step(base, 'numpy_counts', [folder/'counts.json', record_path])
     for arm in ('a', 'b'):
         if not valid_step(base, 'cache_'+arm):
@@ -304,8 +307,8 @@ def pipeline(cfg, case):
                      '--arm', 'cache', '--header', '--out', str(output)], base/f'cache_{arm}.log')
             with output.open() as stream:
                 row, = list(csv.DictReader(stream))
-            if not row or int(row['sample_idx']) != 0:
-                raise ValueError('cache CSV must describe sample 0')
+            if not row or int(row['sample_idx']) != cfg.get('sample', 0):
+                raise ValueError('cache CSV must describe the selected sample')
             commit_step(base, 'cache_'+arm, [output])
     if not valid_step(base, 'noc'):
         files, _ = input_files(cfg, case)
@@ -321,7 +324,7 @@ def pipeline(cfg, case):
                  folder/'case.json', generation, folder/'counts.json', folder/'record_count.csv',
                  folder/'cache_a.csv', folder/'cache_b.csv', folder/'noc/result.json', folder/'noc/tc.csv']
     commit_step(base, 'checkpoint', artifacts)
-    save(base/'complete.json', {'inputs': fingerprint, 'sample': 0, 'status': 'complete',
+    save(base/'complete.json', {'inputs': fingerprint, 'sample': cfg.get('sample', 0), 'status': 'complete',
                               'checkpoint': str(directory), 'arms': list(manifest['graphs'])})
     cleanup_trace(scratch)
     return 'complete'

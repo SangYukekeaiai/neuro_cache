@@ -1,0 +1,2 @@
+2026-11-15 15:36:13.489 -05:00 | DEBUG    | archx:emit:29 - SNNArch loaded: instances=[16, 1, 1]  has_local_buffer=True  num_pes=4  S=[1, 16, 1]  single_node=False
+2026-11-15 15:36:13.491 -05:00 | DEBUG    | archx:emit:29 - SNNBitwidths: BW_WEIGHT=8  BW_PSUM=16  BW_VMEM=32  DRAM_LATENCY=0.25

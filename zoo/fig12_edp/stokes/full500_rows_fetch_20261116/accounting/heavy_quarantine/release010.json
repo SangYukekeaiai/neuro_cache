@@ -1,0 +1,25 @@
+{
+  "authority": "manager authorized bounded release after retirements",
+  "boundary_before": {
+    "created_unix": 1794741236.517022,
+    "max_sample": 9,
+    "previous_max_sample": 499,
+    "reason": "sample009 bounded release after003/006 verified retirement",
+    "record": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/full500/manual_quota_throttle/20261115_061356",
+    "updated_unix": 1794747765.8547292
+  },
+  "commit_sha256": "f66a25a1dfd9dda859d2efdfe257511146f6c29ee7a0eb09314685724275dd17",
+  "quota": {
+    "available_bytes": 584485744640,
+    "available_inodes": 397196,
+    "capacity": 5,
+    "reserve_bytes": 32212254720,
+    "reserve_inodes": 20000,
+    "sample_bytes": 75161927680,
+    "sample_inodes": 70000,
+    "used_bytes": 489256079360,
+    "used_inodes": 602804
+  },
+  "retirement_credit": 7,
+  "time": 1794748244.7994719
+}

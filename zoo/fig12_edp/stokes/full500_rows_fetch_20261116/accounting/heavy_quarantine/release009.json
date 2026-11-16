@@ -1,0 +1,71 @@
+{
+  "quota_after": {
+    "available_bytes": 619403153408,
+    "available_inodes": 344659,
+    "capacity": 4,
+    "reserve_bytes": 32212254720,
+    "reserve_inodes": 20000,
+    "sample_bytes": 75161927680,
+    "sample_inodes": 70000,
+    "used_bytes": 454338670592,
+    "used_inodes": 655341
+  },
+  "results": [
+    {
+      "id": "1143220",
+      "rc": 0,
+      "stderr": ""
+    },
+    {
+      "id": "1143235",
+      "rc": 0,
+      "stderr": ""
+    },
+    {
+      "id": "1143236",
+      "rc": 0,
+      "stderr": ""
+    },
+    {
+      "id": "1143239",
+      "rc": 0,
+      "stderr": ""
+    },
+    {
+      "id": "1143241",
+      "rc": 0,
+      "stderr": ""
+    },
+    {
+      "id": "1143242",
+      "rc": 0,
+      "stderr": ""
+    },
+    {
+      "id": "1143245",
+      "rc": 0,
+      "stderr": ""
+    },
+    {
+      "id": "1143249",
+      "rc": 0,
+      "stderr": ""
+    },
+    {
+      "id": "1143255",
+      "rc": 0,
+      "stderr": ""
+    },
+    {
+      "id": "1143262",
+      "rc": 0,
+      "stderr": ""
+    },
+    {
+      "id": "1143267",
+      "rc": 0,
+      "stderr": ""
+    }
+  ],
+  "time": 1794747766.19254
+}

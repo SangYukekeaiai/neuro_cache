@@ -1,0 +1,43 @@
+{
+  "archive_sha256": "f0a5bdc5f6be15402991427621c3620b1b5a0fc73bab924cb6f138d3d9b60c3c",
+  "authority": "manager EDP directive: automatic bounded release after verified retirements",
+  "dispatch_ceiling": 12,
+  "new_scientific_hashes": {
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/energy_table_nangate45.json": "2d8e4ea0b0f836a547ee6ec9301bff004928a8b19814aeb007f102afdc8295a3",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py": "2fce5e59c7ee607ace156af87d4c6958e387a62d5911b8b5bd9769ebf09fee6d",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500_batch.py": "9f3911c428e4ac4ffd60175d1e38f65c1ba87d23c3b303306ca836abd0428f13",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage1_worker.py": "69bda4c0ddd2a50e9cc5a18579bbaef6982808821583531ff3c6f6b4992b8d83",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage2.py": "f63299c6529476c72aa8d4a77289c708c3e22dd152eeb65703e0a7c5a184aa8a"
+  },
+  "old_scientific_hashes": {
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/energy_table_nangate45.json": "2d8e4ea0b0f836a547ee6ec9301bff004928a8b19814aeb007f102afdc8295a3",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py": "a929c1a4da7ada028c127e7bfe4f7c0eafd336f2b27457ad67a819eb89d99d43",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500_batch.py": "9f3911c428e4ac4ffd60175d1e38f65c1ba87d23c3b303306ca836abd0428f13",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage1_worker.py": "69bda4c0ddd2a50e9cc5a18579bbaef6982808821583531ff3c6f6b4992b8d83",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage2.py": "f63299c6529476c72aa8d4a77289c708c3e22dd152eeb65703e0a7c5a184aa8a"
+  },
+  "ownership_max_sample": 489,
+  "quota": {
+    "available_bytes": 575485743104,
+    "available_inodes": 283860,
+    "capacity": 3,
+    "reserve_bytes": 32212254720,
+    "reserve_inodes": 20000,
+    "sample_bytes": 75161927680,
+    "sample_inodes": 70000,
+    "used_bytes": 498256080896,
+    "used_inodes": 716140
+  },
+  "seed_consumed_retirements": [
+    0,
+    2,
+    3,
+    4,
+    6,
+    7,
+    8
+  ],
+  "tests_local": "50 passed",
+  "tests_stokes": "50 passed",
+  "time": 1794750431.1548944
+}

@@ -1,0 +1,77 @@
+{
+  "all_transferred_files_verified": 344,
+  "committed_count": 23,
+  "committed_samples": [
+    0,
+    2,
+    3,
+    4,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    25
+  ],
+  "control_files_verified": 4,
+  "delta_deltaai": "untouched",
+  "ledger_sha256": "b5dffc0cf10405e333b2cc454c2064a71b40017a123a6bc2ea09bc2f1450e24e",
+  "missing_files": 0,
+  "original_commit_artifacts_verified": 207,
+  "quiescence": {
+    "checked_unix": 1794785150.8918574,
+    "controller_absent": true,
+    "controller_lock_free": true,
+    "queue": "",
+    "retained_work": [
+      "sample_001",
+      "sample_005",
+      "sample_024",
+      "sample_026",
+      "sample_027"
+    ]
+  },
+  "result_rows": 38571,
+  "retained_on_stokes": {
+    "priced": [
+      "sample_024"
+    ],
+    "scratch": [
+      "sample_001",
+      "sample_005",
+      "sample_024",
+      "sample_026",
+      "sample_027"
+    ],
+    "work": [
+      "sample_001",
+      "sample_005",
+      "sample_024",
+      "sample_026",
+      "sample_027"
+    ]
+  },
+  "sha256_mismatches": 0,
+  "source_control_sha256": {
+    "driver_after_interrupt.json": "7087d22d58b08fcdf7d18e88626ecaf0717e9176fea0fddd5f11a8d58b557f54",
+    "driver_before.json": "a4346e76fe68f207895fb8d8839f60ef16feb8aa3ed4bdbd5f5acb9988c5424a",
+    "source_manifest.json": "139dbe278de42e98dfb57933245e1325fe965d7ddbbf82135fb60fb3092db60c",
+    "stop_request.json": "2cda43ae927a1becb7db38f5834a42373e391a028cc7a7cbc08aa2a87b97d586"
+  },
+  "source_manifest_files_verified": 340,
+  "verified_unix": 1794785206.8967366,
+  "watcher": "read-only milestone watcher remains running"
+}

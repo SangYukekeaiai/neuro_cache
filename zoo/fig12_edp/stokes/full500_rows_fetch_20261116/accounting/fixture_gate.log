@@ -1,0 +1,6 @@
+archx.__file__=/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/src/archx/__init__.py
+{"arch": "spinalflow", "rows": 3, "terms": 67, "max_total_relative_error": 1.2288076966846338e-16, "max_term_relative_error": 0}
+{"arch": "ptb", "rows": 3, "terms": 82, "max_total_relative_error": 2.692250735113692e-16, "max_term_relative_error": 0}
+{"arch": "loas", "rows": 3, "terms": 79, "max_total_relative_error": 2.1876667139931425e-16, "max_term_relative_error": 0}
+{"arch": "gustavsnn", "rows": 3, "terms": 67, "max_total_relative_error": 2.0507864150043755e-16, "max_term_relative_error": 0}
+{"arch": "prosperity", "rows": 3, "terms": 91, "max_total_relative_error": 1.890323634174115e-16, "max_term_relative_error": 0}

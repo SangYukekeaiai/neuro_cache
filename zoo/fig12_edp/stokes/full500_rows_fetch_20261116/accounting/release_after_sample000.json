@@ -1,0 +1,11 @@
+{
+  "approved": true,
+  "authorization": "boss release for sample001+ with installed batched/pipelined scheduler",
+  "claimed_blocks": [
+    "000-009",
+    "010-019"
+  ],
+  "quota_guard": "undeployed; manual headroom monitoring",
+  "recovery": "retain recovery_glibc_20261115",
+  "released_unix": 1794738606.5730035
+}

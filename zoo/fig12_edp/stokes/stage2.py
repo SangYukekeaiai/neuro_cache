@@ -175,7 +175,7 @@ def count_snapshot(root):
     result = {}
     # Include committed and partial count directories, including unselected leftovers.
     for directory in sorted(root.rglob('counts')):
-        if not directory.is_dir() or directory.parent.name != 'sample_00000':
+        if not directory.is_dir() or not directory.parent.name.startswith('sample_'):
             continue
         for path in sorted(directory.rglob('*')):
             if path.is_file():
@@ -200,9 +200,9 @@ def stage1_state(base):
     raise ValueError('Stage 1 case lacks a terminal receipt: '+str(base))
 
 
-def count_checkpoint(base, case):
+def count_checkpoint(base, case, sample=0):
     complete = load(base/'complete.json')
-    if complete['status'] != 'complete' or complete['sample'] != 0 or set(complete['arms']) != set(ARMS):
+    if complete['status'] != 'complete' or complete['sample'] != sample or set(complete['arms']) != set(ARMS):
         raise ValueError('invalid completion receipt')
     if key(complete['inputs']['case']) != key(case):
         raise ValueError('completion identity differs')
@@ -217,8 +217,8 @@ def count_checkpoint(base, case):
     metadata = load(directory/'counts.json')
     if key(metadata['identity']) != key(case) or metadata['arch'] != case['arch']:
         raise ValueError('saved count identity differs from selection')
-    if metadata['provenance']['noc']['sample_idx'] != 0:
-        raise ValueError('saved counts are not sample 0')
+    if metadata['provenance']['noc']['sample_idx'] != sample:
+        raise ValueError('saved counts have the wrong sample')
     return directory, metadata
 
 
@@ -239,7 +239,8 @@ def stop_owned(process):
 
 
 def price_case(case, counts, metadata, table, table_sha, output, stop, pricing_profile='dummy'):
-    directory = output/'cases'/key(case)/'sample_00000'/table_sha
+    sample = metadata['provenance']['noc']['sample_idx']
+    directory = output/'cases'/key(case)/f'sample_{sample:05d}'/table_sha
     directory.parent.mkdir(parents=True, exist_ok=True)
     log_path = directory.parent/(table_sha+'.log')
     argv = [sys.executable, '-m', 'snn_edp.run', 'price', '--counts', str(counts),
@@ -287,7 +288,7 @@ def price_case(case, counts, metadata, table, table_sha, output, stop, pricing_p
                 raise ValueError('invalid priced metric')
         if not math.isclose(row['EDP_nJ_s'], (row['E_dyn_nJ']+row['E_leak_nJ'])*row['T_s'], rel_tol=1e-12, abs_tol=1e-15):
             raise ValueError('layer EDP differs from energy times latency')
-        row.update(capture=case['trace_relative_dir'], layer=case['layer'], sample=0, n=1,
+        row.update(capture=case['trace_relative_dir'], layer=case['layer'], sample=sample, n=1,
                    incomplete=True, counts_json=json.dumps(saved_counts, sort_keys=True))
         row.update(labels)
         trace_sha = metadata['provenance']['noc'].get('inputs', {}).get('sample', {}).get('sha256')
@@ -328,7 +329,9 @@ def run(stage1_root, table, output, *, confirmed_drained=False, workers=2, prici
     root, selection, provenance = campaign(stage1_root)
     if output.is_relative_to(root) or root.is_relative_to(output) or output.is_relative_to(stage1_root):
         raise ValueError('Stage-2 output must be separate from Stage-1 data')
-    states = {key(c): stage1_state(root/key(c)/'sample_00000') for c in selection['feasible']}
+    sample = int(load(stage1_root/'config.json').get('sample', 0))
+    sample_dir = f'sample_{sample:05d}'
+    states = {key(c): stage1_state(root/key(c)/sample_dir) for c in selection['feasible']}
     table_bytes = table.read_bytes(); table_sha = hashlib.sha256(table_bytes).hexdigest()
     if pricing_profile == 'nangate45':
         check_ng45_table(json.loads(table_bytes))
@@ -353,7 +356,7 @@ def run(stage1_root, table, output, *, confirmed_drained=False, workers=2, prici
             errors[identity] = 'terminal Stage-1 failure'
             continue
         try:
-            counts, metadata = count_checkpoint(root/identity/'sample_00000', case)
+            counts, metadata = count_checkpoint(root/identity/sample_dir, case, sample)
             jobs.append((case, counts, metadata))
         except (OSError, ValueError, KeyError) as error:
             states[identity] = 'failed'; errors[identity] = str(error)
@@ -394,7 +397,7 @@ def run(stage1_root, table, output, *, confirmed_drained=False, workers=2, prici
     _, _, scope_summary = collector()
     coverage = {**provenance, 'status': 'collected', 'stage1_root': str(stage1_root), 'main_confirmed_drained': True,
         **labels, 'table_source': str(table),
-        'caveats': [labels['pricing_caveat']], 'sample': 0, 'n': 1, 'workers': workers,
+        'caveats': [labels['pricing_caveat']], 'sample': sample, 'n': 1, 'workers': workers,
         'case_states': states, 'errors': errors, 'infeasible': selection['infeasible'],
         'scope': scope_summary(selection), 'result_rows': len(rows), 'whole_model_groups': len(models),
         'count_artifacts_unchanged': True, 'count_artifact_files': len(before),

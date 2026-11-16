@@ -1,0 +1,25 @@
+{
+  "authority": "manager authorized bounded011+ dispatch as retirements/quota permit",
+  "boundary_before": {
+    "created_unix": 1794741236.517022,
+    "max_sample": 10,
+    "previous_max_sample": 499,
+    "reason": "sample010 bounded dispatch after007 verified retirement",
+    "record": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/full500/manual_quota_throttle/20261115_061356",
+    "updated_unix": 1794748244.8074536
+  },
+  "commit_sha256": "d1339f2ea5530f0bb774c21db820afc61cb57a72115e9a6540d6c06d35686fc8",
+  "quota_before": {
+    "available_bytes": 611426508800,
+    "available_inodes": 350951,
+    "capacity": 4,
+    "reserve_bytes": 32212254720,
+    "reserve_inodes": 20000,
+    "sample_bytes": 75161927680,
+    "sample_inodes": 70000,
+    "used_bytes": 462315315200,
+    "used_inodes": 649049
+  },
+  "retirement_credit": 8,
+  "time": 1794749267.1753314
+}

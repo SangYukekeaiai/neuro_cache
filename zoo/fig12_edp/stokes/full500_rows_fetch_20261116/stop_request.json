@@ -1,0 +1,55 @@
+{
+  "requested_unix": 1794784926.0833597,
+  "authority": "T99 boss stop Stokes and fetch durable outputs; retain checkpoints",
+  "controller_pid": 1774005,
+  "controller_command": "python -B zoo/fig12_edp/stokes/full500.py --root /home/ya867177/snn_edp_stokes_20261114/full500 ",
+  "signal": "SIGINT",
+  "sample024": "pricing not near completion; only table file exists after 36 minutes",
+  "cancelled_jobs": [
+    {
+      "id": "1147636_1",
+      "name": "f500_s027_a1_t1_4",
+      "state": "RUNNING"
+    },
+    {
+      "id": "1147636_0",
+      "name": "f500_s027_a1_t1_4",
+      "state": "RUNNING"
+    },
+    {
+      "id": "1147633_0",
+      "name": "f500_s027_a1_t2_3",
+      "state": "RUNNING"
+    },
+    {
+      "id": "1147633_1",
+      "name": "f500_s027_a1_t2_3",
+      "state": "RUNNING"
+    },
+    {
+      "id": "1147633_2",
+      "name": "f500_s027_a1_t2_3",
+      "state": "RUNNING"
+    },
+    {
+      "id": "1147495_2",
+      "name": "f500_s026_a1_t2_3",
+      "state": "RUNNING"
+    },
+    {
+      "id": "1147495_1",
+      "name": "f500_s026_a1_t2_3",
+      "state": "RUNNING"
+    },
+    {
+      "id": "1147495_0",
+      "name": "f500_s026_a1_t2_3",
+      "state": "RUNNING"
+    },
+    {
+      "id": "1147433",
+      "name": "f500_price_024",
+      "state": "RUNNING"
+    }
+  ]
+}

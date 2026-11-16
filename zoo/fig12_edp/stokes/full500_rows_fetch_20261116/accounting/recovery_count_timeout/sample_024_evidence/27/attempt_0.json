@@ -1,0 +1,18 @@
+{
+  "actual_limits": {
+    "rlimit_as_hard_bytes": null,
+    "rlimit_as_soft_bytes": null,
+    "slurm_job_id": "1146875",
+    "slurm_mem_per_node": "122880"
+  },
+  "attempt": 0,
+  "case": "spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3",
+  "finished_unix": 1794775275.6325219,
+  "memory_gib": 120,
+  "retry": null,
+  "shutdown_reserve_seconds": 30,
+  "started_unix": 1794774521.9986043,
+  "status": "timeout",
+  "tier": 2,
+  "timeout_seconds": 3600
+}

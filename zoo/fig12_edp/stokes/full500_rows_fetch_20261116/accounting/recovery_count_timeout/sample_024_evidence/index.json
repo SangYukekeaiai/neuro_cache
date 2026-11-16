@@ -1,0 +1,239 @@
+{
+  "created_unix": 1794781201.4596865,
+  "files": {
+    "20/attempt_0.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0/sample_00024/attempt_0.json",
+      "sha256": "05b65dc2eb363763d48f182c352b59a74844bc446199a457f4e398a73b32ea7d"
+    },
+    "20/attempt_0.log": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0/sample_00024/attempt_0.log",
+      "sha256": "016aba0a0c484e3c91770718e93a874223147f4fadd8c7c60a72c5ca5d5930e1"
+    },
+    "20/inputs.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0/sample_00024/inputs.json",
+      "sha256": "714fab8ff677b374cf688fc20b4f45f47449484281ebd00982c540c216b52a0c"
+    },
+    "20/counts/request.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0/sample_00024/counts/request.json",
+      "sha256": "6dd5b8ad1e97475faab06f1d09d82aab0eead1e512092f5f82746a4c55b4bebd"
+    },
+    "20/counts/archx_0.log": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0/sample_00024/counts/archx_0.log",
+      "sha256": "05d49777f3c6ff5663bc54e75c406cb82ca673bb93bfa345260a75cfe6ba2e87"
+    },
+    "20/steps/cache_a.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0/sample_00024/steps/cache_a.json",
+      "sha256": "7d6797748ca02c767fd64cd9051b77839f34d1796d9886679150a3cff5e70f7b"
+    },
+    "20/steps/cache_b.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0/sample_00024/steps/cache_b.json",
+      "sha256": "d09b320b38acac7c75d86ce3616a956a329f490a205775700cf8d3ed91e20d65"
+    },
+    "20/steps/generation.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0/sample_00024/steps/generation.json",
+      "sha256": "1dd57834fe3e14f6bbe30fedef33e12c5b0306cafa8d7ef140b120f4908f9302"
+    },
+    "20/steps/noc.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0/sample_00024/steps/noc.json",
+      "sha256": "0d61c85b513d6f3bcc2785878ebf4a04eacc84f833eb52f9914b0bce2696ec4a"
+    },
+    "20/steps/numpy_counts.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0/sample_00024/steps/numpy_counts.json",
+      "sha256": "b7e07da146983401d9a615691aaf8fb166ceb23a0e60146d23b3bcc1357c4bb7"
+    },
+    "24/attempt_0.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0/sample_00024/attempt_0.json",
+      "sha256": "6afaf21325561aadd19569417fb7709597b68c511bf0dfbe639c2a324e7ed79d"
+    },
+    "24/attempt_0.log": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0/sample_00024/attempt_0.log",
+      "sha256": "2d7ee93ecec01a12b1e828757b5838411aafb4c13ab6ffee526b6b99c13ea68a"
+    },
+    "24/inputs.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0/sample_00024/inputs.json",
+      "sha256": "4f62d3068c278a0d60fceca422b4290e54585189750d01aefeb15399167ce043"
+    },
+    "24/counts/request.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0/sample_00024/counts/request.json",
+      "sha256": "659e9006f2fa59ddc69e1c386ec46c8b512ec8b45ef0c96fdb84bf44c89d8a14"
+    },
+    "24/counts/archx_0.log": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0/sample_00024/counts/archx_0.log",
+      "sha256": "05d49777f3c6ff5663bc54e75c406cb82ca673bb93bfa345260a75cfe6ba2e87"
+    },
+    "24/steps/cache_a.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0/sample_00024/steps/cache_a.json",
+      "sha256": "470fd9675bf92bcf505e92be9e890fd44def6f233eb8da1cc0d89470d57ec70d"
+    },
+    "24/steps/cache_b.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0/sample_00024/steps/cache_b.json",
+      "sha256": "fb44aaf1ef79ae34a6af1a877f194ebb4fb443327bf21d0bfb9c74222d8bdb7e"
+    },
+    "24/steps/generation.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0/sample_00024/steps/generation.json",
+      "sha256": "d238d14c6d65ca8dfeeb7c4ed44b00928b8159794ac75eb78934e91c7dda9a56"
+    },
+    "24/steps/noc.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0/sample_00024/steps/noc.json",
+      "sha256": "733af111d789e0e501ef92e0925f78692ee537a8f178e3cf4763378ac9c45d2f"
+    },
+    "24/steps/numpy_counts.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0/sample_00024/steps/numpy_counts.json",
+      "sha256": "018270d02f1b2e02ece96283c30b8dc6dc8f85fa466178ad6b99cf87600790e3"
+    },
+    "26/attempt_0.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_dvs128_gesture_T16_n500/layer_04_core_block5_0_0/sample_00024/attempt_0.json",
+      "sha256": "532bfdbee327f94b5ef72e317ea5c710b859cd0b29843128356967aca45ae433"
+    },
+    "26/attempt_0.log": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_dvs128_gesture_T16_n500/layer_04_core_block5_0_0/sample_00024/attempt_0.log",
+      "sha256": "dbd86bc7762fd34e2e631e5fee01679381671343dd80a41626726af7ab6ebd2a"
+    },
+    "26/inputs.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_dvs128_gesture_T16_n500/layer_04_core_block5_0_0/sample_00024/inputs.json",
+      "sha256": "b17845fafb0d0c5a5b331982b202323474eac597f977bdd29064b10a705fd89a"
+    },
+    "26/counts/request.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_dvs128_gesture_T16_n500/layer_04_core_block5_0_0/sample_00024/counts/request.json",
+      "sha256": "b9b355bb977454601fdea989f48a9c413fce693f8cf99a9b625df638ca192036"
+    },
+    "26/counts/archx_0.log": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_dvs128_gesture_T16_n500/layer_04_core_block5_0_0/sample_00024/counts/archx_0.log",
+      "sha256": "05d49777f3c6ff5663bc54e75c406cb82ca673bb93bfa345260a75cfe6ba2e87"
+    },
+    "26/steps/cache_a.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_dvs128_gesture_T16_n500/layer_04_core_block5_0_0/sample_00024/steps/cache_a.json",
+      "sha256": "ebac02d2b5e43bb1a84a22a37b5026e0462af8e2bb894633bca18f3ea6a19a23"
+    },
+    "26/steps/cache_b.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_dvs128_gesture_T16_n500/layer_04_core_block5_0_0/sample_00024/steps/cache_b.json",
+      "sha256": "273e3c5d1abe856797fda39ef593e1c08ddbd33e3d96b0999156b765b702523e"
+    },
+    "26/steps/generation.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_dvs128_gesture_T16_n500/layer_04_core_block5_0_0/sample_00024/steps/generation.json",
+      "sha256": "74295228f83944cc506848704013eed71d062dcb3e5c15f01791fa2eb79c4e09"
+    },
+    "26/steps/noc.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_dvs128_gesture_T16_n500/layer_04_core_block5_0_0/sample_00024/steps/noc.json",
+      "sha256": "6167c52481ee74bfd1c69e74ce753121201c0bb0f46d56fcee9767d9105fe8ff"
+    },
+    "26/steps/numpy_counts.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/C01/sma_azo_vgg_dvs128_gesture_T16_n500/layer_04_core_block5_0_0/sample_00024/steps/numpy_counts.json",
+      "sha256": "170eb28356dcd4462094f6cb0556e3787052a2d59521b0ea70b1f3e830089ef0"
+    },
+    "27/attempt_0.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3/sample_00024/attempt_0.json",
+      "sha256": "2d52b384477181c2d59a4e1a40fc6bd631d9ed9abb68b0d7792f7af3c6ac3304"
+    },
+    "27/attempt_0.log": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3/sample_00024/attempt_0.log",
+      "sha256": "56163a0f59e3929ea5e5fad44d1d49c1c39f986eaf011cc55d532cf2a1e8b98d"
+    },
+    "27/inputs.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3/sample_00024/inputs.json",
+      "sha256": "5a34a39850195bb4e5e742f605570a5fb4849b76946c43b39f74c3adb0c85d78"
+    },
+    "27/counts/request.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3/sample_00024/counts/request.json",
+      "sha256": "e461be4cf6499db24c958564dc4936f14cb541dde0dd67c3415581c94b9a40c4"
+    },
+    "27/counts/archx_0.log": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3/sample_00024/counts/archx_0.log",
+      "sha256": "05d49777f3c6ff5663bc54e75c406cb82ca673bb93bfa345260a75cfe6ba2e87"
+    },
+    "27/steps/cache_a.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3/sample_00024/steps/cache_a.json",
+      "sha256": "f710759decf793f9937b9e33d7f2c861bc085cdcf412fced64613a525e45bcb3"
+    },
+    "27/steps/cache_b.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3/sample_00024/steps/cache_b.json",
+      "sha256": "2a76e498d422e45c27f210c7fc4b1cfbd212a283a80e5e3387180c374b812780"
+    },
+    "27/steps/generation.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3/sample_00024/steps/generation.json",
+      "sha256": "1f43e05752398ba90e53468f4dbcd2a8fffb644a446d60c5059f3f09d57d454a"
+    },
+    "27/steps/noc.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3/sample_00024/steps/noc.json",
+      "sha256": "6d9cc5c95f01d0c78cef7230e9209e69ce01b87aa611ef20c21d05eef545b4ab"
+    },
+    "27/steps/numpy_counts.json": {
+      "original": "/home/ya867177/snn_edp_stokes_20261114/full500/work/sample_024/cases/spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3/sample_00024/steps/numpy_counts.json",
+      "sha256": "0565810379fede3a1f1654e6b7f87ba54e30e7ae53378fe28c36b643757768b0"
+    }
+  },
+  "failures": {
+    "20": {
+      "actual_limits": {
+        "rlimit_as_hard_bytes": null,
+        "rlimit_as_soft_bytes": null,
+        "slurm_job_id": "1146878",
+        "slurm_mem_per_node": "122880"
+      },
+      "attempt": 0,
+      "case": "spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_01_core_block2_0_0",
+      "finished_unix": 1794775266.2398536,
+      "memory_gib": 120,
+      "retry": null,
+      "shutdown_reserve_seconds": 30,
+      "started_unix": 1794774522.1200404,
+      "status": "timeout",
+      "tier": 2,
+      "timeout_seconds": 3600
+    },
+    "24": {
+      "actual_limits": {
+        "rlimit_as_hard_bytes": null,
+        "rlimit_as_soft_bytes": null,
+        "slurm_job_id": "1146879",
+        "slurm_mem_per_node": "122880"
+      },
+      "attempt": 0,
+      "case": "spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0",
+      "finished_unix": 1794775193.205821,
+      "memory_gib": 120,
+      "retry": null,
+      "shutdown_reserve_seconds": 30,
+      "started_unix": 1794774521.911843,
+      "status": "timeout",
+      "tier": 2,
+      "timeout_seconds": 3600
+    },
+    "26": {
+      "actual_limits": {
+        "rlimit_as_hard_bytes": null,
+        "rlimit_as_soft_bytes": null,
+        "slurm_job_id": "1146880",
+        "slurm_mem_per_node": "122880"
+      },
+      "attempt": 0,
+      "case": "spinalflow/C01/sma_azo_vgg_dvs128_gesture_T16_n500/layer_04_core_block5_0_0",
+      "finished_unix": 1794775116.155852,
+      "memory_gib": 120,
+      "retry": null,
+      "shutdown_reserve_seconds": 30,
+      "started_unix": 1794774516.3828523,
+      "status": "timeout",
+      "tier": 2,
+      "timeout_seconds": 3600
+    },
+    "27": {
+      "actual_limits": {
+        "rlimit_as_hard_bytes": null,
+        "rlimit_as_soft_bytes": null,
+        "slurm_job_id": "1146875",
+        "slurm_mem_per_node": "122880"
+      },
+      "attempt": 0,
+      "case": "spinalflow/A04/sdt_2_512_cifar100_T4_n500/layer_03_patch_embed_proj_conv3",
+      "finished_unix": 1794775275.6325219,
+      "memory_gib": 120,
+      "retry": null,
+      "shutdown_reserve_seconds": 30,
+      "started_unix": 1794774521.9986043,
+      "status": "timeout",
+      "tier": 2,
+      "timeout_seconds": 3600
+    }
+  }
+}

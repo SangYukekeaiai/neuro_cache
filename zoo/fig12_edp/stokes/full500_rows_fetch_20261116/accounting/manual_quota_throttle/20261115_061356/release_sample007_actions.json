@@ -1,0 +1,25 @@
+{
+  "boundary_max_sample": 7,
+  "results": [
+    {
+      "exit_code": 0,
+      "job": "1143127",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "exit_code": 0,
+      "job": "1143132",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "exit_code": 0,
+      "job": "1143135",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "samples008_009_remain_held": true,
+  "time": 1794742920.7001607
+}

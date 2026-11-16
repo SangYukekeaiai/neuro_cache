@@ -1,0 +1,20 @@
+{
+  "repo": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache",
+  "capture_root": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/input_trace_sample0",
+  "schedule_manifest": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/schedules/manifest.json",
+  "schedule_cache": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/schedules/schedules",
+  "selection": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/stage1/stage1_cases.json",
+  "cachesim": "zoo/fig12_edp/demo/native_build/cachesim_run",
+  "eventsim": "src/lays/nocsim/eventsim/eventsim",
+  "cache_a": "zoo/fig12_edp/configs/production_cache_a.json",
+  "cache_b": "zoo/fig12_edp/configs/production_cache_b.json",
+  "output_root": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/stage1/cases",
+  "scratch_root": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/stage1/scratch",
+  "arch_yaml": {
+    "spinalflow": "zoo/wt500_fig3cfg/arch.yaml",
+    "ptb": "zoo/wt500_fig3cfg/arch.yaml",
+    "loas": "zoo/wt500_fig3cfg/arch.yaml",
+    "gustavsnn": "zoo/wt500_fig3cfg/arch.yaml",
+    "prosperity": "zoo/wt500_fig3cfg/arch.yaml"
+  }
+}

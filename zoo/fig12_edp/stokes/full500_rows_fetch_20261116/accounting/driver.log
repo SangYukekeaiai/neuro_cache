@@ -1,0 +1,73 @@
+/tmp/tmps80rl4sn: line 3: 3008463 Terminated              python -B zoo/fig12_edp/stokes/full500.py --root /home/ya867177/snn_edp_stokes_20261114/full500
+ERROR conda.cli.main_run:execute(125): `conda run python -B zoo/fig12_edp/stokes/full500.py --root /home/ya867177/snn_edp_stokes_20261114/full500` failed. (See above for error)
+Traceback (most recent call last):
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 371, in <module>
+    if __name__=='__main__': main()
+                             ^^^^^^
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 358, in main
+    progress(root,int(key),state,base,entries,script)
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 236, in progress
+    if state.get('failures'): raise RuntimeError(f'sample {sample}: terminal failures; checkpoints retained')
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: sample 5: terminal failures; checkpoints retained
+ERROR conda.cli.main_run:execute(125): `conda run python -B zoo/fig12_edp/stokes/full500.py --root /home/ya867177/snn_edp_stokes_20261114/full500` failed. (See above for error)
+Traceback (most recent call last):
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 376, in <module>
+    if __name__=='__main__': main()
+                             ^^^^^^
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 363, in main
+    progress(root,int(key),state,base,entries,script)
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 239, in progress
+    raise RuntimeError(f'sample {sample}: terminal failures; checkpoints retained')
+RuntimeError: sample 1: terminal failures; checkpoints retained
+ERROR conda.cli.main_run:execute(125): `conda run python -B zoo/fig12_edp/stokes/full500.py --root /home/ya867177/snn_edp_stokes_20261114/full500` failed. (See above for error)
+/tmp/tmpqs9aurjz: line 3: 3914612 Terminated              python -B zoo/fig12_edp/stokes/full500.py --root /home/ya867177/snn_edp_stokes_20261114/full500
+ERROR conda.cli.main_run:execute(125): `conda run python -B zoo/fig12_edp/stokes/full500.py --root /home/ya867177/snn_edp_stokes_20261114/full500` failed. (See above for error)
+Traceback (most recent call last):
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 460, in <module>
+    if __name__=='__main__': main()
+                             ^^^^^^
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 446, in main
+    progress(root,int(key),state,base,entries,script)
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 334, in progress
+    raise RuntimeError('pricing job ended without durable exit receipt')
+RuntimeError: pricing job ended without durable exit receipt
+ERROR conda.cli.main_run:execute(125): `conda run python -B zoo/fig12_edp/stokes/full500.py --root /home/ya867177/snn_edp_stokes_20261114/full500` failed. (See above for error)
+slurm_load_jobs error: Invalid job id specified
+Traceback (most recent call last):
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 488, in <module>
+    if __name__=='__main__': main()
+                             ^^^^^^
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 474, in main
+    progress(root,int(key),state,base,entries,script)
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 331, in progress
+    elif not run(['squeue', '-h', '-j', state['price_job'], '-o', '%i']):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 65, in run
+    return subprocess.check_output(list(map(str, argv)), text=True).strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ya867177/snn_edp_stokes_20261114/env/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ya867177/snn_edp_stokes_20261114/env/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['squeue', '-h', '-j', '1146811', '-o', '%i']' returned non-zero exit status 1.
+ERROR conda.cli.main_run:execute(125): `conda run python -B zoo/fig12_edp/stokes/full500.py --root /home/ya867177/snn_edp_stokes_20261114/full500` failed. (See above for error)
+Traceback (most recent call last):
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 488, in <module>
+    if __name__=='__main__': main()
+                             ^^^^^^
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 474, in main
+    progress(root,int(key),state,base,entries,script)
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 322, in progress
+    raise RuntimeError(f'sample {sample}: terminal failures; checkpoints retained')
+RuntimeError: sample 24: terminal failures; checkpoints retained
+ERROR conda.cli.main_run:execute(125): `conda run python -B zoo/fig12_edp/stokes/full500.py --root /home/ya867177/snn_edp_stokes_20261114/full500` failed. (See above for error)
+Traceback (most recent call last):
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 488, in <module>
+    if __name__=='__main__': main()
+                             ^^^^^^
+  File "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py", line 482, in main
+    time.sleep(30)
+KeyboardInterrupt
+ERROR conda.cli.main_run:execute(125): `conda run python -B zoo/fig12_edp/stokes/full500.py --root /home/ya867177/snn_edp_stokes_20261114/full500` failed. (See above for error)

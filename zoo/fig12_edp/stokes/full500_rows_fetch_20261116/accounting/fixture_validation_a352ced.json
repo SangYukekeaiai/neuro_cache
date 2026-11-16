@@ -1,0 +1,50 @@
+{
+  "archx_backend": "AGraph compile/extract/execute; aggregate_event_count + aggregate_event_metric",
+  "archx_file": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/src/archx/__init__.py",
+  "cases": [
+    {
+      "arch": "spinalflow",
+      "max_term_relative_error": 0,
+      "max_total_relative_error": 1.2288076966846338e-16,
+      "rows": 3,
+      "terms": 67
+    },
+    {
+      "arch": "ptb",
+      "max_term_relative_error": 0,
+      "max_total_relative_error": 2.692250735113692e-16,
+      "rows": 3,
+      "terms": 82
+    },
+    {
+      "arch": "loas",
+      "max_term_relative_error": 0,
+      "max_total_relative_error": 2.1876667139931425e-16,
+      "rows": 3,
+      "terms": 79
+    },
+    {
+      "arch": "gustavsnn",
+      "max_term_relative_error": 0,
+      "max_total_relative_error": 2.0507864150043755e-16,
+      "rows": 3,
+      "terms": 67
+    },
+    {
+      "arch": "prosperity",
+      "max_term_relative_error": 0,
+      "max_total_relative_error": 1.890323634174115e-16,
+      "rows": 3,
+      "terms": 91
+    }
+  ],
+  "energy_table_sha256": "8c3589272e2a68dc9b01847be61f2076fb5dbb84eee7a4dc582671da9ff79942",
+  "performance_cache_disabled": true,
+  "reference_csv": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/zoo/snn_edp/reference_t84_results.csv",
+  "reference_sha256": "8de5ccdd0fbf00fea665f0b67544516c2ce4e3a82e7b99a7783ca75cbb468211",
+  "retirement_record": "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/zoo/snn_edp/provenance/retired_logic.json",
+  "rows": 15,
+  "terms": 386,
+  "validation_basis": "historical independent CSV minus retired logic prices and nine explicit prefetch-control exclusions; deduplicated physical inventory",
+  "wall_seconds": 4.529091245960444
+}

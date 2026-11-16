@@ -193,7 +193,7 @@ def test_progress_every_25_cases_is_flushed(archive, tmp_path, monkeypatch):
            'capture_order':[original['trace_relative_dir']]})
     s.save(Path(cfg['selection']), {'mini':True, 'cases':[{'key':s.key(c)} for c in cases]})
     monkeypatch.setattr(s, 'stage1_state', lambda base: 'complete')
-    monkeypatch.setattr(s, 'count_checkpoint', lambda base, case: (base/'counts', {}))
+    monkeypatch.setattr(s, 'count_checkpoint', lambda base, case, sample=0: (base/'counts', {}))
     def priced(case, counts, metadata, table, sha, output, stop, pricing_profile='dummy'):
         return [{'arch':case['arch'], 'capture':case['trace_relative_dir'], 'layer':case['layer'],
                  'arm':arm, 'E_dyn_nJ':2, 'E_leak_nJ':0, 'T_s':3, 'EDP_nJ_s':6,

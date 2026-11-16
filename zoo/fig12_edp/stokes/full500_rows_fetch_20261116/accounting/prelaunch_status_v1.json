@@ -1,0 +1,15 @@
+{
+  "claimed_blocks": [],
+  "host": "euser2",
+  "phase": "waiting_for_inputs",
+  "pid": 1532481,
+  "samples": {},
+  "scientific_hashes": {
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/energy_table_nangate45.json": "2d8e4ea0b0f836a547ee6ec9301bff004928a8b19814aeb007f102afdc8295a3",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py": "f32262198a4e02a135a353ee18a9789968c35cd20c82cd5450885ed901f1b8de",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage1_worker.py": "69bda4c0ddd2a50e9cc5a18579bbaef6982808821583531ff3c6f6b4992b8d83",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage2.py": "f63299c6529476c72aa8d4a77289c708c3e22dd152eeb65703e0a7c5a184aa8a"
+  },
+  "started_unix": 1794720761.2024233,
+  "updated_unix": 1794721726.9201179
+}

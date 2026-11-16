@@ -1,0 +1,49 @@
+{
+  "grandfathered_samples": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "handoff_array": "1142357 adopted, not resubmitted",
+  "local_tests": "70 passed",
+  "new_scientific_hashes": {
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/energy_table_nangate45.json": "2d8e4ea0b0f836a547ee6ec9301bff004928a8b19814aeb007f102afdc8295a3",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py": "b1f537ddba3730bb31ea398ccf1616d14975dc64789d61afe97da5935dd1504b",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500_batch.py": "9f3911c428e4ac4ffd60175d1e38f65c1ba87d23c3b303306ca836abd0428f13",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage1_worker.py": "69bda4c0ddd2a50e9cc5a18579bbaef6982808821583531ff3c6f6b4992b8d83",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage2.py": "f63299c6529476c72aa8d4a77289c708c3e22dd152eeb65703e0a7c5a184aa8a"
+  },
+  "old_scientific_hashes": {
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/archx/zoo/snn_edp/characterization/energy_table_nangate45.json": "2d8e4ea0b0f836a547ee6ec9301bff004928a8b19814aeb007f102afdc8295a3",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500.py": "a7320a37f496ad05696b7bc7ba1b6a1f3c923229847cf862840f1d1b7bd50f87",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/full500_batch.py": "9f3911c428e4ac4ffd60175d1e38f65c1ba87d23c3b303306ca836abd0428f13",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage1_worker.py": "69bda4c0ddd2a50e9cc5a18579bbaef6982808821583531ff3c6f6b4992b8d83",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/fig12_edp/stokes/stage2.py": "f63299c6529476c72aa8d4a77289c708c3e22dd152eeb65703e0a7c5a184aa8a"
+  },
+  "quota": {
+    "available_bytes": 662946496512,
+    "available_inodes": 610805,
+    "capacity": 8,
+    "reserve_bytes": 32212254720,
+    "reserve_inodes": 20000,
+    "sample_bytes": 75161927680,
+    "sample_inodes": 70000,
+    "used_bytes": 410795327488,
+    "used_inodes": 389195
+  },
+  "reason": "boss-approved quota admission guard and numeric sample order",
+  "stokes_tests": "23 passed",
+  "time": 1794739018.6363943
+}

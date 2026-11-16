@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+STAGE="$HOME/snn_edp_stokes_20261114"
+cd "$STAGE/neuro_cache_wcache"
+export LD_LIBRARY_PATH="$STAGE/env/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 RAYON_NUM_THREADS=1 BLIS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 NUMEXPR_MAX_THREADS=1 POLARS_MAX_THREADS=1 TBB_NUM_THREADS=1 GOTO_NUM_THREADS=1
+export ARCHX_DISABLE_PERFORMANCE_CACHE=1 PYTHONDONTWRITEBYTECODE=1
+export PYTHONPATH="$PWD:$PWD/src:$PWD/zoo/archx/zoo:$PWD/zoo/archx/src"
+exec "$STAGE/env/bin/python" -B zoo/fig12_edp/stokes/stage1_worker.py --config "$1" --case-index "$SLURM_ARRAY_TASK_ID" --attempt "$2"

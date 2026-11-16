@@ -1,0 +1,18 @@
+{
+  "actual_limits": {
+    "rlimit_as_hard_bytes": null,
+    "rlimit_as_soft_bytes": null,
+    "slurm_job_id": "1146879",
+    "slurm_mem_per_node": "122880"
+  },
+  "attempt": 0,
+  "case": "spinalflow/C01/sma_azo_vgg_cifar10_dvs_T10_n500/layer_03_core_block4_0_0",
+  "finished_unix": 1794775193.205821,
+  "memory_gib": 120,
+  "retry": null,
+  "shutdown_reserve_seconds": 30,
+  "started_unix": 1794774521.911843,
+  "status": "timeout",
+  "tier": 2,
+  "timeout_seconds": 3600
+}
