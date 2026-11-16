@@ -1,0 +1,15 @@
+{
+  "real_cases": 276,
+  "nondivisible_cycles_by_T4": 108,
+  "reference_case": {
+    "sample": "0",
+    "layer": "layer_01_core_features_3",
+    "total_cycles": "103485",
+    "cycles_mod_T": "1",
+    "A": "18409024",
+    "B": "1575248.0",
+    "S_or": "98453",
+    "S_sum": "287641"
+  },
+  "interpretation": "No rounding or T division has been applied to the preserved cycles/counts."
+}

@@ -1,0 +1,15 @@
+{
+  "selected_3x3_pairs": 47,
+  "completed_pairs": 1,
+  "cpu_seconds": 0.24662099999999976,
+  "wall_seconds": 0.46034565899753943,
+  "worst_measured_pair_projection_cpu_seconds": 11.572057999999986,
+  "pairs": [
+    {
+      "capture": "C01/sma_azo_vgg_dvs128_gesture_T16_n500",
+      "layer": "layer_01_core_block2_0_0",
+      "records": 8275200,
+      "cpu_seconds": 0.2462139999999997
+    }
+  ]
+}

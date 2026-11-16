@@ -1,0 +1,19 @@
+    _                _                      
+   / \   ___ ___ ___| | ___ _ __ __ _ _   _ 
+  / _ \ / __/ __/ _ \ |/ _ \ '__/ _` | | | |
+ / ___ \ (_| (_|  __/ |  __/ | | (_| | |_| |
+/_/   \_\___\___\___|_|\___|_|  \__, |\__, |
+                                |___/ |___/ 
+
+Info: generating outputs according to the following specified output flags... 
+ Please use the -f flag to update the preference (default to all output files) 
+{'ERT': 0, 'ERT_summary': 0, 'ART': 0, 'ART_summary': 0, 'energy_estimation': 1, 'flattened_arch': 0}
+Info: config file located: ./accelergy_config.yaml 
+config file content: 
+ {'compound_components': [], 'estimator_plug_ins': [], 'primitive_components': ['/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/accelergy/share/primitive_component_libs'], 'version': 0.3}
+Info: Parsing file ERT.yaml for ERT info 
+Info: Parsing file action_counts.yaml for action_counts info 
+Info: primitive component file parsed:  /lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/accelergy/share/primitive_component_libs/pim_primitive_component.lib.yaml 
+Info: primitive component file parsed:  /lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/accelergy/share/primitive_component_libs/primitive_component.lib.yaml 
+Info: primitive component file parsed:  /lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/accelergy/share/primitive_component_libs/soc_primitives.lib.yaml 
+Info: energy estimations are saved to: ./energy_estimation.yaml 

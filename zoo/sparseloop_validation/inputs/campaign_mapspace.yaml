@@ -1,0 +1,12 @@
+dataflow:
+  # Campaign variant (2026-11-10): fig3's loas_t4.yaml had T {spatial: 4}
+  # for the 4 T-lanes; with num_pes limited to 4 the T fanout is removed and
+  # T returns to full node residency. This matches the published
+  # examples/node_mapspace/loas.yaml exactly: the complete reduction row and
+  # tick range stay local per node visit, HO/WO barred, COUT spatial 4.
+  node_dim_capacity:
+    KH:   full
+    KW:   full
+    CIN:  full
+    T:    full
+    COUT: {spatial: 4}

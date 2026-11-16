@@ -1,0 +1,158 @@
+{
+  "layer_01_core_features_3": {
+    "problem": {
+      "CIN": 64,
+      "COUT": 64,
+      "HO": 32,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 32,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_01_core_features_3.json"
+  },
+  "layer_02_core_features_7": {
+    "problem": {
+      "CIN": 64,
+      "COUT": 128,
+      "HO": 16,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 16,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_02_core_features_7.json"
+  },
+  "layer_03_core_features_10": {
+    "problem": {
+      "CIN": 128,
+      "COUT": 128,
+      "HO": 16,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 16,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_03_core_features_10.json"
+  },
+  "layer_04_core_features_14": {
+    "problem": {
+      "CIN": 128,
+      "COUT": 256,
+      "HO": 8,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 8,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_04_core_features_14.json"
+  },
+  "layer_05_core_features_17": {
+    "problem": {
+      "CIN": 256,
+      "COUT": 256,
+      "HO": 8,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 8,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_05_core_features_17.json"
+  },
+  "layer_06_core_features_20": {
+    "problem": {
+      "CIN": 256,
+      "COUT": 256,
+      "HO": 8,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 8,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_06_core_features_20.json"
+  },
+  "layer_07_core_features_24": {
+    "problem": {
+      "CIN": 256,
+      "COUT": 512,
+      "HO": 4,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 4,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_07_core_features_24.json"
+  },
+  "layer_08_core_features_27": {
+    "problem": {
+      "CIN": 512,
+      "COUT": 512,
+      "HO": 4,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 4,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_08_core_features_27.json"
+  },
+  "layer_09_core_features_30": {
+    "problem": {
+      "CIN": 512,
+      "COUT": 512,
+      "HO": 4,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 4,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_09_core_features_30.json"
+  },
+  "layer_10_core_features_34": {
+    "problem": {
+      "CIN": 512,
+      "COUT": 512,
+      "HO": 2,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 2,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_10_core_features_34.json"
+  },
+  "layer_11_core_features_37": {
+    "problem": {
+      "CIN": 512,
+      "COUT": 512,
+      "HO": 2,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 2,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_11_core_features_37.json"
+  },
+  "layer_12_core_features_40": {
+    "problem": {
+      "CIN": 512,
+      "COUT": 512,
+      "HO": 2,
+      "KH": 3,
+      "KW": 3,
+      "T": 4,
+      "WO": 2,
+      "shape": "snn-layer"
+    },
+    "schedule": "schedules/layer_12_core_features_40.json"
+  }
+}

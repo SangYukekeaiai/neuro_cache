@@ -1,0 +1,9 @@
+problem:
+  CIN: 4
+  COUT: 4
+  HO: 2
+  KH: 1
+  KW: 1
+  T: 2
+  WO: 1
+  shape: snn-layer

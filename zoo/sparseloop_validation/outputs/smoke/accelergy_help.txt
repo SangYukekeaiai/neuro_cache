@@ -1,0 +1,41 @@
+    _                _                      
+   / \   ___ ___ ___| | ___ _ __ __ _ _   _ 
+  / _ \ / __/ __/ _ \ |/ _ \ '__/ _` | | | |
+ / ___ \ (_| (_|  __/ |  __/ | | (_| | |_| |
+/_/   \_\___\___\___|_|\___|_|  \__, |\__, |
+                                |___/ |___/ 
+
+usage: accelergy [-h] [-o OUTDIR] [-p PRECISION] [-v VERBOSE]
+                 [-f [OUTPUT_FILES ...]] [--oprefix OPREFIX]
+                 [files ...]
+
+Accelergy is an architecture-level energy estimator for accelerator designs.
+Accelergy allows users to describe the architecture of a design with user-
+defined compound components and generates energy estimations according to the
+workload-generated action counts.
+
+positional arguments:
+  files                 list of input files in arbitrary order.Accelergy
+                        parses the top keys of the files to decide the type of
+                        input the file describes, e.g., architecture
+                        description, compound component class descriptions,
+                        etc.
+
+options:
+  -h, --help            show this help message and exit
+  -o OUTDIR, --outdir OUTDIR
+                        Path to output directory that stores the ERT and/or
+                        flattened_architecture and/or energy estimation.
+                        Default is current directory.
+  -p PRECISION, --precision PRECISION
+                        Number of decimal points for generated energy values.
+                        Default is 3.
+  -v VERBOSE, --verbose VERBOSE
+                        If set to 1, Accelergy outputs the verbose version of
+                        the output files Default is 0
+  -f [OUTPUT_FILES ...], --output_files [OUTPUT_FILES ...]
+                        list that contains the desired output files. Options
+                        include: ERT, ERT_summary, ART, ART_summary,
+                        energy_estimation, flattened_arch, and all (which
+                        refers to all possible outputs)
+  --oprefix OPREFIX     prefix that will be added to the output files names.

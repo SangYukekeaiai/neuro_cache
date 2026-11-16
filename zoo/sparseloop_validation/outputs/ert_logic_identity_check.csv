@@ -1,0 +1,2 @@
+operation,count,expected_pJ,accelergy_pJ,relative_error,source_table_sha256
+loas.adder16.add,5,0.00855238,0.00855238,0,cc065634cbce62a1f2698caa679c719fe9628a7aeaa2ef6619113064014aaa50

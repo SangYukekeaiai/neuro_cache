@@ -1,0 +1,30 @@
+{
+  "builder_sha256": "8d9752c24614d52b8b518a71cda0b96ae5caca03de60089554f1c97f0a288146",
+  "characterization_source": "ASAP7 Genus synthesis only, no post-route parasitics; project-default mixed library declarations (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C); reports name PVT_0P77V_0C; unconstrained I/O, no end-to-end 500MHz timing claim; default activity without per-operation VCD.",
+  "pricing_boundary": "Prices only. Physical inventory and local state-access contracts belong to the count model.",
+  "sources": {
+    "architectures": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig1_energy_profiling/configs/arch_manifest.json",
+      "sha256": "59f2a46f1ba4bfa50e12f4dcf1658d12ddded553ac453ffec4c7abb3640dc72f"
+    },
+    "dram": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/energy_table.json",
+      "sha256": "8c3589272e2a68dc9b01847be61f2076fb5dbb84eee7a4dc582671da9ff79942"
+    },
+    "hardware": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/archx/zoo/snn_edp/hardware.json",
+      "sha256": "b640ca5a71dc22f2c3a246f3db45ee6441b6e2b97d04109bd3d8cb90ccca2053"
+    },
+    "logic": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig1_energy_profiling/archx_config/asap7_genus/logic_prices.json",
+      "sha256": "bd3d1b690bd01f893a4d3e0111dab3b22372b8fbec8b3a1bda008c068693d6a0"
+    },
+    "memory": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig1_energy_profiling/archx_config/memory/memory_prices.json",
+      "sha256": "30ac465f6b20897db753ea3cbeb2aacd43a091873bffc52bcf699e8658ed01d0"
+    }
+  },
+  "table": "archx_config/energy_table_asap7_syn.json",
+  "table_sha256": "cc065634cbce62a1f2698caa679c719fe9628a7aeaa2ef6619113064014aaa50",
+  "variants": 12
+}

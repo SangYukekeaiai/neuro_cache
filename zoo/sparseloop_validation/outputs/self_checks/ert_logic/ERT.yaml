@@ -1,0 +1,8 @@
+ERT:
+  version: 0.3
+  tables:
+  - name: audit.adder16
+    actions:
+    - name: add
+      arguments: null
+      energy: 0.001710476

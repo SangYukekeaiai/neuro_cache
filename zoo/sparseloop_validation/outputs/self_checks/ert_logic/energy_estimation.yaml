@@ -1,0 +1,6 @@
+energy_estimation:
+  version: 0.3
+  components:
+  - name: audit.adder16
+    energy: 0.00855238
+  Total: 0.00855238

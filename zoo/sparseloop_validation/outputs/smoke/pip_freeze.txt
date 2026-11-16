@@ -1,0 +1,7 @@
+accelergy @ file:///home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/accelergy
+numpy @ file:///home/conda/feedstock_root/build_artifacts/numpy_1747544640217/work/dist/numpy-2.2.6-cp310-cp310-linux_x86_64.whl#sha256=d6d964caeef85d00073d27cd62b46883d275b3d8162f723f0fcabbd0b3cc3f9d
+packaging @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_packaging_1785888127/work
+pyfiglet==1.0.4
+PyYAML @ file:///home/conda/feedstock_root/build_artifacts/pyyaml_1770223234623/work
+SCons @ file:///home/conda/feedstock_root/build_artifacts/scons_1787823009232/work
+yamlordereddictloader==0.4.2

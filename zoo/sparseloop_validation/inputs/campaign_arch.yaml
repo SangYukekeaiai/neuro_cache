@@ -1,0 +1,34 @@
+# Campaign hardware for the 5-arch x 8-benchmark x 500-sample weight-trace
+# campaign. Derived from zoo/fig3_design_space/arch.yaml with three
+# user-directed changes (2026-11-10):
+#   - num_pes: 32 -> 4          (each node is limited to exactly 4 PEs)
+#   - L1 weight: 30720 -> 32768 (32 KB exactly)
+#   - L2 weight: 1966080 -> 2097152 (2 MB exactly, was 15/16 of 2 MB)
+# psum/vmem capacities, node count, levels, bitwidths, and DRAM occupancy are
+# unchanged from fig3. Unlike fig3, there is no `problem:` block here: each
+# benchmark layer's workload dims come from its capture meta.json.
+arch:
+  bitwidths:
+    BW_WEIGHT: 8
+    BW_PSUM: 16
+    BW_VMEM: 32
+    DRAM_LATENCY: 0.25  # read only by nocsim (per-packet DRAM occupancy, 64 GB/s at 500 MHz); the scheduler ignores it
+  single_node: false
+  storage:
+  - name: NodeLevel
+    instances: 16
+    pe:
+      num_pes: 4
+    local_buffer:
+      entries:
+        weight: 32768
+        psum: 1024
+        vmem: 1024
+  - name: NoCLevel
+    entries:
+      weight: 2097152
+      psum: 65536
+      vmem: 65536
+    instances: 1
+  - name: OffChip
+    instances: 1

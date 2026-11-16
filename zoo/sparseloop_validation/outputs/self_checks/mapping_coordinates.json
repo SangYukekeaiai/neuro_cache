@@ -1,0 +1,1053 @@
+{
+  "layer_01_core_features_3": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 64,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 2,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "J",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 4,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "K",
+        "dimension": "WO",
+        "extent": 4,
+        "coefficient": 2,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "L",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 8,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "M",
+        "dimension": "WO",
+        "extent": 4,
+        "coefficient": 8,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "N",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 16,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  },
+  "layer_02_core_features_7": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 64,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "WO",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 4,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "J",
+        "dimension": "HO",
+        "extent": 8,
+        "coefficient": 2,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "K",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 8,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "L",
+        "dimension": "COUT",
+        "extent": 2,
+        "coefficient": 64,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  },
+  "layer_03_core_features_10": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 128,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 2,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "J",
+        "dimension": "HO",
+        "extent": 4,
+        "coefficient": 2,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "K",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 4,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "L",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 8,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "M",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 8,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "N",
+        "dimension": "COUT",
+        "extent": 2,
+        "coefficient": 64,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  },
+  "layer_04_core_features_14": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 128,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "HO",
+        "extent": 4,
+        "coefficient": 2,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "J",
+        "dimension": "WO",
+        "extent": 4,
+        "coefficient": 2,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "K",
+        "dimension": "COUT",
+        "extent": 2,
+        "coefficient": 64,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "L",
+        "dimension": "COUT",
+        "extent": 2,
+        "coefficient": 128,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  },
+  "layer_05_core_features_17": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 256,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "HO",
+        "extent": 4,
+        "coefficient": 2,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "J",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 2,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "K",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 4,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "L",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 64,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  },
+  "layer_06_core_features_20": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 256,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "HO",
+        "extent": 4,
+        "coefficient": 2,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "J",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 2,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "K",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 4,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "L",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 64,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  },
+  "layer_07_core_features_24": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 256,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 2,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "HO",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "J",
+        "dimension": "COUT",
+        "extent": 8,
+        "coefficient": 64,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  },
+  "layer_08_core_features_27": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 512,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "WO",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 2,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "J",
+        "dimension": "COUT",
+        "extent": 8,
+        "coefficient": 64,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  },
+  "layer_09_core_features_30": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 512,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "WO",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 2,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "J",
+        "dimension": "COUT",
+        "extent": 8,
+        "coefficient": 64,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  },
+  "layer_10_core_features_34": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 512,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "COUT",
+        "extent": 8,
+        "coefficient": 64,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  },
+  "layer_11_core_features_37": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 512,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "COUT",
+        "extent": 8,
+        "coefficient": 64,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  },
+  "layer_12_core_features_40": {
+    "split_indices_inner_to_outer": [
+      {
+        "label": "A",
+        "dimension": "COUT",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeSpatial"
+      },
+      {
+        "label": "B",
+        "dimension": "KH",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "C",
+        "dimension": "KW",
+        "extent": 3,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "D",
+        "dimension": "CIN",
+        "extent": 512,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "E",
+        "dimension": "T",
+        "extent": 4,
+        "coefficient": 1,
+        "level": "NodeTemporalUnordered"
+      },
+      {
+        "label": "F",
+        "dimension": "COUT",
+        "extent": 16,
+        "coefficient": 4,
+        "level": "NoCSpatial"
+      },
+      {
+        "label": "G",
+        "dimension": "WO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "NoCTemporal"
+      },
+      {
+        "label": "H",
+        "dimension": "HO",
+        "extent": 2,
+        "coefficient": 1,
+        "level": "DRAMTemporal"
+      },
+      {
+        "label": "I",
+        "dimension": "COUT",
+        "extent": 8,
+        "coefficient": 64,
+        "level": "DRAMTemporal"
+      }
+    ],
+    "source_temporal_order": "outer-to-inner; explicitly reversed for Timeloop",
+    "dimension_coordinate_bijections_verified": true,
+    "node_fanout": 16,
+    "PE_fanout_per_node": 4,
+    "node_temporal_order": "not specified by schedule; native LoAS T-bit-vector execution is not a scalar MAC nest",
+    "status": "coordinate representation only; workload/SAF correctness not yet established"
+  }
+}

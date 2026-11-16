@@ -1,0 +1,77 @@
+{
+  "arch": "spinalflow",
+  "chain_packet_hops": 6,
+  "cycle_source": {
+    "format": "wcts",
+    "lif_none_means": "zero_extra_count_cycles",
+    "mac_reduction": "max_over_cores",
+    "steps": 2
+  },
+  "dram_accesses": 1,
+  "dram_bytes": 64,
+  "dram_payload_bytes": 32,
+  "dram_transactions": 1,
+  "eventsim": {
+    "count_cycles": 12,
+    "dram_cycles": 1,
+    "multicast_cycles": 13,
+    "total_cycles": 37,
+    "unicast_cycles": 30
+  },
+  "free_boundaries": {
+    "is_psum_dram_free": true,
+    "is_psum_gb_free": true,
+    "is_vmem_dram_free": true,
+    "is_vmem_gb_free": true
+  },
+  "frequency_hz": 500000000,
+  "gb_reads": 2,
+  "gb_writes": 1,
+  "inputs": {
+    "arch_config": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/examples/arch/spinalflow_inst16.yaml",
+      "sha256": "6e8724e0aba8290ce06449675e1610705dc468adfa2133f20e8bdc2ee6d7f02a"
+    },
+    "arch_name": "spinalflow",
+    "eventsim": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/src/lays/nocsim/eventsim/eventsim",
+      "sha256": "28e3dad50ad0ad71481ed64ff40671fa7605f56961237b3fd93845da3437e3d0"
+    },
+    "frequency_hz": 500000000,
+    "sample": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/nocsim/.testtmp/pytest/test_resume_checks_inputs_and_0/sample_00000.wcts",
+      "sha256": "a26fbc23f3ff1b8ebd0a2ce66b18deaa9c8d5fb27df5c9f04ad6d54b05a3c861"
+    },
+    "schedule": {
+      "path": "/u/yyu9/projects/neuro_cache_wcache/zoo/fig12_edp/nocsim/.testtmp/pytest/test_resume_checks_inputs_and_0/schedule.json",
+      "sha256": "2b1c78b3a6491cee742a52b760339b8c3a0c194b9f03a7564de13dc572a6f3a7"
+    },
+    "schema": "fig12_noc_v1",
+    "source_sha256": "a1ee54478870fab5fd7ec5803467097f08c125d05575cf53e4ba41f53afc865d"
+  },
+  "k_chain_packet_hops": 4,
+  "l1_delivery_bytes": 128,
+  "layer_name": "layer_0",
+  "psum_boundary_bytes": 0,
+  "sample_idx": 0,
+  "t_chain_packet_hops": 2,
+  "tc_sha256": "097e1afc5a314477480d27eb79bbf7fc1a2da2a0833d232d238ad616dcf96010",
+  "time_seconds": 7.4e-08,
+  "topology": {
+    "X": 2,
+    "Y": 2,
+    "dram_port": 8,
+    "gb_port": 4
+  },
+  "total_cycles": 37,
+  "trace_dir": "tiny_native",
+  "transaction_count": 25,
+  "units": {
+    "dram_burst_bytes": 64,
+    "gb_access_bytes": 32
+  },
+  "vmem_boundary_bytes": 0,
+  "weight_multicast_packet_hops": 8,
+  "weight_packet_hops": 8,
+  "weight_unicast_packet_hops": 0
+}

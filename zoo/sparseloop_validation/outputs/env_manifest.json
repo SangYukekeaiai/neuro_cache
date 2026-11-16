@@ -1,0 +1,72 @@
+{
+  "status": "smoke_passed",
+  "host": "euser2",
+  "installer_pid": 2152786,
+  "prefix_relative": "vendor/envs/tlv",
+  "build_threads": 2,
+  "micro22_artifact_commit": "de0374aa00fdf23c1fe5b0715ceb1cbada6d9661",
+  "infrastructure_commit": "4a958cf1311609765179c1f5500ae19d44f0432f",
+  "timeloop_commit": "1eb0fd0a62fea1f3df4580a1b6c7ae6238772fbb",
+  "accelergy_commit": "34df8e87a889ae55cecba58992d4573466b40565",
+  "accelergy_package_version": "0.3",
+  "actual_data_schema": {
+    "distribution": "real-data",
+    "data_file_path": "binary tensor-mask text file; first projected coordinate fastest"
+  },
+  "smoke_passed": true,
+  "tier_b_c_runs": 0,
+  "compiler_module": "gcc/gcc-9.1.0",
+  "build_failure_retained": "outputs/install_gcc8_link_failure.log",
+  "source_models_modified": false,
+  "local_sources": {
+    "src/audit_mapping.py": "938d1b58e7c55ae1552c4311eca5848166b303e884db86367defbcd1ff5424c6",
+    "src/extract_real_counts.py": "6c02a89d77e41cbc8cfca1a48975e84cac2c686fcc2bcb4280da67a4ee8ab751",
+    "src/ingest.py": "44b79b1c76b32a5aa506e8810fcd660431f559d795996978bce0071e9cf1a6f0",
+    "src/install_stokes.sh": "3cb0babf6c7f6d8a3d1d99ea8154674a2fe2c0d3ffb9a901d2b3808dec3d07d3",
+    "src/measure_density.py": "50f723105c8dd3ac6e9c2a6a178fa7e37889aa12d96269b51e33b30535e37b66",
+    "src/pin_build_dependencies.sh": "ac0af8d931a6ad4da004b15137b80ab5081b28f06dc3cad4cdfbffa02b459e71",
+    "src/run_smoke_stokes.sh": "79ac01a40840afa04955573803ae6267ce4483ed4af4c51dce8be1d4908fa612",
+    "src/smoke_stokes.py": "46a2b2b9c8e8978a1486d68ed9fd02c04d1e0fcfe25ff63f90441fd18aa24cdf",
+    "src/verify_inputs.py": "6a5d3769afcbf4fd45a6cfd5994e9f271c5b844b4800f5e334cd2afd7739d61e"
+  },
+  "build_failures_retained": [
+    "outputs/install_gcc8_link_failure.log",
+    "outputs/install_gcc11_warning_failure.log",
+    "outputs/install_gcc9_dependency_failure.log",
+    "outputs/install_module_reload_failure.log",
+    "outputs/install_stale_yaml_objects.log"
+  ],
+  "dependency_pins": {
+    "yaml-cpp": "0.6.3",
+    "libconfig": "1.7.2",
+    "boost-cpp": "1.74"
+  },
+  "completed_utc": "2026-11-16T07:03:00.845495+00:00",
+  "hostname": "euser2",
+  "python": "3.10.22 | packaged by conda-forge | (main, Oct  6 2026, 23:02:24) [GCC 14.4.0]",
+  "python_executable": "/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/bin/python",
+  "pinned_backend_files_verified": 299,
+  "compiler": "g++ (GCC) 9.1.0",
+  "command": [
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop/build/timeloop-model",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/smoke_example/aggregated_input.yaml",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/smoke_example/ERT.yaml",
+    "/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/smoke_example/ART.yaml"
+  ],
+  "binary_sha256": "5c23a0448377735d03a7dc05a99df2b6d4efc4781ab8d67cb976ac99f6eeb5cc",
+  "smoke_inputs": {
+    "ERT.yaml": "3f572ee95cde08f2939927a9b229b32d8dca69562c15729e72c5165c281dda7d",
+    "aggregated_input.yaml": "4c61daa40e97dda7d7525bc08939bb50624b86598795e60d0534204f7242f971",
+    "ART.yaml": "c5c485f141d396276469b1a35b2a2a093fdaf1c391fc747f3a7e0e1836bbbbb2"
+  },
+  "outputs": {
+    "outputs/smoke/timeloop-model.map.txt": "4b14db9747d273acabc7a9460b62d057c7f5fd07fe94f3482f95709871287ae8",
+    "outputs/smoke/accelergy_config.yaml": "ccc470a72a06c2c4b1e28e0b57ca47159f9a90e8d4b3387c4ad53052c019a6b4",
+    "outputs/smoke/accelergy_help.txt": "a4c16fb02daf96bf3828ebe1f2f9bc615091f5ba3ab93bc9a97bf7253463e780",
+    "outputs/smoke/timeloop.log": "9bf4647fb91b2761dc19b97ab5ac5fc97714ae4e03f4c016eed2d08b1e059fae",
+    "outputs/smoke/timeloop-model.stats.txt": "18ef646e14e3f523e3ceedc5a8ff7e362ac0907e66b2f56e567d87c358532f35",
+    "outputs/smoke/pip_freeze.txt": "9a9efde8a0349de36306ed785d5d05ee182469362c859e2eefeb23dc8daaaa8e",
+    "outputs/smoke/timeloop-model.map+stats.xml": "94d4b71ece925fc44869811e5e7fdb18fc2623cefa24abad191b7fa3537678bc"
+  },
+  "caveat": "Shipped DSTC example only; no LoAS Tier B/C runs"
+}

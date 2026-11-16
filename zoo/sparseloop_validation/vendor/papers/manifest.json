@@ -1,0 +1,12 @@
+{
+  "loas.pdf": {
+    "url": "https://ruokaiyin.github.io/papers/loas.pdf",
+    "sha256": "ccd210f75ade5e10dd2b03c1859f14616e3d085cd9aa0255e61d933b390f4213",
+    "sections_used": [
+      "IV-A",
+      "IV-B",
+      "IV-C"
+    ],
+    "text_reader": "primary-source PDF extracted by web tool; local pdftotext unavailable"
+  }
+}

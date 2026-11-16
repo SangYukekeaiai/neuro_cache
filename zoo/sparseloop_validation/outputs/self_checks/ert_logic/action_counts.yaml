@@ -1,0 +1,7 @@
+action_counts:
+  version: 0.3
+  local:
+  - name: audit.adder16
+    action_counts:
+    - name: add
+      counts: 5

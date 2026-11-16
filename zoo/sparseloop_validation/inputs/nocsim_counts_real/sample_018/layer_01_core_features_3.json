@@ -1,0 +1,200 @@
+{
+  "arch": "loas",
+  "arm": "spad",
+  "counts": {
+    "A": 21409664,
+    "B": 1756192.0,
+    "CIN": 64,
+    "COUT": 64,
+    "HO": 32,
+    "Hin": 32,
+    "L": 262144,
+    "O": 34924.0,
+    "O_source": "next_layer_input_density",
+    "S_or": 109762,
+    "S_sum": 334526,
+    "T": 4,
+    "WO": 32,
+    "W_o": 8731.0,
+    "Win": 32,
+    "cout_n": 4,
+    "d_out": 0.1332244873046875,
+    "density_layer": "layer_02_core_features_7",
+    "kernel": 3,
+    "weight_bytes": 7024768
+  },
+  "layer": "layer_01_core_features_3",
+  "noc": {
+    "arch": "loas",
+    "chain_packet_hops": 0,
+    "cycle_source": {
+      "format": "wcts",
+      "lif_none_means": "zero_extra_count_cycles",
+      "mac_reduction": "max_over_cores",
+      "steps": 1024
+    },
+    "dram_accesses": 73728,
+    "dram_bytes": 4718592,
+    "dram_payload_bytes": 4718592,
+    "dram_transactions": 128,
+    "eventsim": {
+      "count_cycles": 1756192,
+      "dram_cycles": 36864,
+      "multicast_cycles": 0,
+      "total_cycles": 114794,
+      "unicast_cycles": 4744
+    },
+    "free_boundaries": {
+      "is_psum_dram_free": true,
+      "is_psum_gb_free": true,
+      "is_vmem_dram_free": true,
+      "is_vmem_gb_free": true
+    },
+    "frequency_hz": 500000000,
+    "gb_reads": 1152,
+    "gb_writes": 147456,
+    "k_chain_packet_hops": 0,
+    "l1_delivery_bytes": 36864,
+    "layer_name": "layer_01_core_features_3",
+    "psum_boundary_bytes": 0,
+    "sample_idx": 18,
+    "t_chain_packet_hops": 0,
+    "tc_sha256": "55ab583ec0044e6e009f6b63f28c7a9df2f09d5e6ac8246fd1adedfc0beb2da0",
+    "time_seconds": 0.000229588,
+    "topology": {
+      "X": 1,
+      "Y": 16,
+      "dram_port": 33,
+      "gb_port": 16
+    },
+    "total_cycles": 114794,
+    "trace_dir": "loas_vgg16_T4_n500",
+    "transaction_count": 32912,
+    "units": {
+      "dram_burst_bytes": 64,
+      "gb_access_bytes": 32
+    },
+    "vmem_boundary_bytes": 0,
+    "weight_multicast_packet_hops": 0,
+    "weight_packet_hops": 9792,
+    "weight_unicast_packet_hops": 9792
+  },
+  "operations": {
+    "loas.adder16.add": {
+      "category": "core",
+      "count": 21409664.0,
+      "count_expression": "A"
+    },
+    "loas.and_gate.and": {
+      "category": "core",
+      "count": 56198144.0,
+      "count_expression": "32*B"
+    },
+    "loas.bsf32.scan": {
+      "category": "core",
+      "count": 5352416.0,
+      "count_expression": "A/cout_n"
+    },
+    "loas.l1_weight_spad.read": {
+      "category": "memory",
+      "count": 1756192.0,
+      "count_expression": "B"
+    },
+    "loas.l1_weight_spad.write": {
+      "category": "memory",
+      "count": 9216.0,
+      "count_expression": "l1_delivery_bytes*8/32.0"
+    },
+    "loas.lif_unit.step": {
+      "category": "core",
+      "count": 262144.0,
+      "count_expression": "L"
+    },
+    "loas.output_fifo.push": {
+      "category": "core",
+      "count": 8731.0,
+      "count_expression": "W_o"
+    },
+    "loas.reg16.read": {
+      "category": "core",
+      "count": 262144.0,
+      "count_expression": "L"
+    },
+    "loas.reg16.rmw": {
+      "category": "core",
+      "count": 21409664.0,
+      "count_expression": "A"
+    },
+    "loas.spike_fifo.pop": {
+      "category": "core",
+      "count": 1756192.0,
+      "count_expression": "B"
+    },
+    "loas.spike_fifo.push": {
+      "category": "core",
+      "count": 1756192.0,
+      "count_expression": "B"
+    },
+    "loas.spike_prefix_scan32.scan": {
+      "category": "core",
+      "count": 1756192.0,
+      "count_expression": "B"
+    },
+    "loas.weight_fifo.pop": {
+      "category": "core",
+      "count": 1756192.0,
+      "count_expression": "B"
+    },
+    "loas.weight_fifo.push": {
+      "category": "core",
+      "count": 1756192.0,
+      "count_expression": "B"
+    },
+    "shared.ddr4.read": {
+      "category": "memory",
+      "count": 73728.0,
+      "count_expression": "dram_accesses"
+    },
+    "shared.ddr4_io.byte": {
+      "category": "memory",
+      "count": 4718592.0,
+      "count_expression": "dram_bytes"
+    },
+    "shared.gb.read": {
+      "category": "memory",
+      "count": 1152.0,
+      "count_expression": "gb_reads"
+    },
+    "shared.gb.write": {
+      "category": "memory",
+      "count": 147456.0,
+      "count_expression": "gb_writes"
+    },
+    "shared.link.hop": {
+      "category": "memory",
+      "count": 9792.0,
+      "count_expression": "weight_packet_hops+chain_packet_hops"
+    },
+    "shared.router.hop": {
+      "category": "memory",
+      "count": 9792.0,
+      "count_expression": "weight_packet_hops+chain_packet_hops"
+    }
+  },
+  "original_input_hashes": {
+    "cache_a.csv": "65933f38b00393815ea3bdce931677432f0b14aad612fa52e217065f024060cd",
+    "cache_b.csv": "2c8c60812b04e79a5a0d7e2ed40c2ced2ac6716503f5b42a598f6c8aab8d372a",
+    "case.json": "ee5fa6b9d41be4bd3a8547aa1c1342463e05f42da40e45f2e5e749e3e304ea9f",
+    "counts.json": "17d94aa6f6900d36428527b959a71b2a6f1b1dbccfbf1fb171253831fb2b4b88",
+    "noc/result.json": "7e736ff6fe3d41e4a4bb2a25fa7effbac3939683c8730ccf95f1768e9c966cb1"
+  },
+  "original_noc_input_hashes": {
+    "arch_config": "f92339bfd9aeb2a2c1d0bb83d10a0842f242ee5c8195b5cb0cddfefaf2d76504",
+    "eventsim": "6c14a1ad5a7c076ea64574f602baf884594bfea6a1ce4604a104bbe60d5b20e5",
+    "sample": "404620f970d31beb1339ce65fc847a0344b37660202c02ca71099b2ce6b2ca7f",
+    "schedule": "617abf4dc1b4ec36c8141ab7947da29dd62ecef8c6494836018166031b906716"
+  },
+  "sample": 18,
+  "source_csv_sha256": "5205fbff4a0f607e97e988ba71629a38c385b434be47f5bf6511f54da6afadbf",
+  "total_cycles": 114794
+}

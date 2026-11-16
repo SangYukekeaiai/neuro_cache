@@ -1,0 +1,1602 @@
+Channels:
+ - conda-forge
+Platform: linux-64
+Collecting package metadata (repodata.json): ...working... done
+Solving environment: ...working... done
+
+## Package Plan ##
+
+  environment location: /home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv
+
+  added / updated specs:
+    - boost-cpp=1.74
+    - libconfig
+    - ncurses
+    - numpy
+    - pip
+    - python=3.10
+    - pyyaml
+    - scons
+    - yaml-cpp=0.7
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    _openmp_mutex-4.5          |           20_gnu          28 KB  conda-forge
+    boost-cpp-1.74.0           |       h75c5d50_8        16.2 MB  conda-forge
+    bzip2-1.0.8                |      hda65f42_10         252 KB  conda-forge
+    ca-certificates-2026.10.23 |       hbd8a1cb_0         127 KB  conda-forge
+    icu-70.1                   |       h27087fc_0        13.5 MB  conda-forge
+    ld_impl_linux-64-2.46.1    |default_hbd61a6d_103         725 KB  conda-forge
+    libblas-3.11.0             |12_h4a7cf45_openblas          18 KB  conda-forge
+    libcblas-3.11.0            |12_h0358290_openblas          18 KB  conda-forge
+    libconfig-1.7.3            |       hd2095e1_1         116 KB  conda-forge
+    libexpat-2.9.0             |       hd2095e1_0          77 KB  conda-forge
+    libffi-3.7.0               |       h81df57d_1          66 KB  conda-forge
+    libgcc-16.2.0              |       ha9f2e26_7         1.0 MB  conda-forge
+    libgcc-ng-16.2.0           |       h69a702a_7          28 KB  conda-forge
+    libgfortran-16.2.0         |       h69a702a_7          28 KB  conda-forge
+    libgfortran5-16.2.0        |       h6b99dfc_7         2.4 MB  conda-forge
+    libgomp-16.2.0             |       he0feb66_7         626 KB  conda-forge
+    liblapack-3.11.0           |12_h47877c9_openblas          18 KB  conda-forge
+    liblzma-5.8.3              |       hb03c661_1         110 KB  conda-forge
+    liblzma-devel-5.8.3        |       hb03c661_1         480 KB  conda-forge
+    libnsl-2.0.1               |       hb9d3cd8_1          33 KB  conda-forge
+    libopenblas-0.3.34         |pthreads_hf13c14d_2         6.5 MB  conda-forge
+    libsqlite-3.53.4           |     h0737f62_102         947 KB  conda-forge
+    libstdcxx-16.2.0           |       h934c35e_7         6.3 MB  conda-forge
+    libstdcxx-ng-16.2.0        |       hdf11a46_7          28 KB  conda-forge
+    libuuid-2.42.4             |       hcfc3c73_1          35 KB  conda-forge
+    libxcrypt-4.4.38           |       h280c20c_0         100 KB  conda-forge
+    libzlib-1.3.2              |       h25fd6f3_3          62 KB  conda-forge
+    ncurses-6.6                |       hdb14827_1         890 KB  conda-forge
+    numpy-2.2.6                |  py310hefbff90_0         7.5 MB  conda-forge
+    openssl-3.6.5              |       h781a0a9_0         3.0 MB  conda-forge
+    packaging-26.3             |     pyhc364b38_0         114 KB  conda-forge
+    pip-26.2.1                 |     pyh8b19718_0         1.1 MB  conda-forge
+    python-3.10.22             |h267e890_0_cpython        24.2 MB  conda-forge
+    python_abi-3.10            |          9_cp310           7 KB  conda-forge
+    pyyaml-6.0.3               |  py310h3406613_1         172 KB  conda-forge
+    readline-8.3               |       hd6e31c0_1         341 KB  conda-forge
+    scons-4.11.1               |  py310hff52083_0         2.5 MB  conda-forge
+    setuptools-84.0.0          |     pyh332efcf_0         512 KB  conda-forge
+    tk-8.6.13                  | noxft_h1df4ec4_4         3.4 MB  conda-forge
+    tzdata-2026e               |       h5d301ff_0         116 KB  conda-forge
+    wheel-0.48.0               |     pyhd8ed1ab_0          34 KB  conda-forge
+    xz-5.8.3                   |       ha02ee65_1          23 KB  conda-forge
+    xz-gpl-tools-5.8.3         |       ha02ee65_1          39 KB  conda-forge
+    xz-tools-5.8.3             |       hb03c661_1          94 KB  conda-forge
+    yaml-0.2.5                 |       hebe6cf0_3          83 KB  conda-forge
+    yaml-cpp-0.7.0             |       h59595ed_3         203 KB  conda-forge
+    zstd-1.5.7                 |       hb78ec9c_7         587 KB  conda-forge
+    ------------------------------------------------------------
+                                           Total:        94.8 MB
+
+The following NEW packages will be INSTALLED:
+
+  _openmp_mutex      conda-forge/linux-64::_openmp_mutex-4.5-20_gnu 
+  boost-cpp          conda-forge/linux-64::boost-cpp-1.74.0-h75c5d50_8 
+  bzip2              conda-forge/linux-64::bzip2-1.0.8-hda65f42_10 
+  ca-certificates    conda-forge/noarch::ca-certificates-2026.10.23-hbd8a1cb_0 
+  icu                conda-forge/linux-64::icu-70.1-h27087fc_0 
+  ld_impl_linux-64   conda-forge/linux-64::ld_impl_linux-64-2.46.1-default_hbd61a6d_103 
+  libblas            conda-forge/linux-64::libblas-3.11.0-12_h4a7cf45_openblas 
+  libcblas           conda-forge/linux-64::libcblas-3.11.0-12_h0358290_openblas 
+  libconfig          conda-forge/linux-64::libconfig-1.7.3-hd2095e1_1 
+  libexpat           conda-forge/linux-64::libexpat-2.9.0-hd2095e1_0 
+  libffi             conda-forge/linux-64::libffi-3.7.0-h81df57d_1 
+  libgcc             conda-forge/linux-64::libgcc-16.2.0-ha9f2e26_7 
+  libgcc-ng          conda-forge/linux-64::libgcc-ng-16.2.0-h69a702a_7 
+  libgfortran        conda-forge/linux-64::libgfortran-16.2.0-h69a702a_7 
+  libgfortran5       conda-forge/linux-64::libgfortran5-16.2.0-h6b99dfc_7 
+  libgomp            conda-forge/linux-64::libgomp-16.2.0-he0feb66_7 
+  liblapack          conda-forge/linux-64::liblapack-3.11.0-12_h47877c9_openblas 
+  liblzma            conda-forge/linux-64::liblzma-5.8.3-hb03c661_1 
+  liblzma-devel      conda-forge/linux-64::liblzma-devel-5.8.3-hb03c661_1 
+  libnsl             conda-forge/linux-64::libnsl-2.0.1-hb9d3cd8_1 
+  libopenblas        conda-forge/linux-64::libopenblas-0.3.34-pthreads_hf13c14d_2 
+  libsqlite          conda-forge/linux-64::libsqlite-3.53.4-h0737f62_102 
+  libstdcxx          conda-forge/linux-64::libstdcxx-16.2.0-h934c35e_7 
+  libstdcxx-ng       conda-forge/linux-64::libstdcxx-ng-16.2.0-hdf11a46_7 
+  libuuid            conda-forge/linux-64::libuuid-2.42.4-hcfc3c73_1 
+  libxcrypt          conda-forge/linux-64::libxcrypt-4.4.38-h280c20c_0 
+  libzlib            conda-forge/linux-64::libzlib-1.3.2-h25fd6f3_3 
+  ncurses            conda-forge/linux-64::ncurses-6.6-hdb14827_1 
+  numpy              conda-forge/linux-64::numpy-2.2.6-py310hefbff90_0 
+  openssl            conda-forge/linux-64::openssl-3.6.5-h781a0a9_0 
+  packaging          conda-forge/noarch::packaging-26.3-pyhc364b38_0 
+  pip                conda-forge/noarch::pip-26.2.1-pyh8b19718_0 
+  python             conda-forge/linux-64::python-3.10.22-h267e890_0_cpython 
+  python_abi         conda-forge/noarch::python_abi-3.10-9_cp310 
+  pyyaml             conda-forge/linux-64::pyyaml-6.0.3-py310h3406613_1 
+  readline           conda-forge/linux-64::readline-8.3-hd6e31c0_1 
+  scons              conda-forge/linux-64::scons-4.11.1-py310hff52083_0 
+  setuptools         conda-forge/noarch::setuptools-84.0.0-pyh332efcf_0 
+  tk                 conda-forge/linux-64::tk-8.6.13-noxft_h1df4ec4_4 
+  tzdata             conda-forge/noarch::tzdata-2026e-h5d301ff_0 
+  wheel              conda-forge/noarch::wheel-0.48.0-pyhd8ed1ab_0 
+  xz                 conda-forge/linux-64::xz-5.8.3-ha02ee65_1 
+  xz-gpl-tools       conda-forge/linux-64::xz-gpl-tools-5.8.3-ha02ee65_1 
+  xz-tools           conda-forge/linux-64::xz-tools-5.8.3-hb03c661_1 
+  yaml               conda-forge/linux-64::yaml-0.2.5-hebe6cf0_3 
+  yaml-cpp           conda-forge/linux-64::yaml-cpp-0.7.0-h59595ed_3 
+  zstd               conda-forge/linux-64::zstd-1.5.7-hb78ec9c_7 
+
+
+
+Downloading and Extracting Packages: ...working...python-3.10.22       | 24.2 MB   |            |   0% 
+boost-cpp-1.74.0     | 16.2 MB   |            |   0% [A
+
+icu-70.1             | 13.5 MB   |            |   0% [A[A
+
+
+numpy-2.2.6          | 7.5 MB    |            |   0% [A[A[A
+
+
+
+libopenblas-0.3.34   | 6.5 MB    |            |   0% [A[A[A[A
+
+
+
+
+libstdcxx-16.2.0     | 6.3 MB    |            |   0% [A[A[A[A[A
+
+
+
+
+
+tk-8.6.13            | 3.4 MB    |            |   0% [A[A[A[A[A[A
+
+
+
+
+
+
+openssl-3.6.5        | 3.0 MB    |            |   0% [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scons-4.11.1         | 2.5 MB    |            |   0% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+libgfortran5-16.2.0  | 2.4 MB    |            |   0% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+pip-26.2.1           | 1.1 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+libgcc-16.2.0        | 1.0 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+libsqlite-3.53.4     | 947 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+ncurses-6.6          | 890 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+ld_impl_linux-64-2.4 | 725 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgomp-16.2.0       | 626 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+zstd-1.5.7           | 587 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setuptools-84.0.0    | 512 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+liblzma-devel-5.8.3  | 480 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[Apython-3.10.22       | 24.2 MB   | #9         |  19% python-3.10.22       | 24.2 MB   | ########## | 100% 
+boost-cpp-1.74.0     | 16.2 MB   |            |   0% [A
+boost-cpp-1.74.0     | 16.2 MB   | ########## | 100% [A
+
+icu-70.1             | 13.5 MB   |            |   0% [A[A
+
+icu-70.1             | 13.5 MB   | ########## | 100% [A[A
+
+
+numpy-2.2.6          | 7.5 MB    |            |   0% [A[A[A
+
+
+numpy-2.2.6          | 7.5 MB    | ########## | 100% [A[A[A
+
+
+
+libopenblas-0.3.34   | 6.5 MB    |            |   0% [A[A[A[A
+
+
+
+libopenblas-0.3.34   | 6.5 MB    | ########## | 100% [A[A[A[A
+
+
+
+
+libstdcxx-16.2.0     | 6.3 MB    |            |   0% [A[A[A[A[A
+
+
+
+
+libstdcxx-16.2.0     | 6.3 MB    | ########## | 100% [A[A[A[A[A
+
+
+
+
+
+tk-8.6.13            | 3.4 MB    |            |   0% [A[A[A[A[A[A
+
+
+
+
+
+tk-8.6.13            | 3.4 MB    | ########## | 100% [A[A[A[A[A[A
+
+
+
+
+
+
+openssl-3.6.5        | 3.0 MB    |            |   1% [A[A[A[A[A[A[A
+
+
+
+
+
+
+openssl-3.6.5        | 3.0 MB    | ########## | 100% [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scons-4.11.1         | 2.5 MB    |            |   1% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scons-4.11.1         | 2.5 MB    | ########## | 100% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+libgfortran5-16.2.0  | 2.4 MB    |            |   1% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+libgfortran5-16.2.0  | 2.4 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+pip-26.2.1           | 1.1 MB    | 1          |   1% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+pip-26.2.1           | 1.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+libgcc-16.2.0        | 1.0 MB    | 1          |   2% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+libgcc-16.2.0        | 1.0 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+libsqlite-3.53.4     | 947 KB    | 1          |   2% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+libsqlite-3.53.4     | 947 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+ncurses-6.6          | 890 KB    | 1          |   2% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+ncurses-6.6          | 890 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+ld_impl_linux-64-2.4 | 725 KB    | 2          |   2% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+ld_impl_linux-64-2.4 | 725 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgomp-16.2.0       | 626 KB    | 2          |   3% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgomp-16.2.0       | 626 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+zstd-1.5.7           | 587 KB    | 2          |   3% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+zstd-1.5.7           | 587 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setuptools-84.0.0    | 512 KB    | 3          |   3% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setuptools-84.0.0    | 512 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+liblzma-devel-5.8.3  | 480 KB    | 3          |   3% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+liblzma-devel-5.8.3  | 480 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+icu-70.1             | 13.5 MB   | ########## | 100% [A[A
+
+icu-70.1             | 13.5 MB   | ########## | 100% [A[Apython-3.10.22       | 24.2 MB   | ########## | 100% python-3.10.22       | 24.2 MB   | ########## | 100% 
+
+
+
+libopenblas-0.3.34   | 6.5 MB    | ########## | 100% [A[A[A[A
+
+
+
+libopenblas-0.3.34   | 6.5 MB    | ########## | 100% [A[A[A[A
+
+
+
+
+libstdcxx-16.2.0     | 6.3 MB    | ########## | 100% [A[A[A[A[A
+
+
+
+
+libstdcxx-16.2.0     | 6.3 MB    | ########## | 100% [A[A[A[A[A
+
+
+numpy-2.2.6          | 7.5 MB    | ########## | 100% [A[A[A
+
+
+numpy-2.2.6          | 7.5 MB    | ########## | 100% [A[A[A
+
+
+
+
+
+
+openssl-3.6.5        | 3.0 MB    | ########## | 100% [A[A[A[A[A[A[A
+
+
+
+
+
+
+openssl-3.6.5        | 3.0 MB    | ########## | 100% [A[A[A[A[A[A[A
+
+
+
+
+
+tk-8.6.13            | 3.4 MB    | ########## | 100% [A[A[A[A[A[A
+
+
+
+
+
+tk-8.6.13            | 3.4 MB    | ########## | 100% [A[A[A[A[A[A
+
+
+
+
+
+
+
+
+libgfortran5-16.2.0  | 2.4 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+libgfortran5-16.2.0  | 2.4 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+pip-26.2.1           | 1.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+pip-26.2.1           | 1.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+libgcc-16.2.0        | 1.0 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+libgcc-16.2.0        | 1.0 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+libsqlite-3.53.4     | 947 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+libsqlite-3.53.4     | 947 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scons-4.11.1         | 2.5 MB    | ########## | 100% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scons-4.11.1         | 2.5 MB    | ########## | 100% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+ld_impl_linux-64-2.4 | 725 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+ld_impl_linux-64-2.4 | 725 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgomp-16.2.0       | 626 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgomp-16.2.0       | 626 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+zstd-1.5.7           | 587 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+zstd-1.5.7           | 587 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setuptools-84.0.0    | 512 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setuptools-84.0.0    | 512 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+liblzma-devel-5.8.3  | 480 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+liblzma-devel-5.8.3  | 480 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+ncurses-6.6          | 890 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+ncurses-6.6          | 890 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+boost-cpp-1.74.0     | 16.2 MB   | ########## | 100% [A
+boost-cpp-1.74.0     | 16.2 MB   | ########## | 100% [A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                      [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A                                                     
+                                                     [A
+
+                                                     [A[A
+
+
+                                                     [A[A[A
+
+
+
+                                                     [A[A[A[A
+
+
+
+
+                                                     [A[A[A[A[A
+
+
+
+
+
+                                                     [A[A[A[A[A[A
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A done
+Preparing transaction: - \ | / - \ | done
+Verifying transaction: - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | done
+Executing transaction: - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | done
+#
+# To activate this environment, use
+#
+#     $ conda activate /home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+
+Processing /home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/accelergy
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: pyYAML>=1.1 in ./vendor/envs/tlv/lib/python3.10/site-packages (from accelergy==0.3) (6.0.3)
+Collecting yamlordereddictloader>=0.4 (from accelergy==0.3)
+  Downloading yamlordereddictloader-0.4.2-py3-none-any.whl.metadata (3.8 kB)
+Collecting pyfiglet (from accelergy==0.3)
+  Downloading pyfiglet-1.0.4-py3-none-any.whl.metadata (7.4 kB)
+Downloading yamlordereddictloader-0.4.2-py3-none-any.whl (4.2 kB)
+Downloading pyfiglet-1.0.4-py3-none-any.whl (1.8 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 32.2 MB/s  0:00:00
+Building wheels for collected packages: accelergy
+  Building wheel for accelergy (pyproject.toml): started
+  Building wheel for accelergy (pyproject.toml): finished with status 'done'
+  Created wheel for accelergy: filename=accelergy-0.3-py3-none-any.whl size=43913 sha256=b12be859fbeb71d5e49c9d9195789463e2e4fb9e4075648c0ee671e7fdd38a56
+  Stored in directory: /lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/outputs/tmp/pip-ephem-wheel-cache-q2a0vd9x/wheels/24/bc/ad/ebf37563e9b3400291b5105ea829f806b2340b9f3eaf304157
+Successfully built accelergy
+Installing collected packages: yamlordereddictloader, pyfiglet, accelergy
+
+Successfully installed accelergy-0.3 pyfiglet-1.0.4 yamlordereddictloader-0.4.2
+scons: Reading SConscript files ...
+Using dynamic linking.
+scons: done reading SConscript files.
+scons: Building targets ...
+g++ -o build/mapspaces/mapspace-base.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/mapspaces/mapspace-base.cpp
+g++ -o build/mapspaces/mapspace-factory.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/mapspaces/mapspace-factory.cpp
+g++ -o build/mapspaces/subspaces.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/mapspaces/subspaces.cpp
+g++ -o build/mapspaces/uber.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/mapspaces/uber.cpp
+g++ -o build/search/search-factory.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/search/search-factory.cpp
+g++ -o build/search/exhaustive.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/search/exhaustive.cpp
+g++ -o build/search/hybrid.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/search/hybrid.cpp
+g++ -o build/search/linear-pruned.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/search/linear-pruned.cpp
+g++ -o build/search/random-pruned.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/search/random-pruned.cpp
+g++ -o build/search/random.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/search/random.cpp
+g++ -o build/applications/mapper/mapper.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/applications/mapper/mapper.cpp
+g++ -o build/applications/mapper/mapper-thread.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/applications/mapper/mapper-thread.cpp
+g++ -o build/applications/design-space/arch.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/applications/design-space/arch.cpp
+g++ -o build/applications/design-space/problem.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/applications/design-space/problem.cpp
+g++ -o build/applications/design-space/design-space.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/applications/design-space/design-space.cpp
+g++ -o build/applications/design-space/main.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/applications/design-space/main.cpp
+g++ -o build/loop-analysis/coordinate-space-tile-info.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/loop-analysis/coordinate-space-tile-info.cpp
+g++ -o build/loop-analysis/loop-state.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/loop-analysis/loop-state.cpp
+g++ -o build/loop-analysis/tiling.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/loop-analysis/tiling.cpp
+g++ -o build/loop-analysis/tiling-tile-info.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/loop-analysis/tiling-tile-info.cpp
+g++ -o build/loop-analysis/point.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/loop-analysis/point.cpp
+g++ -o build/loop-analysis/point-set-aahr.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/loop-analysis/point-set-aahr.cpp
+g++ -o build/loop-analysis/point-set-multi-aahr.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/loop-analysis/point-set-multi-aahr.cpp
+g++ -o build/loop-analysis/nest-analysis-tile-info.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/loop-analysis/nest-analysis-tile-info.cpp
+g++ -o build/loop-analysis/nest-analysis.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/loop-analysis/nest-analysis.cpp
+g++ -o build/loop-analysis/aahr-carve.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/loop-analysis/aahr-carve.cpp
+g++ -o build/sparse-analysis/state.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/sparse-analysis/state.cpp
+g++ -o build/sparse-analysis/sparse-analysis.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/sparse-analysis/sparse-analysis.cpp
+g++ -o build/sparse-analysis/compute-gs-analyzer.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/sparse-analysis/compute-gs-analyzer.cpp
+g++ -o build/sparse-analysis/storage-gs-analyzer.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/sparse-analysis/storage-gs-analyzer.cpp
+g++ -o build/sparse-analysis/representation-analyzer.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/sparse-analysis/representation-analyzer.cpp
+g++ -o build/sparse-analysis/storage-optimization-combiner.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/sparse-analysis/storage-optimization-combiner.cpp
+g++ -o build/sparse-analysis/position-space.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/sparse-analysis/position-space.cpp
+g++ -o build/loop-analysis/operation-type.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/loop-analysis/operation-type.cpp
+g++ -o build/pat/pat.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/pat/pat.cpp
+g++ -o build/mapping/loop.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/mapping/loop.cpp
+g++ -o build/mapping/nest.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/mapping/nest.cpp
+g++ -o build/model/model-base.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/model-base.cpp
+g++ -o build/model/engine.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/engine.cpp
+g++ -o build/model/level.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/level.cpp
+g++ -o build/model/arithmetic.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/arithmetic.cpp
+g++ -o build/model/buffer.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/buffer.cpp
+g++ -o build/model/topology.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/topology.cpp
+g++ -o build/model/network.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/network.cpp
+g++ -o build/model/network-factory.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/network-factory.cpp
+g++ -o build/model/network-legacy.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/network-legacy.cpp
+g++ -o build/model/network-reduction-tree.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/network-reduction-tree.cpp
+g++ -o build/model/network-simple-multicast.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/network-simple-multicast.cpp
+g++ -o build/model/sparse-optimization-info.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/sparse-optimization-info.cpp
+g++ -o build/model/sparse-optimization-parser.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/model/sparse-optimization-parser.cpp
+g++ -o build/util/banner.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/util/banner.cpp
+g++ -o build/util/args.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/util/args.cpp
+g++ -o build/util/numeric.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/util/numeric.cpp
+g++ -o build/util/map2d.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/util/map2d.cpp
+g++ -o build/util/accelergy_interface.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/util/accelergy_interface.cpp
+g++ -o build/workload/shape-models/problem-shape.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/shape-models/problem-shape.cpp
+g++ -o build/workload/workload.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/workload.cpp
+g++ -o build/workload/shape-models/operation-space.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/shape-models/operation-space.cpp
+g++ -o build/workload/density-models/density-distribution.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/density-models/density-distribution.cpp
+g++ -o build/workload/density-models/density-distribution-factory.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/density-models/density-distribution-factory.cpp
+g++ -o build/workload/density-models/fixed-structured-distribution.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/density-models/fixed-structured-distribution.cpp
+g++ -o build/workload/density-models/hypergeometric-distribution.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/density-models/hypergeometric-distribution.cpp
+g++ -o build/workload/density-models/banded-distribution.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/density-models/banded-distribution.cpp
+g++ -o build/workload/density-models/real-data.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/density-models/real-data.cpp
+g++ -o build/workload/format-models/metadata-format.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/format-models/metadata-format.cpp
+g++ -o build/workload/format-models/metadata-format-factory.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/format-models/metadata-format-factory.cpp
+g++ -o build/workload/format-models/run-length-encoding.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/format-models/run-length-encoding.cpp
+g++ -o build/workload/format-models/uncompressed-offset-pair.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/format-models/uncompressed-offset-pair.cpp
+g++ -o build/workload/format-models/coordinate-payload.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/format-models/coordinate-payload.cpp
+g++ -o build/workload/format-models/uncompressed-bitmask.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/format-models/uncompressed-bitmask.cpp
+g++ -o build/workload/format-models/bitmask.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/workload/format-models/bitmask.cpp
+g++ -o build/compound-config/compound-config.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/compound-config/compound-config.cpp
+g++ -o build/data/cnn/cnn-layers.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/data/cnn/cnn-layers.cpp
+g++ -o build/data/cnn/cnn-densities.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/data/cnn/cnn-densities.cpp
+g++ -o build/mapping/mapping.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/mapping/mapping.cpp
+g++ -o build/mapping/parser.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/mapping/parser.cpp
+g++ -o build/mapping/arch-properties.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/mapping/arch-properties.cpp
+g++ -o build/mapping/constraints.os -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -fPIC -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/mapping/constraints.cpp
+g++ -o build/applications/mapper/main.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/applications/mapper/main.cpp
+g++ -o build/applications/metrics/metrics.o -c -g -O3 -flto -Werror -Wall -Wextra -fmax-errors=1 -std=c++14 -pthread -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -I/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/include -DBUILD_BASE_DIR=\"/lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/timeloop\" -DUSE_ACCELERGY -Iinclude src/applications/metrics/metrics.cpp
+g++ -o build/libtimeloop-model.so -std=c++11 -static-libgcc -static-libstdc++ -pthread -shared build/loop-analysis/coordinate-space-tile-info.os build/loop-analysis/loop-state.os build/loop-analysis/tiling.os build/loop-analysis/tiling-tile-info.os build/loop-analysis/point.os build/loop-analysis/point-set-aahr.os build/loop-analysis/point-set-multi-aahr.os build/loop-analysis/nest-analysis-tile-info.os build/loop-analysis/nest-analysis.os build/loop-analysis/aahr-carve.os build/sparse-analysis/state.os build/sparse-analysis/sparse-analysis.os build/sparse-analysis/compute-gs-analyzer.os build/sparse-analysis/storage-gs-analyzer.os build/sparse-analysis/representation-analyzer.os build/sparse-analysis/storage-optimization-combiner.os build/sparse-analysis/position-space.os build/loop-analysis/operation-type.os build/pat/pat.os build/mapping/loop.os build/mapping/nest.os build/model/model-base.os build/model/engine.os build/model/level.os build/model/arithmetic.os build/model/buffer.os build/model/topology.os build/model/network.os build/model/network-factory.os build/model/network-legacy.os build/model/network-reduction-tree.os build/model/network-simple-multicast.os build/model/sparse-optimization-info.os build/model/sparse-optimization-parser.os build/util/banner.os build/util/args.os build/util/numeric.os build/util/map2d.os build/util/accelergy_interface.os build/workload/shape-models/problem-shape.os build/workload/workload.os build/workload/shape-models/operation-space.os build/workload/density-models/density-distribution.os build/workload/density-models/density-distribution-factory.os build/workload/density-models/fixed-structured-distribution.os build/workload/density-models/hypergeometric-distribution.os build/workload/density-models/banded-distribution.os build/workload/density-models/real-data.os build/workload/format-models/metadata-format.os build/workload/format-models/metadata-format-factory.os build/workload/format-models/run-length-encoding.os build/workload/format-models/uncompressed-offset-pair.os build/workload/format-models/coordinate-payload.os build/workload/format-models/uncompressed-bitmask.os build/workload/format-models/bitmask.os build/compound-config/compound-config.os build/data/cnn/cnn-layers.os build/data/cnn/cnn-densities.os build/mapping/mapping.os build/mapping/parser.os build/mapping/arch-properties.os build/mapping/constraints.os -Lbuild -Lsrc -L/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/lib -L/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/lib -lconfig++ -lyaml-cpp -lncurses -ltinfo -lboost_iostreams -lboost_serialization
+/usr/bin/ld: cannot find -lstdc++
+collect2: error: ld returned 1 exit status
+scons: *** [build/libtimeloop-model.so] Error 1
+scons: building terminated because of errors.
+ERROR conda.cli.main_run:execute(125): `conda run scons -j2 --accelergy` failed. (See above for error)

@@ -1,0 +1,13 @@
+{
+  "task": "T100",
+  "architecture": "loas",
+  "S0": "complete; 545 snapshot files verified, 276 cases and 276 density rows",
+  "S1": "complete: shipped sparse example passed on Stokes; 299 backend source files match pins",
+  "S2": "paper and real-data format audited; packed-T semantics awaiting decision",
+  "S3": "12 split-index coordinate bijections verified; executable mappings awaiting packed-T contract",
+  "S4": "logic ERT unit check passed at zero error; full memory ERT awaits source decision",
+  "gate_v": "not yet ready; no release assumed",
+  "tier_b_runs": 0,
+  "tier_c_runs": 0,
+  "open_questions": "docs/open_mapping_questions.md"
+}

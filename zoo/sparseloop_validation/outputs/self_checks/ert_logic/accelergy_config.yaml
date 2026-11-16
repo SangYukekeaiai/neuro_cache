@@ -1,0 +1,5 @@
+compound_components: []
+estimator_plug_ins: []
+primitive_components:
+- /lustre/fs1/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/paper_backend/accelergy/share/primitive_component_libs
+version: 0.3

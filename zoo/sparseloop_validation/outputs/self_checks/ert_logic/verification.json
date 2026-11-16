@@ -1,0 +1,20 @@
+{
+  "scope": "logic unit conversion only; complete campaign ERT pending memory decision",
+  "operation": "loas.adder16.add",
+  "count": 5,
+  "expected_pJ": "0.00855238",
+  "accelergy_pJ": "0.00855238",
+  "relative_error": "0",
+  "source_table_sha256": "cc065634cbce62a1f2698caa679c719fe9628a7aeaa2ef6619113064014aaa50",
+  "command": [
+    "/home/ya867177/snn_edp_stokes_20261114/neuro_cache_wcache/zoo/sparseloop_validation/vendor/envs/tlv/bin/accelergy",
+    "ERT.yaml",
+    "action_counts.yaml",
+    "-o",
+    ".",
+    "-p",
+    "15",
+    "-f",
+    "energy_estimation"
+  ]
+}
