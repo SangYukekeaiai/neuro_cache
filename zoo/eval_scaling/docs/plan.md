@@ -728,7 +728,7 @@ zoo/eval_scaling/
     provenance.json         input SHA256s, commit, dedup map hash, case counts
 ```
 
-**Weight traces are never retained.** `run_case.py:389-416, 475` generates
+**Weight traces are never retained.** `run_case.py:389-416, 474` generates
 into scratch and `shutil.rmtree`s after S4 consumes them - the wave pattern the
 other zoo figures use, and the reason this figure needs no trace quota. **The
 cache arm materializes even less**: its WCTS stream goes down a pipe and is

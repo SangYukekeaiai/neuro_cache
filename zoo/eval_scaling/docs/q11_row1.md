@@ -24,9 +24,7 @@ cost is stated at the end.
 `generator.py`, `transaction.py` are `src/lays/nocsim/core/`; `dram.py`,
 `weight.py` are `src/lays/nocsim/transactions/`; `EventSim.h`,
 `Transaction.h`, `main.cpp` are `src/lays/nocsim/eventsim/`; `run_case.py` is
-`zoo/eval_scaling/`. **`run_case.py` is being edited under T69 as this was
-written**; its line numbers are as of the 2026-11-16 reading and should be
-re-checked rather than trusted.
+`zoo/eval_scaling/`.
 
 ---
 
@@ -124,10 +122,10 @@ run in which weight transfers and compute counts are kept and psum/vmem
 transfers are free:
 
 1. **Carry the stream into the CSV**: append `var_name` as an eighth column in
-   `format_csv` (`transaction.py:118-125`). It is appended, so every existing
+   `format_csv` (`transaction.py:118-127`). It is appended, so every existing
    reader keeps its column positions.
 2. **Parse it**: one `std::string var` field in `Transaction`
-   (`Transaction.h:16-23`) and one more field read in `parse_csv`.
+   (`Transaction.h:16-25`) and one more field read in `parse_csv`.
 3. **One flag**, `--weight-only`: when set, a transaction whose `var` is
    `psum` or `vmem` gets `duration = 0` while still enforcing its
    dependencies. **The dependency structure and the loop order are unchanged;
@@ -135,12 +133,12 @@ transfers are free:
    path is re-timed against a machine where those transfers are free.** That
    re-timing is the mechanism: a zero-duration psum transfer frees its actor
    and its links at `start` rather than at `start + duration`
-   (`EventSim.h:173-176`), so weight transactions behind it begin earlier and
+   (`EventSim.h:185-186`), so weight transactions behind it begin earlier and
    the makespan falls. `op == 2` (compute) and `var == "weight"` are
    untouched.
 4. **Run eventsim twice per case** over the same already-written `tc.csv` -
    once normally, once with the flag. The transaction list is generated once;
-   eventsim re-reads a file (`Transaction.h:49`), so the second run costs one
+   eventsim re-reads a file (`Transaction.h:50`), so the second run costs one
    extra invocation and no regeneration.
 
 Then, counter-exact and in the plan's form:
@@ -171,9 +169,9 @@ the CSV for every point, so nothing is lost.
   about the machine**; a pass is evidence that the flag was wired correctly
   and nothing more.
 - `weight_makespan >= count_cycles / nodes`, the same floor
-  `run_case.py:282-285` and `run_case.py:468-470` assert it on the full and
+  `run_case.py:282-285` and `run_case.py:467-470` assert it on the full and
   weight-only runs. It carries over unchanged because `count_cycles` accumulates only `tc.op == 2`
-  (`EventSim.h:178`) and the flag leaves op-2 durations untouched.
+  (`EventSim.h:188`) and the flag leaves op-2 durations untouched.
 
 ## Recommendation, and the decision taken
 
