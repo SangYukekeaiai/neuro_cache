@@ -20,6 +20,9 @@ convention `zoo/fig12_edp/deltaai/README.md` already uses):
   exist only in this snapshot and on their origin machines.
 - Input spike traces are separate and already shared:
   `/work/nvme/bebv/yyu9/input_trace_delta/`.
+- ASAP7 1 GHz synthesis outputs (all 26 basic modules, Genus syn-only,
+  for archx harvest + pricing) are at
+  `/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/` with their own README.
 - eval_scaling and roofline campaign folders are small and fully in git;
   clone the repo on DeltaAI to get them (eval_scaling outputs/ live on
   Stokes: `~/neuro_cache_wcache/zoo/eval_scaling/outputs/`). As of
