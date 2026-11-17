@@ -29,10 +29,10 @@ WANTED = ["Gill Sans", "Gill Sans MT", "Lato", "Source Sans Pro", "DejaVu Sans"]
 installed = {f.name for f in fm.fontManager.ttflist}
 family = next((w for w in WANTED if w in installed), "DejaVu Sans")
 plt.rcParams.update({
-    "font.family": family, "font.size": 8,
+    "font.family": family, "font.size": 9, "axes.labelsize": 9,
     "mathtext.fontset": "custom",
     "mathtext.rm": family, "mathtext.it": family, "mathtext.bf": family,
-    "xtick.labelsize": 8, "ytick.labelsize": 8,
+    "xtick.labelsize": 9, "ytick.labelsize": 9,
     "axes.linewidth": 0.6, "axes.unicode_minus": False,
 })
 
@@ -93,9 +93,12 @@ for i, layer in enumerate(layers):
     mat = np.stack([pmf(raw[(layer, s)]) for s in samples])
     x = np.arange(len(all_bins))
     mean = mat.mean(0)
-    mean[mean == 0] = np.nan
-    ax.plot(x, mean, color=color, lw=1.0, ls=ls, marker=marker, ms=2.4,
-            markerfacecolor="none", markeredgewidth=0.6, alpha=0.9, label=label)
+    # Connect successive nonzero bins; zero-mass bins in between carry no
+    # accesses and are skipped rather than drawn as cliffs to zero.
+    mask = mean > 0
+    ax.plot(x[mask], mean[mask], color=color, lw=1.0, ls=ls, marker=marker,
+            ms=2.8, markerfacecolor="none", markeredgewidth=0.6, alpha=0.9,
+            label=label)
 
 ax.set_xticks([bin_pos[b] for b in all_bins if b in (0, 4, 16, 64, 256, 1024, 4096, 16384)])
 ax.set_xticklabels([f"${b}$" for b in all_bins if b in (0, 4, 16, 64, 256, 1024, 4096, 16384)])
@@ -106,8 +109,8 @@ ax.yaxis.set_major_formatter(FuncFormatter(
 ax.yaxis.set_minor_formatter(NullFormatter())
 ax.set_xlabel("Reuse distance")
 ax.set_ylabel("fraction of accesses")
-ax.legend(fontsize=6.5, frameon=False, handlelength=2.2, borderaxespad=0.4,
-          labelspacing=0.3, loc="lower left")
+ax.legend(fontsize=8, frameon=False, handlelength=2.2, borderaxespad=0.4,
+          labelspacing=0.3, loc="lower right")
 ax.spines[["top", "right"]].set_visible(False)
 
 fig.savefig(HERE / "fig_reuse_pdf.pdf", bbox_inches="tight")
