@@ -98,7 +98,7 @@ def main() -> None:
     installed = {f.name for f in fm.fontManager.ttflist}
     family = next((w for w in wanted if w in installed), "DejaVu Sans")
     plt.rcParams.update({
-        "font.family": family, "font.size": 8,
+        "font.family": family, "font.size": 9,
         "mathtext.fontset": "custom", "mathtext.rm": family,
         "mathtext.it": family, "mathtext.bf": family,
     })
@@ -146,8 +146,8 @@ def main() -> None:
         axe.errorbar(xs, means, yerr=errs, fmt="none", ecolor="0.2",
                      elinewidth=0.7, capsize=1.6, zorder=4)
     axe.axhline(1.0, color="0.3", lw=1.0, ls="--", zorder=2)
-    axe.text(len(groups) - 0.52, 1.02, "spad", fontsize=6.4, color="0.3",
-             ha="right", va="bottom")
+    axe.text(len(groups) - 0.45, 0.95, "spad", fontsize=8, color="0.3",
+             ha="right", va="top")
     axe.set_yscale("log", base=2)
     lo, hi = min(panel_vals), max(panel_vals)
     axe.set_ylim(lo * 0.7, hi * 1.5)
@@ -156,21 +156,21 @@ def main() -> None:
     axe.set_yticks(ticks)
     axe.set_yticklabels([f"{t:g}" for t in ticks])
     axe.yaxis.set_minor_locator(matplotlib.ticker.NullLocator())
-    axe.set_ylabel(ylabel, fontsize=8)
-    axe.text(0.004, 0.96, better, transform=axe.transAxes, fontsize=6.8,
+    axe.set_ylabel(ylabel, fontsize=9)
+    axe.text(0.004, 0.96, better, transform=axe.transAxes, fontsize=8,
              color="0.3", style="italic", va="top")
     axe.grid(axis="y", alpha=0.25, lw=0.4, zorder=0)
-    axe.tick_params(labelsize=7)
+    axe.tick_params(labelsize=8.5)
     for sp in ("top", "right"):
         axe.spines[sp].set_visible(False)
     for gi in range(1, len(groups)):
         axe.axvline(gi - 0.5, color="0.85", lw=0.7, zorder=1)
     axe.set_xticks(np.arange(len(groups)))
-    axe.set_xticklabels(labels, fontsize=6.8)
+    axe.set_xticklabels(labels, fontsize=8.5)
     axe.set_xlim(-0.6, len(groups) - 0.4)
     axe.legend(handles=[Patch(facecolor=ARCH_COLOUR[a], edgecolor="0.25", label=a)
                         for a in base.ARCHES],
-               fontsize=6.8, ncol=5, frameon=False, loc="lower center",
+               fontsize=8.5, ncol=5, frameon=False, loc="lower center",
                bbox_to_anchor=(0.5, 1.0), handletextpad=0.4, columnspacing=1.0,
                borderaxespad=0.0)
     fig.tight_layout()
