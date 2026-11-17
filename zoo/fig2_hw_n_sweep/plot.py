@@ -124,7 +124,7 @@ def main():
     ax.set_ylim(0, max(all_values) * 1.05)
     ax.set_xticks(range(len(manifest["hardware_sizes"])), [f"${n}$" for n in manifest["hardware_sizes"]])
     ax.set_xlim(-0.5, len(manifest["hardware_sizes"]) - 0.5)
-    ax.set_xlabel("Node size N", labelpad=2)
+    ax.set_xlabel("Node size", labelpad=2)
     ax.set_ylabel("Latency (M cycles)", labelpad=2)
     ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value / 1e6:g}$"))
     ax.tick_params(pad=1)
