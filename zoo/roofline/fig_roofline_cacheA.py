@@ -48,6 +48,7 @@ def main() -> None:
         "mathtext.fontset": "custom", "mathtext.rm": family,
         "mathtext.it": family, "mathtext.bf": family,
         "xtick.labelsize": 10, "ytick.labelsize": 10, "axes.linewidth": 1.0,
+        "axes.unicode_minus": False,
     })
 
     samples_by_group, metadata = base.load_extract(OUT / "extract.csv")
@@ -69,7 +70,7 @@ def main() -> None:
                               base.DEFAULT_MAPSPACE_DIR.resolve(), repo_root)
     base.validate_roofs(points, roofs)
 
-    fig, ax = plt.subplots(figsize=(4.8, 3.4))
+    fig, ax = plt.subplots(figsize=(4.8, 2.6))
     bw = roofs["dram_bw_bytes_s"]
     compute_roofs = roofs["compute"]
     xs = [p[k] for p in points for k in ("OI_ci95_low", "OI_ci95_high")]
@@ -79,15 +80,22 @@ def main() -> None:
     for arch in base.ARCHES:
         roof_groups.setdefault(compute_roofs[arch]["compute_roof_ops_s"], []).append(arch)
     y_cap = max(max(ys), max(roof_groups)) * 2.0
-    dram_x = np.logspace(np.log10(x_min), np.log10(y_cap / bw), 100)
-    ax.plot(dram_x, bw * dram_x, color="0.2", lw=1.3)
-    for roof, names in sorted(roof_groups.items()):
+    top_roof = max(roof_groups)
+    dram_x = np.logspace(np.log10(x_min), np.log10(top_roof / bw), 100)
+    ax.plot(dram_x, bw * dram_x, color="black", lw=1.3)
+    for i, (roof, names) in enumerate(sorted(roof_groups.items())):
         ridge = roof / bw
         ax.plot([max(ridge, x_min), x_max], [roof, roof],
-                color="0.45", lw=1.2, ls=(0, (4, 2)))
-        ax.annotate(", ".join(names), xy=(x_max, roof), xytext=(-2, 3),
-                    textcoords="offset points", ha="right", va="bottom",
-                    fontsize=9, color="0.35")
+                color="black", lw=1.2)
+        # lower roof: label at its left end, beneath the line, clear of points
+        if i:
+            ax.annotate(", ".join(names), xy=(x_max, roof), xytext=(-2, 3),
+                        textcoords="offset points", ha="right", va="bottom",
+                        fontsize=9, color="0.35")
+        else:
+            ax.annotate(", ".join(names), xy=(max(ridge, x_min), roof),
+                        xytext=(4, -4), textcoords="offset points",
+                        ha="left", va="top", fontsize=9, color="0.35")
 
     by_pair = {}
     for p in points:
@@ -112,6 +120,11 @@ def main() -> None:
 
     ax.set_xscale("log")
     ax.set_yscale("log")
+    from matplotlib.ticker import FuncFormatter, NullFormatter
+    pow10 = FuncFormatter(lambda v, _: f"$10^{{{int(round(np.log10(v)))}}}$")
+    for axis in (ax.xaxis, ax.yaxis):
+        axis.set_major_formatter(pow10)
+        axis.set_minor_formatter(NullFormatter())
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(min(ys) * 0.55, y_cap)
     # worked example of the arm notation, drawn in the freed upper-left space
@@ -126,8 +139,8 @@ def main() -> None:
                 ha="center", fontsize=9, color="0.2")
     ax.annotate("cache A", xy=(ex_x * 3.2, ex_y), xytext=(0, 7), textcoords="offset points",
                 ha="center", fontsize=9, color="0.2")
-    ax.set_xlabel("operational intensity (Operations / DRAM byte)")
-    ax.set_ylabel("performance (Operations / s)")
+    ax.set_xlabel("Operational intensity (Operations / DRAM byte)")
+    ax.set_ylabel("Performance (OPS)")
     ax.spines[["top", "right"]].set_visible(False)
 
     short = {KEEP_WORKLOADS[0]: "spikformer-cifar100",
