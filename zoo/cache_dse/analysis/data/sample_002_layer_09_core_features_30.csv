@@ -1,0 +1,7 @@
+layer,sample,kind,bin_lo,count
+layer_09_core_features_30,2,cold,-1,36032
+layer_09_core_features_30,2,reuse,0,2378432
+layer_09_core_features_30,2,reuse,2048,16520
+layer_09_core_features_30,2,reuse,8192,216640
+layer_09_core_features_30,2,reuse,16384,2003752
+layer_09_core_features_30,2,reuse,32768,105488

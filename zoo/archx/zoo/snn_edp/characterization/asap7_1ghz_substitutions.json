@@ -1,0 +1,2161 @@
+{
+  "caveat": "ASAP7 Genus synthesis-only at 1 GHz (CLK_PERIOD_NS=1.0), mixed shipped libraries (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C), Joules power at the default 50% switching activity without VCD, no place-and-route parasitics; prices applied to the 7nm/500MHz performance model",
+  "hardware_contract": "shared.router.hop is one of the 48 audit vectors and is repriced from the ASAP7 basics; memory, DDR4 and the shared.link.hop wire row are baseline values, untouched. technology_nm and query describe the unchanged 7nm hardware checkpoint; the price basis is measured ASAP7 synthesis at 1 GHz.",
+  "operation_count": 98,
+  "operations": {
+    "cache.mshr_cam_l1.search": {
+      "boundary": "Lowest-hit search; allocation/free indices are input ports, not an extra free-slot allocator. Target storage separate.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 176,
+        "not_gate": 56,
+        "or_gate": 1067,
+        "register1": 16,
+        "register64": 16,
+        "xor_gate": 1024
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register1": 16,
+            "register64": 16
+          },
+          "formula": "16 tag64 + 16 valid1 words.",
+          "name": "records"
+        },
+        {
+          "counts": {
+            "not_gate": 16,
+            "or_gate": 1008,
+            "xor_gate": 1024
+          },
+          "formula": "16 equality64 trees: 64 XOR+63 OR+1 NOT each; no adder64.",
+          "name": "tag_equalities"
+        },
+        {
+          "counts": {
+            "and_gate": 16
+          },
+          "formula": "16 valid AND equality.",
+          "name": "valid_matches"
+        },
+        {
+          "counts": {
+            "and_gate": 16,
+            "not_gate": 16,
+            "or_gate": 43
+          },
+          "formula": "16 AND + 16 NOT + 15 prefix/valid OR + 28 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.",
+          "name": "priority16"
+        },
+        {
+          "counts": {
+            "and_gate": 96,
+            "not_gate": 8
+          },
+          "formula": "2 \u00d7 decoder: A=4, N=16; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+          "name": "decoder16"
+        },
+        {
+          "counts": {
+            "and_gate": 32
+          },
+          "formula": "16 allocation decode AND allocate-enable; 16 free decode AND free-enable.",
+          "name": "allocate_free_enable"
+        },
+        {
+          "counts": {
+            "and_gate": 16,
+            "not_gate": 16,
+            "or_gate": 16
+          },
+          "formula": "Per slot next_valid=allocate OR (valid AND NOT free), always-enabled valid register; allocate wins. Tag wen=qualified allocate.",
+          "name": "valid_next"
+        }
+      ]
+    },
+    "cache.mshr_cam_l2.search": {
+      "boundary": "Lowest-hit search; allocation/free indices are input ports, not an extra free-slot allocator. Target storage separate.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 416,
+        "not_gate": 106,
+        "or_gate": 2154,
+        "register1": 32,
+        "register64": 32,
+        "xor_gate": 2048
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register1": 32,
+            "register64": 32
+          },
+          "formula": "32 tag64 + 32 valid1 words.",
+          "name": "records"
+        },
+        {
+          "counts": {
+            "not_gate": 32,
+            "or_gate": 2016,
+            "xor_gate": 2048
+          },
+          "formula": "32 equality64 trees: 64 XOR+63 OR+1 NOT each; no adder64.",
+          "name": "tag_equalities"
+        },
+        {
+          "counts": {
+            "and_gate": 32
+          },
+          "formula": "32 valid AND equality.",
+          "name": "valid_matches"
+        },
+        {
+          "counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 106
+          },
+          "formula": "32 AND + 32 NOT + 31 prefix/valid OR + 75 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.",
+          "name": "priority32"
+        },
+        {
+          "counts": {
+            "and_gate": 256,
+            "not_gate": 10
+          },
+          "formula": "2 \u00d7 decoder: A=5, N=32; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+          "name": "decoder32"
+        },
+        {
+          "counts": {
+            "and_gate": 64
+          },
+          "formula": "32 allocation decode AND allocate-enable; 32 free decode AND free-enable.",
+          "name": "allocate_free_enable"
+        },
+        {
+          "counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 32
+          },
+          "formula": "Per slot next_valid=allocate OR (valid AND NOT free), always-enabled valid register; allocate wins. Tag wen=qualified allocate.",
+          "name": "valid_next"
+        }
+      ]
+    },
+    "cache.mshr_targets_l1.write": {
+      "boundary": "Write-only row exposes all words; selected read is external. Invalid 9-bit addresses assert no decoded word; no extra comparator.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 2880,
+        "not_gate": 9,
+        "register64": 320
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register64": 320
+          },
+          "formula": "320 independent register64 words.",
+          "name": "words"
+        },
+        {
+          "counts": {
+            "and_gate": 2560,
+            "not_gate": 9
+          },
+          "formula": "1 \u00d7 decoder: A=9, N=320; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+          "name": "decoder320"
+        },
+        {
+          "counts": {
+            "and_gate": 320
+          },
+          "formula": "320 write-enable AND gates.",
+          "name": "write_enable"
+        }
+      ]
+    },
+    "cache.mshr_targets_l2.write": {
+      "boundary": "Write-only row exposes all words; selected read is external. Invalid 9-bit addresses assert no decoded word; no extra comparator.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 3456,
+        "not_gate": 9,
+        "register64": 384
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register64": 384
+          },
+          "formula": "384 independent register64 words.",
+          "name": "words"
+        },
+        {
+          "counts": {
+            "and_gate": 3072,
+            "not_gate": 9
+          },
+          "formula": "1 \u00d7 decoder: A=9, N=384; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+          "name": "decoder384"
+        },
+        {
+          "counts": {
+            "and_gate": 384
+          },
+          "formula": "384 write-enable AND gates.",
+          "name": "write_enable"
+        }
+      ]
+    },
+    "gustavsnn.adder16.add": {
+      "boundary": "One arithmetic lane; full W+1 sum.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder16": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder16": 1
+          },
+          "formula": "One library adder; port wires only.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "gustavsnn.leading_spike_detector.scan": {
+      "boundary": "Lowest-set-bit convention; all-zero valid=0, index=0.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 32,
+        "not_gate": 32,
+        "or_gate": 106
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 106
+          },
+          "formula": "32 AND + 32 NOT + 31 prefix/valid OR + 75 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.",
+          "name": "priority32"
+        }
+      ]
+    },
+    "gustavsnn.lif_core.step": {
+      "boundary": "Input scale folded into weights as lif_unit.md specifies; no decay subtractor/multiplier. State/spike registers excluded; state port owned by potential RF/lif_state.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder32": 2,
+        "mux2": 66,
+        "not_gate": 35,
+        "or_gate": 33,
+        "xor_gate": 33
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder32": 1
+          },
+          "formula": "One 32-bit integration adder; discard carry for modulo2^32.",
+          "name": "integration"
+        },
+        {
+          "counts": {
+            "adder32": 1,
+            "mux2": 2,
+            "not_gate": 35,
+            "or_gate": 33,
+            "xor_gate": 33
+          },
+          "formula": "a+~b carry=unsigned gt; equality: W XOR +(W-1) OR +1 NOT; unsigned ge=gt OR eq, lt=NOT ge. Signed adds sign XOR, sign NOT, two one-bit sign-select muxes and signed ge OR.",
+          "name": "signed_compare32"
+        },
+        {
+          "counts": {
+            "mux2": 64
+          },
+          "formula": "32 scalar mux2 select arithmetic shift1/2; 32 scalar mux2 select integrated value/zero; sign extension and shifts are wires.",
+          "name": "leak_and_reset_mux"
+        }
+      ]
+    },
+    "gustavsnn.merger_tree2.merge": {
+      "boundary": "Unsigned compact key; valid first; stable lane0 ties; preserve both equal records.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder32": 1,
+        "and_gate": 1,
+        "mux2": 68,
+        "not_gate": 35,
+        "or_gate": 33,
+        "xor_gate": 32
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder32": 1,
+            "not_gate": 34,
+            "or_gate": 32,
+            "xor_gate": 32
+          },
+          "formula": "a+~b carry=gt; equality W XOR +(W-1) OR +1 NOT; ge=gt OR eq; lt=NOT ge; b inversion W NOT.",
+          "name": "unsigned_compare32"
+        },
+        {
+          "counts": {
+            "and_gate": 1,
+            "not_gate": 1,
+            "or_gate": 1
+          },
+          "formula": "swap=vb AND (NOT va OR gt).",
+          "name": "swap_control"
+        },
+        {
+          "counts": {
+            "mux2": 68
+          },
+          "formula": "Two records \u00d7 (key32 + lane1 + valid1) scalar mux2.",
+          "name": "two_record_muxes"
+        }
+      ]
+    },
+    "gustavsnn.output_fifo.push": {
+      "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "fifo32x8": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo32x8": 1
+          },
+          "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "gustavsnn.potential_regfile.rmw": {
+      "boundary": "One 32x64 RF with selected read; RMW shares same array.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 384,
+        "mux2": 2016,
+        "not_gate": 6,
+        "register32": 64
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register32": 64
+          },
+          "formula": "64 independent 32-bit words.",
+          "name": "words"
+        },
+        {
+          "counts": {
+            "and_gate": 320,
+            "not_gate": 6
+          },
+          "formula": "1 \u00d7 decoder: A=6, N=64; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+          "name": "decoder64"
+        },
+        {
+          "counts": {
+            "and_gate": 64
+          },
+          "formula": "64 decoded word enables AND write-enable.",
+          "name": "write_enable"
+        },
+        {
+          "counts": {
+            "mux2": 2016
+          },
+          "formula": "(64-1)*32 scalar mux2; six-bit read address.",
+          "name": "selected_read"
+        }
+      ]
+    },
+    "gustavsnn.reg16.rmw": {
+      "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "register16": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register16": 1
+          },
+          "formula": "One library register word; reset/enable and storage are internal.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "gustavsnn.spike_fifo.pop": {
+      "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "fifo32x8": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo32x8": 1
+          },
+          "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "loas.adder16.add": {
+      "boundary": "One arithmetic lane; full W+1 sum.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder16": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder16": 1
+          },
+          "formula": "One library adder; port wires only.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "loas.and_gate.and": {
+      "boundary": "Count expression 32*B already accounts for word work; do not multiply inventory or this primitive count by 32.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "and_gate": 1
+          },
+          "formula": "One scalar repo AND.",
+          "name": "scalar_AND"
+        }
+      ]
+    },
+    "loas.bsf32.scan": {
+      "boundary": "Lowest-set-bit convention; all-zero valid=0, index=0.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 32,
+        "not_gate": 32,
+        "or_gate": 106,
+        "xor_gate": 32
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "and_gate": 32,
+            "not_gate": 32,
+            "or_gate": 106
+          },
+          "formula": "32 AND + 32 NOT + 31 prefix/valid OR + 75 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.",
+          "name": "priority32"
+        },
+        {
+          "counts": {
+            "xor_gate": 32
+          },
+          "formula": "32 XOR: input XOR selected onehot; no adder.",
+          "name": "clear_selected"
+        }
+      ]
+    },
+    "loas.lif_unit.step": {
+      "boundary": "Input scale folded into weights as lif_unit.md specifies; no decay subtractor/multiplier. State/spike included.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder32": 2,
+        "mux2": 66,
+        "not_gate": 35,
+        "or_gate": 33,
+        "register1": 1,
+        "register32": 1,
+        "xor_gate": 33
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder32": 1
+          },
+          "formula": "One 32-bit integration adder; discard carry for modulo2^32.",
+          "name": "integration"
+        },
+        {
+          "counts": {
+            "adder32": 1,
+            "mux2": 2,
+            "not_gate": 35,
+            "or_gate": 33,
+            "xor_gate": 33
+          },
+          "formula": "a+~b carry=unsigned gt; equality: W XOR +(W-1) OR +1 NOT; unsigned ge=gt OR eq, lt=NOT ge. Signed adds sign XOR, sign NOT, two one-bit sign-select muxes and signed ge OR.",
+          "name": "signed_compare32"
+        },
+        {
+          "counts": {
+            "mux2": 64
+          },
+          "formula": "32 scalar mux2 select arithmetic shift1/2; 32 scalar mux2 select integrated value/zero; sign extension and shifts are wires.",
+          "name": "leak_and_reset_mux"
+        },
+        {
+          "counts": {
+            "register1": 1,
+            "register32": 1
+          },
+          "formula": "State and spike words; step drives wen directly; step=0 holds both.",
+          "name": "state"
+        }
+      ]
+    },
+    "loas.output_fifo.push": {
+      "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "fifo32x8": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo32x8": 1
+          },
+          "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "loas.reg16.read": {
+      "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "register16": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register16": 1
+          },
+          "formula": "One library register word; reset/enable and storage are internal.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "loas.reg16.rmw": {
+      "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "register16": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register16": 1
+          },
+          "formula": "One library register word; reset/enable and storage are internal.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "loas.spike_fifo.pop": {
+      "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "fifo32x8": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo32x8": 1
+          },
+          "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "loas.spike_fifo.push": {
+      "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "fifo32x8": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo32x8": 1
+          },
+          "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "loas.spike_prefix_scan32.scan": {
+      "boundary": "129 adders; inclusive count/total6; exclusive rank[i]=inclusive[i-1], rank[0]=0, low5 bits; wires only.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder1": 31,
+        "adder2": 30,
+        "adder3": 28,
+        "adder4": 24,
+        "adder5": 16
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder1": 31,
+            "adder2": 30,
+            "adder3": 28,
+            "adder4": 24,
+            "adder5": 16
+          },
+          "formula": "Five levels at distances1/2/4/8/16: 31/30/28/24/16 adders; retain carry and zero-extend pass-throughs; no glue gates.",
+          "name": "prefix_network"
+        }
+      ]
+    },
+    "loas.weight_fifo.pop": {
+      "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "fifo16x8": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo16x8": 1
+          },
+          "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "loas.weight_fifo.push": {
+      "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "fifo16x8": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo16x8": 1
+          },
+          "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "prosperity.adder16.add": {
+      "boundary": "One arithmetic lane; full W+1 sum.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder16": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder16": 1
+          },
+          "formula": "One library adder; port wires only.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "prosperity.bitonic_cmp.compare": {
+      "boundary": "Ascending (popcount5,index8); stable equal keys.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder13": 1,
+        "mux2": 26,
+        "not_gate": 15,
+        "or_gate": 13,
+        "xor_gate": 13
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder13": 1,
+            "not_gate": 15,
+            "or_gate": 13,
+            "xor_gate": 13
+          },
+          "formula": "a+~b carry=gt; equality W XOR +(W-1) OR +1 NOT; ge=gt OR eq; lt=NOT ge; b inversion W NOT.",
+          "name": "unsigned_compare13"
+        },
+        {
+          "counts": {
+            "mux2": 26
+          },
+          "formula": "Two 13-bit key muxes = 26 scalar mux2.",
+          "name": "key_exchange"
+        }
+      ]
+    },
+    "prosperity.bsf16.scan": {
+      "boundary": "Lowest-set-bit convention; all-zero valid=0, index=0.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 16,
+        "not_gate": 16,
+        "or_gate": 43,
+        "xor_gate": 16
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "and_gate": 16,
+            "not_gate": 16,
+            "or_gate": 43
+          },
+          "formula": "16 AND + 16 NOT + 15 prefix/valid OR + 28 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.",
+          "name": "priority16"
+        },
+        {
+          "counts": {
+            "xor_gate": 16
+          },
+          "formula": "16 XOR: input XOR selected onehot; no adder.",
+          "name": "clear_selected"
+        }
+      ]
+    },
+    "prosperity.lif_core.step": {
+      "boundary": "Input scale folded into weights as lif_unit.md specifies; no decay subtractor/multiplier. State/spike registers excluded; state port owned by potential RF/lif_state.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder32": 2,
+        "mux2": 66,
+        "not_gate": 35,
+        "or_gate": 33,
+        "xor_gate": 33
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder32": 1
+          },
+          "formula": "One 32-bit integration adder; discard carry for modulo2^32.",
+          "name": "integration"
+        },
+        {
+          "counts": {
+            "adder32": 1,
+            "mux2": 2,
+            "not_gate": 35,
+            "or_gate": 33,
+            "xor_gate": 33
+          },
+          "formula": "a+~b carry=unsigned gt; equality: W XOR +(W-1) OR +1 NOT; unsigned ge=gt OR eq, lt=NOT ge. Signed adds sign XOR, sign NOT, two one-bit sign-select muxes and signed ge OR.",
+          "name": "signed_compare32"
+        },
+        {
+          "counts": {
+            "mux2": 64
+          },
+          "formula": "32 scalar mux2 select arithmetic shift1/2; 32 scalar mux2 select integrated value/zero; sign extension and shifts are wires.",
+          "name": "leak_and_reset_mux"
+        }
+      ]
+    },
+    "prosperity.lif_state.rmw": {
+      "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "register32": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register32": 1
+          },
+          "formula": "One library register word; reset/enable and storage are internal.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "prosperity.popcount16.count": {
+      "boundary": "15 adders; 5-bit result.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder1": 8,
+        "adder2": 4,
+        "adder3": 2,
+        "adder4": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder1": 8,
+            "adder2": 4,
+            "adder3": 2,
+            "adder4": 1
+          },
+          "formula": "8+4+2+1 carry-preserving adders; no glue.",
+          "name": "balanced_tree"
+        }
+      ]
+    },
+    "prosperity.pruner.prune": {
+      "boundary": "256-entry combinational boundary; subset lines, processed-valid, keys and original rows are input ports. TCAM and key/processed-valid storage are not silently duplicated or claimed priced here; equal subsets remain eligible.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder13": 255,
+        "and_gate": 511,
+        "mux2": 9451,
+        "not_gate": 4080,
+        "or_gate": 3825,
+        "xor_gate": 3331
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "and_gate": 256
+          },
+          "formula": "256 processed_valid AND subset_match.",
+          "name": "eligibility"
+        },
+        {
+          "counts": {
+            "adder13": 255,
+            "not_gate": 3825,
+            "or_gate": 3315,
+            "xor_gate": 3315
+          },
+          "formula": "255 \u00d7 (a+~b carry=gt; equality W XOR +(W-1) OR +1 NOT; ge=gt OR eq; lt=NOT ge; b inversion W NOT.)",
+          "name": "unsigned_compare13"
+        },
+        {
+          "counts": {
+            "and_gate": 255,
+            "mux2": 5355,
+            "not_gate": 255,
+            "or_gate": 510
+          },
+          "formula": "255 nodes: select_right=er AND (NOT el OR lt), valid=el OR er; key13 + slot8 mux per node =>255*21 scalar mux2.",
+          "name": "max_tournament"
+        },
+        {
+          "counts": {
+            "mux2": 4080
+          },
+          "formula": "(256-1)*16 scalar mux2 selects original stored row by winning slot.",
+          "name": "original_row_select"
+        },
+        {
+          "counts": {
+            "mux2": 16,
+            "xor_gate": 16
+          },
+          "formula": "16 XOR with chosen original prefix; 16 scalar mux2 bypass unchanged input when no eligible prefix.",
+          "name": "residual"
+        }
+      ]
+    },
+    "prosperity.reg16.rmw": {
+      "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "register16": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register16": 1
+          },
+          "formula": "One library register word; reset/enable and storage are internal.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "prosperity.tcam.search": {
+      "boundary": "ONE bank; search/write share this whole bank. Two banks/node is standing inventory; processed-valid masking is in pruner.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 6144,
+        "not_gate": 280,
+        "or_gate": 3840,
+        "register16": 256
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register16": 256
+          },
+          "formula": "One bank, 256 original 16-bit rows.",
+          "name": "bank_words"
+        },
+        {
+          "counts": {
+            "and_gate": 4096,
+            "not_gate": 16,
+            "or_gate": 3840
+          },
+          "formula": "16 shared query NOT; 256*16 entry AND NOT query; 256*(16-1) OR reductions.",
+          "name": "subset_terms"
+        },
+        {
+          "counts": {
+            "not_gate": 256
+          },
+          "formula": "One NOT per reduced row gives non-strict subset match.",
+          "name": "subset_invert"
+        },
+        {
+          "counts": {
+            "and_gate": 1792,
+            "not_gate": 8
+          },
+          "formula": "1 \u00d7 decoder: A=8, N=256; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+          "name": "decoder256"
+        },
+        {
+          "counts": {
+            "and_gate": 256
+          },
+          "formula": "256 decoded word enables AND write-enable.",
+          "name": "write_enable"
+        }
+      ]
+    },
+    "prosperity.tcam.write": {
+      "boundary": "ONE bank; search/write share this whole bank. Two banks/node is standing inventory; processed-valid masking is in pruner.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 6144,
+        "not_gate": 280,
+        "or_gate": 3840,
+        "register16": 256
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register16": 256
+          },
+          "formula": "One bank, 256 original 16-bit rows.",
+          "name": "bank_words"
+        },
+        {
+          "counts": {
+            "and_gate": 4096,
+            "not_gate": 16,
+            "or_gate": 3840
+          },
+          "formula": "16 shared query NOT; 256*16 entry AND NOT query; 256*(16-1) OR reductions.",
+          "name": "subset_terms"
+        },
+        {
+          "counts": {
+            "not_gate": 256
+          },
+          "formula": "One NOT per reduced row gives non-strict subset match.",
+          "name": "subset_invert"
+        },
+        {
+          "counts": {
+            "and_gate": 1792,
+            "not_gate": 8
+          },
+          "formula": "1 \u00d7 decoder: A=8, N=256; N*(A-1) AND + A shared NOT. Codes >=N assert no output; no separate invalid-address comparator.",
+          "name": "decoder256"
+        },
+        {
+          "counts": {
+            "and_gate": 256
+          },
+          "formula": "256 decoded word enables AND write-enable.",
+          "name": "write_enable"
+        }
+      ]
+    },
+    "ptb.adder16.add": {
+      "boundary": "One arithmetic lane; full W+1 sum.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder16": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder16": 1
+          },
+          "formula": "One library adder; port wires only.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "ptb.lif_unit.step": {
+      "boundary": "Input scale folded into weights as lif_unit.md specifies; no decay subtractor/multiplier. State/spike included.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder32": 2,
+        "mux2": 66,
+        "not_gate": 35,
+        "or_gate": 33,
+        "register1": 1,
+        "register32": 1,
+        "xor_gate": 33
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder32": 1
+          },
+          "formula": "One 32-bit integration adder; discard carry for modulo2^32.",
+          "name": "integration"
+        },
+        {
+          "counts": {
+            "adder32": 1,
+            "mux2": 2,
+            "not_gate": 35,
+            "or_gate": 33,
+            "xor_gate": 33
+          },
+          "formula": "a+~b carry=unsigned gt; equality: W XOR +(W-1) OR +1 NOT; unsigned ge=gt OR eq, lt=NOT ge. Signed adds sign XOR, sign NOT, two one-bit sign-select muxes and signed ge OR.",
+          "name": "signed_compare32"
+        },
+        {
+          "counts": {
+            "mux2": 64
+          },
+          "formula": "32 scalar mux2 select arithmetic shift1/2; 32 scalar mux2 select integrated value/zero; sign extension and shifts are wires.",
+          "name": "leak_and_reset_mux"
+        },
+        {
+          "counts": {
+            "register1": 1,
+            "register32": 1
+          },
+          "formula": "State and spike words; step drives wen directly; step=0 holds both.",
+          "name": "state"
+        }
+      ]
+    },
+    "ptb.reg16.read": {
+      "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "register16": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register16": 1
+          },
+          "formula": "One library register word; reset/enable and storage are internal.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "ptb.reg16.rmw": {
+      "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "register16": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register16": 1
+          },
+          "formula": "One library register word; reset/enable and storage are internal.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "ptb.spike_fifo.pop": {
+      "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "fifo16x8": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo16x8": 1
+          },
+          "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "ptb.spike_fifo.push": {
+      "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "fifo16x8": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo16x8": 1
+          },
+          "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "ptb.spike_mask_overlap.check": {
+      "boundary": "T=32 disjointness output.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "and_gate": 32,
+        "not_gate": 1,
+        "or_gate": 31
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "and_gate": 32,
+            "not_gate": 1,
+            "or_gate": 31
+          },
+          "formula": "32 pairwise AND; 31-OR reduction; one NOT gives disjointness.",
+          "name": "disjointness"
+        }
+      ]
+    },
+    "ptb.weight_fifo.pop": {
+      "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "fifo16x8": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo16x8": 1
+          },
+          "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "ptb.weight_fifo.push": {
+      "boundary": "Push/pop share the FIFO. Internal flags are not external ports; standalone row adds no handshake tracker.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "fifo16x8": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo16x8": 1
+          },
+          "formula": "One unchanged library FIFO including storage, pointers and registered output; zero external glue.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "shared.router.hop": {
+      "boundary": "Fixed depth2. Head/mask replace only after all destinations handshake; zero mask discards. Reset held through a clock edge for sync helper registers; handshakes suppressed in reset. One 320-bit packet is five 64-bit flits: dynamic_event_cycles=5, never multiply area/leakage by5.",
+      "dynamic_event_cycles": 5,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "scaled_archx_router_csv",
+      "primitive_counts": {
+        "adder2": 10,
+        "adder3": 5,
+        "and_gate": 225,
+        "and_gate_5": 5,
+        "fifo64x2": 5,
+        "mux2": 1560,
+        "not_gate": 115,
+        "or_gate": 65,
+        "register1": 10,
+        "register2": 10,
+        "register3": 10,
+        "register5": 15,
+        "xor_gate": 10
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "fifo64x2": 5
+          },
+          "formula": "Five unchanged FIFO64x2; native output registers hold head data; no extra register64.",
+          "name": "data_queues"
+        },
+        {
+          "counts": {
+            "adder2": 10,
+            "register2": 10
+          },
+          "formula": "Two 2-bit mirror pointers per input, one increment adder each; pointer enables are accepted push/pop.",
+          "name": "mirrored_pointers"
+        },
+        {
+          "counts": {
+            "register5": 15
+          },
+          "formula": "Five inputs*(2 queued masks +1 pending head mask); register5 words, no new FIFO variant.",
+          "name": "queued_and_head_masks"
+        },
+        {
+          "counts": {
+            "register1": 5
+          },
+          "formula": "One valid bit per FIFO output/head.",
+          "name": "head_valid"
+        },
+        {
+          "counts": {
+            "adder3": 5,
+            "register1": 5,
+            "register3": 10
+          },
+          "formula": "Per output RR pointer3, held index3, lock1; adder3 computes chosen index+1.",
+          "name": "arbiter_state"
+        },
+        {
+          "counts": {
+            "and_gate": 25
+          },
+          "formula": "Five outputs*five inputs: head-valid AND pending destination bit.",
+          "name": "requests"
+        },
+        {
+          "counts": {
+            "and_gate": 25,
+            "not_gate": 25,
+            "or_gate": 20
+          },
+          "formula": "5 \u00d7 (5 AND + 5 NOT + 4 prefix/valid OR + 0 index-encode OR; lowest set bit; zero valid=0/index=0. Counts follow BASIC_MODULES priority-chain convention before constant folding.)",
+          "name": "five_priority_chains"
+        },
+        {
+          "counts": {
+            "and_gate_5": 5,
+            "not_gate": 25
+          },
+          "formula": "Per input pending5 AND NOT ack5; one and_gate_5, five NOT; do not also count five scalar ANDs.",
+          "name": "pending_mask_clear"
+        },
+        {
+          "counts": {
+            "and_gate": 35,
+            "not_gate": 20,
+            "xor_gate": 10
+          },
+          "formula": "Per input: two pointer XOR, four NOT (same-low, wrap, full, empty), two full/empty AND + ready/enW/push/enR/pop AND. ready=NOT full AND rst; enW=valid AND rst; push=enW AND NOT full; enR=can_load AND rst; pop=enR AND NOT empty. iClr tied0.",
+          "name": "fifo_status_acceptance"
+        },
+        {
+          "counts": {
+            "not_gate": 5
+          },
+          "formula": "Per input two-output A=1 decoder: one shared NOT, zero AND-tree gates; low mirror write pointer selects slot.",
+          "name": "mask_slot_decode"
+        },
+        {
+          "counts": {
+            "and_gate": 10
+          },
+          "formula": "Two slot selects AND accepted push per input.",
+          "name": "mask_write_enables"
+        },
+        {
+          "counts": {
+            "mux2": 25
+          },
+          "formula": "Per input 2:1 read mux over two register5 words: five scalar mux2.",
+          "name": "mask_queue_read"
+        },
+        {
+          "counts": {
+            "mux2": 25
+          },
+          "formula": "Per input pop selects queued mask versus cleared pending mask: five scalar mux2.",
+          "name": "head_mask_update"
+        },
+        {
+          "counts": {
+            "and_gate": 25
+          },
+          "formula": "ack[input][output]=selected_grant[input][output] AND output_handshake.",
+          "name": "ack_matrix"
+        },
+        {
+          "counts": {
+            "and_gate": 5,
+            "not_gate": 5,
+            "or_gate": 20
+          },
+          "formula": "Per input OR4+NOT1 tests cleared pending5==0; finished=head_valid AND zero.",
+          "name": "head_completion"
+        },
+        {
+          "counts": {
+            "not_gate": 5,
+            "or_gate": 5
+          },
+          "formula": "can_load=NOT head_valid OR finished; feeds reset-gated enR above.",
+          "name": "head_load"
+        },
+        {
+          "counts": {
+            "and_gate": 5,
+            "not_gate": 5,
+            "or_gate": 5
+          },
+          "formula": "next_head_valid=pop OR (head_valid AND NOT finished); always-enabled valid word.",
+          "name": "head_valid_update"
+        },
+        {
+          "counts": {
+            "mux2": 200
+          },
+          "formula": "Per output two 5:1,5-bit mux trees: 2*(5-1)*5=40 scalar mux2, five outputs.",
+          "name": "cyclic_rotate_unrotate"
+        },
+        {
+          "counts": {
+            "or_gate": 10
+          },
+          "formula": "Per output index bits OR onehot[1,3] and OR onehot[2,3]; bit2=onehot4; two OR.",
+          "name": "original_grant_index"
+        },
+        {
+          "counts": {
+            "mux2": 15
+          },
+          "formula": "Per output lock selects held index3 versus new index3; three scalar mux2.",
+          "name": "held_grant_select"
+        },
+        {
+          "counts": {
+            "or_gate": 5
+          },
+          "formula": "Per output grant_valid=locked OR priority_valid.",
+          "name": "grant_valid"
+        },
+        {
+          "counts": {
+            "and_gate": 50,
+            "not_gate": 15
+          },
+          "formula": "Per output N=5,A=3 decoder: 5*(3-1) AND +3 shared NOT; five outputs.",
+          "name": "grant_decode"
+        },
+        {
+          "counts": {
+            "and_gate": 25
+          },
+          "formula": "Per output five decoded grant bits AND grant_valid.",
+          "name": "grant_valid_mask"
+        },
+        {
+          "counts": {
+            "and_gate": 10
+          },
+          "formula": "Per output handshake=grant_valid AND output_ready AND rst: two AND.",
+          "name": "output_handshake"
+        },
+        {
+          "counts": {
+            "and_gate": 5,
+            "not_gate": 5
+          },
+          "formula": "Per output held-index wen=NOT locked AND priority_valid.",
+          "name": "capture_held_index"
+        },
+        {
+          "counts": {
+            "and_gate": 5,
+            "not_gate": 5
+          },
+          "formula": "Per output next_locked=grant_valid AND NOT handshake; always-enabled lock word.",
+          "name": "lock_update"
+        },
+        {
+          "counts": {
+            "mux2": 15
+          },
+          "formula": "Per output chosen_index[2] selects0 versus increment low3 (legal indices0..4); three mux2. RR wen=handshake.",
+          "name": "rr_wrap"
+        },
+        {
+          "counts": {
+            "mux2": 1280
+          },
+          "formula": "Five outputs*(5-1)*64 scalar mux2; selected index drives 5:1 data mux.",
+          "name": "crossbar"
+        }
+      ]
+    },
+    "spinalflow.adder32.add": {
+      "boundary": "One arithmetic lane; full W+1 sum.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder32": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder32": 1
+          },
+          "formula": "One library adder; port wires only.",
+          "name": "primitive"
+        }
+      ]
+    },
+    "spinalflow.cmp32.compare": {
+      "boundary": "Signed threshold compare; numeric, not repo temporal less_equal.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder32": 1,
+        "mux2": 2,
+        "not_gate": 35,
+        "or_gate": 33,
+        "xor_gate": 33
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder32": 1,
+            "mux2": 2,
+            "not_gate": 35,
+            "or_gate": 33,
+            "xor_gate": 33
+          },
+          "formula": "a+~b carry=unsigned gt; equality: W XOR +(W-1) OR +1 NOT; unsigned ge=gt OR eq, lt=NOT ge. Signed adds sign XOR, sign NOT, two one-bit sign-select muxes and signed ge OR.",
+          "name": "signed_compare32"
+        }
+      ]
+    },
+    "spinalflow.min_tree4.compare": {
+      "boundary": "Unsigned timestamps; two-level minimum tree, invalid suppression, stable low-index ties; invalid data is unspecified.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "adder32": 3,
+        "and_gate": 3,
+        "mux2": 102,
+        "not_gate": 105,
+        "or_gate": 102,
+        "xor_gate": 96
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "adder32": 3,
+            "not_gate": 102,
+            "or_gate": 96,
+            "xor_gate": 96
+          },
+          "formula": "3 \u00d7 (a+~b carry=gt; equality W XOR +(W-1) OR +1 NOT; ge=gt OR eq; lt=NOT ge; b inversion W NOT.)",
+          "name": "unsigned_compare32"
+        },
+        {
+          "counts": {
+            "and_gate": 3,
+            "mux2": 102,
+            "not_gate": 3,
+            "or_gate": 6
+          },
+          "formula": "Three nodes: choose_right=vr AND (NOT vl OR gt); valid=vl OR vr; mux32 key + mux2 index per node, 3*(32+2) scalar mux2.",
+          "name": "valid_winner_mux"
+        }
+      ]
+    },
+    "spinalflow.reg32.rmw": {
+      "boundary": "Read/RMW share one word; standing units are not inside this primitive count.",
+      "dynamic_event_cycles": 1,
+      "formula": "dynamic = cycles * sum(count * source_dynamic_mW/source_frequency_MHz); leakage/area = sum(count * source_metric)",
+      "method": "ASAP7 1 GHz measured primitive composition",
+      "previous_pricing_status": "pending-ASAP7-synthesis",
+      "primitive_counts": {
+        "register32": 1
+      },
+      "structural_terms": [
+        {
+          "counts": {
+            "register32": 1
+          },
+          "formula": "One library register word; reset/enable and storage are internal.",
+          "name": "primitive"
+        }
+      ]
+    }
+  },
+  "sources": {
+    "adder1": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 4.51e-07,
+      "dynamic_energy_nJ": 3.947695e-08,
+      "dynamic_power_mW": 3.947695e-05,
+      "leakage_power_mW": 1.01158e-07,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 4.51e-07,
+        "dynamic_energy_nJ": 3.947695e-08,
+        "leakage_power_mW": 1.01158e-07
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder1/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "74b4b92816dcb4b2e7dd03411365c86e73ab4d64bc8282d779b7a103ca7cef28",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder1/scripts/cadence/syn_rpt/snn_adder1_power.rpt",
+      "source_report_power_sha256": "3e3aca111ab8d2efa539d9f9edc633478c3194ce87a7a0c29eaee29cfdb5868a",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "adder1"
+    },
+    "adder13": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 1.0375e-05,
+      "dynamic_energy_nJ": 1.3523809999999999e-06,
+      "dynamic_power_mW": 0.001352381,
+      "leakage_power_mW": 2.81592e-06,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 1.0375e-05,
+        "dynamic_energy_nJ": 1.3523809999999999e-06,
+        "leakage_power_mW": 2.81592e-06
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder13/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "ea0fb8c7b32150b9bb7b47069eeb52819d9bc1d36c6dc912355742125d1eaa7a",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder13/scripts/cadence/syn_rpt/snn_adder13_power.rpt",
+      "source_report_power_sha256": "aa6796e2ecc792e1236ae68018a0641d4cb9eb119274ad177aa74686193ace02",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "adder13"
+    },
+    "adder16": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 1.2893e-05,
+      "dynamic_energy_nJ": 1.710477e-06,
+      "dynamic_power_mW": 0.001710477,
+      "leakage_power_mW": 3.49442e-06,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 1.2893e-05,
+        "dynamic_energy_nJ": 1.710477e-06,
+        "leakage_power_mW": 3.49442e-06
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder16/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "aec0fc0faf259630bafce23e432eb317eea637c7987c6c9f7f6e65a973e22775",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder16/scripts/cadence/syn_rpt/snn_adder16_power.rpt",
+      "source_report_power_sha256": "8e16472f9c2a0e7eaf08a0e51525d8524ed6c9cd31dfc26c1ce71688db3bdb08",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "adder16"
+    },
+    "adder2": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 1.1399999999999999e-06,
+      "dynamic_energy_nJ": 1.317343e-07,
+      "dynamic_power_mW": 0.00013173430000000002,
+      "leakage_power_mW": 3.66411e-07,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 1.1399999999999999e-06,
+        "dynamic_energy_nJ": 1.317343e-07,
+        "leakage_power_mW": 3.66411e-07
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder2/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "fb5ea9b6f40a54aec639edbe7034fa043defef870507d5cc6c8d19e9942484ed",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder2/scripts/cadence/syn_rpt/snn_adder2_power.rpt",
+      "source_report_power_sha256": "783728cbb709f057c8bbc14f0a89a1256ed45c465ed044abe20e90bfe9397289",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "adder2"
+    },
+    "adder3": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 1.979e-06,
+      "dynamic_energy_nJ": 2.334262e-07,
+      "dynamic_power_mW": 0.0002334262,
+      "leakage_power_mW": 6.575470000000001e-07,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 1.979e-06,
+        "dynamic_energy_nJ": 2.334262e-07,
+        "leakage_power_mW": 6.575470000000001e-07
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder3/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "f0f5b70252daccbef49d7898c9c7c502c1ace6250598747e13183f0f0ffa8b48",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder3/scripts/cadence/syn_rpt/snn_adder3_power.rpt",
+      "source_report_power_sha256": "b9fbd9faef4a9a8250f8d0fc7ea07de2100d2400441fcbe104aee74a853562fd",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "adder3"
+    },
+    "adder32": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 2.6324e-05,
+      "dynamic_energy_nJ": 3.604934e-06,
+      "dynamic_power_mW": 0.003604934,
+      "leakage_power_mW": 7.11318e-06,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 2.6324e-05,
+        "dynamic_energy_nJ": 3.604934e-06,
+        "leakage_power_mW": 7.11318e-06
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder32/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "24ce99738bcadd6996984701b440636891abc6df0b89dec37abc5d47de245f16",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder32/scripts/cadence/syn_rpt/snn_adder32_power.rpt",
+      "source_report_power_sha256": "3fe139f3d64bec81bfc08b92be6e59f24adcf06cf99cc28c1e05053201cd6bfe",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "adder32"
+    },
+    "adder4": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 2.8199999999999997e-06,
+      "dynamic_energy_nJ": 3.0831099999999996e-07,
+      "dynamic_power_mW": 0.00030831099999999997,
+      "leakage_power_mW": 7.819460000000001e-07,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 2.8199999999999997e-06,
+        "dynamic_energy_nJ": 3.0831099999999996e-07,
+        "leakage_power_mW": 7.819460000000001e-07
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder4/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "7e51cf90e1122783b7de246af10924e2bdb0f6622efb394c878a3e4f160da567",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder4/scripts/cadence/syn_rpt/snn_adder4_power.rpt",
+      "source_report_power_sha256": "0ad5064d0ab002ba1723714c76017e94d6a5e7b6a7538a65bba8d91cb874c407",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "adder4"
+    },
+    "adder5": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 3.6589999999999996e-06,
+      "dynamic_energy_nJ": 4.1721399999999997e-07,
+      "dynamic_power_mW": 0.00041721399999999995,
+      "leakage_power_mW": 1.00745e-06,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 3.6589999999999996e-06,
+        "dynamic_energy_nJ": 4.1721399999999997e-07,
+        "leakage_power_mW": 1.00745e-06
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder5/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "3566027ff61d06d2fb72dd802d66ed87619a757b1830b16846c6eee62c0cf6b9",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_adder5/scripts/cadence/syn_rpt/snn_adder5_power.rpt",
+      "source_report_power_sha256": "f0f9943ffabe914a88467407058b9b48fe6d27ea29dec72a189d91bf1639a743",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "adder5"
+    },
+    "and_gate": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 2.27e-07,
+      "dynamic_energy_nJ": 1.646866e-08,
+      "dynamic_power_mW": 1.646866e-05,
+      "leakage_power_mW": 5.3294e-08,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 2.27e-07,
+        "dynamic_energy_nJ": 1.646866e-08,
+        "leakage_power_mW": 5.3294e-08
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_and_gate/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "9aede6057bf61e233178bd5ca2d1986a4861a93ff8949cc6c14f3b5ccd655e54",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_and_gate/scripts/cadence/syn_rpt/snn_and_gate_power.rpt",
+      "source_report_power_sha256": "36c68a387f1891cb77e668434b12ee07bc763fb8929e3902370ada42abc6b8d8",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "and_gate"
+    },
+    "and_gate_5": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 1.1339999999999999e-06,
+      "dynamic_energy_nJ": 8.23433e-08,
+      "dynamic_power_mW": 8.23433e-05,
+      "leakage_power_mW": 2.6647000000000003e-07,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 1.1339999999999999e-06,
+        "dynamic_energy_nJ": 8.23433e-08,
+        "leakage_power_mW": 2.6647000000000003e-07
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_and_gate_5/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "efd32fc4935842225fd747cbf1dc67840ada5828baa4f1bc20e9c4991fd5887c",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_and_gate_5/scripts/cadence/syn_rpt/snn_and_gate_5_power.rpt",
+      "source_report_power_sha256": "2ea43b16347754078313c4f2c466f6a6d1e45b49bbfc3ceb1c942410b1e1e3ce",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "and_gate_5"
+    },
+    "fifo16x8": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 0.00011394199999999999,
+      "dynamic_energy_nJ": 0.000448284,
+      "dynamic_power_mW": 0.448284,
+      "leakage_power_mW": 4.5602699999999996e-05,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 0.00011394199999999999,
+        "dynamic_energy_nJ": 0.000448284,
+        "leakage_power_mW": 4.5602699999999996e-05
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_fifo16x8/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "153052778f47b191b2bbe7a23507a100d0d367d9ff895fdff1fcb67041cd5433",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_fifo16x8/scripts/cadence/syn_rpt/snn_fifo16x8_power.rpt",
+      "source_report_power_sha256": "243ace7a75cd6f3b10bc74a520b944b3417b13649d195c5f4282ce29f841949d",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "fifo16x8"
+    },
+    "fifo32x8": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 0.000207092,
+      "dynamic_energy_nJ": 0.0007695569999999999,
+      "dynamic_power_mW": 0.7695569999999999,
+      "leakage_power_mW": 8.517890000000001e-05,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 0.000207092,
+        "dynamic_energy_nJ": 0.0007695569999999999,
+        "leakage_power_mW": 8.517890000000001e-05
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_fifo32x8/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "8b79ebe78ccd1dd694fad903297eeca07a4c0080041da3dae020a7bc94da7c69",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_fifo32x8/scripts/cadence/syn_rpt/snn_fifo32x8_power.rpt",
+      "source_report_power_sha256": "ff866bf8b2bd14847ea3e2761d8f6164698643b661f1d189ce3baf62fb0076d7",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "fifo32x8"
+    },
+    "fifo64x2": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 0.000124506,
+      "dynamic_energy_nJ": 0.000578954,
+      "dynamic_power_mW": 0.578954,
+      "leakage_power_mW": 4.97587e-05,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 0.000124506,
+        "dynamic_energy_nJ": 0.000578954,
+        "leakage_power_mW": 4.97587e-05
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_fifo64x2/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "6128569d7549a20175f8c2516c5092d8f3ab8475ebfc71315f3e160e23974fc9",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_fifo64x2/scripts/cadence/syn_rpt/snn_fifo64x2_power.rpt",
+      "source_report_power_sha256": "3bc40900fa05efc80e1acecfc0dd600cbab27cae7dbc5630defc4e73c58aa230",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "fifo64x2"
+    },
+    "mux2": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 3.4599999999999995e-07,
+      "dynamic_energy_nJ": 3.84959e-08,
+      "dynamic_power_mW": 3.84959e-05,
+      "leakage_power_mW": 8.275399999999999e-08,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 3.4599999999999995e-07,
+        "dynamic_energy_nJ": 3.84959e-08,
+        "leakage_power_mW": 8.275399999999999e-08
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_mux2/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "2de33d9b156a7fb9d07cb50091c79be18dc72236d0f4802917292c79257d71f6",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_mux2/scripts/cadence/syn_rpt/snn_mux2_power.rpt",
+      "source_report_power_sha256": "a9c5ae7a7c6159336aa8191dcc900be51c45e85ef79c733e838f23c6c23e4e36",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "mux2"
+    },
+    "not_gate": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 1.06e-07,
+      "dynamic_energy_nJ": 7.7486e-09,
+      "dynamic_power_mW": 7.7486e-06,
+      "leakage_power_mW": 1.0876000000000001e-08,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 1.06e-07,
+        "dynamic_energy_nJ": 7.7486e-09,
+        "leakage_power_mW": 1.0876000000000001e-08
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_not_gate/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "6350b5307c821ea01852366c1bc0a741ac2db8b67cf786ccf2b8259be9a1d835",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_not_gate/scripts/cadence/syn_rpt/snn_not_gate_power.rpt",
+      "source_report_power_sha256": "6494e2da0af0eee1a1de8a3643522894baaa5021bc17cad1b2331957093b60c7",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "not_gate"
+    },
+    "or_gate": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 2.27e-07,
+      "dynamic_energy_nJ": 1.650668e-08,
+      "dynamic_power_mW": 1.650668e-05,
+      "leakage_power_mW": 5.1616000000000004e-08,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 2.27e-07,
+        "dynamic_energy_nJ": 1.650668e-08,
+        "leakage_power_mW": 5.1616000000000004e-08
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_or_gate/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "c73e198d747b3a6c7a277443d8cb7a707c26de1851252e7a130a198a934482d6",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_or_gate/scripts/cadence/syn_rpt/snn_or_gate_power.rpt",
+      "source_report_power_sha256": "e62e0814e3c873afadcfe709182b4cb1f42e9e727404f48086d26a77f0363cd6",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "or_gate"
+    },
+    "register1": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 7.3e-07,
+      "dynamic_energy_nJ": 2.609651e-06,
+      "dynamic_power_mW": 0.0026096509999999997,
+      "leakage_power_mW": 2.3328900000000002e-07,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 7.3e-07,
+        "dynamic_energy_nJ": 2.609651e-06,
+        "leakage_power_mW": 2.3328900000000002e-07
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register1/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "2983ba76136cfcfad96c1d9593a58e687affa982e77f2714427ebf700421d56d",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register1/scripts/cadence/syn_rpt/snn_register1_power.rpt",
+      "source_report_power_sha256": "5170a261272253e2489bda6ee297bd5a5d782faa796321f9fdef23e9acd612b8",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "register1"
+    },
+    "register16": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 1.1196e-05,
+      "dynamic_energy_nJ": 4.1118900000000004e-05,
+      "dynamic_power_mW": 0.04111890000000001,
+      "leakage_power_mW": 3.7326199999999998e-06,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 1.1196e-05,
+        "dynamic_energy_nJ": 4.1118900000000004e-05,
+        "leakage_power_mW": 3.7326199999999998e-06
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register16/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "0824b461496dea03c2781ab6a3d77768c33e35d5947afe912d342913a757a8a4",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register16/scripts/cadence/syn_rpt/snn_register16_power.rpt",
+      "source_report_power_sha256": "af92efa25007a44b6403e07efd26fe289b097103b8a4622c68a2c5a39a924b3d",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "register16"
+    },
+    "register2": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 1.427e-06,
+      "dynamic_energy_nJ": 5.159820000000001e-06,
+      "dynamic_power_mW": 0.005159820000000001,
+      "leakage_power_mW": 4.6657800000000004e-07,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 1.427e-06,
+        "dynamic_energy_nJ": 5.159820000000001e-06,
+        "leakage_power_mW": 4.6657800000000004e-07
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register2/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "e8c7c2a36a0aabb43497b943ee0c96502bbeb2e3f496854082f3b72db4c8ba40",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register2/scripts/cadence/syn_rpt/snn_register2_power.rpt",
+      "source_report_power_sha256": "cee8c803c51e46537a9b01242d990dd65386465c0c74eafa4e117d6626328d34",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "register2"
+    },
+    "register3": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 2.125e-06,
+      "dynamic_energy_nJ": 7.72542e-06,
+      "dynamic_power_mW": 0.00772542,
+      "leakage_power_mW": 6.99867e-07,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 2.125e-06,
+        "dynamic_energy_nJ": 7.72542e-06,
+        "leakage_power_mW": 6.99867e-07
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register3/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "af8692ea3ca176fa38d979b0a8b253f7615ca27b9d0de0d94ddcf7c1c13bdadf",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register3/scripts/cadence/syn_rpt/snn_register3_power.rpt",
+      "source_report_power_sha256": "75ed8c3746a880953cf223ded6c03d919de1baae4b8d3daf05d5f4554f0f89e3",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "register3"
+    },
+    "register32": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 2.1437e-05,
+      "dynamic_energy_nJ": 8.13764e-05,
+      "dynamic_power_mW": 0.0813764,
+      "leakage_power_mW": 7.988660000000001e-06,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 2.1437e-05,
+        "dynamic_energy_nJ": 8.13764e-05,
+        "leakage_power_mW": 7.988660000000001e-06
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register32/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "74c7957e37fe1c2dbbb8c205b078de9bc04d8e23a97a541666af60447d58c534",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register32/scripts/cadence/syn_rpt/snn_register32_power.rpt",
+      "source_report_power_sha256": "94589c7b7072613caefcd33488fab398501ce0a9337cf0c62eac6fae6c975708",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "register32"
+    },
+    "register5": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 3.521e-06,
+      "dynamic_energy_nJ": 1.2935610000000001e-05,
+      "dynamic_power_mW": 0.01293561,
+      "leakage_power_mW": 1.16644e-06,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 3.521e-06,
+        "dynamic_energy_nJ": 1.2935610000000001e-05,
+        "leakage_power_mW": 1.16644e-06
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register5/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "5bd7db7799ffd789f0ebe2d08ccbf59d3b50cf90deb3e8815c40d33bb478b608",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register5/scripts/cadence/syn_rpt/snn_register5_power.rpt",
+      "source_report_power_sha256": "ab81440e385b4ea9260f08dc79bec68fcc7f0f7e21c076470111500f14bcf1c5",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "register5"
+    },
+    "register64": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 4.2768e-05,
+      "dynamic_energy_nJ": 0.00016273539999999998,
+      "dynamic_power_mW": 0.16273539999999997,
+      "leakage_power_mW": 1.59664e-05,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 4.2768e-05,
+        "dynamic_energy_nJ": 0.00016273539999999998,
+        "leakage_power_mW": 1.59664e-05
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register64/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "18c6227f5d48efa073f82e5e60e27225c8cc44cc8a622707270c5c01c6c8e03c",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_register64/scripts/cadence/syn_rpt/snn_register64_power.rpt",
+      "source_report_power_sha256": "aecb032d266713e4ecdff5b0449ecadc5319fb4f3f3ca54e9aa51c910dcf1499",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "register64"
+    },
+    "xor_gate": {
+      "activity": "default 50% switching, no VCD",
+      "area_mm2": 3.6099999999999996e-07,
+      "dynamic_energy_nJ": 3.638641e-08,
+      "dynamic_power_mW": 3.6386409999999995e-05,
+      "leakage_power_mW": 6.1787e-08,
+      "measured_directly": true,
+      "scale": 1,
+      "scaled_metrics": {
+        "area_mm2": 3.6099999999999996e-07,
+        "dynamic_energy_nJ": 3.638641e-08,
+        "leakage_power_mW": 6.1787e-08
+      },
+      "source_frequency_MHz": 1000.0,
+      "source_report_area": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_xor_gate/scripts/cadence/syn_rpt/final_area.rpt",
+      "source_report_area_sha256": "c17f75cb13d1f345115ec103762dbdda0985414c741044e389473b84d46b9535",
+      "source_report_power": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116/snn_xor_gate/scripts/cadence/syn_rpt/snn_xor_gate_power.rpt",
+      "source_report_power_sha256": "7b70ef91a1ec2e953d76e7b18309dcdf720a2b0b392b83a64b3e833abfc85278",
+      "source_technology_nm": 7,
+      "synthesis": "Genus 21.18 synthesis-only (no P&R)",
+      "variant": "xor_gate"
+    }
+  }
+}

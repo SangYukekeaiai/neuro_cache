@@ -12,77 +12,262 @@
     8,
     9
   ],
-  "arch": "loas",
+  "architectures": [
+    "spinalflow",
+    "ptb",
+    "loas",
+    "prosperity",
+    "gustavsnn"
+  ],
+  "sides": [
+    "single",
+    "multi"
+  ],
+  "multipliers": [
+    1,
+    2,
+    4
+  ],
   "points": [
     {
+      "arch": "spinalflow",
       "side": "single",
       "multiplier": 1,
-      "arch_yaml": "configs/arch_single_x1.yaml",
-      "mapspace_dir": "configs/mapspaces_single",
+      "arch_yaml": "configs/arch_spinalflow_single_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_spinalflow_single",
       "total_weight_bytes": 1048576
     },
     {
+      "arch": "spinalflow",
       "side": "single",
       "multiplier": 2,
-      "arch_yaml": "configs/arch_single_x2.yaml",
-      "mapspace_dir": "configs/mapspaces_single",
+      "arch_yaml": "configs/arch_spinalflow_single_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_spinalflow_single",
       "total_weight_bytes": 2097152
     },
     {
+      "arch": "spinalflow",
       "side": "single",
       "multiplier": 4,
-      "arch_yaml": "configs/arch_single_x4.yaml",
-      "mapspace_dir": "configs/mapspaces_single",
+      "arch_yaml": "configs/arch_spinalflow_single_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_spinalflow_single",
       "total_weight_bytes": 4194304
     },
     {
-      "side": "single",
-      "multiplier": 8,
-      "arch_yaml": "configs/arch_single_x8.yaml",
-      "mapspace_dir": "configs/mapspaces_single",
-      "total_weight_bytes": 8388608
-    },
-    {
-      "side": "single",
-      "multiplier": 16,
-      "arch_yaml": "configs/arch_single_x16.yaml",
-      "mapspace_dir": "configs/mapspaces_single",
-      "total_weight_bytes": 16777216
-    },
-    {
+      "arch": "spinalflow",
       "side": "multi",
       "multiplier": 1,
-      "arch_yaml": "configs/arch_multi_x1.yaml",
-      "mapspace_dir": "configs/mapspaces_multi",
+      "arch_yaml": "configs/arch_spinalflow_multi_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_spinalflow_multi",
       "total_weight_bytes": 1048576
     },
     {
+      "arch": "spinalflow",
       "side": "multi",
       "multiplier": 2,
-      "arch_yaml": "configs/arch_multi_x2.yaml",
-      "mapspace_dir": "configs/mapspaces_multi",
+      "arch_yaml": "configs/arch_spinalflow_multi_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_spinalflow_multi",
       "total_weight_bytes": 2097152
     },
     {
+      "arch": "spinalflow",
       "side": "multi",
       "multiplier": 4,
-      "arch_yaml": "configs/arch_multi_x4.yaml",
-      "mapspace_dir": "configs/mapspaces_multi",
+      "arch_yaml": "configs/arch_spinalflow_multi_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_spinalflow_multi",
       "total_weight_bytes": 4194304
     },
     {
-      "side": "multi",
-      "multiplier": 8,
-      "arch_yaml": "configs/arch_multi_x8.yaml",
-      "mapspace_dir": "configs/mapspaces_multi",
-      "total_weight_bytes": 8388608
+      "arch": "ptb",
+      "side": "single",
+      "multiplier": 1,
+      "arch_yaml": "configs/arch_ptb_single_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_ptb_single",
+      "total_weight_bytes": 1048576
     },
     {
+      "arch": "ptb",
+      "side": "single",
+      "multiplier": 2,
+      "arch_yaml": "configs/arch_ptb_single_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_ptb_single",
+      "total_weight_bytes": 2097152
+    },
+    {
+      "arch": "ptb",
+      "side": "single",
+      "multiplier": 4,
+      "arch_yaml": "configs/arch_ptb_single_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_ptb_single",
+      "total_weight_bytes": 4194304
+    },
+    {
+      "arch": "ptb",
       "side": "multi",
-      "multiplier": 16,
-      "arch_yaml": "configs/arch_multi_x16.yaml",
-      "mapspace_dir": "configs/mapspaces_multi",
-      "total_weight_bytes": 16777216
+      "multiplier": 1,
+      "arch_yaml": "configs/arch_ptb_multi_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_ptb_multi",
+      "total_weight_bytes": 1048576
+    },
+    {
+      "arch": "ptb",
+      "side": "multi",
+      "multiplier": 2,
+      "arch_yaml": "configs/arch_ptb_multi_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_ptb_multi",
+      "total_weight_bytes": 2097152
+    },
+    {
+      "arch": "ptb",
+      "side": "multi",
+      "multiplier": 4,
+      "arch_yaml": "configs/arch_ptb_multi_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_ptb_multi",
+      "total_weight_bytes": 4194304
+    },
+    {
+      "arch": "loas",
+      "side": "single",
+      "multiplier": 1,
+      "arch_yaml": "configs/arch_loas_single_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_loas_single",
+      "total_weight_bytes": 1048576
+    },
+    {
+      "arch": "loas",
+      "side": "single",
+      "multiplier": 2,
+      "arch_yaml": "configs/arch_loas_single_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_loas_single",
+      "total_weight_bytes": 2097152
+    },
+    {
+      "arch": "loas",
+      "side": "single",
+      "multiplier": 4,
+      "arch_yaml": "configs/arch_loas_single_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_loas_single",
+      "total_weight_bytes": 4194304
+    },
+    {
+      "arch": "loas",
+      "side": "multi",
+      "multiplier": 1,
+      "arch_yaml": "configs/arch_loas_multi_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_loas_multi",
+      "total_weight_bytes": 1048576
+    },
+    {
+      "arch": "loas",
+      "side": "multi",
+      "multiplier": 2,
+      "arch_yaml": "configs/arch_loas_multi_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_loas_multi",
+      "total_weight_bytes": 2097152
+    },
+    {
+      "arch": "loas",
+      "side": "multi",
+      "multiplier": 4,
+      "arch_yaml": "configs/arch_loas_multi_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_loas_multi",
+      "total_weight_bytes": 4194304
+    },
+    {
+      "arch": "prosperity",
+      "side": "single",
+      "multiplier": 1,
+      "arch_yaml": "configs/arch_prosperity_single_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_prosperity_single",
+      "total_weight_bytes": 1048576
+    },
+    {
+      "arch": "prosperity",
+      "side": "single",
+      "multiplier": 2,
+      "arch_yaml": "configs/arch_prosperity_single_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_prosperity_single",
+      "total_weight_bytes": 2097152
+    },
+    {
+      "arch": "prosperity",
+      "side": "single",
+      "multiplier": 4,
+      "arch_yaml": "configs/arch_prosperity_single_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_prosperity_single",
+      "total_weight_bytes": 4194304
+    },
+    {
+      "arch": "prosperity",
+      "side": "multi",
+      "multiplier": 1,
+      "arch_yaml": "configs/arch_prosperity_multi_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_prosperity_multi",
+      "total_weight_bytes": 1048576
+    },
+    {
+      "arch": "prosperity",
+      "side": "multi",
+      "multiplier": 2,
+      "arch_yaml": "configs/arch_prosperity_multi_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_prosperity_multi",
+      "total_weight_bytes": 2097152
+    },
+    {
+      "arch": "prosperity",
+      "side": "multi",
+      "multiplier": 4,
+      "arch_yaml": "configs/arch_prosperity_multi_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_prosperity_multi",
+      "total_weight_bytes": 4194304
+    },
+    {
+      "arch": "gustavsnn",
+      "side": "single",
+      "multiplier": 1,
+      "arch_yaml": "configs/arch_gustavsnn_single_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_gustavsnn_single",
+      "total_weight_bytes": 1048576
+    },
+    {
+      "arch": "gustavsnn",
+      "side": "single",
+      "multiplier": 2,
+      "arch_yaml": "configs/arch_gustavsnn_single_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_gustavsnn_single",
+      "total_weight_bytes": 2097152
+    },
+    {
+      "arch": "gustavsnn",
+      "side": "single",
+      "multiplier": 4,
+      "arch_yaml": "configs/arch_gustavsnn_single_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_gustavsnn_single",
+      "total_weight_bytes": 4194304
+    },
+    {
+      "arch": "gustavsnn",
+      "side": "multi",
+      "multiplier": 1,
+      "arch_yaml": "configs/arch_gustavsnn_multi_x1.yaml",
+      "mapspace_dir": "configs/mapspaces_gustavsnn_multi",
+      "total_weight_bytes": 1048576
+    },
+    {
+      "arch": "gustavsnn",
+      "side": "multi",
+      "multiplier": 2,
+      "arch_yaml": "configs/arch_gustavsnn_multi_x2.yaml",
+      "mapspace_dir": "configs/mapspaces_gustavsnn_multi",
+      "total_weight_bytes": 2097152
+    },
+    {
+      "arch": "gustavsnn",
+      "side": "multi",
+      "multiplier": 4,
+      "arch_yaml": "configs/arch_gustavsnn_multi_x4.yaml",
+      "mapspace_dir": "configs/mapspaces_gustavsnn_multi",
+      "total_weight_bytes": 4194304
     }
   ]
 }

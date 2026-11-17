@@ -112,7 +112,7 @@ class TC:
         """Return two lines: a comment header and the CSV data row.
 
         Column order:
-            tc_id | actor_id | op | size | src | dest | dep
+            tc_id | actor_id | op | size | src | dest | dep | var_name
         """
         comment = f"# {self.annotation}\n"
         row = ",".join([
@@ -123,6 +123,7 @@ class TC:
             self._fmt(self.srcs),
             self._fmt(self.dests),
             self._fmt(self.deps),
+            self.var_name,
         ])
         return comment + row
 

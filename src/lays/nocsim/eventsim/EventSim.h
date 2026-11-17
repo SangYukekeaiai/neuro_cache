@@ -52,7 +52,8 @@ inline bool touches_dram(const Transaction& tc, int dram_port) {
 }
 
 inline SimResult simulate(const std::vector<Transaction>& tcs, const NoC& noc,
-                           int dram_port, double dram_latency) {
+                           int dram_port, double dram_latency,
+                           bool weight_only = false) {
     const int n = static_cast<int>(tcs.size());
 
     std::unordered_map<int, int> id_to_idx;
@@ -168,6 +169,15 @@ inline SimResult simulate(const std::vector<Transaction>& tcs, const NoC& noc,
                 for (const auto& l : route) start = std::max(start, get_link_free(l));
 
                 duration = static_cast<long long>(route.size()) + tc.size * FLITS_PER_PACKET;
+            }
+
+            // The weight-only ablation keeps the transaction and dependency
+            // graph intact, but makes psum/vmem transfers free.  Updating the
+            // actor/link free times below with finish == start still enforces
+            // every dependency and preserves the ordering of the path.
+            if (weight_only && tc.op != 2 &&
+                (tc.var_name == "psum" || tc.var_name == "vmem")) {
+                duration = 0;
             }
 
             long long finish = start + duration;

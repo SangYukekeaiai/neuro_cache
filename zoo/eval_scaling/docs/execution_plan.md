@@ -1,121 +1,227 @@
-# eval_scaling execution plan (full chain) - PLAN ONLY, nothing implemented
+# eval_scaling execution chain - AWAITING REVIEW, nothing implemented
 
-Boss spec 2026-11-16 (verbatim decisions) applied on top of `plan.md`:
+The stage-by-stage chain for the design in `plan.md`. That file owns the
+scope, the metric definitions, the schedule-identity argument and the open
+questions; this one owns the order of operations, the per-stage inputs and
+outputs, and the gates. Where the two could disagree, `plan.md` governs.
 
-- Two series only: single-node vs multi-node. **Supersedes plan.md v2's third
-  (multi-node cache) series - confirm this is intended before plotting.**
-- Workload: loas_vgg16, samples 000-009 (10), the 13 kept layers (C5/C6).
-- Utilization: the Row-1 formula in `plan.md` (U = sum_l C_l / (N * sum_l T_l)),
-  computed from nocsim total latency + per-core per-tile latency.
-- Traffic: **CoSA weight-traffic formula (analytic, from the solved schedule)**,
-  not the nocsim DRAM-byte counter of plan.md Row 2. nocsim DRAM bytes are kept
-  as a cross-check diagnostic only.
-- Single-node side goes through the scheduler too, then nocsim's single-node
-  path (weight traces are still produced by the single-node core model).
-- Venue: Stokes (bridge already built). All inputs/outputs under
-  `zoo/eval_scaling/`, fully separated from every other zoo figure.
+**S0 can start.** The four questions that gated it were closed by the user on
+2026-11-16: the workload is the CIFAR-10 `B09/loas_vgg16_T4_n500` capture, the
+grid is 1x/2x/4x, the figure carries three series including the multi-node
+cache arm, and the previous campaign's Stokes array is cancelled. Of what is
+still open, only **Q7** (the four non-LoAS mapspace pairs) is consumed by S0,
+and it is a confirm-or-replace of a stated rule rather than a missing input.
+
+**No stage inherits an artifact.** `zoo/eval_scaling/outputs/` and
+`configs/` do not exist; every input below is produced by an earlier stage
+or snapshotted from outside the figure. The cancelled array's rows are not
+read by anything here.
 
 ## Sweep definition
 
-| Side | Node mapspace | Nodes | lb (L1 weight) per node | GB (L2 weight) | Total weight storage |
-|---|---|---|---|---|---|
-| single | CIN/KH/KW full, COUT=64, T full | 1 | 1024 KB × {1,2,4,8,16} → 1-16 MB | - (single_node: true, direct DRAM→node) | 1-16 MB |
-| multi | CIN/KH/KW full, COUT=4, T full | 16 | 32 KB × {1,2,4,8,16} → 32-512 KB | 512 KB × {1,2,4,8,16} → 0.5-8 MB | 1-16 MB (16·lb + GB) |
+| series | node mapspace | nodes | per-node L1/`lb` weight | shared L2/`GB` weight | total weight storage | simulator |
+|---|---|---|---|---|---|---|
+| single-node spad | KH/KW/CIN/T full, COUT spatial = full node | 1 | 1,048,576 B x m | - (`single_node: true`, direct DRAM->node) | 1,048,576 B x m | nocsim |
+| multi-node spad | KH/KW/CIN/T full, COUT spatial = 1/16 | 16 | 32,768 B x m | 524,288 B x m | 1,048,576 B x m (16*lb + GB) | nocsim |
+| multi-node cache | the multi-node schedule, unchanged | 16 | `l1_size_bytes` = 32,768 x m | `l2_size_bytes` = 524,288 x m | 1,048,576 B x m | cachesim |
 
-- Equal-capacity accounting (resolves C9): **total weight storage =
-  sum of node lb + GB**; psum/vmem/state buffers held constant per fig1
-  convention. 16×32 KB + 512 KB = 1024 KB matches single x1 exactly, and the
-  match holds at every multiplier. Caption must state this rule.
-- PE accounting: multi-node keeps campaign `num_pes: 4` per node (64 total);
-  single node gets `num_pes: 64` so compute capability is equal and only the
-  memory organization differs. (Assumption - flag to boss.)
-- Note for the caption/text: single-node x1 (1024 KB) is already 32× the
-  published LoAS lb (32 KB); the x-axis is total on-chip capacity, not
-  multiples of published.
+`m` in **{1, 2, 4}**. `16 * 32768 * m + 524288 * m == 1048576 * m` at every
+`m`, asserted in `make_configs.py:124-125` and to be asserted for the cache
+configs too. All three series hold equal total weight bytes at every point,
+which is what makes the comparison a comparison of *organization* rather than
+of size. psum/vmem are held constant across the sweep so only weight capacity
+moves; the caption must say so.
 
-Case counts: schedules 2 sides × 5 capacities × 13 layers = **130 solves**;
-trace-gen/sim 120 × 10 samples = **1,200 cases** per stage.
+The COUT splits above are LoAS's. **The other four architectures' splits are
+`plan.md` Q7 and must not be guessed.** The cache arm's per-core geometry
+depends on the schedule's NoC-level spatial product and is **not known until
+S1b prints it** (`plan.md` 7.7, Q12).
 
-## Full chain (input → module → intermediate → output)
+## Case arithmetic
 
-### S0. Ingest + configs (Delta, no compute)
-- **Input:** boss spec above; bases `zoo/wt500_fig3cfg/arch.yaml`,
-  `zoo/wt500_fig3cfg/mapspaces/loas.yaml`; B09 vgg16 capture `meta.json`
-  (layer dims, kept-layer list) from `/work/nvme/bebv/yyu9/input_trace_delta/`.
-- **Module:** none (config authoring), S0-style snapshot of external inputs.
-- **Output:** `zoo/eval_scaling/configs/`
-  - `arch_single_x{1,2,4,8,16}.yaml` (single_node: true, lb per table, COUT-64 mapspace `mapspaces/loas_single.yaml`)
-  - `arch_multi_x{1,2,4,8,16}.yaml` (16 nodes, lb+GB per table, campaign COUT-4 mapspace `mapspaces/loas_multi.yaml`)
-  - `sweep_config.yaml` (case list: side × capacity × layer × sample), published-capacity note with citation.
+With `A` = 5 architectures, 3 capacity points, `L` = 13 layers, `S` = 10
+samples:
 
-### S1. Scheduler (Delta login - Gurobi license lives here; module `lays.scheduler`)
-- **Input:** per case: arch yaml + mapspace + layer dims.
-- **Module:** `lays.scheduler` CLI (MIP solve, branch problems for
-  traffic-free cases). Thread caps per login-node rules (Gurobi Threads=1,
-  OPENBLAS/OMP_NUM_THREADS=1).
-- **Intermediate:** per-case solver logs.
-- **Output:** `zoo/eval_scaling/outputs/schedules/{side}_x{m}/{layer}.json`
-  + `extract_metrics` dump (util, spatial_cost, temporal_traffic, delay)
-  per schedule. 130 solves, minutes each - login-friendly, no Slurm needed.
+- **S1 solves** = `A x 2 x 3 x L` = **390**. The cache arm adds none: it
+  reuses the multi-node schedules.
+- **Scratchpad cases before dedup** = `390 x S` = **3,900**.
+- **Scratchpad cases after dedup** = `(distinct schedules) x S`, which S1b
+  measures. Bound from `plan.md` section 4: the single side collapses 39
+  (layer, point) pairs per arch to 13 if the flatness finding holds, the multi
+  side falls somewhere between 13 and 39, so 3,900 cases become between
+  **1,300 and 2,600**.
+- **Cache cases** = `A x 3 x L x S` = **1,950**, **none deduped** - cachesim
+  reads the capacity out of its own config, so two points sharing a schedule
+  share the trace and not the result (`plan.md` section 4).
+- **Total simulation** = **3,250 to 4,550 cases.**
 
-### S2. Analytic CoSA weight traffic (Delta; small join script, no sim)
-- **Input:** S1 schedules + metrics.
-- **Module:** `lays.scheduler.metrics` values; per plan.md closed form
-  W_weight = GB-tile bytes × product of DRAM-boundary-crossing temporal trips
-  (= `util[weight]` × `temporal_traffic[weight]` in linear scale, bw_weight/8).
-- **Output:** `zoo/eval_scaling/outputs/traffic.csv`:
-  (side, capacity, layer) → W_weight bytes. **Schedule-determined, so
-  sample-independent: the traffic panel has no CI** (flag to boss; plan.md
-  Row 2 had per-sample CI from counted DRAM bytes).
+The 65 % dedup measured on the deleted LoAS campaign was over a *five*-point
+grid and is not this figure's number.
 
-### S3. Weight trace generation (Stokes Slurm; module `lays.weight_trace_gen`, LoAS model)
-- **Input:** S1 schedules shipped over the bridge + B09 vgg16 spike captures
-  samples 000-009 (already mirrored on Stokes).
-- **Module:** `lays.weight_trace_gen` (LoAS core model) - replays spikes
-  through the node tile computation: single side with the COUT-64 node,
-  multi side with the COUT-4 node.
-- **Output (intermediate, /dev/shm then scratch):** per (side, capacity,
-  layer, sample): per-tile weight-address trace + per-tile cycle counts
-  (wcts). 1,200 cases. Traces deleted after S4 consumes them (wave pattern).
+**12 vs 13 layers**: 13 is the whole set, 12 is the convolutions alone
+(`plan.md` Q2). `L` above assumes 13.
 
-### S4. nocsim (Stokes Slurm; module `lays.nocsim`)
-- **Input:** S1 schedule + S3 per-tile cycles/traces, arch yaml.
-- **Module:** `lays.nocsim` - single side through the single-node path
-  (`combine.py` direct DRAM→node sends with weight-change elision), multi
-  side through the full NoC eventsim (GB tiles, K/T-chains).
-- **Output:** per case CSV: T_l (makespan), C_l per node (compute-transaction
-  occupancy = per-core per-tile latency summed), D_l, DRAM transaction bytes
-  (diagnostic cross-check against S2 only - not plotted).
-  1,200 runs. Slurm array via the `wt500_fig3cfg/stokes/sim_shard` pattern:
-  real `--mem`, TMPDIR=/dev/shm, thread env caps, shard manifest + rerun_missing.
+## Stages
 
-### S5. Transfer back + aggregate (Delta; join script in `zoo/eval_scaling/`)
-- **Input:** S4 CSVs (bridge back), S2 traffic.csv.
-- **Formulae (per plan.md):**
-  - U = (sum_l C_l) / (N · sum_l T_l), cycle-weighted over the 13 layers
-    (sum before divide), per sample → mean ± 95% CI over 10 samples.
-  - Traffic y = W(side, x) / W_single(x1), layer-summed, one baseline per panel.
-- **Output:** `zoo/eval_scaling/outputs/aggregate.csv`
-  (side, capacity → U_mean, U_ci, traffic_norm) + stall-decomposition
-  diagnostics columns (exposed/overlapped, not plotted).
+### S0 - configs, from nothing (Delta, no compute)
+- **Input:** `plan.md` sections 2, 6 and 7; the `B09/loas_vgg16_T4_n500`
+  capture `meta.json` (layer dims and the valid-layer list); the five campaign
+  mapspaces under `zoo/wt500_fig3cfg/mapspaces/`;
+  `zoo/wt500_fig3cfg/arch.yaml` as the bitwidth and node-shape base;
+  `examples/cache/base.json` as the cache base.
+- **Component:** `zoo/eval_scaling/make_configs.py`, **extended** to emit per
+  architecture rather than for LoAS alone, and to emit the three cachesim
+  config JSONs.
+- **Output:** `configs/arch_{arch}_{side}_x{m}.yaml` (30),
+  `configs/mapspaces_{arch}_{side}/` (10), `configs/cache_x{m}.json` (3),
+  `configs/sweep_config.json`, plus a snapshot of every external input with
+  its SHA256.
+- **Gate:** the equal-capacity assertion passes for every architecture **and
+  for the three cache configs**, and every emitted mapspace is a one-field
+  edit of its campaign original.
 
-### S6. Plot (Delta; `zoo/eval_scaling/plot.py` per approved mock)
-- **Input:** aggregate.csv; mock `docs/scaling_mock.py` restyled to TWO series.
-- **Output:** `zoo/eval_scaling/outputs/eval_scaling.{pdf,png}` +
-  `provenance.json`. 1×2 panels: left U, right normalized traffic with the
-  compulsory floor (R=1, every weight once) as dotted reference; x-axis
-  total on-chip capacity, log2. → copied into the paper repo `fig/` only
-  after boss sign-off.
+### S1 - schedules (Delta login; Gurobi lives here)
+- **Input:** per case, arch yaml + mapspace + layer dims.
+- **Component:** `lays.scheduler`, driven by `zoo/eval_scaling/gen_inputs.py`
+  (a thin wrapper over the frozen `wt_gen_inputs_snapshot.py`, with the
+  capture pinned at `gen_inputs.py:23`). `Threads=1`, single-threaded BLAS.
+- **Output:** `outputs/s1/{arch}/{side}_x{m}/schedules/{arch}/{capture}/{layer}.json`
+  and the matching `workloads/` layer yamls.
+- **Gate:** every solve `OPTIMAL`. Any `INFEASIBLE` is recorded per
+  `plan.md` Q6 - Prosperity's mapspace is known to reject layers on
+  `cap_NodeLevel_psum` - and the answer is settled before S3.
 
-## Boss gates
-1. This plan + the two-series mock (regenerate scaling_mock without the cache series).
-2. S1 schedule sanity spot-check (one layer per side, capacities x1/x16) before launching S3/S4 on Stokes.
-3. Figure sign-off before paper integration.
+### S1b - schedule identity, dedup, and the cache arm's geometry (Delta, seconds)
+- **Input:** every S1 schedule.
+- **Component:** **new** `zoo/eval_scaling/dedup.py`.
+- **Method:** `plan.md` section 4. Canonical key is a SHA256 over
+  `{result.strategy, dram_num_steps, mode}`, sorted keys, **with the arm in
+  the key** so no cache point can be deduplicated. `arch_yaml_sha256` and
+  `result.configs` are excluded deliberately: both vary at every capacity
+  by construction, so a byte-level hash reports every schedule as different
+  and is the wrong test.
+- **Output:** `outputs/dedup_map.json` mapping every
+  (arch, arm, side, layer, capacity) to its representative, and
+  `outputs/cases.txt` holding scratchpad representatives plus **every** cache
+  point.
+- **Gates:** (a) the per-architecture saving reported before S3 is sized, with
+  no number inherited from any earlier campaign; (b) the single-node flatness
+  finding of `plan.md` section 3 confirmed or refuted per architecture;
+  (c) the **NoC-level spatial product** of the first multi-node solve printed
+  per architecture - if it is not the node count, **stop**: the cache series
+  needs generator or simulator work this plan has not scoped
+  (`plan.md` 7.7, Q12).
 
-## Open flags for boss
-- F1: cache series really dropped (contradicts plan.md v2 note of 2026-11-16)?
-- F2: single-node num_pes = 64 (equal compute) - confirm.
-- F3: traffic panel without CI (analytic CoSA traffic is per-schedule) - OK,
-  or also plot nocsim-counted DRAM bytes (per-sample, with CI) as the check?
-- F4: single-node solves may be near-trivial (mapspace mostly fixed by the
-  inherent dataflow) - scheduler still run for uniformity per spec item 5.
+### S2 - pilot (two Stokes tasks)
+- **Input:** one scratchpad representative case, and one cache case.
+- **Component:** `run_case.py` end to end; and the
+  `gen --stream | cachesim_run` pipe end to end.
+- **Output:** wall time and peak RSS for one (point, layer) over `S` samples,
+  **per arm** - the two arms run different simulators and neither is sized
+  from the other - and **the second eventsim invocation timed separately**
+  rather than assumed free (`docs/q11_row1.md`).
+- **Gate:** reviewed before the array is sized. **No eval_scaling S4 run has
+  ever completed and no cachesim run has ever been made on a stream from this
+  capture, so both arms are unsized until this runs.**
+
+### S3 + S4 - trace generation and scratchpad simulation (Stokes Slurm array)
+- **Input:** S1 schedules shipped over the bridge; the capture's spike
+  samples; the arch yaml.
+- **Components:** `lays.weight_trace_gen` (`run_case.py:63-69`) then
+  `lays.nocsim --simulate` (`run_case.py:82-88`), one array task per
+  (point, layer) covering all `S` samples. **Twice per case**: once normally,
+  once with eventsim's `--weight-only` flag over the same already-written
+  `tc.csv`, which yields the weight-only makespan row 1 needs
+  (`docs/q11_row1.md`, adopted; T72 adds the flag).
+- **Output:** `outputs/s4/{arch}_{side}_x{m}_{layer}.csv`, one row per sample
+  carrying `total_cycles`, `count_cycles`, `dram_cycles`,
+  `dram_bytes_{weight,psum,vmem}` and `weight_makespan` from the ablation
+  run.
+- **Traces are not retained**: generated into `$TMPDIR`, `shutil.rmtree`d
+  after S4 consumes them (`run_case.py:57-58, 116`). This figure needs no
+  trace quota.
+- **Gates:** `total_cycles >= count_cycles / nodes` per row, already asserted
+  at `run_case.py:108`; and the dedup identity check of `plan.md` section 4
+  step 5 - one skipped point per (arch, side) run for real and asserted to
+  match its representative **exactly** on `total_cycles` and every
+  `dram_bytes_*`. A mismatch is a stop, not a warning. **The step-5
+  assertion covers both runs**, the full one and the ablation. Plus the two
+  ablation gates of `docs/q11_row1.md`:
+  `weight_makespan <= total_cycles` - which cannot fail on a correct
+  implementation, so a pass is an implementation check and not evidence about
+  the machine - and `weight_makespan >= count_cycles / nodes`.
+
+### S3c + S4c - cache arm (Stokes Slurm array)
+- **Input:** the **multi-node** S1 schedules; the capture's spike samples;
+  `configs/cache_x{m}.json`.
+- **Components:** `lays.weight_trace_gen gen --stream`
+  (`src/lays/weight_trace_gen/cli.py:322-375`) piped into `cachesim_run` via
+  `lays.cachesim run` (`src/lays/cachesim/cli.py:15-17, 22-24`). One stream is
+  one sample (`cli.py:328-330`), so a task walks its `S` samples serially.
+- **Output:** `outputs/s4c/{arch}_cache_x{m}_{layer}.csv`, one native-schema
+  cachesim row per sample. `total_cycles` and `dram_bytes` are the two columns
+  the figure reads; `tick_base_total`, `stretch_cycles`, the hit rates and the
+  stall causes are kept as diagnostics.
+- **Nothing is materialized**: the stream never becomes a file
+  (`cli.py:298`).
+- **Gates:** `total_cycles >= tick_base_total` for every row - a cache cannot
+  make the weight path shorter than its no-stall baseline; and the binary's
+  own stall-cause identity, which it throws on rather than reports
+  (`src/lays/cachesim/native/src/instrument/stats.cpp:422-427`).
+
+### S5 - aggregate (Delta)
+- **Input:** S4 and S4c CSVs, `dedup_map.json`.
+- **Component:** `zoo/eval_scaling/aggregate.py`, **rewritten** for the two
+  metrics (row 1 is performance) and for the two arms' different column
+  names.
+- **Method:** re-expand deduped **scratchpad** rows from their
+  representatives and **refuse to re-expand a cache row**, then per
+  `plan.md` section 5 - sum over layers before forming any ratio, normalize
+  to that panel's single-node 1x point, mean and 95 % CI over `S` samples.
+  **Counted DRAM bytes, not the analytic CoSA product**: `aggregate.py:3-8`
+  records that the analytic value "reconstructs total weight volume rather
+  than measuring capacity-dependent refetch", which is exactly the failure
+  mode a capacity sweep would walk into. **The traffic row is weight-only**
+  (`plan.md` Q11, closed): `dram_bytes_weight` for the scratchpad arms
+  against `dram_bytes` for the cache arm, so all three series are on one
+  quantity.
+- **Output:** `outputs/aggregate.csv` - (arch, series, multiplier) ->
+  `perf_norm`, `perf_ci`, `traffic_norm`, `traffic_ci`, plus the unplotted
+  diagnostics.
+
+### S6 - plot (Delta)
+- **Input:** `aggregate.csv`.
+- **Component:** `zoo/eval_scaling/plot.py`, styled from `docs/scaling_mock.py`.
+- **Output:** `outputs/eval_scaling.{pdf,png}` and `provenance.json`
+  (input SHA256s, commit, dedup-map hash, case counts).
+- **Gate:** user sign-off before anything is copied into the paper repo.
+
+## Gates, in order
+
+1. S0 equal-capacity assertion, scratchpad and cache - before S1.
+2. S1 solve status and the Q6 feasibility list - before S1b.
+3. S1b dedup report, flatness re-derivation, and the spatial-product check
+   that the cache arm's geometry rests on - before S2.
+4. S2 pilot measurement, **one per arm** - before either array.
+5. S3/S4 dedup identity assertion, over both eventsim runs, plus the two
+   ablation gates - before S5.
+6. S4c `total_cycles >= tick_base_total` on every row - before S5.
+7. Figure sign-off - before paper integration.
+
+## Carried from `plan.md`, so this file is not read alone
+
+- **The single-node series is expected exactly flat at 1.0** in both rows at
+  this grid: the capacity constraint does not bind until about x0.28, below
+  1x. That is the single-node half of the result, not a missing measurement,
+  and `scaling_mock.py:26` currently draws it rising (`plan.md` Q10).
+- **The cache series is a weight-path measurement from a different
+  simulator** than the other two, so **row 1 compares weight-only makespans
+  on all three series** (`plan.md` Q11, closed; `docs/q11_row1.md` is the
+  finding and the spec). The scratchpad arms' weight-only makespan comes from
+  a second eventsim run over the same `tc.csv` with psum and vmem durations
+  zeroed, which is T72's work; until it lands, S5 cannot form row 1.
+- **The 16-node cache geometry is undecided** until S1b prints the spatial
+  product; if it is not the node count, the cache series needs work not
+  scoped here (`plan.md` Q12).
+- **The previous campaign's Stokes array is cancelled** by the user and is
+  not a dependency, a cross-check or an input of any stage above.

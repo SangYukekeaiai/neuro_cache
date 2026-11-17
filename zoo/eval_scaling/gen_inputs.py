@@ -28,23 +28,28 @@ def main() -> int:
     ap.add_argument("--smoke", action="store_true", help="first layer only, per point")
     ap.add_argument("--point", action="append", help="restrict to side_xM points")
     ap.add_argument("--allow-bridge-violations", action="store_true")
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--conda-env", default="gurobi")
     args = ap.parse_args()
 
     manifest = json.loads((HERE / "configs" / "sweep_config.json").read_text())
     failures = []
     for pt in manifest["points"]:
-        name = f"{pt['side']}_x{pt['multiplier']}"
+        name = f"{pt['arch']}_{pt['side']}_x{pt['multiplier']}"
         if args.point and name not in args.point:
             continue
-        out = HERE / "outputs" / "s1" / name
+        out = HERE / "outputs" / "s1" / pt["arch"] / f"{pt['side']}_x{pt['multiplier']}"
         argv = [
-            "--arch", manifest["arch"],
+            "--arch", pt["arch"],
             "--arch-yaml", str(HERE / pt["arch_yaml"]),
             "--mapspace-dir", str(HERE / pt["mapspace_dir"]),
             "--output-dir", str(out),
         ]
         if args.smoke:
             argv.append("--smoke")
+        if args.dry_run:
+            argv.append("--dry-run")
+        argv.extend(("--conda-env", args.conda_env))
         if args.allow_bridge_violations:
             argv.append("--allow-bridge-violations")
         print(f"=== S1 {name} ===", flush=True)

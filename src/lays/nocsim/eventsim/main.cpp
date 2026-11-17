@@ -2,6 +2,7 @@
 //
 // Usage:
 //   eventsim <tc.csv> --X <X> --Y <Y> --dram-port <id> --dram-latency <n>
+//            [--weight-only]
 //
 // Prints a one-line JSON summary to stdout:
 //   {"total_cycles":N,"unicast_cycles":N,"multicast_cycles":N,
@@ -19,6 +20,7 @@ struct Args {
     int X = -1, Y = -1;
     int dram_port = -1;
     double dram_latency = -1.0;
+    bool weight_only = false;
 };
 
 Args parse_args(int argc, char** argv) {
@@ -44,6 +46,7 @@ Args parse_args(int argc, char** argv) {
         else if (flag == "--Y") a.Y = std::stoi(next());
         else if (flag == "--dram-port") a.dram_port = std::stoi(next());
         else if (flag == "--dram-latency") a.dram_latency = std::stod(next());
+        else if (flag == "--weight-only") a.weight_only = true;
         else {
             std::cerr << "eventsim: unknown flag " << flag << "\n";
             std::exit(2);
@@ -61,9 +64,10 @@ int main(int argc, char** argv) {
     Args args = parse_args(argc, argv);
 
     try {
-        std::vector<Transaction> tcs = parse_csv(args.csv_path);
+        std::vector<Transaction> tcs = parse_csv(args.csv_path, args.weight_only);
         NoC noc(args.X, args.Y);
-        SimResult res = simulate(tcs, noc, args.dram_port, args.dram_latency);
+        SimResult res = simulate(tcs, noc, args.dram_port, args.dram_latency,
+                                 args.weight_only);
 
         std::cout << "{"
                   << "\"total_cycles\":" << res.total_cycles << ","

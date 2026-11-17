@@ -1,0 +1,26 @@
+{
+  "assumptions": [
+    "Power is Genus Joules at default 50% switching activity without VCD; per-event energy = (internal+switching) power / 1000 MHz, per dynamic-event cycle.",
+    "Synthesis-only: no place-and-route wire parasitics (Innovus OOM on the vlsi host).",
+    "All 24 basics measured at their exact widths; additive structural composition remains an estimate, not whole-module characterization.",
+    "Per-event energies use the 1 GHz source clock; the pipeline time base remains 500 MHz."
+  ],
+  "baseline_sha256": "8c3589272e2a68dc9b01847be61f2076fb5dbb84eee7a4dc582671da9ff79942",
+  "builder_sha256": "67f58d7e3ca1121f7a7b57a2ddb978af117e9e85f8998eb521fd77f609194d37",
+  "caveat": "ASAP7 Genus synthesis-only at 1 GHz (CLK_PERIOD_NS=1.0), mixed shipped libraries (AO/INVBUF/OA/SEQ 0.77V/0C, SIMPLE 0.70V/25C), Joules power at the default 50% switching activity without VCD, no place-and-route parasitics; prices applied to the 7nm/500MHz performance model",
+  "default_table_modified": false,
+  "drop": "/work/hdd/bebv/yyu9/asap7_syn_1ghz_20261116",
+  "drop_readme_sha256": "2db74aa88dbcbea14a916d66b6995b6210dc80e01f2398b53a1096d50a697c52",
+  "logic": 48,
+  "logic_technology_nm": 7,
+  "operations": 98,
+  "performance_frequency_MHz": 500,
+  "source_frequency_MHz": [
+    1000.0
+  ],
+  "structural_audit_sha256": "969c757408f576d2a68e21931994afde74573212d499c53fc5a90b27e9954269",
+  "substitution_manifest": "asap7_1ghz_substitutions.json",
+  "substitution_manifest_sha256": "ba104e465b8589c9f47d9969712bef016dd8bd80594871d7c62b28764a4d4116",
+  "table_sha256": "d29939d3fb428f2f26c1d417fd101dec139a910d9e02917be73cce437ff0d5a5",
+  "untouched_rows": 50
+}

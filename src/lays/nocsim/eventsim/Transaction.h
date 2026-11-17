@@ -2,7 +2,7 @@
 //
 // Row grammar (one transaction = one comment line + one data line):
 //   # <annotation>
-//   tc_id,actor_id,op,size,src,dest,dep
+//   tc_id,actor_id,op,size,src,dest,dep,var_name
 // where src/dest/dep are space-separated integer lists (dest/dep may be
 // empty). op: 0 UNICAST, 1 MULTICAST, 2 COUNT.
 #pragma once
@@ -21,6 +21,7 @@ struct Transaction {
     std::vector<int> srcs;   // always [actor_id], kept for CSV fidelity
     std::vector<int> dests;  // empty for COUNT
     std::vector<int> deps;   // tc_ids that must finish first
+    std::string var_name;    // weight, psum, vmem, or empty for legacy/COUNT rows
 };
 
 inline std::vector<int> parse_int_list(const std::string& s) {
@@ -46,7 +47,8 @@ inline std::vector<std::string> split_csv_line(const std::string& line) {
     return fields;
 }
 
-inline std::vector<Transaction> parse_csv(const std::string& path) {
+inline std::vector<Transaction> parse_csv(const std::string& path,
+                                          bool weight_only = false) {
     std::ifstream in(path);
     if (!in.is_open()) {
         throw std::runtime_error("cannot open " + path);
@@ -58,9 +60,12 @@ inline std::vector<Transaction> parse_csv(const std::string& path) {
         if (line.empty() || line[0] == '#') continue;
 
         auto fields = split_csv_line(line);
-        if (fields.size() != 7) {
-            throw std::runtime_error("malformed CSV row (expected 7 fields, got " +
+        if (fields.size() != 7 && fields.size() != 8) {
+            throw std::runtime_error("malformed CSV row (expected 7 or 8 fields, got " +
                                       std::to_string(fields.size()) + "): " + line);
+        }
+        if (weight_only && fields.size() != 8) {
+            throw std::runtime_error("weight-only requires 8-field CSV rows: " + line);
         }
 
         Transaction tc;
@@ -71,6 +76,7 @@ inline std::vector<Transaction> parse_csv(const std::string& path) {
         tc.srcs     = parse_int_list(fields[4]);
         tc.dests    = parse_int_list(fields[5]);
         tc.deps     = parse_int_list(fields[6]);
+        tc.var_name = fields.size() == 8 ? fields[7] : "";
         result.push_back(std::move(tc));
     }
     return result;

@@ -25,6 +25,13 @@ point=$(echo "$line" | awk '{print $1}')
 layer=$(echo "$line" | awk '{print $2}')
 [[ -n "$point" && -n "$layer" ]] || { echo "bad case line $SLURM_ARRAY_TASK_ID"; exit 2; }
 
+if [[ "$point" == *_cache_x* ]]; then
+  OUT_DIR="$ES/outputs/s4c"
+else
+  OUT_DIR="$ES/outputs/s4"
+fi
+mkdir -p "$OUT_DIR"
+
 exec "$PYTHON" "$ES/run_case.py" --repo "$REPO" --trace-root "$TRACE_ROOT" \
   --point "$point" --layer "$layer" --samples 0 --sample-count 10 \
-  --scratch "$SCRATCH" --out "$ES/outputs/s4/${point}_${layer}.csv"
+  --scratch "$SCRATCH" --out "$OUT_DIR/${point}_${layer}.csv"

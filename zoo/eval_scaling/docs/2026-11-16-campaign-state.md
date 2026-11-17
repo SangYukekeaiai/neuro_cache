@@ -1,50 +1,59 @@
-# eval_scaling (paper Fig 11): campaign state, 2026-11-16
+# eval_scaling campaign state - SUPERSEDED
 
-Record of the campaign's state as of 2026-11-16, logged on boss's request.
-Scope: what has been decided, what has run, and where the artifacts are.
-Plan of record: `zoo/eval_scaling/docs/execution_plan.md` (commit `cf0e232`).
+**This file described a campaign that no longer exists.** It is kept, rather
+than deleted, for one unverified item about the Stokes working tree that is
+recorded nowhere else (below). The Slurm array it was kept for is **cancelled
+by user decision of 2026-11-16**.
 
-## Decisions in force
+**The current design is `plan.md`**, with the chain in `execution_plan.md`.
 
-- **Two series only**: single-node vs multi-node. The multi-node *cache*
-  series of `plan.md` v2 is dropped.
-- **Sweep**: single node, node mapspace COUT 64, `lb` 1-16 MB, against
-  16 nodes at COUT 4 with the same total weight storage, counted as
-  `16 x lb + GB` (so 16 x 32 KB + 512 KB = 1024 KB matches single x1, and
-  the match holds at every multiplier).
-- **Workload**: `loas_vgg16`, samples 000-009, 13 valid layers.
-- **Utilization**: `U = sum_l C_l / (N * sum_l T_l)`.
-- **Traffic**: analytic CoSA weight traffic from the solved schedule is
-  primary; nocsim-counted DRAM words are kept as a cross-check diagnostic
-  only.
-- **Venue**: Stokes; all inputs and outputs under `zoo/eval_scaling/`.
+## What changed
 
-## Stage state
+The user redefined the figure: five architectures, the LoAS VGG16 workload,
+the whole layer set, a memory-capacity sweep at 1x/2x/4x, **three series**
+(single-node spad, multi-node spad, multi-node cache), and **performance and
+DRAM traffic** as the two metrics. The previous campaign was LoAS-only,
+two-series, swept x1-x16, and reported utilization.
 
-| stage | state | evidence |
-|---|---|---|
-| S0 configs | done | `zoo/eval_scaling/configs/`, 13 files |
-| S1 schedule solves | done, 130/130 `OPTIMAL`, ~15 min on Delta | commit `53f3c1f`; `outputs/cases.txt` 130 rows = 13 layers x {single,multi} x {x1,x2,x4,x8,x16}; per-case schedules under `outputs/s1/<config>/` |
-| S3/S4 trace-gen + sim | dispatched: 130-task Slurm array submitted to Stokes; queue was idle and no prior validation jobs were found to kill | boss report |
-| S5/S6 aggregate + figure | not started; ETA for the figure is tonight | boss report |
+The workload was specified as CIFAR-100 and then settled on the existing
+CIFAR-10 `B09/loas_vgg16_T4_n500` capture, because no CIFAR-100 LoAS VGG16
+checkpoint exists in the tree and the scaling claim does not depend on the
+label count (`plan.md` section 1, Q1). **This file's two-series decision is
+overridden**: the cache series is back in (`plan.md` Q4, 7.7).
 
-Review: archie is reviewing the kit in parallel, with findings requested
-before S5/S6.
+`zoo/eval_scaling/outputs/` and `zoo/eval_scaling/configs/` were deleted from
+the working tree on user command - the 130 S1 schedule solves, `cases.txt`,
+the manifests, and the 13 S0 config files. 284 tracked deletions,
+uncommitted, recoverable from git history. **Nothing under either directory
+is an asset of the current plan**, which regenerates everything it consumes
+from S0.
 
-## Open discrepancy to settle before the caption is written
+The harness scripts are untouched and are still the framework components the
+new plan names: `make_configs.py`, `gen_inputs.py`, `run_case.py`,
+`run_array.sbatch`, `aggregate.py`, `plot.py`, `test_hardening.py`,
+`wt_gen_inputs_snapshot.py`.
 
-`execution_plan.md` states **12 kept layers** and **120 solves**
-("Case counts: schedules 2 sides x 5 capacities x 12 layers"), while the
-committed kit is built on **13 layers and 130 solves** (`outputs/cases.txt`,
-13 distinct layer names, 13 rows per config; commit `53f3c1f`'s message
-likewise says 130). The artifacts are self-consistent at 13; only the plan
-text disagrees. Which number is right is not settled here - whoever owns
-the 13th layer's inclusion should reconcile the plan text with the kit,
-because the case count and the layer set both reach the figure caption.
+## The array: cancelled
 
-## Stokes working-tree note (reported by boss, not verified here)
+The 130-task Slurm array dispatched for the previous campaign is **cancelled
+on user decision** (`plan.md` Q9). There is no Stokes access from Delta, so
+the user runs `scancel` there. **Nothing in the current plan reads its rows**,
+including as a cross-check - the earlier suggestion that its single-node rows
+could confirm the schedule-invariance finding for free is withdrawn with it,
+and `plan.md` section 3 is re-derived in S1b instead.
 
-To unblock a `git pull` on Stokes, 9 untracked wt500 Stokes files were
-moved to `~/untracked_backup_20261116/`, and local deletions were stashed
-as `stash@{0}`. Nothing was deleted. Recovering either set is a `git stash
-pop` and a move back from that directory.
+## Still live, and actionable
+
+- **Stokes working-tree note, reported but never verified here.** To unblock
+  a `git pull` on Stokes, 9 untracked wt500 Stokes files were moved to
+  `~/untracked_backup_20261116/` and local deletions were stashed as
+  `stash@{0}`. Nothing was deleted. Recovering either set is a `git stash pop`
+  and a move back from that directory.
+
+## Resolved, so it is not carried forward
+
+The 12-versus-13 layer discrepancy this file left open is settled in
+`plan.md` step I2: **12 is the count of 3x3 convolutions and 13 includes the
+1x1 GEMM classifier head**, per
+`zoo/wt500_fig3cfg/layer_dim_coverage.md:194` (1 GEMM + 12 conv). The two
+numbers were never a disagreement about which layers exist.
