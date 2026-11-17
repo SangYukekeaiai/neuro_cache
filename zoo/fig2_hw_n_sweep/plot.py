@@ -83,7 +83,7 @@ def main():
     manifest, rows = load_summary()
     paper_style()
     width = 243.91125 / 72.27
-    fig, ax = plt.subplots(figsize=(width, width * 0.65))
+    fig, ax = plt.subplots(figsize=(width, width * 0.5))
     fig.subplots_adjust(left=0.18, right=0.98, bottom=0.23, top=0.97)
     ax.yaxis.set_major_locator(MultipleLocator(5e6))
     ax.yaxis.set_minor_locator(MultipleLocator(1e6))
@@ -117,20 +117,16 @@ def main():
         medians = [median(group) for group in data]
         ax.plot([position + offset for position in positions], medians,
                 color=color, marker=marker, markersize=3, linewidth=1)
-        info = manifest["networks"][network]
-        included = len(info["included_layers"])
-        total = included + len(info.get("excluded_layers", {}))
-        label = f"{DISPLAY_NAMES[network]} (${included}/{total}$)"
         handles.append(Line2D([], [], color=color, marker=marker, markersize=3,
-                              linewidth=1, label=label))
+                              linewidth=1, label=DISPLAY_NAMES[network]))
         for n, group in zip(manifest["hardware_sizes"], data):
             print(json.dumps(dict(network=network, N=n, median=median(group), min=min(group), max=max(group))))
     ax.set_ylim(0, max(all_values) * 1.05)
     ax.set_xticks(range(len(manifest["hardware_sizes"])), [f"${n}$" for n in manifest["hardware_sizes"]])
     ax.set_xlim(-0.5, len(manifest["hardware_sizes"]) - 0.5)
-    ax.set_xlabel("Node size N (PEs)", labelpad=2)
-    ax.set_ylabel("Latency (cycles)", labelpad=2)
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value / 1e6:g}$M"))
+    ax.set_xlabel("Node size N", labelpad=2)
+    ax.set_ylabel("Latency (M cycles)", labelpad=2)
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value / 1e6:g}$"))
     ax.tick_params(pad=1)
     ax.legend(handles=handles, loc="upper right", frameon=False, borderpad=0.3,
               handletextpad=0.4, labelspacing=0.3, handlelength=0.5)
