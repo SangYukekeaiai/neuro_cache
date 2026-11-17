@@ -38,11 +38,13 @@ def category(key: str) -> str:
         if module in ("router", "link"):
             return "NoC"
         if module == "gb":
-            return "Weight storage"
+            return "Global buffer"
         return "Shared other"
     if ns == "cache":
-        if "l1" in module or "l2" in module:
-            return "Weight storage"
+        if "l1" in module:
+            return "L1 cache"
+        if "l2" in module:
+            return "L2 cache"
         return "Prefetch metadata"
     if any(s in module for s in SRAMISH):
         return "Node buffers"
@@ -101,8 +103,8 @@ def main() -> None:
             vals = [dyn[(arm, s)].get(cat, 0.0) / T[(arm, s)] * 1e-6 for s in samples]
             pdyn[arm][cat] = sum(vals) / len(vals)   # mW
 
-    CATS = ["Compute logic", "Node buffers", "Weight storage",
-            "Prefetch metadata", "NoC", "DRAM"]
+    CATS = ["Compute logic", "Node buffers", "L1 cache", "L2 cache",
+            "Prefetch metadata", "Global buffer", "NoC", "DRAM"]
     print(f"\n{'Component':18s} {'Area mm2':>9s} {'Area mm2':>9s} {'Power mW':>9s} {'Power mW':>9s}")
     print(f"{'':18s} {'spad':>9s} {'cacheA':>9s} {'spad':>9s} {'cacheA':>9s}")
     tot = defaultdict(float)
@@ -131,14 +133,12 @@ def main() -> None:
         "    \\centering",
         "    \\caption{Power and area breakdown of the scratchpad baseline"
         " and cache~A (loas, SpikingLM, ASAP7 at 1\\,GHz; area is on-chip,"
-        " off-chip DRAM contributes power only; weight storage is the"
-        " global buffer for spad and the L1+L2 hierarchy for cache~A;"
-        " MSHRs excluded).}",
+        " off-chip DRAM contributes power only; MSHRs excluded).}",
         "    \\label{tab:power-area}",
         "    \\begingroup",
         "    \\setlength{\\tabcolsep}{3pt}",
-        "    \\renewcommand{\\arraystretch}{1.1}",
-        "    \\begin{adjustbox}{max width=\\columnwidth}",
+        "    \\renewcommand{\\arraystretch}{1.0}",
+        "    \\begin{adjustbox}{width=\\columnwidth}",
         "    \\begin{tabular}{@{}lrrrr@{}}",
         "        \\toprule",
         "        \\multirow{2}{*}{\\textbf{Component}} &"
