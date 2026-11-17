@@ -37,20 +37,20 @@ EDP_DIR = HERE.parent / "fig12_edp/stokes/results_asap7_20261116"
 # same palette as zoo/cache_dse/stokes_kit/plot.py GROUP_COLOUR
 ARCH_COLOUR = {"gustavsnn": "#444444", "loas": "#4477aa", "prosperity": "#228833",
                "ptb": "#aa3377", "spinalflow": "#ee6677"}
-WORKLOADS = [
-    ("A02/spikformer_4_384_cifar100_T4_n500", "spikformer\ncifar100"),
-    ("A04/sdt_2_512_cifar100_T4_n500", "sdt\ncifar100"),
-    ("A07/spikinglm_t4_T4_n500", "spikinglm"),
-    ("A08/vgg16_cifar10_loas_T32_n500", "vgg16\nT32"),
-    ("B09/loas_resnet19_T4_n500", "resnet19"),
-    ("B09/loas_vgg16_T4_n500", "vgg16\nT4"),
-    ("C01/sma_azo_vgg_cifar10_dvs_T10_n500", "cifar10\ndvs"),
-    ("C01/sma_azo_vgg_dvs128_gesture_T16_n500", "dvs128\ngesture"),
+WORKLOADS = [  # label: dataset on top, model below
+    ("A02/spikformer_4_384_cifar100_T4_n500", "cifar100\nspikformer"),
+    ("A04/sdt_2_512_cifar100_T4_n500", "cifar100\nsdt"),
+    ("A07/spikinglm_t4_T4_n500", "bert-base\nspikinglm"),
+    ("A08/vgg16_cifar10_loas_T32_n500", "cifar10\nvgg16-T32"),
+    ("B09/loas_resnet19_T4_n500", "cifar100\nresnet19"),
+    ("B09/loas_vgg16_T4_n500", "cifar100\nvgg16"),
+    ("C01/sma_azo_vgg_cifar10_dvs_T10_n500", "cifar10-dvs\nvgg"),
+    ("C01/sma_azo_vgg_dvs128_gesture_T16_n500", "dvs128-gesture\nvgg"),
 ]
 
 
 def edp_ratios():
-    """(arch, workload) -> per-sample model_EDP cacheA / spad, paired on sample."""
+    """(arch, workload) -> per-sample model_EDP spad / cacheA (higher = cache better)."""
     edp = {}
     for path in sorted(EDP_DIR.glob("sample_*/whole_model_asap7.csv")):
         with path.open(newline="") as stream:
@@ -67,7 +67,7 @@ def edp_ratios():
             if not spad or not cache:
                 continue
             ids = sorted(set(spad) & set(cache))
-            out[(arch, wl)] = [cache[i] / spad[i] for i in ids]
+            out[(arch, wl)] = [spad[i] / cache[i] for i in ids]
     return out
 
 
@@ -127,8 +127,8 @@ def main() -> None:
     labels = [short for _, short in WORKLOADS]
     n_arch = len(base.ARCHES)
     width = 0.8 / n_arch
-    fig, axe = plt.subplots(figsize=(7.0, 2.5))
-    key, ylabel, better = "edp", "EDP / spad\n(E x t)", "lower is better"
+    fig, axe = plt.subplots(figsize=(7.0, 2.0))
+    key, ylabel, better = "edp", "EDP improvement\nover spad", "higher is better"
     panel_vals = []
     for ai, arch in enumerate(base.ARCHES):
         xs, means, errs = [], [], []
@@ -151,7 +151,7 @@ def main() -> None:
     axe.set_yscale("log", base=2)
     lo, hi = min(panel_vals), max(panel_vals)
     axe.set_ylim(lo * 0.7, hi * 1.5)
-    ticks = [t for t in (0.004, 0.016, 0.0625, 0.25, 0.5, 1, 2, 4, 8, 16)
+    ticks = [t for t in (0.004, 0.016, 0.0625, 0.25, 0.5, 1, 2, 4, 8, 16, 64, 256)
              if lo * 0.7 <= t <= hi * 1.5]
     axe.set_yticks(ticks)
     axe.set_yticklabels([f"{t:g}" for t in ticks])
@@ -168,7 +168,6 @@ def main() -> None:
     axe.set_xticks(np.arange(len(groups)))
     axe.set_xticklabels(labels, fontsize=6.8)
     axe.set_xlim(-0.6, len(groups) - 0.4)
-    axe.set_xlabel("benchmark (whole model)", fontsize=8)
     axe.legend(handles=[Patch(facecolor=ARCH_COLOUR[a], edgecolor="0.25", label=a)
                         for a in base.ARCHES],
                fontsize=6.8, ncol=5, frameon=False, loc="lower center",
