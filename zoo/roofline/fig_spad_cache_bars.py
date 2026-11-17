@@ -195,8 +195,8 @@ def main() -> None:
                bbox_to_anchor=(0.5, 1.0), handletextpad=0.4, columnspacing=0.8,
                borderaxespad=0.0)
     fig.tight_layout()
-    fig.savefig(OUT / "fig_spad_cache_bars.pdf", bbox_inches="tight")
-    fig.savefig(OUT / "fig_spad_cache_bars.png", bbox_inches="tight", dpi=300)
+    fig.savefig(OUT / "fig_spad_cache_bars.pdf", bbox_inches="tight", pad_inches=0.02)
+    fig.savefig(OUT / "fig_spad_cache_bars.png", bbox_inches="tight", pad_inches=0.02, dpi=300)
 
     print(f"font: {family}")
     for arch in base.ARCHES:

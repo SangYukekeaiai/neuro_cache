@@ -118,7 +118,7 @@ def main() -> None:
     fig.tight_layout(h_pad=0.9, w_pad=0.6)
     for ext in ("pdf", "png"):
         fig.savefig(HERE / "results" / f"fig_dse_tornado.{ext}",
-                    bbox_inches="tight", dpi=300)
+                    bbox_inches="tight", pad_inches=0.02, dpi=300)
     print(f"font: {family}; wrote results/fig_dse_tornado.pdf / .png")
 
 

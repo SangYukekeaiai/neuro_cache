@@ -144,7 +144,7 @@ def plot(rows) -> None:
     fig.tight_layout()
     for suffix in ("png", "pdf"):
         path = OUT / f"sched_scaling.{suffix}"
-        fig.savefig(path, dpi=300 if suffix == "png" else None, bbox_inches="tight")
+        fig.savefig(path, dpi=300 if suffix == "png" else None, bbox_inches="tight", pad_inches=0.02)
         print(f"-> {path}")
     print(f"font: {family}")
 

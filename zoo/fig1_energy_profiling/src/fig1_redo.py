@@ -96,8 +96,8 @@ def main():
                ncol=2, frameon=False, fontsize=7, loc="lower center",
                bbox_to_anchor=(0.54, 0.915), handletextpad=0.5, columnspacing=0.9)
     fig.tight_layout()
-    fig.savefig(OUT / "fig1_energy_profiling_v2.pdf", bbox_inches="tight")
-    fig.savefig(OUT / "fig1_energy_profiling_v2.png", bbox_inches="tight", dpi=300)
+    fig.savefig(OUT / "fig1_energy_profiling_v2.pdf", bbox_inches="tight", pad_inches=0.02)
+    fig.savefig(OUT / "fig1_energy_profiling_v2.png", bbox_inches="tight", pad_inches=0.02, dpi=300)
     print("wrote outputs/fig1_energy_profiling_v2.pdf / .png")
     print(f"font: {family}")
 

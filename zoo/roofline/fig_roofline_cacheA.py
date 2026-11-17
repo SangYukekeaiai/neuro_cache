@@ -156,8 +156,8 @@ def main() -> None:
               loc="lower center", bbox_to_anchor=(0.5, 1.01),
               handletextpad=0.3, columnspacing=0.7, borderaxespad=0.0)
 
-    fig.savefig(OUT / "fig_roofline_cacheA.pdf", bbox_inches="tight")
-    fig.savefig(OUT / "fig_roofline_cacheA.png", bbox_inches="tight", dpi=300)
+    fig.savefig(OUT / "fig_roofline_cacheA.pdf", bbox_inches="tight", pad_inches=0.02)
+    fig.savefig(OUT / "fig_roofline_cacheA.png", bbox_inches="tight", pad_inches=0.02, dpi=300)
     n_set = {int(p["n_samples"]) for p in points}
     print(f"points: {len(points)}; n per point: {sorted(n_set)}; font: {family}")
     print("wrote outputs/fig_roofline_cacheA.pdf / .png")
