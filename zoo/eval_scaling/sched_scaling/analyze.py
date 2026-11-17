@@ -123,7 +123,7 @@ def plot(rows) -> None:
              label="single node")
     axp.set_ylabel("Speedup / single 128K")
     axp.set_yticks([1, 2, 3, 4])
-    axp.legend(fontsize=6.5, frameon=False, loc="upper left", borderaxespad=0.2,
+    axp.legend(fontsize=8, frameon=False, loc="upper left", borderaxespad=0.2,
                handlelength=1.6, handletextpad=0.4)
     for arch in ARCHES:
         pts = sorted((r for r in rows if r["arch"] == arch and r["side"] == "multi"),
@@ -133,7 +133,7 @@ def plot(rows) -> None:
                  markerfacecolor="none", label=PRETTY[arch])
     axt.axhline(1.0, color="0.4", lw=0.8, ls=":")
     axt.set_ylabel("DRAM weight traffic\n/ single 128K", fontsize=7.5)
-    axt.legend(fontsize=6, frameon=False, loc="upper right", borderaxespad=0.1,
+    axt.legend(fontsize=8, frameon=False, loc="upper right", borderaxespad=0.1,
                handlelength=1.4, handletextpad=0.3, labelspacing=0.25)
     for ax in (axp, axt):
         ax.set_xticks(list(x)); ax.set_xticklabels(caps, fontsize=8)
