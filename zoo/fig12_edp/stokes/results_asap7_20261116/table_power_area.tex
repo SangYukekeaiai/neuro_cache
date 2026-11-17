@@ -1,6 +1,6 @@
 \begin{table}[t]
     \centering
-    \caption{Power and area breakdown of the scratchpad baseline and cache~A (loas, SpikingLM, ASAP7 at 1\,GHz; area is on-chip, off-chip DRAM contributes power only).}
+    \caption{Power and area breakdown of the scratchpad baseline and cache~A (loas, SpikingLM, ASAP7 at 1\,GHz; area is on-chip, off-chip DRAM contributes power only; weight storage is the global buffer for spad and the L1+L2 hierarchy for cache~A; MSHRs excluded).}
     \label{tab:power-area}
     \begingroup
     \setlength{\tabcolsep}{3pt}
@@ -14,13 +14,11 @@
         \midrule
         Compute logic & 0.075 & 0.075 & 2.4 & 2.9 \\
         Node buffers & 0.142 & 0.008 & 57.0 & 19.0 \\
-        L1 cache & -- & 0.460 & -- & 32.5 \\
-        L2 cache & -- & 0.138 & -- & 38.0 \\
-        Global buffer & 0.621 & -- & 205.9 & -- \\
+        Weight storage & 0.621 & 0.327 & 205.9 & 69.6 \\
         NoC & 0.022 & 0.022 & 6.5 & 0.0 \\
         DRAM & -- & -- & 10410.3 & 655.3 \\
         \midrule
-        \textbf{Total} & 0.860 & 0.703 & 10682.1 & 747.7 \\
+        \textbf{Total} & 0.860 & 0.432 & 10682.1 & 746.8 \\
         \bottomrule
     \end{tabular}
     \end{adjustbox}

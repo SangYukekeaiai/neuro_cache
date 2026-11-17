@@ -26,6 +26,10 @@ ARMS = ("spad", "cacheA")
 SRAMISH = ("spad", "buffer", "fifo", "queue", "sram", "rf")
 
 
+def excluded(key: str) -> bool:
+    return "mshr" in key
+
+
 def category(key: str) -> str:
     ns, module, _ = key.split(".")
     if ns == "shared":
@@ -34,13 +38,11 @@ def category(key: str) -> str:
         if module in ("router", "link"):
             return "NoC"
         if module == "gb":
-            return "Global buffer"
+            return "Weight storage"
         return "Shared other"
     if ns == "cache":
-        if module.endswith("l1") or module == "l1" or "l1" in module:
-            return "L1 cache"
-        if module.endswith("l2") or module == "l2" or "l2" in module:
-            return "L2 cache"
+        if "l1" in module or "l2" in module:
+            return "Weight storage"
         return "Prefetch metadata"
     if any(s in module for s in SRAMISH):
         return "Node buffers"
@@ -62,6 +64,8 @@ def main() -> None:
                     continue
                 breakdown = ast.literal_eval(r["breakdown"])
                 for key, spec in breakdown.items():
+                    if excluded(key):
+                        continue
                     dyn[(r["arm"], sample)][category(key)] += (
                         spec["count"] * table[key]["dynamic_energy_nJ"])
                     inv_keys[r["arm"]].add(key)
@@ -79,6 +83,8 @@ def main() -> None:
     for arm, keys in inv_keys.items():
         seen = set()
         for key in sorted(keys):
+            if excluded(key):
+                continue
             row = table[key]
             name = physical(key, row)
             if name in seen:
@@ -95,8 +101,8 @@ def main() -> None:
             vals = [dyn[(arm, s)].get(cat, 0.0) / T[(arm, s)] * 1e-6 for s in samples]
             pdyn[arm][cat] = sum(vals) / len(vals)   # mW
 
-    CATS = ["Compute logic", "Node buffers", "L1 cache", "L2 cache",
-            "Prefetch metadata", "Global buffer", "NoC", "DRAM"]
+    CATS = ["Compute logic", "Node buffers", "Weight storage",
+            "Prefetch metadata", "NoC", "DRAM"]
     print(f"\n{'Component':18s} {'Area mm2':>9s} {'Area mm2':>9s} {'Power mW':>9s} {'Power mW':>9s}")
     print(f"{'':18s} {'spad':>9s} {'cacheA':>9s} {'spad':>9s} {'cacheA':>9s}")
     tot = defaultdict(float)
@@ -125,7 +131,9 @@ def main() -> None:
         "    \\centering",
         "    \\caption{Power and area breakdown of the scratchpad baseline"
         " and cache~A (loas, SpikingLM, ASAP7 at 1\\,GHz; area is on-chip,"
-        " off-chip DRAM contributes power only).}",
+        " off-chip DRAM contributes power only; weight storage is the"
+        " global buffer for spad and the L1+L2 hierarchy for cache~A;"
+        " MSHRs excluded).}",
         "    \\label{tab:power-area}",
         "    \\begingroup",
         "    \\setlength{\\tabcolsep}{3pt}",
