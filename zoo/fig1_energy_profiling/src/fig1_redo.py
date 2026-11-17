@@ -94,7 +94,7 @@ def main():
     fig.legend(handles=[Patch(facecolor=c, hatch=h, edgecolor="0.25", label=l)
                         for _, l, c, h in SEGMENTS],
                ncol=2, frameon=False, fontsize=7, loc="lower center",
-               bbox_to_anchor=(0.54, 0.97), handletextpad=0.5, columnspacing=0.9)
+               bbox_to_anchor=(0.54, 0.915), handletextpad=0.5, columnspacing=0.9)
     fig.tight_layout()
     fig.savefig(OUT / "fig1_energy_profiling_v2.pdf", bbox_inches="tight")
     fig.savefig(OUT / "fig1_energy_profiling_v2.png", bbox_inches="tight", dpi=300)
