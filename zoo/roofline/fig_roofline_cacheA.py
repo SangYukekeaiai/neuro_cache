@@ -44,10 +44,10 @@ def main() -> None:
     installed = {f.name for f in fm.fontManager.ttflist}
     family = next((w for w in wanted if w in installed), "DejaVu Sans")
     plt.rcParams.update({
-        "font.family": family, "font.size": 12,
+        "font.family": family, "font.size": 14,
         "mathtext.fontset": "custom", "mathtext.rm": family,
         "mathtext.it": family, "mathtext.bf": family,
-        "xtick.labelsize": 10, "ytick.labelsize": 10, "axes.linewidth": 1.0,
+        "xtick.labelsize": 12, "ytick.labelsize": 12, "axes.linewidth": 1.0,
         "axes.unicode_minus": False,
     })
 
@@ -91,11 +91,12 @@ def main() -> None:
         if i:
             ax.annotate(", ".join(names), xy=(x_max, roof), xytext=(-2, 3),
                         textcoords="offset points", ha="right", va="bottom",
-                        fontsize=9, color="0.35")
+                        fontsize=11, color="0.35")
         else:
-            ax.annotate(", ".join(names), xy=(max(ridge, x_min), roof),
+            label = ", ".join(names[:-1]) + ",\n" + names[-1] if len(names) > 2 else ", ".join(names)
+            ax.annotate(label, xy=(max(ridge, x_min), roof),
                         xytext=(4, -4), textcoords="offset points",
-                        ha="left", va="top", fontsize=9, color="0.35")
+                        ha="left", va="top", fontsize=11, color="0.35")
 
     by_pair = {}
     for p in points:
@@ -136,9 +137,9 @@ def main() -> None:
                 arrowprops=dict(arrowstyle="-|>", color="0.45", lw=0.9,
                                 shrinkA=5, shrinkB=5.5, mutation_scale=8))
     ax.annotate("spad", xy=(ex_x, ex_y), xytext=(0, 7), textcoords="offset points",
-                ha="center", fontsize=9, color="0.2")
+                ha="center", fontsize=11, color="0.2")
     ax.annotate("cache A", xy=(ex_x * 3.2, ex_y), xytext=(0, 7), textcoords="offset points",
-                ha="center", fontsize=9, color="0.2")
+                ha="center", fontsize=11, color="0.2")
     ax.set_xlabel("Operational intensity (Ops / DRAM byte)")
     ax.set_ylabel("Performance (OPS)")
     ax.spines[["top", "right"]].set_visible(False)
@@ -151,7 +152,7 @@ def main() -> None:
                       label=short[w]) for w in KEEP_WORKLOADS]
     handles += [Line2D([0], [0], marker=ARCH_MARKERS[a], ls="none", ms=6,
                        color="#444444", label=a) for a in base.ARCHES]
-    ax.legend(handles=handles, fontsize=9, ncol=3, frameon=False,
+    ax.legend(handles=handles, fontsize=11, ncol=4, frameon=False,
               loc="lower center", bbox_to_anchor=(0.5, 1.01),
               handletextpad=0.3, columnspacing=0.7, borderaxespad=0.0)
 

@@ -77,7 +77,7 @@ for layer in layers:
 
 # --- figure: three representative layers across vgg16's depth (one per
 # depth third; Okabe-Ito colors + linestyle + marker per curve).
-fig, ax = plt.subplots(figsize=(3.3, 1.8))
+fig, ax = plt.subplots(figsize=(3.3, 1.5))
 # layer index -> (label, color, linestyle, marker)
 SHOW = {0: ("conv 1", "#0072B2", "-", "o"),
         4: ("conv 5", "#E69F00", "--", "s"),
@@ -110,9 +110,11 @@ ax.yaxis.set_major_formatter(FuncFormatter(
     lambda v, _: f"$10^{{{int(round(np.log10(v)))}}}$"))
 ax.yaxis.set_minor_formatter(NullFormatter())
 ax.set_xlabel("Reuse distance")
-ax.set_ylabel("fraction of accesses")
+ax.set_ylabel("Fraction of accesses")
 ax.legend(fontsize=8, frameon=False, handlelength=2.2, borderaxespad=0.4,
           labelspacing=0.3, loc="lower right")
+ax.grid(alpha=0.25, lw=0.4)
+ax.set_axisbelow(True)
 ax.spines[["top", "right"]].set_visible(False)
 
 fig.savefig(HERE / "fig_reuse_pdf.pdf", bbox_inches="tight")
