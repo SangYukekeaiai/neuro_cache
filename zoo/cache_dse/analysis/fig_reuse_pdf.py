@@ -95,18 +95,15 @@ for i, layer in enumerate(layers):
     mean = mat.mean(0)
     # Connect successive nonzero bins; zero-mass bins in between carry no
     # accesses and are skipped rather than drawn as cliffs to zero.
-    # The d=0 bin stands alone as a marker, not connected to the curve.
-    mask = mean > 0
-    tail = mask & (x > 0)
-    ax.plot(x[tail], mean[tail], color=color, lw=1.0, ls=ls, marker=marker,
+    # The d=0 bin is not drawn (not counted in the analysis).
+    mask = (mean > 0) & (x > 0)
+    ax.plot(x[mask], mean[mask], color=color, lw=1.0, ls=ls, marker=marker,
             ms=2.8, markerfacecolor="none", markeredgewidth=0.6, alpha=0.9,
             label=label)
-    head = mask & (x == 0)
-    ax.plot(x[head], mean[head], color=color, ls="none", marker=marker,
-            ms=2.8, markerfacecolor="none", markeredgewidth=0.6, alpha=0.9)
 
-ax.set_xticks([bin_pos[b] for b in all_bins if b in (0, 4, 16, 64, 256, 1024, 4096, 16384)])
-ax.set_xticklabels([f"${b}$" for b in all_bins if b in (0, 4, 16, 64, 256, 1024, 4096, 16384)])
+ax.set_xticks([bin_pos[b] for b in all_bins if b in (16, 64, 256, 1024, 4096, 16384)])
+ax.set_xticklabels([f"${b}$" for b in all_bins if b in (16, 64, 256, 1024, 4096, 16384)])
+ax.set_xlim(left=bin_pos[min(b for b in all_bins if b > 0)] - 0.5)
 ax.set_yscale("log")
 from matplotlib.ticker import FuncFormatter, NullFormatter
 ax.yaxis.set_major_formatter(FuncFormatter(
