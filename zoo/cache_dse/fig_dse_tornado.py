@@ -108,10 +108,10 @@ def main() -> None:
         ax.tick_params(labelsize=7.5, pad=1.5)
         ax.spines[["top", "right", "left"]].set_visible(False)
     for ax in axes2[0]:
-        ax.annotate("$\\leftarrow$ better", xy=(0, 1.0), xycoords="axes fraction",
+        ax.annotate("$\\leftarrow$ better", xy=(0.47, 1.0), xycoords="axes fraction",
                     ha="right", va="bottom", fontsize=7, color="0.35")
-        ax.annotate("worse $\\rightarrow$", xy=(1.0, 1.0), xycoords="axes fraction",
-                    ha="right", va="bottom", fontsize=7, color="0.35")
+        ax.annotate("worse $\\rightarrow$", xy=(0.53, 1.0), xycoords="axes fraction",
+                    ha="left", va="bottom", fontsize=7, color="0.35")
     for ax in axes2[:, 0]:
         ax.set_yticks(ys)
         ax.set_yticklabels([d for _, d in ORDER], fontsize=8)
