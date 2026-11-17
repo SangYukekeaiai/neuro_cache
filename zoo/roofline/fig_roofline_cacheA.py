@@ -139,7 +139,7 @@ def main() -> None:
                 ha="center", fontsize=9, color="0.2")
     ax.annotate("cache A", xy=(ex_x * 3.2, ex_y), xytext=(0, 7), textcoords="offset points",
                 ha="center", fontsize=9, color="0.2")
-    ax.set_xlabel("Operational intensity (Operations / DRAM byte)")
+    ax.set_xlabel("Operational intensity (Ops / DRAM byte)")
     ax.set_ylabel("Performance (OPS)")
     ax.spines[["top", "right"]].set_visible(False)
 
