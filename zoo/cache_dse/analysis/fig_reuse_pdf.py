@@ -10,7 +10,6 @@ numbers printed to stdout. Vertical markers: V0 cache_a L1 (16 KiB = 256 lines)
 and L2 (512 KiB = 8192 lines) capacities.
 """
 import csv
-import math
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -21,7 +20,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import font_manager as fm
-from matplotlib.ticker import StrMethodFormatter
 
 HERE = Path(__file__).resolve().parent
 DATA = HERE / "data"
@@ -35,7 +33,7 @@ plt.rcParams.update({
     "mathtext.fontset": "custom",
     "mathtext.rm": family, "mathtext.it": family, "mathtext.bf": family,
     "xtick.labelsize": 8, "ytick.labelsize": 8,
-    "axes.linewidth": 0.6,
+    "axes.linewidth": 0.6, "axes.unicode_minus": False,
 })
 
 # --- ingest
@@ -77,53 +75,39 @@ for layer in layers:
           f"{np.mean(colds):.0f}, P(d=0) {np.mean(d0):.3f} "
           f"[{np.min(d0):.3f},{np.max(d0):.3f}]")
 
-# --- figure: 13 curves in four discrete depth groups (no colorbar: a
-# continuous ramp over 13 curves is not distinguishable; Okabe-Ito colors
-# + linestyle + marker per group, one legend entry per group).
-fig, ax = plt.subplots(figsize=(3.3, 2.4))
-# (label, color, linestyle, marker) per depth group; membership by index.
-GROUPS = [("conv 1-4", "#0072B2", "-", "o"),
-          ("conv 5-8", "#E69F00", "--", "s"),
-          ("conv 9-12", "#009E73", "-.", "^"),
-          ("classifier (FC)", "#000000", ":", "D")]
-
-def group_of(i):
-    return 3 if i == 12 else i // 4
+# --- figure: three representative layers across vgg16's depth (one per
+# depth third; Okabe-Ito colors + linestyle + marker per curve).
+fig, ax = plt.subplots(figsize=(3.3, 1.8))
+# layer index -> (label, color, linestyle, marker)
+SHOW = {0: ("conv 1", "#0072B2", "-", "o"),
+        4: ("conv 5", "#E69F00", "--", "s"),
+        8: ("conv 9", "#009E73", "-.", "^")}
 
 # Cross-sample spread is below 0.3% of the mass in every bin (printed above),
 # so the bands would be invisible; the mean over the 10 samples is drawn alone,
 # and bins a layer never reaches are masked rather than drawn as cliffs to zero.
-seen_groups = set()
 for i, layer in enumerate(layers):
-    label, color, ls, marker = GROUPS[group_of(i)]
+    if i not in SHOW:
+        continue
+    label, color, ls, marker = SHOW[i]
     mat = np.stack([pmf(raw[(layer, s)]) for s in samples])
     x = np.arange(len(all_bins))
     mean = mat.mean(0)
     mean[mean == 0] = np.nan
     ax.plot(x, mean, color=color, lw=1.0, ls=ls, marker=marker, ms=2.4,
-            markerfacecolor="none", markeredgewidth=0.6, alpha=0.9,
-            label=None if label in seen_groups else label)
-    seen_groups.add(label)
-
-for cap_lines, label in ((256, "L1 16 KiB"), (8192, "L2 512 KiB")):
-    # position: between the two bins straddling cap_lines
-    xpos = np.interp(math.log2(cap_lines),
-                     [math.log2(b) if b > 0 else -1 for b in all_bins],
-                     np.arange(len(all_bins)))
-    ax.axvline(xpos, color="0.35", lw=0.7, ls="--")
-    ax.text(xpos, ax.get_ylim()[1], f" {label}", fontsize=6.5, va="top", ha="left",
-            color="0.25", rotation=90,
-            bbox=dict(facecolor="white", alpha=0.75, edgecolor="none", pad=0.4))
+            markerfacecolor="none", markeredgewidth=0.6, alpha=0.9, label=label)
 
 ax.set_xticks([bin_pos[b] for b in all_bins if b in (0, 4, 16, 64, 256, 1024, 4096, 16384)])
 ax.set_xticklabels([f"${b}$" for b in all_bins if b in (0, 4, 16, 64, 256, 1024, 4096, 16384)])
 ax.set_yscale("log")
-ax.yaxis.set_major_formatter(StrMethodFormatter("${x:g}$"))
-ax.set_xlabel("LRU reuse distance (64 B weight lines, log$_2$ bins)")
+from matplotlib.ticker import FuncFormatter, NullFormatter
+ax.yaxis.set_major_formatter(FuncFormatter(
+    lambda v, _: f"$10^{{{int(round(np.log10(v)))}}}$"))
+ax.yaxis.set_minor_formatter(NullFormatter())
+ax.set_xlabel("Reuse distance")
 ax.set_ylabel("fraction of accesses")
 ax.legend(fontsize=6.5, frameon=False, handlelength=2.2, borderaxespad=0.4,
-          labelspacing=0.3, loc="lower left", title="vgg16 depth",
-          title_fontsize=6.5)
+          labelspacing=0.3, loc="lower left")
 ax.spines[["top", "right"]].set_visible(False)
 
 fig.savefig(HERE / "fig_reuse_pdf.pdf", bbox_inches="tight")
