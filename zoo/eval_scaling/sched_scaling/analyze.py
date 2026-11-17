@@ -55,6 +55,16 @@ def point_metrics(arch: str, side: str, m: int) -> tuple[float, float, int]:
 
 
 def main() -> None:
+    # plot-only fallback: reuse the committed CSV when the Gurobi schedule
+    # outputs are not on this machine (--from-csv or missing inputs)
+    import sys
+    csv_existing = OUT / "sched_scaling.csv"
+    if "--from-csv" in sys.argv and csv_existing.is_file():
+        with csv_existing.open(newline="") as stream:
+            rows = [{k: (v if k in ("arch", "side") else float(v))
+                     for k, v in r.items()} for r in csv.DictReader(stream)]
+        plot(rows)
+        return
     rows = []
     for arch in ARCHES:
         base_delay = base_traffic = None
@@ -78,37 +88,65 @@ def main() -> None:
         writer.writerows(rows)
     print(f"-> {csv_path}")
 
-    fig, axes = plt.subplots(2, 5, figsize=(14, 5.2), sharex=True)
-    styles = {"single": dict(color="#4477aa", marker="o", ls="-",
-                             label="single node (1 core, capacity grows)"),
-              "multi": dict(color="#ee6677", marker="s", ls="--",
-                            label="multi node (cores grow 1/2/4, LB fixed 64K)")}
-    for col, arch in enumerate(ARCHES):
-        for metric_row, key, ylabel in ((0, "perf_norm", "Performance / single-node 128K\n(1 / scheduler delay)"),
-                                        (1, "traffic_norm", "Analytic DRAM weight traffic\n/ single-node 128K")):
-            ax = axes[metric_row][col]
-            for side in ("single", "multi"):
-                pts = [r for r in rows if r["arch"] == arch and r["side"] == side]
-                pts.sort(key=lambda r: r["multiplier"])
-                ax.plot([CAP_LABELS[r["multiplier"]] for r in pts],
-                        [r[key] for r in pts], **styles[side])
-            if metric_row == 0:
-                ax.set_title(PRETTY[arch])
-            if metric_row == 1:
-                ax.set_xlabel("Total on-chip weight capacity")
-            if col == 0:
-                ax.set_ylabel(ylabel)
-            ax.grid(alpha=0.25, lw=0.4)
-            ax.axhline(1.0, color="0.4", lw=0.8, ls=":")
-    axes[0][0].legend(fontsize=8, loc="best")
-    fig.suptitle("Scheduler-only scaling: scale-up (single) vs scale-out (multi) "
-                 "at equal total weight capacity - vgg16, Gurobi solves, no simulation",
-                 fontsize=11)
-    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    plot(rows)
+
+
+def plot(rows) -> None:
+    # --- publication figure: two compact panels ---------------------------
+    # Multi-node perf_norm is identical (1/2/4) across all five arches and
+    # single-node lines are flat at 1.0, so one speedup panel suffices;
+    # DRAM weight traffic differs per arch and gets its own panel.
+    from matplotlib import font_manager as fm
+    wanted = ["Gill Sans", "Gill Sans MT", "Lato", "Source Sans Pro", "DejaVu Sans"]
+    installed = {f.name for f in fm.fontManager.ttflist}
+    family = next((w for w in wanted if w in installed), "DejaVu Sans")
+    plt.rcParams.update({
+        "font.family": family, "font.size": 8,
+        "mathtext.fontset": "custom", "mathtext.rm": family,
+        "mathtext.it": family, "mathtext.bf": family,
+    })
+    for a_ in ARCHES:
+        mp = [r["perf_norm"] for r in rows if r["arch"] == a_ and r["side"] == "multi"]
+        assert all(abs(v - w) < 1e-3 for v, w in zip(mp, [1.0, 2.0, 4.0])), (a_, mp)
+
+    ARCH_COLOUR = {"gustavsnn": "#444444", "loas": "#4477aa",
+                   "prosperity": "#228833", "ptb": "#aa3377",
+                   "spinalflow": "#ee6677"}
+    ARCH_MARKER = {"spinalflow": "P", "ptb": "D", "loas": "s",
+                   "prosperity": "^", "gustavsnn": "o"}
+    caps = [CAP_LABELS[m] for m in MULTIPLIERS]
+    x = range(len(caps))
+    fig, (axp, axt) = plt.subplots(1, 2, figsize=(3.4, 1.8))
+    axp.plot(x, [1.0, 2.0, 4.0], color="#ee6677", marker="s", ms=4, ls="--",
+             label="multi-node (all arches)")
+    axp.plot(x, [1.0, 1.0, 1.0], color="#4477aa", marker="o", ms=4, ls="-",
+             label="single node")
+    axp.set_ylabel("Speedup / single 128K")
+    axp.set_yticks([1, 2, 3, 4])
+    axp.legend(fontsize=6.5, frameon=False, loc="upper left", borderaxespad=0.2,
+               handlelength=1.6, handletextpad=0.4)
+    for arch in ARCHES:
+        pts = sorted((r for r in rows if r["arch"] == arch and r["side"] == "multi"),
+                     key=lambda r: r["multiplier"])
+        axt.plot(x, [r["traffic_norm"] for r in pts], color=ARCH_COLOUR[arch],
+                 marker=ARCH_MARKER[arch], ms=3.6, lw=1.0, ls="--",
+                 markerfacecolor="none", label=PRETTY[arch])
+    axt.axhline(1.0, color="0.4", lw=0.8, ls=":")
+    axt.set_ylabel("DRAM weight traffic\n/ single 128K", fontsize=7.5)
+    axt.legend(fontsize=6, frameon=False, loc="upper right", borderaxespad=0.1,
+               handlelength=1.4, handletextpad=0.3, labelspacing=0.25)
+    for ax in (axp, axt):
+        ax.set_xticks(list(x)); ax.set_xticklabels(caps, fontsize=8)
+        ax.set_xlabel("Total weight capacity", fontsize=8)
+        ax.grid(alpha=0.25, lw=0.4)
+        ax.tick_params(labelsize=8)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout()
     for suffix in ("png", "pdf"):
         path = OUT / f"sched_scaling.{suffix}"
-        fig.savefig(path, dpi=220 if suffix == "png" else None)
+        fig.savefig(path, dpi=300 if suffix == "png" else None, bbox_inches="tight")
         print(f"-> {path}")
+    print(f"font: {family}")
 
 
 if __name__ == "__main__":
