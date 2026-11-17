@@ -33,17 +33,13 @@ HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 FONT_DIR = REPO / "zoo" / "fig2_hw_n_sweep"
 N_BINS = 24
-# Bins are ordered (latency), so they take a perceptually uniform sequential
-# map: cividis, dark blue = fast through yellow = slow, colorblind-safe and
-# free of the magenta used for the architecture markers.  The top is cut at
-# 0.85 so the slowest bins stay visible on white.  Color repeats the x
-# position, so it never carries information on its own.
-BAR_CMAP = "cividis"
-BAR_CMAP_RANGE = (0.0, 0.85)
+# Bars in the paper-wide orange (fig 1's dominant bar color); the marker
+# lines keep their own distinct colors and dash styles, carried by a legend.
+BAR_COLOR = "#EE7733"
 # Bars keep this fraction of each bin's log10 width, inset equally on both
 # sides, so neighbours stay apart without an edge stroke crossing a boundary.
 BAR_KEEP = 0.975
-MARK_COLOR = "#DC267F"
+MARK_STYLES = [("#DC267F", "--"), ("#648FFF", (0, (3, 1, 1, 1)))]
 DISPLAY = {
     "loas_t4": "LoAS",
     "ptb_t4": "PTB",
@@ -136,35 +132,35 @@ def main() -> int:
 
     family = paper_style()
     width = 243.91125 / 72.27          # 3.375 in single-column width
-    fig, ax = plt.subplots(figsize=(width, width * 0.65))
+    fig, ax = plt.subplots(figsize=(width, width * 0.5))
     fig.subplots_adjust(left=0.17, right=0.98, bottom=0.21, top=0.97)
     ax.set_axisbelow(True)
     ax.grid(axis="y", linestyle="-", alpha=0.5)
     ax.set_xscale("log")
-    centers = np.log10(np.sqrt(edges[:-1] * edges[1:]))
-    t = (centers - centers[0]) / (centers[-1] - centers[0])
-    shade = BAR_CMAP_RANGE[0] + t * (BAR_CMAP_RANGE[1] - BAR_CMAP_RANGE[0])
     log_lo, log_hi = np.log10(edges[:-1]), np.log10(edges[1:])
     inset = (1 - BAR_KEEP) / 2 * (log_hi - log_lo)
     bar_lo, bar_hi = 10 ** (log_lo + inset), 10 ** (log_hi - inset)
     assert np.all(bar_lo > edges[:-1]) and np.all(bar_hi < edges[1:])
     ax.bar(bar_lo, heights, width=bar_hi - bar_lo, align="edge",
-           color=matplotlib.colormaps[BAR_CMAP](shade), linewidth=0)
+           color=BAR_COLOR, linewidth=0)
 
-    # Architecture markers: one dashed line per distinct solver delay, labelled
-    # with every architecture that lands on it.
+    # Architecture markers: one line per distinct solver delay, named in the
+    # legend (one entry per line, distinct color + dash style).
     by_delay: dict[int, list[str]] = {}
     for row in baselines["baselines"]:
         if not row["has_solution"]:
             continue
         by_delay.setdefault(row["delay"], []).append(DISPLAY.get(row["name"], row["name"]))
+    assert len(by_delay) <= len(MARK_STYLES)
     ymax = heights.max() * 1.08
-    for delay, names in sorted(by_delay.items()):
-        ax.axvline(delay, color=MARK_COLOR, linestyle="--", linewidth=0.8)
-        # No background box: the 1.03 offset fits each label in the clear
-        # space right of its line (the GustavSNN group sits in the empty bin).
-        ax.text(delay * 1.03, ymax * 0.97, ", ".join(sorted(names)),
-                rotation=90, ha="left", va="top", color=MARK_COLOR, fontsize=8)
+    handles = []
+    for (delay, names), (color, dashes) in zip(sorted(by_delay.items()), MARK_STYLES):
+        line = ax.axvline(delay, color=color, linestyle=dashes, linewidth=1.0,
+                          label=", ".join(sorted(names)))
+        handles.append(line)
+    fig.legend(handles=handles, loc="lower center", frameon=False,
+               bbox_to_anchor=(0.56, 0.955), ncol=2, borderpad=0.2,
+               handletextpad=0.5, columnspacing=1.0, handlelength=1.3)
 
     ax.set_xlim(edges[0] / 1.15, edges[-1] * 1.15)
     ax.set_ylim(0, ymax)
@@ -209,8 +205,7 @@ def main() -> int:
         f"{n_sched:,} valid schedules found by exhaustive enumeration "
         f"({summary['n_node_assignments']:,} local-buffer-valid per-dimension "
         "node assignments, each crossed with every legal NoC partition), "
-        f"counted into {N_BINS} log-spaced latency bins, each shaded by its "
-        "latency (dark blue = fast, yellow = slow); "
+        f"counted into {N_BINS} log-spaced latency bins; "
         f"{summary['n_distinct_latencies']} distinct latencies span "
         f"{summary['best_latency']:,} to {summary['worst_latency']:,} "
         f"iterations, a {summary['spread']}x spread. Latency is the "
