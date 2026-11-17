@@ -1,0 +1,22 @@
+\begin{table}[t]
+\centering
+\caption{Power and area breakdown of the scratchpad baseline and cache~A (loas, spiking VGG16, ASAP7 at 1\,GHz; power is the whole-model mean over the complete samples; area is on-chip, off-chip DRAM contributes power only).}
+\label{tab:power-area}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{Area [mm$^2$]} & \multicolumn{2}{c}{Power [mW]} \\
+\cmidrule(lr){2-3}\cmidrule(l){4-5}
+Component & spad & cache A & spad & cache A \\
+\midrule
+Compute logic & 0.075 & 0.075 & 2.0 & 2.8 \\
+Node buffers & 0.142 & 0.008 & 49.8 & 14.4 \\
+L1 cache & -- & 0.460 & -- & 33.4 \\
+L2 cache & -- & 0.138 & -- & 43.5 \\
+Global buffer & 0.621 & -- & 156.7 & -- \\
+NoC & 0.022 & 0.022 & 24.1 & 0.0 \\
+DRAM & -- & -- & 2033.2 & 1792.7 \\
+\midrule
+Total & 0.860 & 0.703 & 2265.9 & 1886.7 \\
+\bottomrule
+\end{tabular}
+\end{table}
