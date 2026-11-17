@@ -21,7 +21,7 @@ sys.path.insert(0, str(HERE))
 from asap7_reprice import ROWS, NEW_TABLE, physical, instances  # noqa: E402
 
 ARCH = "loas"
-CAPTURE = "B09/loas_vgg16_T4_n500"
+CAPTURE = "A07/spikinglm_t4_T4_n500"
 ARMS = ("spad", "cacheA")
 SRAMISH = ("spad", "buffer", "fifo", "queue", "sram", "rf")
 
@@ -67,8 +67,9 @@ def main() -> None:
                     inv_keys[r["arm"]].add(key)
                 T[(r["arm"], sample)] += float(r["T_s"])
                 layers[(r["arm"], sample)].add(r["layer"])
-    n_layers = {k: len(v) for k, v in layers.items()}
-    assert all(v == 12 for v in n_layers.values()), sorted(set(n_layers.values()))
+    n_layers = {len(v) for v in layers.values()}
+    assert len(n_layers) == 1, n_layers
+    print(f"layers per model: {n_layers}")
     samples = sorted({s for (_, s) in T})
     print(f"samples: {len(samples)}; arms: {sorted(inv_keys)}")
 
@@ -121,26 +122,33 @@ def main() -> None:
 
     tex = [
         "\\begin{table}[t]",
-        "\\centering",
-        "\\caption{Power and area breakdown of the scratchpad baseline and"
-        " cache~A (loas, spiking VGG16, ASAP7 at 1\\,GHz; power is the"
-        " whole-model mean over the complete samples; area is on-chip,"
+        "    \\centering",
+        "    \\caption{Power and area breakdown of the scratchpad baseline"
+        " and cache~A (loas, SpikingLM, ASAP7 at 1\\,GHz; area is on-chip,"
         " off-chip DRAM contributes power only).}",
-        "\\label{tab:power-area}",
-        "\\begin{tabular}{@{}lrrrr@{}}",
-        "\\toprule",
-        " & \\multicolumn{2}{c}{Area [mm$^2$]} & \\multicolumn{2}{c}{Power [mW]} \\\\",
-        "\\cmidrule(lr){2-3}\\cmidrule(l){4-5}",
-        "Component & spad & cache A & spad & cache A \\\\",
-        "\\midrule",
+        "    \\label{tab:power-area}",
+        "    \\begingroup",
+        "    \\setlength{\\tabcolsep}{3pt}",
+        "    \\renewcommand{\\arraystretch}{1.1}",
+        "    \\begin{adjustbox}{max width=\\columnwidth}",
+        "    \\begin{tabular}{@{}lrrrr@{}}",
+        "        \\toprule",
+        "        \\multirow{2}{*}{\\textbf{Component}} &"
+        " \\multicolumn{2}{c}{\\textbf{Area [mm$^2$]}} &"
+        " \\multicolumn{2}{c}{\\textbf{Power [mW]}} \\\\",
+        "        \\cmidrule(lr){2-3}\\cmidrule(l){4-5}",
+        "        & spad & cache A & spad & cache A \\\\",
+        "        \\midrule",
     ]
     for cat, a_s, a_c, p_s, p_c in lines:
-        tex.append(f"{cat} & {fmt_a(a_s)} & {fmt_a(a_c)} & {fmt_p(p_s)} & {fmt_p(p_c)} \\\\")
+        tex.append(f"        {cat} & {fmt_a(a_s)} & {fmt_a(a_c)} & {fmt_p(p_s)} & {fmt_p(p_c)} \\\\")
     tex += [
-        "\\midrule",
-        f"Total & {tot['as']:.3f} & {tot['ac']:.3f} & {tot['ps']:.1f} & {tot['pc']:.1f} \\\\",
-        "\\bottomrule",
-        "\\end{tabular}",
+        "        \\midrule",
+        f"        \\textbf{{Total}} & {tot['as']:.3f} & {tot['ac']:.3f} & {tot['ps']:.1f} & {tot['pc']:.1f} \\\\",
+        "        \\bottomrule",
+        "    \\end{tabular}",
+        "    \\end{adjustbox}",
+        "    \\endgroup",
         "\\end{table}",
     ]
     out = HERE / "results_asap7_20261116" / "table_power_area.tex"
