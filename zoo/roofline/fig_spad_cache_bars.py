@@ -45,7 +45,7 @@ WORKLOADS = [  # label: dataset on top, model below
     ("B09/loas_resnet19_T4_n500", "cifar100\nresnet19"),
     ("B09/loas_vgg16_T4_n500", "cifar100\nvgg16"),
     ("C01/sma_azo_vgg_cifar10_dvs_T10_n500", "cifar10-dvs\nvgg"),
-    ("C01/sma_azo_vgg_dvs128_gesture_T16_n500", "dvs128-gesture\nvgg"),
+    ("C01/sma_azo_vgg_dvs128_gesture_T16_n500", "dvs128\nvgg"),
 ]
 
 
@@ -98,7 +98,7 @@ def main() -> None:
     installed = {f.name for f in fm.fontManager.ttflist}
     family = next((w for w in wanted if w in installed), "DejaVu Sans")
     plt.rcParams.update({
-        "font.family": family, "font.size": 9,
+        "font.family": family, "font.size": 10,
         "mathtext.fontset": "custom", "mathtext.rm": family,
         "mathtext.it": family, "mathtext.bf": family,
     })
@@ -139,7 +139,7 @@ def main() -> None:
     n_arch = len(base.ARCHES)
     n_bars = n_arch * 2
     width = 0.86 / n_bars
-    fig, axe = plt.subplots(figsize=(7.0, 2.0))
+    fig, axe = plt.subplots(figsize=(7.2, 2.2))
     ylabel = "EDP improvement\nover spad"
     panel_vals = []
     for ai, arch in enumerate(base.ARCHES):
@@ -162,7 +162,7 @@ def main() -> None:
             axe.errorbar(xs, means, yerr=errs, fmt="none", ecolor="0.2",
                          elinewidth=0.6, capsize=1.3, zorder=4)
     axe.axhline(1.0, color="0.3", lw=1.0, ls="--", zorder=2)
-    axe.text(len(groups) - 0.45, 1.05, "spad", fontsize=8, color="0.3",
+    axe.text(len(groups) - 0.45, 1.05, "spad", fontsize=9, color="0.3",
              ha="right", va="bottom")
     axe.axvline(len(groups) - 1.5, color="0.6", lw=0.9, zorder=1)
     axe.set_yscale("log", base=2)
@@ -173,17 +173,17 @@ def main() -> None:
     axe.set_yticks(ticks)
     axe.set_yticklabels([f"{t:g}" for t in ticks])
     axe.yaxis.set_minor_locator(matplotlib.ticker.NullLocator())
-    axe.set_ylabel(ylabel, fontsize=9)
-    axe.text(0.004, 0.96, "higher is better", transform=axe.transAxes, fontsize=8,
+    axe.set_ylabel(ylabel, fontsize=10)
+    axe.text(0.004, 0.96, "higher is better", transform=axe.transAxes, fontsize=9,
              color="0.3", style="italic", va="top")
     axe.grid(axis="y", alpha=0.25, lw=0.4, zorder=0)
-    axe.tick_params(labelsize=8.5)
+    axe.tick_params(labelsize=9.5)
     for sp in ("top", "right"):
         axe.spines[sp].set_visible(False)
     for gi in range(1, len(groups) - 1):
         axe.axvline(gi - 0.5, color="0.85", lw=0.7, zorder=1)
     axe.set_xticks(np.arange(len(groups)))
-    axe.set_xticklabels(labels, fontsize=8.5)
+    axe.set_xticklabels(labels, fontsize=9.5)
     axe.set_xlim(-0.6, len(groups) - 0.4)
     arch_handles = [Patch(facecolor=ARCH_COLOUR[a], edgecolor="0.25", label=a)
                     for a in base.ARCHES]
@@ -191,7 +191,7 @@ def main() -> None:
                    Patch(facecolor="0.75", edgecolor="0.25", hatch="////",
                          label="cache B")]
     axe.legend(handles=arch_handles + arm_handles,
-               fontsize=8, ncol=7, frameon=False, loc="lower center",
+               fontsize=9, ncol=7, frameon=False, loc="lower center",
                bbox_to_anchor=(0.5, 1.0), handletextpad=0.4, columnspacing=0.8,
                borderaxespad=0.0)
     fig.tight_layout()
