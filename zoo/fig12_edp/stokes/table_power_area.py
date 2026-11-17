@@ -138,7 +138,8 @@ def main() -> None:
         "    \\begingroup",
         "    \\setlength{\\tabcolsep}{3pt}",
         "    \\renewcommand{\\arraystretch}{1.0}",
-        "    \\begin{adjustbox}{width=\\columnwidth}",
+        "    \\small",
+        "    \\begin{adjustbox}{max width=\\columnwidth}",
         "    \\begin{tabular}{@{}lrrrr@{}}",
         "        \\toprule",
         "        \\multirow{2}{*}{\\textbf{Component}} &"
