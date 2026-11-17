@@ -49,8 +49,8 @@ WORKLOADS = [  # label: dataset on top, model below
 ]
 
 
-def edp_ratios():
-    """(arch, workload) -> per-sample model_EDP spad / cacheA (higher = cache better)."""
+def edp_ratios(arm="cacheA"):
+    """(arch, workload) -> per-sample model_EDP spad / arm (higher = cache better)."""
     edp = {}
     for path in sorted(EDP_DIR.glob("sample_*/whole_model_asap7.csv")):
         with path.open(newline="") as stream:
@@ -63,7 +63,7 @@ def edp_ratios():
     for arch in base.ARCHES:
         for wl, _ in WORKLOADS:
             spad = edp.get((arch, "spad", wl))
-            cache = edp.get((arch, "cacheA", wl))
+            cache = edp.get((arch, arm, wl))
             if not spad or not cache:
                 continue
             ids = sorted(set(spad) & set(cache))
@@ -105,7 +105,8 @@ def main() -> None:
 
     samples_by_group, _ = base.load_extract(OUT / "extract.csv")
     ratios = paired_ratios(samples_by_group)
-    for key_wl, vals in edp_ratios().items():
+    arm_edp = {arm: edp_ratios(arm) for arm in ("cacheA", "cacheB")}
+    for key_wl, vals in arm_edp["cacheA"].items():
         ratios.setdefault(key_wl, {})["edp"] = vals
 
     # geomean per arch: per sample, geomean over that arch's covered workloads
@@ -122,32 +123,48 @@ def main() -> None:
                 missing = [w for w, _ in WORKLOADS if w not in wls]
                 print(f"note: {arch} {key} geomean over {len(wls)} benchmarks; missing: {missing}")
 
-    # geomeans are printed for the prose but not drawn (user call: no geomean group)
-    groups = [wl for wl, _ in WORKLOADS]
-    labels = [short for _, short in WORKLOADS]
+    # per-arm EDP geomeans across models, per sample (paired)
+    arm_geo = {}
+    for arm, table in arm_edp.items():
+        arm_geo[arm] = {}
+        for arch in base.ARCHES:
+            wls = [wl for wl, _ in WORKLOADS if (arch, wl) in table]
+            n = min(len(table[(arch, wl)]) for wl in wls)
+            arm_geo[arm][arch] = [
+                math.exp(sum(math.log(table[(arch, wl)][i]) for wl in wls) / len(wls))
+                for i in range(n)]
+
+    groups = [wl for wl, _ in WORKLOADS] + ["geomean"]
+    labels = [short for _, short in WORKLOADS] + ["geomean\n(all models)"]
     n_arch = len(base.ARCHES)
-    width = 0.8 / n_arch
+    n_bars = n_arch * 2
+    width = 0.86 / n_bars
     fig, axe = plt.subplots(figsize=(7.0, 2.0))
-    key, ylabel, better = "edp", "EDP improvement\nover spad", "higher is better"
+    ylabel = "EDP improvement\nover spad"
     panel_vals = []
     for ai, arch in enumerate(base.ARCHES):
-        xs, means, errs = [], [], []
-        for gi, wl in enumerate(groups):
-            vals = ratios.get((arch, wl), {}).get(key)
-            if not vals:
-                continue
-            mean, lo, hi = base._ci(vals)
-            xs.append(gi + (ai - (n_arch - 1) / 2) * width)
-            means.append(mean)
-            errs.append(hi - mean)
-        panel_vals.extend(means)
-        axe.bar(xs, means, width=width * 0.94, color=ARCH_COLOUR[arch],
-                edgecolor="0.25", lw=0.5, zorder=3)
-        axe.errorbar(xs, means, yerr=errs, fmt="none", ecolor="0.2",
-                     elinewidth=0.7, capsize=1.6, zorder=4)
+        for bi, arm in enumerate(("cacheA", "cacheB")):
+            xs, means, errs = [], [], []
+            for gi, wl in enumerate(groups):
+                vals = (arm_geo[arm][arch] if wl == "geomean"
+                        else arm_edp[arm].get((arch, wl)))
+                if not vals:
+                    continue
+                mean, lo, hi = base._ci(vals)
+                slot = ai * 2 + bi
+                xs.append(gi + (slot - (n_bars - 1) / 2) * width)
+                means.append(mean)
+                errs.append(hi - mean)
+            panel_vals.extend(means)
+            axe.bar(xs, means, width=width * 0.92, color=ARCH_COLOUR[arch],
+                    edgecolor="0.25", lw=0.4, zorder=3,
+                    hatch=None if arm == "cacheA" else "////")
+            axe.errorbar(xs, means, yerr=errs, fmt="none", ecolor="0.2",
+                         elinewidth=0.6, capsize=1.3, zorder=4)
     axe.axhline(1.0, color="0.3", lw=1.0, ls="--", zorder=2)
-    axe.text(len(groups) - 0.45, 0.95, "spad", fontsize=8, color="0.3",
-             ha="right", va="top")
+    axe.text(len(groups) - 0.45, 1.05, "spad", fontsize=8, color="0.3",
+             ha="right", va="bottom")
+    axe.axvline(len(groups) - 1.5, color="0.6", lw=0.9, zorder=1)
     axe.set_yscale("log", base=2)
     lo, hi = min(panel_vals), max(panel_vals)
     axe.set_ylim(lo * 0.7, hi * 1.5)
@@ -157,21 +174,25 @@ def main() -> None:
     axe.set_yticklabels([f"{t:g}" for t in ticks])
     axe.yaxis.set_minor_locator(matplotlib.ticker.NullLocator())
     axe.set_ylabel(ylabel, fontsize=9)
-    axe.text(0.004, 0.96, better, transform=axe.transAxes, fontsize=8,
+    axe.text(0.004, 0.96, "higher is better", transform=axe.transAxes, fontsize=8,
              color="0.3", style="italic", va="top")
     axe.grid(axis="y", alpha=0.25, lw=0.4, zorder=0)
     axe.tick_params(labelsize=8.5)
     for sp in ("top", "right"):
         axe.spines[sp].set_visible(False)
-    for gi in range(1, len(groups)):
+    for gi in range(1, len(groups) - 1):
         axe.axvline(gi - 0.5, color="0.85", lw=0.7, zorder=1)
     axe.set_xticks(np.arange(len(groups)))
     axe.set_xticklabels(labels, fontsize=8.5)
     axe.set_xlim(-0.6, len(groups) - 0.4)
-    axe.legend(handles=[Patch(facecolor=ARCH_COLOUR[a], edgecolor="0.25", label=a)
-                        for a in base.ARCHES],
-               fontsize=8.5, ncol=5, frameon=False, loc="lower center",
-               bbox_to_anchor=(0.5, 1.0), handletextpad=0.4, columnspacing=1.0,
+    arch_handles = [Patch(facecolor=ARCH_COLOUR[a], edgecolor="0.25", label=a)
+                    for a in base.ARCHES]
+    arm_handles = [Patch(facecolor="0.75", edgecolor="0.25", label="cache A"),
+                   Patch(facecolor="0.75", edgecolor="0.25", hatch="////",
+                         label="cache B")]
+    axe.legend(handles=arch_handles + arm_handles,
+               fontsize=8, ncol=7, frameon=False, loc="lower center",
+               bbox_to_anchor=(0.5, 1.0), handletextpad=0.4, columnspacing=0.8,
                borderaxespad=0.0)
     fig.tight_layout()
     fig.savefig(OUT / "fig_spad_cache_bars.pdf", bbox_inches="tight")
