@@ -62,10 +62,10 @@ def write_stream(events,path,dram_port):
     return compute,packets
 
 
-def run(case,trace_root,out):
+def run(case,trace_root,out,manifest_root=None):
     identity=json.loads((case/'case.json').read_text());arch=identity['arch'];size=identity['size'];sample=identity['sample'];layer=identity['layer']
     assert size=='256k'
-    manifest_path=ROOT/f'outputs/manifest/{arch}_{size}/manifest.json';manifest=json.loads(manifest_path.read_text())
+    manifest_path=(manifest_root or ROOT/'outputs/manifest')/f'{arch}_{size}/manifest.json';manifest=json.loads(manifest_path.read_text())
     row,=[x for x in manifest['layers'] if x['layer']==layer]
     schedule=ROOT/row['schedule'];config=ROOT/manifest['arch_path']
     assert digest(schedule)==row['schedule_sha256'] and digest(config)==manifest['arch_sha256']
@@ -120,9 +120,15 @@ def run(case,trace_root,out):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--index',type=int,required=True);p.add_argument('--trace-root',type=Path,required=True);a=p.parse_args()
-    cases=[x for x in json.loads((ROOT/'configs/cases.json').read_text()) if x['size']=='256k'];assert len(cases)==360
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--index',type=int,required=True);p.add_argument('--trace-root',type=Path,required=True)
+    p.add_argument('--cases',type=Path,default=ROOT/'configs/cases.json')
+    p.add_argument('--counts-root',type=Path,default=ROOT/'outputs/counts')
+    p.add_argument('--out-root',type=Path,default=ROOT/'outputs/whole_run_ideal/counts')
+    p.add_argument('--manifest-root',type=Path,default=ROOT/'outputs/manifest')
+    a=p.parse_args()
+    cases=[x for x in json.loads(a.cases.read_text()) if x['size']=='256k']
+    if a.cases.name=='cases.json':assert len(cases)==360
     c=cases[a.index];rel=Path(c['arch'])/c['size']/f'sample_{c["sample"]:03d}'/c['layer']
-    result=run(ROOT/'outputs/counts'/rel,a.trace_root,ROOT/'outputs/whole_run_ideal/counts'/rel)
+    result=run(a.counts_root/rel,a.trace_root,a.out_root/rel,a.manifest_root)
     print(json.dumps({k:v for k,v in result.items() if k!='artifacts'}),flush=True)
 if __name__=='__main__':main()

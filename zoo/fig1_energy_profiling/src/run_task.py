@@ -14,8 +14,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--index', type=int, required=True)
     parser.add_argument('--trace-root', type=Path, required=True)
+    parser.add_argument('--cases', type=Path, default=ROOT/'configs/cases.json')
+    parser.add_argument('--output-root', type=Path, default=ROOT/'outputs/counts')
+    parser.add_argument('--status-dir', type=Path, default=ROOT/'outputs/task_status')
     args = parser.parse_args()
-    cases = json.loads((ROOT/'configs/cases.json').read_text())
+    cases = json.loads(args.cases.read_text())
     case = cases[args.index]
     assert case['index'] == args.index
     start = time.monotonic()
@@ -23,14 +26,14 @@ def main():
     error = None
     try:
         status['result'] = run(ROOT/case['manifest'], case['layer'], case['sample'],
-                               args.trace_root, ROOT/'outputs/counts')
+                               args.trace_root, args.output_root)
     except Exception:
         error = traceback.format_exc()
         status['error'] = error
     usage = resource.getrusage(resource.RUSAGE_SELF)
     status.update(wall_seconds=time.monotonic()-start, cpu_seconds=usage.ru_utime+usage.ru_stime,
                   max_rss_kib=usage.ru_maxrss)
-    directory = ROOT/'outputs/task_status'; directory.mkdir(parents=True, exist_ok=True)
+    directory = args.status_dir; directory.mkdir(parents=True, exist_ok=True)
     save(directory/f'{args.index:04d}.json', status)
     print(json.dumps(status), flush=True)
     if error:
