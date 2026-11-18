@@ -102,3 +102,4 @@ core.*
 innovation_summary/
 # Platform-specific native builds: each host builds its own; never carried by git
 zoo/fig12_edp/demo/native_build/
+zoo/fig12_edp/stokes/full500_rows_fetch_20261116/rows/
